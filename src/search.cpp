@@ -290,6 +290,7 @@ void MainThread::search() {
       {
           th->maxPly = 0;
           th->rootDepth = DEPTH_ZERO;
+          th->inSlipStream = false;
           if (th != this)
           {
               th->rootPos = Position(rootPos, th);
@@ -388,6 +389,7 @@ void Thread::search() {
       if (!isMainThread)
           rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
 
+      inSlipStream = false;
       // Age out PV variability metric
       if (isMainThread)
           BestMoveChanges *= 0.5;
@@ -647,6 +649,11 @@ namespace {
             update_stats(pos, ss, ttMove, depth, nullptr, 0);
 
         return ttValue;
+    }
+
+    if (pos.this_thread()->inSlipStream && ss->ply == 6 && posKey % Threads.size() == pos.this_thread()->idx) {
+       	depth = depth + ONE_PLY;
+       	pos.this_thread()->inSlipStream = false;
     }
 
     // Step 4a. Tablebase probe
@@ -1339,6 +1346,11 @@ moves_loop: // When in check search starts from here
     if (InCheck && bestValue == -VALUE_INFINITE)
         return mated_in(ss->ply); // Plies to mate from the root
 
+    if (!PvNode && ttHit && tte->depth() == depth && ttValue != VALUE_NONE &&
+        		(ttValue >= beta ? (tte->bound() & BOUND_LOWER) : (tte->bound() & BOUND_UPPER))) {
+        	pos.this_thread()->inSlipStream = true;
+    //    	std::cout << "Thread idx:" << pos.this_thread()->idx << " slipstream detected on ply: " << ss->ply  << "pos " << pos.key() << std::endl;
+    }
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval, TT.generation());

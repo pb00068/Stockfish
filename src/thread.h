@@ -61,6 +61,7 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
+  bool inSlipStream;
 
   Position rootPos;
   Search::RootMoveVector rootMoves;
