@@ -70,7 +70,6 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16];  // [improving][depth]
   Depth Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
-  //int depth_memory[4] = { 0, 0, 0, 0 };
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d, 63 * ONE_PLY)][std::min(mn, 63)];
@@ -389,9 +388,7 @@ void Thread::search() {
 
       // Set up the new depth for the helper threads
       if (!isMainThread)
-      {
-           rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
-      }
+    	  rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
 
 
       this->inSlipStream = false;
@@ -429,7 +426,6 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we're not failing
           // high/low anymore.
-          //int aspiration=0;
           while (true)
           {
         	  inSlipStreamWriteConflictThreshold=0;
@@ -1265,7 +1261,7 @@ moves_loop: // When in check search starts from here
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE,  MOVE_NONE, ss->staticEval, TT.generation());
+                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation());
 
             return bestValue;
         }
@@ -1373,7 +1369,6 @@ moves_loop: // When in check search starts from here
     // and no legal moves were found, it is checkmate.
     if (InCheck && bestValue == -VALUE_INFINITE)
         return mated_in(ss->ply); // Plies to mate from the root
-
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
