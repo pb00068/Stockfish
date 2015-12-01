@@ -70,6 +70,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16];  // [improving][depth]
   Depth Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
+  //int depth_memory[4] = { 0, 0, 0, 0 };
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d, 63 * ONE_PLY)][std::min(mn, 63)];
@@ -290,6 +291,7 @@ void MainThread::search() {
       {
           th->maxPly = 0;
           th->rootDepth = DEPTH_ZERO;
+          th->inSlipStreamWriteConflictThreshold = -1;
           if (th != this)
           {
               th->rootPos = Position(rootPos, th);
@@ -384,9 +386,25 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or target depth reached
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
+
       // Set up the new depth for the helper threads
       if (!isMainThread)
-          rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
+      {
+           rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
+      }
+
+
+      this->inSlipStream = false;
+      for (Thread* th : Threads)
+	  {
+		if (th->idx == this->idx)
+			continue;
+		if (th->rootDepth == rootDepth && rootDepth != DEPTH_ZERO) {
+			this->inSlipStream = true;
+			this->followingIdx = th->idx;
+			break;
+		}
+	  }
 
       // Age out PV variability metric
       if (isMainThread)
@@ -411,8 +429,10 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we're not failing
           // high/low anymore.
+          //int aspiration=0;
           while (true)
           {
+        	  inSlipStreamWriteConflictThreshold=0;
               bestValue = ::search<Root>(rootPos, ss, alpha, beta, rootDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -882,6 +902,7 @@ moves_loop: // When in check search starts from here
       if (givesCheck && pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
 
+
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
       // is singular and should be extended. To verify this we do a reduced search
@@ -901,6 +922,11 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
+      }
+      else if (thisThread != Threads.main() && !extension && thisThread->inSlipStream && thisThread->inSlipStreamWriteConflictThreshold > 300 && depth == 9)
+      {
+    	  extension = ONE_PLY ;
+    	  thisThread->inSlipStreamWriteConflictThreshold=0;
       }
 
       // Update the current move (this must be done after singular extension search)
@@ -1126,6 +1152,15 @@ moves_loop: // When in check search starts from here
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
+    if (!PvNode && ttHit && ttValue != VALUE_NONE &&
+    		(ttValue >= beta ? (tte->bound() & BOUND_LOWER) : (tte->bound() & BOUND_UPPER)))
+    {
+    	if (tte->depth() == depth )
+       	    pos.this_thread()->inSlipStreamWriteConflictThreshold+=50;
+    	else
+    		pos.this_thread()->inSlipStreamWriteConflictThreshold--;
+    }
+
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
@@ -1230,7 +1265,7 @@ moves_loop: // When in check search starts from here
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation());
+                          DEPTH_NONE,  MOVE_NONE, ss->staticEval, TT.generation());
 
             return bestValue;
         }
@@ -1338,6 +1373,7 @@ moves_loop: // When in check search starts from here
     // and no legal moves were found, it is checkmate.
     if (InCheck && bestValue == -VALUE_INFINITE)
         return mated_in(ss->ply); // Plies to mate from the root
+
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
