@@ -385,8 +385,10 @@ void Thread::search() {
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
       // Set up the new depth for the helper threads
-      if (!isMainThread)
-          rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
+      if (!isMainThread) {
+          if ((rootPos.game_ply() + rootDepth) % (Threads.size() - 1) == idx)
+        	  continue; // each helper skips iteration cycle on determinate game-plies
+      }
 
       // Age out PV variability metric
       if (isMainThread)
