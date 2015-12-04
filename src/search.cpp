@@ -380,13 +380,13 @@ void Thread::search() {
       multiPV = std::max(multiPV, (size_t)4);
 
   multiPV = std::min(multiPV, rootMoves.size());
-
   // Iterative deepening loop until requested to stop or target depth reached
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
       // Set up the new depth for the helper threads
       if (!isMainThread) {
-          if ((rootPos.game_ply() + rootDepth) % (Threads.size() - 1) == idx)
+    	  size_t left = (rootPos.game_ply() + rootDepth) % (Threads.size() - 1); // thread with max idx behaviors like main thread
+          if (left == idx || 2 * left == idx)
         	  continue; // each helper skips iteration cycle on determinate game-plies
       }
 
