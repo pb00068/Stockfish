@@ -385,8 +385,8 @@ void Thread::search() {
   {
       // Set up the new depth for the helper threads
       if (!isMainThread) {
-    	  size_t left = (rootPos.game_ply() + rootDepth) % (Threads.size() - 1); // thread with max idx behaviors like main thread
-          if (left == idx || 2 * left == idx)
+    	  size_t left = (rootPos.game_ply() + rootDepth) % std::max((int) Threads.size() - 1, 2);
+          if (left == idx - 1 || 2 * left == idx - 1)
         	  continue; // each helper skips iteration cycle on determinate game-plies
       }
 
