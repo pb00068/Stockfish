@@ -386,8 +386,15 @@ void Thread::search() {
   {
       // Set up the new depth for the helper threads
       if (!isMainThread) {
-          if ((rootPos.game_ply() + rootDepth) % (Threads.size() - 1) == idx)
-        	  continue; // each helper skips iteration cycle on determinate game-plies
+    	  if (idx <=2 ) {
+             if ((rootPos.game_ply() + rootDepth) % 2 == idx - 1)
+        	   continue; // each helper skips iteration cycle on determinate game-plies
+    	  }
+    	  else  {
+    		   int r = ((rootPos.game_ply() + rootDepth + idx) / 2 ) % 2;
+    		   if (r == 0)
+		          continue; // each helper skips iteration cycle on determinate game-plies
+    	  }
       }
 
       // Age out PV variability metric
