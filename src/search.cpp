@@ -294,6 +294,9 @@ void MainThread::search() {
           {
               th->rootPos = Position(rootPos, th);
               th->rootMoves = rootMoves;
+              th->rootDepth = DEPTH_ZERO + Depth(int(2.2 * log(1 + th->idx)));
+              if (Limits.depth)
+                   th->rootDepth = std::min(Depth(Limits.depth - 1), th->rootDepth);
               th->start_searching();
           }
       }
