@@ -186,6 +186,7 @@ void Search::clear() {
   {
       th->history.clear();
       th->counterMoves.clear();
+      th->rootDepth = DEPTH_ZERO;
   }
 }
 
@@ -289,9 +290,19 @@ void MainThread::search() {
       for (Thread* th : Threads)
       {
           th->maxPly = 0;
-          th->rootDepth = DEPTH_ZERO;
-          if (th != this)
+          if (th == this)
           {
+        	  th->rootDepth = DEPTH_ZERO;
+          }
+          else
+          {
+        	  if (th->rootDepth > ONE_PLY) // TODO check if last rootPos is distant 2 plies from current rootPos
+        	  {
+        		  // let helper-threads directly resume on the ply they was running before
+        		  // N.B. With lazy SMP we pretend the TT being dimensioned big enough
+        		  th->rootDepth -= 3 * ONE_PLY; // TODO: consider Ponder ON
+        	  }
+
               th->rootPos = Position(rootPos, th);
               th->rootMoves = rootMoves;
               th->start_searching();

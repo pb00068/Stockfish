@@ -39,6 +39,7 @@ Thread::Thread() {
   history.clear();
   counterMoves.clear();
   idx = Threads.size(); // Start from 0
+  rootDepth = DEPTH_ZERO;
 
   std::unique_lock<Mutex> lk(mutex);
   searching = true;

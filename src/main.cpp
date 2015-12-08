@@ -32,6 +32,26 @@ int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
 
+
+
+//  for (int ply =1; ply <= 8; ply ++) {
+//	  std::cout << "ply " << ply;
+//	  for (int idx=1; idx<=6; idx++) {
+////		  int r= ((ply + idx) / 2 ) % 2 == 0;
+//		  int r=0;
+//		  if (idx <=2 ) {
+//		         r = ply % 2 == idx - 1;
+//
+//		      	  }
+//		      	  else  {
+//		      		   r = ((ply + idx) / 2 ) % 2;
+//
+//		      	  }
+//		  std::cout << " " << r;
+//	  }
+//	  std::cout << std::endl;
+//  }
+
   UCI::init(Options);
   PSQT::init();
   Bitboards::init();
