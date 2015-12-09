@@ -186,6 +186,7 @@ void Search::clear() {
   {
       th->history.clear();
       th->counterMoves.clear();
+      th->rootDepth = DEPTH_ZERO;
   }
 }
 
@@ -290,8 +291,18 @@ void MainThread::search() {
       {
           th->maxPly = 0;
           th->rootDepth = DEPTH_ZERO;
-          if (th != this)
-          {
+          if (th == this)
+		  {
+		     th->rootDepth = DEPTH_ZERO;
+		  }
+		  else
+		  {
+			  if (th->rootDepth > ONE_PLY) // TODO before sending readyOk check if last rootPos is distant 2 plies from current rootPos
+			  {
+				  // let helper-threads directly resume on the ply they was running when signal stop came
+				  // N.B. With lazy SMP we pretend the TT being dimensioned big enough
+				  th->rootDepth -= 3 * ONE_PLY; // TODO: consider Ponder ON
+			  }
               th->rootPos = Position(rootPos, th);
               th->rootMoves = rootMoves;
               th->start_searching();
@@ -385,8 +396,17 @@ void Thread::search() {
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
       // Set up the new depth for the helper threads
-      if (!isMainThread)
-          rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
+	  if (!isMainThread) {
+		  if (idx <=2 ) {
+			if ((rootPos.game_ply() + rootDepth) % 2 == idx - 1)
+			   continue; // each helper skips iteration cycle on determinate game-plies
+		  }
+		  else  {
+			   int r = ((rootPos.game_ply() + rootDepth + idx) / 2 ) % 2;
+			   if (r == 0)
+				  continue; // each helper skips iteration cycle on determinate game-plies
+		  }
+	  }
 
       // Age out PV variability metric
       if (isMainThread)
