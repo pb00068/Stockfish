@@ -399,8 +399,25 @@ void Thread::search() {
           {
               // Table of values of 6 bits with 3 of them set
               static const int HalfDensityMap[] = {
-                      0x07, 0x0b, 0x0d, 0x0e, 0x13, 0x16, 0x19, 0x1a, 0x1c,
-                      0x23, 0x25, 0x26, 0x29, 0x2c, 0x31, 0x32, 0x34, 0x38
+            		  	  	  0b000111,
+							  0b001110,
+							  0b011100,
+							  0b111000,
+							  0b110001,
+            		 		  0b100011,
+
+            		 		  0b001011,
+            		 		  0b001101,
+            		 		  0b010011,
+            		 		  0b010110,
+            		 		  0b011001,
+            		 		  0b011010,
+            		 		  0b100101,
+            		 		  0b100110,
+            		 		  0b101001,
+            		 		  0b101100,
+            		 		  0b110010,
+            		 		  0b110100,
               };
 
               if ((HalfDensityMap[idx - 7] >> (d % 6)) & 1)
