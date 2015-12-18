@@ -65,6 +65,8 @@ namespace {
 
   // Razoring and futility margin based on depth
   const int razor_margin[4] = { 483, 570, 603, 554 };
+
+
   Value futility_margin(Depth d) { return Value(200 * d); }
 
   // Futility and reductions lookup tables, initialized at startup
@@ -344,7 +346,44 @@ void MainThread::search() {
 
   std::cout << sync_endl;
 }
+const int halfDensityMap[][8] =
+ {
+   {0, 1},
+	{1, 0},
 
+	{0, 0, 1, 1},
+	{0, 1, 1, 0},
+	{1, 1, 0, 0},
+	{1, 0, 0, 1},
+
+	{0, 0, 0, 1, 1, 1},
+	{0, 0, 1, 1, 1, 0},
+	{0, 1, 1, 1, 0, 0},
+	{1, 1, 1, 0, 0, 0},
+	{1, 1, 0, 0, 0, 1},
+	{1, 0, 0, 0, 1, 1},
+
+	{0, 0, 0, 0, 1, 1, 1, 1},
+	{0, 0, 0, 1, 1, 1, 1, 0},
+	{0, 0, 1, 1, 1, 1, 0 ,0},
+	{0, 1, 1, 1, 1, 0, 0 ,0},
+	{1, 1, 1, 1, 0, 0, 0 ,0},
+	{1, 1, 1, 0, 0, 0, 0 ,1},
+	{1, 1, 0, 0, 0, 0, 1 ,1},
+	{1, 0, 0, 0, 0, 1, 1 ,1},
+ };
+
+int getRowLength(size_t idx) {
+	int blsize = 2;
+	int count =0;
+	for (size_t i=0;i < idx; i++) {
+		if (++count == blsize) {
+			blsize+=2;
+			count =0;
+		}
+	}
+	return blsize;
+}
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -389,40 +428,9 @@ void Thread::search() {
       if (!isMainThread)
       {
           int d = rootDepth + rootPos.game_ply();
-
-          if (idx <= 6 || idx > 24)
-          {
-              if (((d + idx) >> (msb(idx + 1) - 1)) % 2)
-                  continue;
-          }
-          else
-          {
-              // Table of values of 6 bits with 3 of them set
-              static const int HalfDensityMap[] = {
-            		  	  	  0b000111,
-							  0b001110,
-							  0b011100,
-							  0b111000,
-							  0b110001,
-            		 		  0b100011,
-
-            		 		  0b001011,
-            		 		  0b001101,
-            		 		  0b010011,
-            		 		  0b010110,
-            		 		  0b011001,
-            		 		  0b011010,
-            		 		  0b100101,
-            		 		  0b100110,
-            		 		  0b101001,
-            		 		  0b101100,
-            		 		  0b110010,
-            		 		  0b110100,
-              };
-
-              if ((HalfDensityMap[idx - 7] >> (d % 6)) & 1)
-                  continue;
-          }
+          int patternLength = getRowLength(idx - 1);
+          if (halfDensityMap[(idx - 1) % 20][d % patternLength])
+             continue;
       }
 
       // Age out PV variability metric
