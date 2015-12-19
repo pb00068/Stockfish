@@ -347,43 +347,37 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-const int halfDensityMap[][8] =
+const int skipMap[][6] =
  {
-   {0, 1},
-	{1, 0},
+    {0, 1, 2},
+    {1, 0, 2},
 
-	{0, 0, 1, 1},
-	{0, 1, 1, 0},
-	{1, 1, 0, 0},
-	{1, 0, 0, 1},
+    {0, 1, 1, 3},
+    {1, 1, 0, 3},
+    {1, 0, 1, 3},
 
-	{0, 0, 0, 1, 1, 1},
-	{0, 0, 1, 1, 1, 0},
-	{0, 1, 1, 1, 0, 0},
-	{1, 1, 1, 0, 0, 0},
-	{1, 1, 0, 0, 0, 1},
-	{1, 0, 0, 0, 1, 1},
+    {0, 1, 1, 1, 4},
+    {1, 0, 1, 1, 4},
+    {1, 1, 0, 1, 4},
+    {1, 1, 1, 0, 4},
 
-	{0, 0, 0, 0, 1, 1, 1, 1},
-	{0, 0, 0, 1, 1, 1, 1, 0},
-	{0, 0, 1, 1, 1, 1, 0 ,0},
-	{0, 1, 1, 1, 1, 0, 0 ,0},
-	{1, 1, 1, 1, 0, 0, 0 ,0},
-	{1, 1, 1, 0, 0, 0, 0 ,1},
-	{1, 1, 0, 0, 0, 0, 1 ,1},
-	{1, 0, 0, 0, 0, 1, 1 ,1},
+	{0, 1, 1, 1, 1, 5},
+    {1, 0, 1, 1, 1, 5},
+    {1, 1, 0, 1, 1, 5},
+    {1, 1, 1, 0, 1, 5},
+	{1, 1, 1, 1, 0, 5},
+
  };
 
 int getRowLength(size_t idx) {
-	int blsize = 2;
-	int count =0;
-	for (size_t i=0;i < idx; i++) {
-		if (++count == blsize) {
-			blsize+=2;
-			count =0;
+	for (size_t i=0;i < idx % 14; i++) {
+		int j=0;
+		for (j=0;j < 6; j++) {
+			if (skipMap[i][j] > 1)
+				return j;
 		}
 	}
-	return blsize;
+	return 0;
 }
 
 // Thread::search() is the main iterative deepening loop. It calls search()
@@ -430,7 +424,7 @@ void Thread::search() {
       if (!isMainThread)
       {
           int patternLength = getRowLength(idx - 1);
-          if (halfDensityMap[(idx - 1) % 20][(rootDepth + rootPos.game_ply()) % patternLength])
+          if (skipMap[(idx - 1) % 14][(rootDepth + rootPos.game_ply()) % patternLength])
              continue;
       }
 
