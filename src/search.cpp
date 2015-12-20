@@ -370,13 +370,11 @@ const int skipMap[][6] =
  };
 
 int getRowLength(size_t idx) {
-	for (size_t i=0;i < idx % 14; i++) {
-		int j=0;
-		for (j=0;j < 6; j++) {
-			if (skipMap[i][j] > 1)
-				return j;
-		}
+	for (int j=0;j < 6; j++) {
+		if (skipMap[idx % 14][j] > 1)
+			return j;
 	}
+
 	return 0;
 }
 
