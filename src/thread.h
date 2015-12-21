@@ -65,6 +65,7 @@ public:
   Position rootPos;
   Search::RootMoveVector rootMoves;
   Depth rootDepth;
+  bool skipRazoring;
   HistoryStats history;
   MovesStats counterMoves;
   Depth completedDepth;

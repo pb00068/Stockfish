@@ -347,7 +347,7 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-const int halfDensityMap[][9] =
+const int halfDensityMap[][7] =
  {
     {2, 0, 1},
 	{2, 1, 0},
@@ -364,14 +364,6 @@ const int halfDensityMap[][9] =
 	{6, 1, 1, 0, 0, 0, 1},
 	{6, 1, 0, 0, 0, 1, 1},
 
-	{8, 0, 0, 0, 0, 1, 1, 1, 1},
-	{8, 0, 0, 0, 1, 1, 1, 1, 0},
-	{8, 0, 0, 1, 1, 1, 1, 0 ,0},
-	{8, 0, 1, 1, 1, 1, 0, 0 ,0},
-	{8, 1, 1, 1, 1, 0, 0, 0 ,0},
-	{8, 1, 1, 1, 0, 0, 0, 0 ,1},
-	{8, 1, 1, 0, 0, 0, 0, 1 ,1},
-	{8, 1, 0, 0, 0, 0, 1, 1 ,1},
  };
 
 
@@ -391,6 +383,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  skipRazoring = false;
 
   if (isMainThread)
   {
@@ -418,9 +411,12 @@ void Thread::search() {
       // 2nd ply (using a half density map similar to a Hadamard matrix).
       if (!isMainThread)
       {
-          int row = (idx - 1) % 20;
+          int row = (idx - 1) % 12;
           if (halfDensityMap[row][(rootDepth + rootPos.game_ply()) % halfDensityMap[row][0] + 1])
              continue;
+
+          if (idx > 12 && Threads.at(row + 1)->rootDepth >= Threads.main()->rootDepth)
+        	  skipRazoring = true; // better work division
       }
 
       // Age out PV variability metric
@@ -749,7 +745,8 @@ namespace {
     if (   !PvNode
         &&  depth < 4 * ONE_PLY
         &&  eval + razor_margin[depth] <= alpha
-        &&  ttMove == MOVE_NONE)
+        &&  ttMove == MOVE_NONE
+		&&  !thisThread->skipRazoring)
     {
         if (   depth <= ONE_PLY
             && eval + razor_margin[3 * ONE_PLY] <= alpha)
