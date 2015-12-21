@@ -347,44 +347,33 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-const int halfDensityMap[][8] =
+const int halfDensityMap[][9] =
  {
-   {0, 1},
-	{1, 0},
+    {2, 0, 1},
+	{2, 1, 0},
 
-	{0, 0, 1, 1},
-	{0, 1, 1, 0},
-	{1, 1, 0, 0},
-	{1, 0, 0, 1},
+	{4, 0, 0, 1, 1},
+	{4, 0, 1, 1, 0},
+	{4, 1, 1, 0, 0},
+	{4, 1, 0, 0, 1},
 
-	{0, 0, 0, 1, 1, 1},
-	{0, 0, 1, 1, 1, 0},
-	{0, 1, 1, 1, 0, 0},
-	{1, 1, 1, 0, 0, 0},
-	{1, 1, 0, 0, 0, 1},
-	{1, 0, 0, 0, 1, 1},
+	{6, 0, 0, 0, 1, 1, 1},
+	{6, 0, 0, 1, 1, 1, 0},
+	{6, 0, 1, 1, 1, 0, 0},
+	{6, 1, 1, 1, 0, 0, 0},
+	{6, 1, 1, 0, 0, 0, 1},
+	{6, 1, 0, 0, 0, 1, 1},
 
-	{0, 0, 0, 0, 1, 1, 1, 1},
-	{0, 0, 0, 1, 1, 1, 1, 0},
-	{0, 0, 1, 1, 1, 1, 0 ,0},
-	{0, 1, 1, 1, 1, 0, 0 ,0},
-	{1, 1, 1, 1, 0, 0, 0 ,0},
-	{1, 1, 1, 0, 0, 0, 0 ,1},
-	{1, 1, 0, 0, 0, 0, 1 ,1},
-	{1, 0, 0, 0, 0, 1, 1 ,1},
+	{8, 0, 0, 0, 0, 1, 1, 1, 1},
+	{8, 0, 0, 0, 1, 1, 1, 1, 0},
+	{8, 0, 0, 1, 1, 1, 1, 0 ,0},
+	{8, 0, 1, 1, 1, 1, 0, 0 ,0},
+	{8, 1, 1, 1, 1, 0, 0, 0 ,0},
+	{8, 1, 1, 1, 0, 0, 0, 0 ,1},
+	{8, 1, 1, 0, 0, 0, 0, 1 ,1},
+	{8, 1, 0, 0, 0, 0, 1, 1 ,1},
  };
 
-int getRowLength(size_t idx) {
-	int blsize = 2;
-	int count =0;
-	for (size_t i=0;i < idx; i++) {
-		if (++count == blsize) {
-			blsize+=2;
-			count =0;
-		}
-	}
-	return blsize;
-}
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -429,8 +418,8 @@ void Thread::search() {
       // 2nd ply (using a half density map similar to a Hadamard matrix).
       if (!isMainThread)
       {
-          int patternLength = getRowLength(idx - 1);
-          if (halfDensityMap[(idx - 1) % 20][(rootDepth + rootPos.game_ply()) % patternLength])
+          int row = (idx - 1) % 20;
+          if (halfDensityMap[row][(rootDepth + rootPos.game_ply()) % halfDensityMap[row][0] + 1])
              continue;
       }
 
