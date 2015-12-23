@@ -219,7 +219,7 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 }
 
 template uint64_t Search::perft<true>(Position&, Depth);
-
+int maxCompletedDepth, targetDepth;
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from root position and at the end prints
@@ -286,6 +286,9 @@ void MainThread::search() {
                                                       :  VALUE_DRAW;
           }
       }
+
+      maxCompletedDepth = 0;
+      targetDepth = Options["Threads"]-1;
 
       for (Thread* th : Threads)
       {
@@ -421,6 +424,13 @@ void Thread::search() {
           int row = (idx - 1) % 20;
           if (halfDensityMap[row][(rootDepth + rootPos.game_ply()) % halfDensityMap[row][0] + 1])
              continue;
+
+          if (rootDepth > targetDepth)
+		  {
+				targetDepth = targetDepth + 1;
+				rootDepth = (Depth) maxCompletedDepth;
+				continue;
+		  }
       }
 
       // Age out PV variability metric
@@ -509,6 +519,7 @@ void Thread::search() {
           if (!isMainThread)
               break;
 
+
           if (Signals.stop)
               sync_cout << "info nodes " << Threads.nodes_searched()
                         << " time " << Time.elapsed() << sync_endl;
@@ -516,6 +527,9 @@ void Thread::search() {
           else if (PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
+
+      if (rootDepth > maxCompletedDepth)
+                         maxCompletedDepth = rootDepth;
 
       if (!Signals.stop)
           completedDepth = rootDepth;

@@ -28,9 +28,45 @@
 #include "uci.h"
 #include "syzygy/tbprobe.h"
 
+const int halfDensityMa[][9] =
+ {
+    {2, 0, 1},
+	{2, 1, 0},
+
+	{4, 0, 0, 1, 1},
+	{4, 0, 1, 1, 0},
+	{4, 1, 1, 0, 0},
+	{4, 1, 0, 0, 1},
+
+	{6, 0, 0, 0, 1, 1, 1},
+	{6, 0, 0, 1, 1, 1, 0},
+	{6, 0, 1, 1, 1, 0, 0},
+	{6, 1, 1, 1, 0, 0, 0},
+	{6, 1, 1, 0, 0, 0, 1},
+	{6, 1, 0, 0, 0, 1, 1},
+
+	{8, 0, 0, 0, 0, 1, 1, 1, 1},
+	{8, 0, 0, 0, 1, 1, 1, 1, 0},
+	{8, 0, 0, 1, 1, 1, 1, 0 ,0},
+	{8, 0, 1, 1, 1, 1, 0, 0 ,0},
+	{8, 1, 1, 1, 1, 0, 0, 0 ,0},
+	{8, 1, 1, 1, 0, 0, 0, 0 ,1},
+	{8, 1, 1, 0, 0, 0, 0, 1 ,1},
+	{8, 1, 0, 0, 0, 0, 1, 1 ,1},
+ };
+
 int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
+
+
+  for (int p=0; p<20; p++) {
+	  for (size_t idx=1; idx<21; idx++) {
+		  int row = (idx - 1) % 20;
+		  std::cout << halfDensityMa[row][p % halfDensityMa[row][0] + 1] << " ";
+	  }
+	  std::cout << std::endl;
+  }
 
   UCI::init(Options);
   PSQT::init();
