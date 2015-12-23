@@ -219,7 +219,7 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 }
 
 template uint64_t Search::perft<true>(Position&, Depth);
-int maxCompletedDepth, targetDepth;
+int maxCompletedDepth;
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from root position and at the end prints
@@ -288,7 +288,6 @@ void MainThread::search() {
       }
 
       maxCompletedDepth = 0;
-      targetDepth = Options["Threads"]-1;
 
       for (Thread* th : Threads)
       {
@@ -421,16 +420,13 @@ void Thread::search() {
       // 2nd ply (using a half density map similar to a Hadamard matrix).
       if (!isMainThread)
       {
+    	  if (bestMoveChangeInMain) {
+    		  bestMoveChangeInMain = false;
+    		  rootDepth = (Depth) (maxCompletedDepth + 1);
+    	  }
           int row = (idx - 1) % 20;
           if (halfDensityMap[row][(rootDepth + rootPos.game_ply()) % halfDensityMap[row][0] + 1])
              continue;
-
-          if (rootDepth > targetDepth)
-		  {
-				targetDepth = targetDepth + 1;
-				rootDepth = (Depth) maxCompletedDepth;
-				continue;
-		  }
       }
 
       // Age out PV variability metric
@@ -1091,8 +1087,13 @@ moves_loop: // When in check search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
-                  ++BestMoveChanges;
+              if (moveCount > 1 && thisThread == Threads.main()) {
+            	  for (Thread* th : Threads) {
+            		  th->bestMoveChangeInMain = true;
+            	  }
+            	  ++BestMoveChanges;
+              }
+
           }
           else
               // All other moves but the PV are set to the lowest value: this is
