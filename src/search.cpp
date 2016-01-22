@@ -191,32 +191,6 @@ void Search::clear() {
   Threads.main()->previousScore = VALUE_INFINITE;
 }
 
-const int halfDensityMap[][9] =
-{
-    {2, 0, 1},
-    {2, 1, 0},
-
-    {4, 0, 0, 1, 1},
-    {4, 0, 1, 1, 0},
-    {4, 1, 1, 0, 0},
-    {4, 1, 0, 0, 1},
-
-    {6, 0, 0, 0, 1, 1, 1},
-    {6, 0, 0, 1, 1, 1, 0},
-    {6, 0, 1, 1, 1, 0, 0},
-    {6, 1, 1, 1, 0, 0, 0},
-    {6, 1, 1, 0, 0, 0, 1},
-    {6, 1, 0, 0, 0, 1, 1},
-
-    {8, 0, 0, 0, 0, 1, 1, 1, 1},
-    {8, 0, 0, 0, 1, 1, 1, 1, 0},
-    {8, 0, 0, 1, 1, 1, 1, 0 ,0},
-    {8, 0, 1, 1, 1, 1, 0, 0 ,0},
-    {8, 1, 1, 1, 1, 0, 0, 0 ,0},
-    {8, 1, 1, 1, 0, 0, 0, 0 ,1},
-    {8, 1, 1, 0, 0, 0, 0, 1 ,1},
-    {8, 1, 0, 0, 0, 0, 1, 1 ,1},
-};
 
 /// Search::perft() is our utility to verify move generation. All the leaf nodes
 /// up to the given depth are generated and counted, and the sum is returned.
@@ -321,7 +295,7 @@ void MainThread::search() {
           {
               th->rootPos = Position(rootPos, th);
               th->rootMoves = rootMoves;
-              th->skipsize = halfDensityMap[(th->idx - 1) % 20][0] / 2;
+              th->skipsize =  th->idx < 3 ? 1 : th->idx < 7 ? 2  : 3;      // halfDensityMap[(th->idx - 1) % 20][0] / 2; as soon #574 will be committed
               th->start_searching();
           }
       }
@@ -423,9 +397,24 @@ void Thread::search() {
       // 2nd ply (using a half-density map similar to a Hadamard matrix).
       if (!mainThread)
       {
-    	  int row = (idx - 1) % 20;
-    	  if (halfDensityMap[row][(rootDepth + rootPos.game_ply()) % halfDensityMap[row][0] + 1])
-    	      continue;
+          int d = rootDepth + rootPos.game_ply();
+
+          if (idx <= 6 || idx > 24)
+          {
+              if (((d + idx) >> (msb(idx + 1) - 1)) % 2)
+                  continue;
+          }
+          else
+          {
+              // Table of values of 6 bits with 3 of them set
+              static const int HalfDensityMap[] = {
+                0x07, 0x0b, 0x0d, 0x0e, 0x13, 0x16, 0x19, 0x1a, 0x1c,
+                0x23, 0x25, 0x26, 0x29, 0x2c, 0x31, 0x32, 0x34, 0x38
+              };
+
+              if ((HalfDensityMap[idx - 7] >> (d % 6)) & 1)
+                  continue;
+          }
       }
 
       // Age out PV variability metric
@@ -720,7 +709,7 @@ namespace {
 
                 tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
                           std::min(DEPTH_MAX - ONE_PLY, depth + 6 * ONE_PLY),
-                          MOVE_NONE, VALUE_NONE, TT.generation(), tt_index, 0);
+                          MOVE_NONE, VALUE_NONE, TT.generation(), Threads.size() > 1, tt_index, 0);
 
                 return value;
             }
@@ -752,7 +741,7 @@ namespace {
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  ss->staticEval, TT.generation(), tt_index, 5);
+                  ss->staticEval, TT.generation(), Threads.size() > 1, tt_index, 5);
     }
 
     if (ss->skipEarlyPruning)
@@ -1176,13 +1165,10 @@ moves_loop: // When in check search starts from here
     ///-helpers with skip-size 3 : medium-low quality
     ///-helpers with skip-size 4 : low quality
     char16_t quality = thisThread->skipsize + 1;
-//    if (posKey % 10000 == 0) {
-//      		sync_cout << "pos: " << posKey << "  save qual: " << quality <<  " skipsize:" <<  thisThread->skipsize << " idx " << thisThread->idx << sync_endl;
-//    }
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-              depth, bestMove, ss->staticEval, TT.generation(), tt_index, quality);
+              depth, bestMove, ss->staticEval, TT.generation(), Threads.size() > 1, tt_index, quality);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1283,7 +1269,7 @@ moves_loop: // When in check search starts from here
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), tt_index, 4);
+                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), Threads.size() > 1, tt_index, 4);
 
             return bestValue;
         }
@@ -1379,7 +1365,7 @@ moves_loop: // When in check search starts from here
               else // Fail high
               {
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
-                            ttDepth, move, ss->staticEval, TT.generation(), tt_index, 4);
+                            ttDepth, move, ss->staticEval, TT.generation(), Threads.size() > 1, tt_index, 4);
 
                   return value;
               }
@@ -1394,7 +1380,7 @@ moves_loop: // When in check search starts from here
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
-              ttDepth, bestMove, ss->staticEval, TT.generation(), tt_index, 4);
+              ttDepth, bestMove, ss->staticEval, TT.generation(), Threads.size() > 1, tt_index, 4);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1620,7 +1606,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 
       if (!ttHit || tte->move() != m) // Don't overwrite correct entries
           tte->save(pos.key(), VALUE_NONE, BOUND_NONE, DEPTH_NONE,
-                    m, VALUE_NONE, TT.generation(), tt_index, 0);
+                    m, VALUE_NONE, TT.generation(), Threads.size() > 1, tt_index, 0);
 
       pos.do_move(m, *st++, pos.gives_check(m, CheckInfo(pos)));
   }

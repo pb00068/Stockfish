@@ -63,26 +63,30 @@ struct TTEntry {
 //    }
 //  }
 
-  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g, int index, char16_t quality) {
-  	  TTEntry* pointer = this;
-  	  pointer+= 3 - index; // ClusterSize
-  	  char16_t* qual = (char16_t*) pointer;
-  	  char16_t savedq = (*qual >> (3 * index)) & 7;
+  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g, bool smp, int index, char16_t quality) {
+	  char16_t savedQuality = quality;
+	  char16_t* qual;
+	  // quality 0 : tablabase-probe
+	  // quality 1 : main-thread skipsize 0
+	  // quality n : helper with skipsize n+1
+	  // quality 4 : qsearch
+	  // quality 5 : static eval
 
-//  	  if (k % 10000 == 0) {
-//  		sync_cout << "pos: " << k << "  save qual: " << quality <<  " saved qual:" <<  savedq << sync_endl;
-//  	  }
+	  if (smp) { // read stored quality
+		  TTEntry* pointer = this;
+		  pointer+= 3 - index; // ClusterSize
+		  qual = (char16_t*) pointer;
+		  savedQuality = (*qual >> (3 * index)) & 7;
+	  }
 
-        // Preserve any existing move for the same position
+       // Preserve any existing move for the same position
         if (m || (k >> 48) != key16)
             move16 = (uint16_t)m;
 
         // Don't overwrite more valuable entries
         if (  (k >> 48) != key16
             || d > depth8 - 2
-            || quality < savedq
-//			||std::max(0, savedq - quality)
-//            || d > depth8 - 4
+            || quality < savedQuality
          /* || g != (genBound8 & 0xFC) // Matching non-zero keys are already refreshed by probe() */
             || b == BOUND_EXACT)
         {
@@ -92,10 +96,12 @@ struct TTEntry {
             genBound8 = (uint8_t)(g | b);
             depth8    = (int8_t)d;
 
-            char16_t qual1 = index == 0 ? quality :  *qual & 7;
-            char16_t qual2 = index == 1 ? quality : (*qual >> 3) & 7;
-            char16_t qual3 = index == 2 ? quality : (*qual >> 6) & 7;
-            *qual = qual1 | (qual2 << 3) | (qual3 << 6);
+            if (smp) { // store new quality
+				char16_t qual1 = index == 0 ? quality :  *qual & 7;
+				char16_t qual2 = index == 1 ? quality : (*qual >> 3) & 7;
+				char16_t qual3 = index == 2 ? quality : (*qual >> 6) & 7;
+				*qual = qual1 | (qual2 << 3) | (qual3 << 6); // there exists surely a better approach
+            }
         }
       }
 private:
