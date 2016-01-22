@@ -23,6 +23,7 @@
 
 #include "misc.h"
 #include "types.h"
+//#include <iostream>
 
 /// TTEntry struct is the 10 bytes transposition table entry, defined as below:
 ///
@@ -68,14 +69,20 @@ struct TTEntry {
   	  char16_t* qual = (char16_t*) pointer;
   	  char16_t savedq = (*qual >> (3 * index)) & 7;
 
+//  	  if (k % 10000 == 0) {
+//  		sync_cout << "pos: " << k << "  save qual: " << quality <<  " saved qual:" <<  savedq << sync_endl;
+//  	  }
+
         // Preserve any existing move for the same position
         if (m || (k >> 48) != key16)
             move16 = (uint16_t)m;
 
         // Don't overwrite more valuable entries
         if (  (k >> 48) != key16
-            || d > depth8 - (2 + std::max(0, savedq - quality))
-         //   || d > depth8 - 4
+            || d > depth8 - 2
+            || quality < savedq
+//			||std::max(0, savedq - quality)
+//            || d > depth8 - 4
          /* || g != (genBound8 & 0xFC) // Matching non-zero keys are already refreshed by probe() */
             || b == BOUND_EXACT)
         {

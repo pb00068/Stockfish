@@ -1176,6 +1176,9 @@ moves_loop: // When in check search starts from here
     ///-helpers with skip-size 3 : medium-low quality
     ///-helpers with skip-size 4 : low quality
     char16_t quality = thisThread->skipsize + 1;
+//    if (posKey % 10000 == 0) {
+//      		sync_cout << "pos: " << posKey << "  save qual: " << quality <<  " skipsize:" <<  thisThread->skipsize << " idx " << thisThread->idx << sync_endl;
+//    }
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
