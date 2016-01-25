@@ -51,7 +51,6 @@ namespace Tablebases {
   bool UseRule50;
   Depth ProbeDepth;
   Value Score;
-  Quality Qual;
 }
 
 namespace TB = Tablebases;
