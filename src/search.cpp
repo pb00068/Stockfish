@@ -1173,7 +1173,7 @@ moves_loop: // When in check search starts from here
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    Quality quality = (Quality) (QUALITY_BEST - std::min(thisThread->skipsize, 0));
+    Quality quality = (Quality) std::max(((int)QUALITY_BEST) - thisThread->skipsize, 0);
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
