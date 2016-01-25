@@ -173,6 +173,13 @@ enum Bound {
   BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
+enum Quality {
+	 QUALITY_LOWEST = 0,
+	 QUALITY_MEDIUM,
+	 QUALITY_HIGH,
+	 QUALITY_BEST
+};
+
 enum Value : int {
   VALUE_ZERO      = 0,
   VALUE_DRAW      = 0,

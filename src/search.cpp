@@ -51,6 +51,7 @@ namespace Tablebases {
   bool UseRule50;
   Depth ProbeDepth;
   Value Score;
+  Quality Qual;
 }
 
 namespace TB = Tablebases;
@@ -221,6 +222,32 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 
 template uint64_t Search::perft<true>(Position&, Depth);
 
+const int halfDensityMap[][9] =
+{
+    {2, 0, 1},
+    {2, 1, 0},
+
+    {4, 0, 0, 1, 1},
+    {4, 0, 1, 1, 0},
+    {4, 1, 1, 0, 0},
+    {4, 1, 0, 0, 1},
+
+    {6, 0, 0, 0, 1, 1, 1},
+    {6, 0, 0, 1, 1, 1, 0},
+    {6, 0, 1, 1, 1, 0, 0},
+    {6, 1, 1, 1, 0, 0, 0},
+    {6, 1, 1, 0, 0, 0, 1},
+    {6, 1, 0, 0, 0, 1, 1},
+
+    {8, 0, 0, 0, 0, 1, 1, 1, 1},
+    {8, 0, 0, 0, 1, 1, 1, 1, 0},
+    {8, 0, 0, 1, 1, 1, 1, 0 ,0},
+    {8, 0, 1, 1, 1, 1, 0, 0 ,0},
+    {8, 1, 1, 1, 1, 0, 0, 0 ,0},
+    {8, 1, 1, 1, 0, 0, 0, 0 ,1},
+    {8, 1, 1, 0, 0, 0, 0, 1 ,1},
+    {8, 1, 0, 0, 0, 0, 1, 1 ,1},
+};
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
@@ -298,6 +325,7 @@ void MainThread::search() {
               th->rootMoves = rootMoves;
               th->start_searching();
           }
+          th->skipsize =  halfDensityMap[(th->idx - 1) % 20][0] / 2;
       }
 
       Thread::search(); // Let's start searching!
@@ -353,32 +381,7 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-const int halfDensityMap[][9] =
-{
-    {2, 0, 1},
-    {2, 1, 0},
 
-    {4, 0, 0, 1, 1},
-    {4, 0, 1, 1, 0},
-    {4, 1, 1, 0, 0},
-    {4, 1, 0, 0, 1},
-
-    {6, 0, 0, 0, 1, 1, 1},
-    {6, 0, 0, 1, 1, 1, 0},
-    {6, 0, 1, 1, 1, 0, 0},
-    {6, 1, 1, 1, 0, 0, 0},
-    {6, 1, 1, 0, 0, 0, 1},
-    {6, 1, 0, 0, 0, 1, 1},
-
-    {8, 0, 0, 0, 0, 1, 1, 1, 1},
-    {8, 0, 0, 0, 1, 1, 1, 1, 0},
-    {8, 0, 0, 1, 1, 1, 1, 0 ,0},
-    {8, 0, 1, 1, 1, 1, 0, 0 ,0},
-    {8, 1, 1, 1, 1, 0, 0, 0 ,0},
-    {8, 1, 1, 1, 0, 0, 0, 0 ,1},
-    {8, 1, 1, 0, 0, 0, 0, 1 ,1},
-    {8, 1, 0, 0, 0, 0, 1, 1 ,1},
-};
 
 
 // Thread::search() is the main iterative deepening loop. It calls search()
@@ -405,6 +408,7 @@ void Thread::search() {
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
+      skipsize = 0;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -721,7 +725,7 @@ namespace {
 
                 tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
                           std::min(DEPTH_MAX - ONE_PLY, depth + 6 * ONE_PLY),
-                          MOVE_NONE, VALUE_NONE, TT.generation());
+                          MOVE_NONE, VALUE_NONE, TT.generation(), QUALITY_BEST);
 
                 return value;
             }
@@ -753,7 +757,7 @@ namespace {
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  ss->staticEval, TT.generation());
+                  ss->staticEval, TT.generation(), QUALITY_LOWEST);
     }
 
     if (ss->skipEarlyPruning)
@@ -1170,10 +1174,11 @@ moves_loop: // When in check search starts from here
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
+    Quality quality = (Quality) (QUALITY_BEST - std::min(thisThread->skipsize, 0));
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-              depth, bestMove, ss->staticEval, TT.generation());
+              depth, bestMove, ss->staticEval, TT.generation(), quality);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1273,7 +1278,7 @@ moves_loop: // When in check search starts from here
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation());
+                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), QUALITY_LOWEST);
 
             return bestValue;
         }
@@ -1369,7 +1374,7 @@ moves_loop: // When in check search starts from here
               else // Fail high
               {
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
-                            ttDepth, move, ss->staticEval, TT.generation());
+                            ttDepth, move, ss->staticEval, TT.generation(), QUALITY_LOWEST);
 
                   return value;
               }
@@ -1384,7 +1389,7 @@ moves_loop: // When in check search starts from here
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
-              ttDepth, bestMove, ss->staticEval, TT.generation());
+              ttDepth, bestMove, ss->staticEval, TT.generation(), QUALITY_LOWEST);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1609,7 +1614,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 
       if (!ttHit || tte->move() != m) // Don't overwrite correct entries
           tte->save(pos.key(), VALUE_NONE, BOUND_NONE, DEPTH_NONE,
-                    m, VALUE_NONE, TT.generation());
+                    m, VALUE_NONE, TT.generation(), QUALITY_LOWEST);
 
       pos.do_move(m, *st++, pos.gives_check(m, CheckInfo(pos)));
   }
