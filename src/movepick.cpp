@@ -140,9 +140,18 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this)
-      m.value =  history[pos.moved_piece(m)][to_sq(m)]
-               + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+  Value min = (Value) INT_MIN;
+  for (auto& m : *this) {
+	  m.value =  history[pos.moved_piece(m)][to_sq(m)] +
+	          + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+	  if (m.value > min)
+	   	  min = m.value;
+  }
+  if (min < VALUE_ZERO) { // if there are no good moves, we take into account only countermoves
+    for (auto& m : *this) {
+	  m.value =  (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+    }
+  }
 }
 
 template<>
