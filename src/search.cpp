@@ -1457,7 +1457,9 @@ moves_loop: // When in check search starts from here
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), quietsRaise[i] ? -bonus/2 : -bonus);
+    	if (quiets[i] == move)
+    		continue;
+        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), quietsRaise[i] ? -bonus * 3/4 : -bonus);
 
         if (is_ok((ss-1)->currentMove))
             cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
