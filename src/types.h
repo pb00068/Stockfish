@@ -231,6 +231,7 @@ enum Square {
   SQ_NONE,
 
   SQUARE_NB = 64,
+  SQUARE_DUB = 128,
 
   DELTA_N =  8,
   DELTA_E =  1,

@@ -47,22 +47,33 @@ struct Stats {
   void clear() { std::memset(table, 0, sizeof(table)); }
 
   void update(Piece pc, Square to, Move m) {
-
     if (m != table[pc][to])
         table[pc][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, Depth depth) {
 
     if (abs(int(v)) >= 324)
         return;
+    for (int index=0; index < 2; index++) {
+        Value w = VALUE_ZERO;
+        if (index == 0) {
+        	if (depth > 25)
+        		continue;
+        	w = v * (100 - depth * 4) / 100;
+        }
+        else {
+        	w = v * ((int)depth) * 4 / 100;
+        }
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 512 : 324);
-    table[pc][to] += int(v) * (CM ? 64 : 32);
+
+    	table[pc][to + index * to] -= table[pc][to + index * to] * abs(int(w)) / (CM ? 512 : 324);
+    	table[pc][to + index * to] += int(w) * (CM ? 64 : 32);
+    }
   }
 
 private:
-  T table[PIECE_NB][SQUARE_NB];
+  T table[PIECE_NB][SQUARE_DUB];
 };
 
 typedef Stats<Move> MoveStats;
