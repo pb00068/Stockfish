@@ -362,10 +362,16 @@ void MainThread::search() {
       &&  Options["MultiPV"] == 1
       && !Skill(Options["Skill Level"]).enabled())
   {
-      for (Thread* th : Threads)
+      for (Thread* th : Threads) {
+    	  int skipsize =0;
+		  if (th->idx > 0) {
+			  const Row& row = HalfDensity[(th->idx - 1) % HalfDensitySize];
+			  skipsize = row.size() / 2;
+		  }
           if (   th->completedDepth > bestThread->completedDepth
               && th->rootMoves[0].score > bestThread->rootMoves[0].score)
               bestThread = th;
+      }
   }
 
   previousScore = bestThread->rootMoves[0].score;
