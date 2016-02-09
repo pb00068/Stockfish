@@ -60,7 +60,7 @@ public:
   Pawns::Table pawnsTable;
   Material::Table materialTable;
   Endgames endgames;
-  size_t idx, PVIdx;
+  size_t idx, PVIdx, bonusExponent;
   int maxPly, callsCnt;
 
   Position rootPos;

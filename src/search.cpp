@@ -220,6 +220,14 @@ void Search::clear() {
   Threads.main()->previousScore = VALUE_INFINITE;
 }
 
+Depth power(int basis, size_t exponent) {
+	Depth ret = ONE_PLY;
+	for (size_t i=0; i < exponent; i++) {
+		ret *=basis;
+	}
+	return (Depth) basis;
+}
+
 
 /// Search::perft() is our utility to verify move generation. All the leaf nodes
 /// up to the given depth are generated and counted, and the sum is returned.
@@ -406,6 +414,7 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->bonusExponent=2;
       TT.new_search();
   }
 
@@ -418,7 +427,7 @@ void Thread::search() {
       multiPV = std::max(multiPV, (size_t)4);
 
   multiPV = std::min(multiPV, rootMoves.size());
-
+  size_t hdsizeToUse = std::min(HalfDensitySize, Threads.size() / 2);
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
@@ -426,9 +435,10 @@ void Thread::search() {
       // 2nd ply (using a half-density matrix).
       if (!mainThread)
       {
-          const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+          const Row& row = HalfDensity[(idx - 1) % hdsizeToUse];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
+          bonusExponent = 2 + (idx - 1) / hdsizeToUse; // Use exponent 3 for the second cycle
       }
 
       // Age out PV variability metric
@@ -1163,7 +1173,7 @@ moves_loop: // When in check search starts from here
              && is_ok((ss - 1)->currentMove)
              && is_ok((ss - 2)->currentMove))
     {
-        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        Value bonus = Value(power(depth / ONE_PLY, thisThread->bonusExponent) + depth / ONE_PLY - 1);
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1438,7 +1448,7 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+    Value bonus = Value(power(depth / ONE_PLY, pos.this_thread()->bonusExponent) + depth / ONE_PLY - 1);
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
@@ -1616,6 +1626,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
   for (size_t i = pv.size(); i > 0; )
       pos.undo_move(pv[--i]);
 }
+
 
 
 /// RootMove::extract_ponder_from_tt() is called in case we have no ponder move
