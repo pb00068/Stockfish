@@ -137,21 +137,22 @@ namespace {
     {0, 0, 1, 1},
     {0, 1, 1, 0},
     {1, 1, 0, 0},
-    {1, 0, 0, 1},
-    {0, 0, 0, 1, 1, 1},
-    {0, 0, 1, 1, 1, 0},
-    {0, 1, 1, 1, 0, 0},
-    {1, 1, 1, 0, 0, 0},
-    {1, 1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1, 1},
-    {0, 0, 0, 0, 1, 1, 1, 1},
-    {0, 0, 0, 1, 1, 1, 1, 0},
-    {0, 0, 1, 1, 1, 1, 0 ,0},
-    {0, 1, 1, 1, 1, 0, 0 ,0},
-    {1, 1, 1, 1, 0, 0, 0 ,0},
-    {1, 1, 1, 0, 0, 0, 0 ,1},
-    {1, 1, 0, 0, 0, 0, 1 ,1},
-    {1, 0, 0, 0, 0, 1, 1 ,1},
+	{1, 0, 0, 1},
+	{0, 0, 0, 1, 1, 1},
+	{0, 0, 1, 1, 1, 0},
+	{0, 1, 1, 1, 0, 0},
+	{1, 1, 1, 0, 0, 0},
+	{1, 1, 0, 0, 0, 1},
+	/*{1, 0, 0, 0, 1, 1},
+	{0, 0, 0, 0, 1, 1, 1, 1},
+	{0, 0, 0, 1, 1, 1, 1, 0},
+	{0, 0, 1, 1, 1, 1, 0 ,0},
+	{0, 1, 1, 1, 1, 0, 0 ,0},
+	{1, 1, 1, 1, 0, 0, 0 ,0},
+	{1, 1, 1, 0, 0, 0, 0 ,1},
+	{1, 1, 0, 0, 0, 0, 1 ,1},
+	{1, 0, 0, 0, 0, 1, 1 ,1},*/
+
   };
 
   const size_t HalfDensitySize = std::extent<decltype(HalfDensity)>::value;
@@ -422,11 +423,13 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
+	  variax=false;
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+          variax = idx > HalfDensitySize;
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
       }
@@ -1164,6 +1167,8 @@ moves_loop: // When in check search starts from here
              && is_ok((ss - 2)->currentMove))
     {
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        if (pos.this_thread()-> variax)
+        	bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1439,6 +1444,8 @@ moves_loop: // When in check search starts from here
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+    if (pos.this_thread()-> variax)
+            bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];

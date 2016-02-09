@@ -62,6 +62,7 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
+  bool variax;
 
   Position rootPos;
   Search::RootMoveVector rootMoves;
