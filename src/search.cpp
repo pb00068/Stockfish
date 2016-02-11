@@ -131,30 +131,15 @@ namespace {
   // the search depths across the threads.
   typedef std::vector<int> Row;
 
-  const Row HalfDensity[] = {
+  const Row skipMap[] = {
     {0, 1},
     {1, 0},
     {0, 0, 1, 1},
     {0, 1, 1, 0},
     {1, 1, 0, 0},
-    {1, 0, 0, 1},
-    {0, 0, 0, 1, 1, 1},
-    {0, 0, 1, 1, 1, 0},
-    {0, 1, 1, 1, 0, 0},
-    {1, 1, 1, 0, 0, 0},
-    {1, 1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1, 1},
-    {0, 0, 0, 0, 1, 1, 1, 1},
-    {0, 0, 0, 1, 1, 1, 1, 0},
-    {0, 0, 1, 1, 1, 1, 0 ,0},
-    {0, 1, 1, 1, 1, 0, 0 ,0},
-    {1, 1, 1, 1, 0, 0, 0 ,0},
-    {1, 1, 1, 0, 0, 0, 0 ,1},
-    {1, 1, 0, 0, 0, 0, 1 ,1},
-    {1, 0, 0, 0, 0, 1, 1 ,1},
   };
 
-  const size_t HalfDensitySize = std::extent<decltype(HalfDensity)>::value;
+  const size_t skipMapSize = std::extent<decltype(skipMap)>::value;
 
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
@@ -419,17 +404,20 @@ void Thread::search() {
 
   multiPV = std::min(multiPV, rootMoves.size());
 
+  size_t usedMapSize = 5;
+
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
   {
-      // Set up the new depths for the helper threads skipping on average every
-      // 2nd ply (using a half-density matrix).
-      if (!mainThread)
-      {
-          const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
-          if (row[(rootDepth + rootPos.game_ply()) % row.size()])
-             continue;
-      }
+     // Set up the new depths for the helper threads skipping on average every
+     // 2nd ply (using a half-density matrix).
+
+	  if (!mainThread) {
+		  const Row& row = skipMap[(idx-1)  % usedMapSize];
+		  alternate_bonus = (idx-1) >= usedMapSize;
+		  if (row[(rootDepth + rootPos.game_ply()) % row.size()])
+			 continue;
+	  }
 
       // Age out PV variability metric
       if (mainThread)
@@ -1163,7 +1151,12 @@ moves_loop: // When in check search starts from here
              && is_ok((ss - 1)->currentMove)
              && is_ok((ss - 2)->currentMove))
     {
-        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        Value bonus;
+        if (!thisThread->alternate_bonus)
+        	bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        else
+        	bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1438,11 +1431,16 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+    Thread* thisThread = pos.this_thread();
+    Value bonus;
+	if (!thisThread->alternate_bonus)
+		bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+	else
+		bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
-    Thread* thisThread = pos.this_thread();
+
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
 
