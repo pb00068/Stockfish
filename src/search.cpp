@@ -405,6 +405,7 @@ void Thread::search() {
   multiPV = std::min(multiPV, rootMoves.size());
 
   size_t usedMapSize = 5;
+  alternate_bonus = false;
 
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || rootDepth <= Limits.depth))
