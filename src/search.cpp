@@ -1158,7 +1158,7 @@ moves_loop: // When in check search starts from here
     {
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         if (pos.this_thread()-> variax)
-        	bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        	bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) / 10 + depth / ONE_PLY - 1);
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1435,7 +1435,7 @@ moves_loop: // When in check search starts from here
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
     if (pos.this_thread()-> variax)
-            bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+            bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) * (depth / ONE_PLY) / 10 + depth / ONE_PLY - 1);
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
