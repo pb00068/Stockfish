@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
   Search::init();
   Eval::init();
   Pawns::init();
+  WorkUnits.init();
   Threads.init();
   Tablebases::init(Options["SyzygyPath"]);
   TT.resize(Options["Hash"]);

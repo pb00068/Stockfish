@@ -30,6 +30,7 @@
 
 class Position;
 class Thread;
+class WorkUnit;
 
 namespace PSQT {
 
@@ -88,12 +89,12 @@ public:
 
   Position() = default; // To define the global object RootPos
   Position(const Position&) = delete;
-  Position(const Position& pos, Thread* th) { *this = pos; thisThread = th; }
-  Position(const std::string& f, bool c960, Thread* th) { set(f, c960, th); }
+  Position(const Position& pos, Thread* th, WorkUnit* unit) { *this = pos; thisThread = th; thisUnit = unit;}
+  Position(const std::string& f, bool c960, Thread* th, WorkUnit* unit) { set(f, c960, th, unit); }
   Position& operator=(const Position&); // To assign RootPos from UCI
 
   // FEN string input/output
-  void set(const std::string& fenStr, bool isChess960, Thread* th);
+  void set(const std::string& fenStr, bool isChess960, Thread* th, WorkUnit* unit);
   const std::string fen() const;
 
   // Position representation
@@ -165,6 +166,7 @@ public:
   int game_ply() const;
   bool is_chess960() const;
   Thread* this_thread() const;
+  WorkUnit* this_unit() const;
   uint64_t nodes_searched() const;
   void set_nodes_searched(uint64_t n);
   bool is_draw() const;
@@ -205,6 +207,7 @@ private:
   int gamePly;
   Color sideToMove;
   Thread* thisThread;
+  WorkUnit* thisUnit;
   StateInfo* st;
   bool chess960;
 };
@@ -390,6 +393,10 @@ inline PieceType Position::captured_piece_type() const {
 
 inline Thread* Position::this_thread() const {
   return thisThread;
+}
+
+inline WorkUnit* Position::this_unit() const {
+  return thisUnit;
 }
 
 inline void Position::put_piece(Color c, PieceType pt, Square s) {

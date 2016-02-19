@@ -37,9 +37,9 @@ Thread::Thread() {
 
   resetCalls = exit = false;
   maxPly = callsCnt = 0;
-  history.clear();
-  counterMoves.clear();
   idx = Threads.size(); // Start from 0
+  if (idx == 0)
+	  workUnit = WorkUnits.first();
 
   std::unique_lock<Mutex> lk(mutex);
   searching = true;
@@ -157,15 +157,7 @@ void ThreadPool::read_uci_options() {
 }
 
 
-/// ThreadPool::nodes_searched() returns the number of nodes searched
 
-int64_t ThreadPool::nodes_searched() {
-
-  int64_t nodes = 0;
-  for (Thread* th : *this)
-      nodes += th->rootPos.nodes_searched();
-  return nodes;
-}
 
 
 /// ThreadPool::start_thinking() wakes up the main thread sleeping in idle_loop()
@@ -178,8 +170,8 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits,
 
   Signals.stopOnPonderhit = Signals.stop = false;
 
-  main()->rootMoves.clear();
-  main()->rootPos = pos;
+  main()->workUnit->rootMoves.clear();
+  main()->workUnit->rootPos = pos;
   Limits = limits;
   if (states.get()) // If we don't set a new position, preserve current state
   {
@@ -190,7 +182,7 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits,
   for (const auto& m : MoveList<LEGAL>(pos))
       if (   limits.searchmoves.empty()
           || std::count(limits.searchmoves.begin(), limits.searchmoves.end(), m))
-          main()->rootMoves.push_back(RootMove(m));
+          main()->workUnit->rootMoves.push_back(RootMove(m));
 
   main()->start_searching();
 }

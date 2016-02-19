@@ -194,7 +194,7 @@ void Position::clear() {
 /// This function is not very robust - make sure that input FENs are correct,
 /// this is assumed to be the responsibility of the GUI.
 
-void Position::set(const string& fenStr, bool isChess960, Thread* th) {
+void Position::set(const string& fenStr, bool isChess960, Thread* th, WorkUnit* unit) {
 /*
    A FEN string defines a particular position using only the ASCII character set.
 
@@ -305,6 +305,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
 
   chess960 = isChess960;
   thisThread = th;
+  thisUnit = unit;
   set_state(st);
 
   assert(pos_is_ok());
@@ -1112,7 +1113,7 @@ void Position::flip() {
   std::getline(ss, token); // Half and full moves
   f += token;
 
-  set(f, is_chess960(), this_thread());
+  set(f, is_chess960(), this_thread(), this_unit());
 
   assert(pos_is_ok());
 }

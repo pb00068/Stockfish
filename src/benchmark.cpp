@@ -147,12 +147,16 @@ void benchmark(const Position& current, istream& is) {
 
   for (size_t i = 0; i < fens.size(); ++i)
   {
-      Position pos(fens[i], Options["UCI_Chess960"], Threads.main());
+      Position pos(fens[i], Options["UCI_Chess960"], Threads.main(), Threads.main()->workUnit);
 
       cerr << "\nPosition: " << i + 1 << '/' << fens.size() << endl;
+      cerr << "\nwu: " << Threads.main()->workUnit << endl;
 
-      if (limitType == "perft")
+      if (limitType == "perft") {
+    	  cerr << "\n perft" << endl;
           nodes += Search::perft(pos, limits.depth * ONE_PLY);
+
+      }
 
       else
       {
@@ -160,7 +164,7 @@ void benchmark(const Position& current, istream& is) {
           limits.startTime = now();
           Threads.start_thinking(pos, limits, st);
           Threads.main()->wait_for_search_finished();
-          nodes += Threads.nodes_searched();
+          nodes += WorkUnits.nodes_searched();
       }
   }
 
