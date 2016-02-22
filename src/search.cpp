@@ -922,8 +922,14 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move, ci);
 
       // Step 12. Extend checks
-      if (givesCheck && pos.see_sign(move) >= VALUE_ZERO)
-          extension = ONE_PLY;
+      if (givesCheck) {
+    	  Value val = pos.see_sign(move);
+    	  if (val  >= VALUE_ZERO)
+    		  extension = ONE_PLY;
+    	  else if (ci.dcCandidates  && (ci.dcCandidates & from_sq(move))  && !aligned(from_sq(move), to_sq(move), ci.ksq) && val >= -PawnValueMg)
+    		  extension = ONE_PLY;
+      }
+
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
