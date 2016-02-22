@@ -926,8 +926,14 @@ moves_loop: // When in check search starts from here
     	  Value val = pos.see_sign(move);
     	  if (val  >= VALUE_ZERO)
     		  extension = ONE_PLY;
-    	  else if (ci.dcCandidates  && (ci.dcCandidates & from_sq(move))  && !aligned(from_sq(move), to_sq(move), ci.ksq) && val >= -PawnValueMg)
-    		  extension = ONE_PLY;
+    	  else {
+    		  bool discoveredCheck = ci.dcCandidates  && (ci.dcCandidates & from_sq(move))  && !aligned(from_sq(move), to_sq(move), ci.ksq);
+    		  if (discoveredCheck && val >= -PawnValueMg)
+    			  extension = ONE_PLY;
+    		  else if (discoveredCheck && pos.gives_doublecheck(move, ci)) {
+    			  extension = ONE_PLY;
+    		  }
+    	  }
       }
 
 

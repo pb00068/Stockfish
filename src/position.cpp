@@ -606,6 +606,7 @@ bool Position::pseudo_legal(const Move m) const {
 }
 
 
+
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
 bool Position::gives_check(Move m, const CheckInfo& ci) const {
@@ -663,6 +664,15 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
   }
 }
 
+/// discovers double checks, excluded the rare case of double checks by promotion
+/// the passed move must already be recognized as a discovered check
+bool Position::gives_doublecheck(Move discoveredCheckMove, const CheckInfo& ci) const {
+	Square from = from_sq(discoveredCheckMove);
+	Square to = to_sq(discoveredCheckMove);
+
+	// Is there a direct check?
+	return (ci.checkSquares[type_of(piece_on(from))] & to);
+}
 
 /// Position::do_move() makes a move, and saves all information necessary
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal
