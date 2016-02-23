@@ -664,11 +664,10 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
   }
 }
 
-/// discovers double checks, excluded the rare case of double checks by promotion
-/// the passed move must already be recognized as a discovered check
-bool Position::gives_doublecheck(Move discoveredCheckMove, const CheckInfo& ci) const {
-	Square from = from_sq(discoveredCheckMove);
-	Square to = to_sq(discoveredCheckMove);
+/// discovers direct checks, excluded the rare case of checks by promotion
+bool Position::gives_directcheck(Move m, const CheckInfo& ci) const {
+	Square from = from_sq(m);
+	Square to = to_sq(m);
 
 	// Is there a direct check?
 	return (ci.checkSquares[type_of(piece_on(from))] & to);

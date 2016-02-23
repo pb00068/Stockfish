@@ -926,11 +926,9 @@ moves_loop: // When in check search starts from here
     	  Value val = pos.see_sign(move);
     	  if (val  >= VALUE_ZERO)
     		  extension = ONE_PLY;
-    	  else {
+    	  else { // extend discovered checks when SEE margin <= value of the attacking piece (tempo win) but exclude double checks
     		  bool discoveredCheck = ci.dcCandidates  && (ci.dcCandidates & from_sq(move))  && !aligned(from_sq(move), to_sq(move), ci.ksq);
-    		  if (discoveredCheck && val >= -PawnValueMg)
-    			  extension = ONE_PLY;
-    		  else if (discoveredCheck && pos.gives_doublecheck(move, ci)) {
+    		  if (discoveredCheck && val >= -PieceValue[MG][pos.piece_on(from_sq(move))] && !pos.gives_directcheck(move, ci)) {
     			  extension = ONE_PLY;
     		  }
     	  }

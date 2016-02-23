@@ -134,7 +134,7 @@ public:
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
   bool gives_check(Move m, const CheckInfo& ci) const;
-  bool gives_doublecheck(Move discoveredCheckMove, const CheckInfo& ci) const;
+  bool gives_directcheck(Move discoveredCheckMove, const CheckInfo& ci) const;
   bool advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   PieceType captured_piece_type() const;
