@@ -616,7 +616,7 @@ namespace {
     Depth extension, newDepth, predictedDepth;
     Value bestValue, value, ttValue, eval, nullValue, futilityValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch;
+    bool captureOrPromotion, doFullDepthSearch, doNullMove=true;
     int moveCount, quietCount;
 
     // Step 1. Initialize node
@@ -783,7 +783,18 @@ namespace {
         return eval - futility_margin(depth);
 
     // Step 8. Null move search with verification search (is omitted in PV nodes)
-    if (   !PvNode
+    if (!PvNode && ss->ply > 7 && (ss-2)->currentMove != MOVE_NULL && (ss-2)->currentMove == (ss-6)->currentMove) {
+    	// Is this a tic-tac-situation where we always has only one legal move?
+		MovePicker mp(pos, ttMove, depth, thisThread->history, CounterMoveHistory[NO_PIECE][SQ_A1], MOVE_NONE, ss);
+    	int mc =0;
+    	while (mp.next_move() != MOVE_NONE && mc < 2) {
+    	  mc++;
+    	}
+    	if (mc == 1) // confirmed tic-tac-situation
+    	  doNullMove = false;
+    }
+
+    if (doNullMove && !PvNode
         &&  depth >= 2 * ONE_PLY
         &&  eval >= beta
         &&  pos.non_pawn_material(pos.side_to_move()))
