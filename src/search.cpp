@@ -783,15 +783,20 @@ namespace {
         return eval - futility_margin(depth);
 
     // Step 8. Null move search with verification search (is omitted in PV nodes)
-    if (!PvNode && ss->ply > 7 && (ss-2)->currentMove != MOVE_NULL && (ss-2)->currentMove == (ss-6)->currentMove) {
+    if (!PvNode && depth >= 2 * ONE_PLY    &&  eval >= beta && ss->ply > 7 && (ss-2)->currentMove != MOVE_NULL &&
+      (ss-2)->currentMove == (ss-6)->currentMove && (ss-2)->moveCount==0 && (ss-6)->moveCount==0 && (ss-4)->moveCount==0 &&
+      (ss-4)->currentMove == make_move(to_sq((ss-2)->currentMove), from_sq((ss-2)->currentMove)) )  {
     	// Is this a tic-tac-situation where we always has only one legal move?
-		MovePicker mp(pos, ttMove, depth, thisThread->history, CounterMoveHistory[NO_PIECE][SQ_A1], MOVE_NONE, ss);
-    	int mc =0;
-    	while (mp.next_move() != MOVE_NONE && mc < 2) {
+        MovePicker mp(pos, ttMove, depth, thisThread->history, CounterMoveHistory[NO_PIECE][SQ_A1], MOVE_NONE, ss);
+    	int mc = 0;
+    	Move v,z;
+    	while ((v=mp.next_move()) != MOVE_NONE && mc < 2) {
+    	  z=v;
     	  mc++;
     	}
-    	if (mc == 1) // confirmed tic-tac-situation
+    	if (mc == 1 && z == (ss-4)->currentMove) { // confirmed tic-tac-situation
     	  doNullMove = false;
+    	}
     }
 
     if (doNullMove && !PvNode
