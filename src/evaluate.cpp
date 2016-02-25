@@ -293,8 +293,13 @@ namespace {
         {
             // Bonus for outpost squares
             bb = OutpostRanks & ~ei.pi->pawn_attacks_span(Them);
-            if (bb & s)
+            if (bb & s) {
                 score += Outpost[Pt == BISHOP][!!(ei.attackedBy[Us][PAWN] & s)];
+                if (Pt == KNIGHT) {
+                    int bonusscore = 8 - std::max(distance(pos.square<KING>(Them), s), 2);
+                    score += make_score(3 * bonusscore, 0);
+                }
+            }
             else
             {
                 bb &= b & ~pos.pieces(Us);
