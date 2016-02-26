@@ -42,6 +42,9 @@ int main(int argc, char* argv[]) {
   Eval::init();
   Pawns::init();
   Sees::init();
+
+  //sync_cout << Bitboards::pretty(PseudoAttacks[QUEEN][SQ_D4] | StepAttacksBB[KNIGHT][SQ_D4]) << sync_endl;
+
   Threads.init();
   Tablebases::init(Options["SyzygyPath"]);
   TT.resize(Options["Hash"]);
