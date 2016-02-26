@@ -297,7 +297,7 @@ namespace {
                 score += Outpost[Pt == BISHOP][!!(ei.attackedBy[Us][PAWN] & s)];
                 if (Pt == KNIGHT) {
                 	int heavyThreats = popcount<Max15>(KnightDoubleSteps[s] & (pos.pieces(Them, QUEEN, ROOK) |  pos.pieces(Them, KING)));
-                	score += make_score(5 * heavyThreats, heavyThreats);
+                	score += make_score(10 * heavyThreats, 0);
                 }
             }
             else
