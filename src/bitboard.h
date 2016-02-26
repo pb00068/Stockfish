@@ -77,6 +77,7 @@ extern Bitboard RankBB[RANK_NB];
 extern Bitboard AdjacentFilesBB[FILE_NB];
 extern Bitboard InFrontBB[COLOR_NB][RANK_NB];
 extern Bitboard StepAttacksBB[PIECE_NB][SQUARE_NB];
+extern Bitboard KnightDoubleSteps[SQUARE_NB];
 extern Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard DistanceRingBB[SQUARE_NB][8];

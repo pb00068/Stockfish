@@ -36,6 +36,8 @@ Bitboard  BishopMagics [SQUARE_NB];
 Bitboard* BishopAttacks[SQUARE_NB];
 unsigned  BishopShifts [SQUARE_NB];
 
+Bitboard KnightDoubleSteps[SQUARE_NB];
+
 Bitboard SquareBB[SQUARE_NB];
 Bitboard FileBB[FILE_NB];
 Bitboard RankBB[RANK_NB];
@@ -189,6 +191,16 @@ void Bitboards::init() {
                   if (is_ok(to) && distance(s, to) < 3)
                       StepAttacksBB[make_piece(c, pt)][s] |= to;
               }
+
+  for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+	  KnightDoubleSteps[s]=0;
+	  for (Bitboard b = StepAttacksBB[KNIGHT][s]; b; )
+	  {
+	      Square sq = pop_lsb(&b);
+	      KnightDoubleSteps[s] |= StepAttacksBB[KNIGHT][sq];
+	  }
+  }
+
 
   Square RookDeltas[] = { DELTA_N,  DELTA_E,  DELTA_S,  DELTA_W  };
   Square BishopDeltas[] = { DELTA_NE, DELTA_SE, DELTA_SW, DELTA_NW };

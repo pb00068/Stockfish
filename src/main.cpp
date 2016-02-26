@@ -38,6 +38,9 @@ int main(int argc, char* argv[]) {
   Bitboards::init();
   Position::init();
   Bitbases::init();
+
+  //sync_cout << Bitboards::pretty(KnightDoubleSteps[SQ_D4]) << sync_endl;
+  //sync_cout << Bitboards::pretty(StepAttacksBB[KNIGHT][SQ_D4]) << sync_endl;
   Search::init();
   Eval::init();
   Pawns::init();

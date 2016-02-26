@@ -293,8 +293,13 @@ namespace {
         {
             // Bonus for outpost squares
             bb = OutpostRanks & ~ei.pi->pawn_attacks_span(Them);
-            if (bb & s)
+            if (bb & s) {
                 score += Outpost[Pt == BISHOP][!!(ei.attackedBy[Us][PAWN] & s)];
+                if (Pt == KNIGHT) {
+                	int heavyThreats = popcount<Max15>(KnightDoubleSteps[s] & (pos.pieces(Them, QUEEN, ROOK) |  pos.pieces(Them, KING)));
+                	score += make_score(5 * heavyThreats, heavyThreats);
+                }
+            }
             else
             {
                 bb &= b & ~pos.pieces(Us);
