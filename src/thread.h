@@ -33,6 +33,7 @@
 #include "pawns.h"
 #include "position.h"
 #include "search.h"
+#include "sees.h"
 #include "thread_win32.h"
 
 
@@ -59,6 +60,7 @@ public:
 
   Pawns::Table pawnsTable;
   Material::Table materialTable;
+  Sees::Table seeTable;
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;

@@ -158,6 +158,7 @@ public:
   Key exclusion_key() const;
   Key material_key() const;
   Key pawn_key() const;
+  Key see_key(const Move move, const Piece attackedPiece) const;
 
   // Other properties of the position
   Color side_to_move() const;
@@ -332,6 +333,8 @@ inline Key Position::key() const {
 inline Key Position::pawn_key() const {
   return st->pawnKey;
 }
+
+
 
 inline Key Position::material_key() const {
   return st->materialKey;

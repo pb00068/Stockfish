@@ -31,6 +31,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "uci.h"
+#include "sees.h"
 
 using std::string;
 
@@ -174,6 +175,17 @@ Position& Position::operator=(const Position& pos) {
   return *this;
 }
 
+Key Position::see_key(const Move move, const Piece attackedPiece) const {
+	Key key =0;
+	for (Bitboard b = (pieces() ^ from_sq(move)) & ( PseudoAttacks[ALL_PIECES][to_sq(move)] ) ; b; )
+	{
+	      Square s = pop_lsb(&b);
+	      Piece pc = piece_on(s);
+	      key ^= Zobrist::psq[color_of(pc)][type_of(pc)][s];
+	}
+	key += attackedPiece;
+	return key;
+}
 
 /// Position::clear() erases the position object to a pristine state, with an
 /// empty board, white to move, and no castling rights.
@@ -1003,17 +1015,23 @@ Value Position::see(Move m) const {
 
   assert(is_ok(m));
 
-  from = from_sq(m);
-  to = to_sq(m);
-  swapList[0] = PieceValue[MG][piece_on(to)];
-  stm = color_of(piece_on(from));
-  occupied = pieces() ^ from;
-
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
   // unless in the rare case the rook ends up under attack.
   if (type_of(m) == CASTLING)
       return VALUE_ZERO;
+
+  to = to_sq(m);
+  Sees::Entry* see = Sees::probe(*this, m, piece_on(to));
+  if (see)
+	 return see->value;
+
+  from = from_sq(m);
+  swapList[0] = PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(from));
+  occupied = pieces() ^ from;
+
+
 
   if (type_of(m) == ENPASSANT)
   {
@@ -1028,8 +1046,10 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
-  if (!stmAttackers)
+  if (!stmAttackers) {
+	  Sees::save(*this, m, piece_on(to), swapList[0]);
       return swapList[0];
+  }
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1058,6 +1078,7 @@ Value Position::see(Move m) const {
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
+  Sees::save(*this, m, piece_on(to), swapList[0]);
   return swapList[0];
 }
 
