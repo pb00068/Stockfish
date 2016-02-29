@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitcount.h"
@@ -999,7 +1000,7 @@ Value Position::see(Move m, int& exchanges) const {
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
   int slIndex = 1;
-  exchanges = 1;
+  exchanges = 0;
   PieceType captured;
   Color stm;
 
@@ -1008,6 +1009,8 @@ Value Position::see(Move m, int& exchanges) const {
   from = from_sq(m);
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
+  if (piece_on(to) != NO_PIECE)
+    exchanges=1;
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
@@ -1020,6 +1023,7 @@ Value Position::see(Move m, int& exchanges) const {
   if (type_of(m) == ENPASSANT)
   {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
+      exchanges = 1;
       swapList[0] = PieceValue[MG][PAWN];
   }
 
@@ -1031,7 +1035,7 @@ Value Position::see(Move m, int& exchanges) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   if (!stmAttackers)
-      return exchanges, swapList[0];
+      return swapList[0];
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1057,17 +1061,21 @@ Value Position::see(Move m, int& exchanges) const {
 
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
-  exchanges = slIndex;
+  exchanges = slIndex - 1;
   while (--slIndex) {
     if (-swapList[slIndex] < swapList[slIndex - 1]) {
       swapList[slIndex - 1] = -swapList[slIndex];
     }
     else {
-      exchanges = slIndex;
+      exchanges = slIndex - 1;
     }
   }
 
-  return exchanges, swapList[0];
+//  if (exchanges > 3) {
+//    sync_cout << "See with more than 3 exchanges " << fen() << " move " << UCI::move(m,false)  << " exchanges: " << exchanges << sync_endl;
+//  }
+
+  return swapList[0];
 }
 
 
