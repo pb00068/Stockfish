@@ -924,8 +924,12 @@ moves_loop: // When in check search starts from here
 
       // Step 12. Extend checks
       int exchanges =0;
-      if (givesCheck && (pos.see_sign(move, exchanges) >= VALUE_ZERO || exchanges > 3))
+      if (givesCheck) {
+        Value v = pos.see_sign(move, exchanges);
+        if (v >= VALUE_ZERO || (v >= -KnightValueMg && exchanges > 3)) {
           extension = ONE_PLY;
+        }
+      }
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
