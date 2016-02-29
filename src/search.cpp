@@ -923,7 +923,8 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move, ci);
 
       // Step 12. Extend checks
-      if (givesCheck && pos.see_sign(move) >= VALUE_ZERO)
+      int exchanges =0;
+      if (givesCheck && (pos.see_sign(move, exchanges) >= VALUE_ZERO || exchanges > 3))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -1027,7 +1028,6 @@ moves_loop: // When in check search starts from here
           // castling moves, because they are coded as "king captures rook" and
           // hence break make_move(). Also use see() instead of see_sign(),
           // because the destination square is empty.
-          int exchanges=0;
           if (   r
               && type_of(move) == NORMAL
               && type_of(pos.piece_on(to_sq(move))) != PAWN
@@ -1318,7 +1318,7 @@ moves_loop: // When in check search starts from here
           }
 
           int exchanges=0;
-          if (futilityBase <= alpha && pos.see(move, exchanges) <= VALUE_ZERO && exchanges < 2)
+          if (futilityBase <= alpha && pos.see(move, exchanges) <= VALUE_ZERO && exchanges < 4)
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1331,9 +1331,10 @@ moves_loop: // When in check search starts from here
                        && !pos.capture(move);
 
       // Don't search moves with negative SEE values
+      int exchanges =0;
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  pos.see_sign(move) < VALUE_ZERO)
+          &&  pos.see_sign(move, exchanges) < VALUE_ZERO && exchanges < 4)
           continue;
 
       // Speculative prefetch as early as possible

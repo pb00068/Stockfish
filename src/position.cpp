@@ -994,6 +994,19 @@ Value Position::see_sign(Move m) const {
   return see(m, exchanges);
 }
 
+Value Position::see_sign(Move m, int& exchanges) const {
+
+  assert(is_ok(m));
+
+  // Early return if SEE cannot be negative because captured piece value
+  // is not less then capturing one. Note that king moves always return
+  // here because king midgame value is set to 0.
+  if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
+      return VALUE_KNOWN_WIN;
+
+  return see(m, exchanges);
+}
+
 Value Position::see(Move m, int& exchanges) const {
 
   Square from, to;
