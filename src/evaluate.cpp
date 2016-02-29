@@ -293,8 +293,20 @@ namespace {
         {
             // Bonus for outpost squares
             bb = OutpostRanks & ~ei.pi->pawn_attacks_span(Them);
-            if (bb & s)
+            if (bb & s) {
                 score += Outpost[Pt == BISHOP][!!(ei.attackedBy[Us][PAWN] & s)];
+				   if (Pt == KNIGHT) { // Detect heavy fork threads
+					   Bitboard bbb = StepAttacksBB[KNIGHT][s] & mobilityArea[Us];
+					   if (bbb) {
+						   Bitboard targets = pos.pieces(Them, QUEEN, ROOK) |  pos.pieces(Them, KING);
+						   while (bbb) {
+							   Square sq = pop_lsb(&bbb);
+							   int heavyThreats = popcount<Max15>(StepAttacksBB[KNIGHT][sq] & targets);
+							   score += make_score(4 *  heavyThreats * heavyThreats, 0);
+						   }
+					   }
+				   }
+            }
             else
             {
                 bb &= b & ~pos.pieces(Us);
