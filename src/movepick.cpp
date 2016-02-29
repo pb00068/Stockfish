@@ -112,10 +112,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
   stage = PROBCUT;
 
   // In ProbCut we generate captures with SEE higher than the given threshold
+  int exchanges=0;
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
+          && pos.see(ttm, exchanges) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
 }
@@ -238,6 +239,7 @@ void MovePicker::generate_next_stage() {
 Move MovePicker::next_move() {
 
   Move move;
+  int exchanges =0;
 
   while (true)
   {
@@ -291,8 +293,9 @@ Move MovePicker::next_move() {
           break;
 
       case PROBCUT_CAPTURES:
+
            move = pick_best(cur++, endMoves);
-           if (move != ttMove && pos.see(move) > threshold)
+           if (move != ttMove && pos.see(move, exchanges) > threshold)
                return move;
            break;
 

@@ -1027,10 +1027,11 @@ moves_loop: // When in check search starts from here
           // castling moves, because they are coded as "king captures rook" and
           // hence break make_move(). Also use see() instead of see_sign(),
           // because the destination square is empty.
+          int exchanges=0;
           if (   r
               && type_of(move) == NORMAL
               && type_of(pos.piece_on(to_sq(move))) != PAWN
-              && pos.see(make_move(to_sq(move), from_sq(move))) < VALUE_ZERO)
+              && pos.see(make_move(to_sq(move), from_sq(move)), exchanges) < VALUE_ZERO)
               r = std::max(DEPTH_ZERO, r - ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
@@ -1316,7 +1317,8 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && pos.see(move) <= VALUE_ZERO)
+          int exchanges=0;
+          if (futilityBase <= alpha && pos.see(move, exchanges) <= VALUE_ZERO && exchanges < 2)
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;

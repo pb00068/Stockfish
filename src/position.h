@@ -149,7 +149,7 @@ public:
   void undo_null_move();
 
   // Static exchange evaluation
-  Value see(Move m) const;
+  Value see(Move m, int& exchanges) const;
   Value see_sign(Move m) const;
 
   // Accessing hash keys

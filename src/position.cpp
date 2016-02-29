@@ -989,15 +989,17 @@ Value Position::see_sign(Move m) const {
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
-  return see(m);
+  int exchanges =0;
+  return see(m, exchanges);
 }
 
-Value Position::see(Move m) const {
+Value Position::see(Move m, int& exchanges) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
   int slIndex = 1;
+  exchanges = 1;
   PieceType captured;
   Color stm;
 
@@ -1013,7 +1015,7 @@ Value Position::see(Move m) const {
   // be handled correctly. Simply return VALUE_ZERO that is always correct
   // unless in the rare case the rook ends up under attack.
   if (type_of(m) == CASTLING)
-      return VALUE_ZERO;
+      return exchanges = 0, VALUE_ZERO;
 
   if (type_of(m) == ENPASSANT)
   {
@@ -1029,7 +1031,7 @@ Value Position::see(Move m) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   if (!stmAttackers)
-      return swapList[0];
+      return exchanges, swapList[0];
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1055,10 +1057,17 @@ Value Position::see(Move m) const {
 
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
-  while (--slIndex)
-      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+  exchanges = slIndex;
+  while (--slIndex) {
+    if (-swapList[slIndex] < swapList[slIndex - 1]) {
+      swapList[slIndex - 1] = -swapList[slIndex];
+    }
+    else {
+      exchanges = slIndex;
+    }
+  }
 
-  return swapList[0];
+  return exchanges, swapList[0];
 }
 
 
