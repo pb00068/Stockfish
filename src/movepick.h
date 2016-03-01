@@ -58,6 +58,7 @@ struct Stats {
      {
        if (abs(int(v)) >= 10000)
            return;
+       v /= 100;
        table_lowplies[pc][to] -= table_lowplies[pc][to] * abs(int(v)) / (CM ? 936 : 324);
        table_lowplies[pc][to] += int(v) * 32;
        return;
