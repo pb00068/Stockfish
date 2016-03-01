@@ -56,17 +56,19 @@ struct Stats {
 
      if (abs(int(v)) >= 324)
      {
-       if (abs(int(v)) >= 10000)
-           return;
-       v /= 100;
-       table_lowplies[pc][to] -= table_lowplies[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-       table_lowplies[pc][to] += int(v) * 32;
        return;
      }
 
 
-     table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-     table[pc][to] += int(v) * 32;
+     if (pc > PIECE_NB) {
+         pc -= PIECE_NB;
+         table_lowplies[pc][to] -= table_lowplies[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+         table_lowplies[pc][to] += int(v) * 32;
+     }
+     else {
+       table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+       table[pc][to] += int(v) * 32;
+     }
    }
 
  private:

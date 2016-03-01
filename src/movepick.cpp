@@ -139,14 +139,14 @@ void MovePicker::score<CAPTURES>() {
 
 template<>
 void MovePicker::score<QUIETS>() {
-  if (depth <= 17) {
+
     for (auto& m : *this)
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-  }
-  else {
+
+  if (depth > 17) {
     for (auto& m : *this)
-      m.value =  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)]
+      m.value +=  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)]
                + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
   }
 }
