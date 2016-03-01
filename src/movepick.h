@@ -42,9 +42,9 @@ struct Stats {
 
   static const Value Max = Value(1 << 28);
 
-  const T* operator[](Piece pc) const { return table[pc]; }
-  T* operator[](Piece pc) { return table[pc]; }
-  void clear() { std::memset(table, 0, sizeof(table)); }
+  const T* operator[](Piece pc) const { return pc < PIECE_NB ? table[pc] : table_lowplies[pc - PIECE_NB]; }
+  T* operator[](Piece pc) { return pc < PIECE_NB ? table[pc] : table_lowplies[pc - PIECE_NB]; }
+  void clear() { std::memset(table, 0, sizeof(table)); std::memset(table_lowplies, 0, sizeof(table_lowplies));}
 
   void update(Piece pc, Square to, Move m) {
 
@@ -54,16 +54,24 @@ struct Stats {
 
   void update(Piece pc, Square to, Value v) {
 
-    if (abs(int(v)) >= 324)
-        return;
+     if (abs(int(v)) >= 324)
+     {
+       if (abs(int(v)) >= 10000)
+           return;
+       table_lowplies[pc][to] -= table_lowplies[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+       table_lowplies[pc][to] += int(v) * 32;
+       return;
+     }
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
-  }
 
-private:
-  T table[PIECE_NB][SQUARE_NB];
-};
+     table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+     table[pc][to] += int(v) * 32;
+   }
+
+ private:
+   T table[PIECE_NB][SQUARE_NB];
+   T table_lowplies[PIECE_NB][SQUARE_NB];
+ };
 
 typedef Stats<Move> MoveStats;
 typedef Stats<Value, false> HistoryStats;
