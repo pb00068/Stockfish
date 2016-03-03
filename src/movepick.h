@@ -67,10 +67,11 @@ struct Stats {
     if (abs(int(v)) >= 324)
         return;
 
+    // all-layer = old
     table[pc][0][to] -= table[pc][0][to] * abs(int(v)) / (CM ? 936 : 324);
     table[pc][0][to] += int(v) * 32;
 
-    if (level == 0) {
+    if (level == 0) { // flat-layer only fill it as long ss->ply + depth is small
       table[pc][1][to] -= table[pc][1][to] * abs(int(v)) / (CM ? 936 : 324);
       table[pc][1][to] += int(v) * 32;
     }
