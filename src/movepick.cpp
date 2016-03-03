@@ -148,10 +148,10 @@ void MovePicker::score<QUIETS>() {
                + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
     if (patchActive && ss->ply <= 4) {
     for (auto& m : *this)
-          m.value =  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)] +
+          m.value +=  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
                    //+ (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)]; // alte countermove
 
-                   + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+                  // + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
 
   }
 }
