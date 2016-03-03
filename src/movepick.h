@@ -42,27 +42,40 @@ struct Stats {
 
   static const Value Max = Value(1 << 28);
 
-  const T* operator[](Piece pc) const { return table[pc]; }
-  T* operator[](Piece pc) { return table[pc]; }
+  const T* operator[](Piece pc) const {
+    if (pc < PIECE_NB)
+      return table[pc][0];
+    return table[pc - PIECE_NB][1];
+  }
+  T* operator[](Piece pc) {
+    if (pc < PIECE_NB)
+          return table[pc][0];
+    return table[pc - PIECE_NB][1];
+  }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
   void update(Piece pc, Square to, Move m) {
 
-    if (m != table[pc][to])
-        table[pc][to] = m;
+    if (m != table[pc][0][to])
+        table[pc][0][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, bool flat) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    table[pc][0][to] -= table[pc][0][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][0][to] += int(v) * 32;
+
+    if (flat) { // flat-layer only fill it as long ss->ply + depth is small
+          table[pc][1][to] -= table[pc][1][to] * abs(int(v)) / (CM ? 936 : 324);
+          table[pc][1][to] += int(v) * 32;
+    }
   }
 
 private:
-  T table[PIECE_NB][SQUARE_NB];
+  T table[PIECE_NB][2][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;
