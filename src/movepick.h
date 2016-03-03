@@ -62,7 +62,7 @@ struct Stats {
         table[pc][level][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v, int level) {
+  void update(Piece pc, Square to, Value v, bool flat) {
 
     if (abs(int(v)) >= 324)
         return;
@@ -71,10 +71,10 @@ struct Stats {
     table[pc][0][to] -= table[pc][0][to] * abs(int(v)) / (CM ? 936 : 324);
     table[pc][0][to] += int(v) * 32;
 
-    if (level == 0) { // flat-layer only fill it as long ss->ply + depth is small
-      table[pc][1][to] -= table[pc][1][to] * abs(int(v)) / (CM ? 936 : 324);
-      table[pc][1][to] += int(v) * 32;
-    }
+    if (flat) { // flat-layer only fill it as long ss->ply + depth is small
+             table[pc][1][to] -= table[pc][1][to] * abs(int(v)) / (CM ? 936 : 324);
+             table[pc][1][to] += int(v) * 32;
+        }
   }
 
 private:
