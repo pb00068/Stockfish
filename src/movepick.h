@@ -118,6 +118,7 @@ private:
   Move countermove;
   Depth depth;
   Move ttMove;
+  int patchActive;
   ExtMove killers[3];
   Square recaptureSquare;
   Value threshold;

@@ -22,6 +22,7 @@
 
 #include "movepick.h"
 #include "thread.h"
+#include "uci.h"
 
 namespace {
 
@@ -72,6 +73,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
            : pos(p), history(h), counterMoveHistory(&cmh), ss(s), countermove(cm), depth(d) {
 
   assert(d > DEPTH_ZERO);
+  patchActive = Options["Patch"];
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
@@ -144,10 +146,11 @@ void MovePicker::score<QUIETS>() {
     for (auto& m : *this)
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-    if (ss->ply <= 4) {
+    if (patchActive && ss->ply <= 4) {
     for (auto& m : *this)
-          m.value +=  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)]
-                   + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+          m.value +=  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+                   //+ (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+
   }
 }
 
