@@ -144,9 +144,9 @@ void MovePicker::score<QUIETS>() {
     for (auto& m : *this)
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-    if (ss->ply <= 8) {
+    if (ss->ply <= 4) {
     for (auto& m : *this)
-          m.value =  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)]
+          m.value +=  history[pos.moved_piece(m) + PIECE_NB][to_sq(m)]
                    + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
   }
 }
