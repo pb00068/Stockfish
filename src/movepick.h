@@ -42,32 +42,65 @@ struct Stats {
 
   static const Value Max = Value(1 << 28);
 
-  const T* operator[](Piece pc) const { return table[pc]; }
+  const T* operator[](Piece pc) const {
+	  int resply = pc / 100;
+	  pc = pc % 100;
+	  TriValue v1 = table[pc][0][to];
+	  TriValue v2 = table[pc][1][to];
+	  float dist1 = std::abs( v1.avgPly - resply);
+	  float dist2 = std::abs( v2.avgPly - resply);
+	  return table[pc][0];
+  }
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
   void update(Piece pc, Square to, Move m) {
 
     if (m != table[pc][to])
-        table[pc][to] = m;
+        table[pc][0][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, int gameply, int ply) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    TriValue v1 = table[pc][0][to];
+    TriValue v2 = table[pc][1][to];
+
+    if (v1.puts == 0 || v1.avgPly < gameply) // empty or obsolete
+    {
+    	TriValue t = new TriValue();
+    	t.value = int(v) * 32;
+    	t.avgPly = ply + gameply;
+    	t.puts=1;
+    	table[pc][0][to] = t;
+    }
+    else if (v2.puts == 0 || v2.avgPly < gameply) // empty or obsolete
+    {
+    	TriValue t = new TriValue();
+    	t.value = int(v) * 32;
+    	t.avgPly = ply + gameply;
+    	t.puts=1;
+    	table[pc][1][to] = t;
+    }
+    else {
+    	float dist1 = std::abs( v1.avgPly - (ply + gameply));
+    	float dist2 = std::abs( v2.avgPly - (ply + gameply));
+    	TriValue t = dist1 > dist2 ? table[pc][1][to] : table[pc][0][to];
+    	t.value -= t.value * abs(int(v)) / (CM ? 936 : 324);
+    	t.value += int(t.value) * 32;
+    	t.avgPly = (t.puts * t.avgPly + (ply + gameply)) / ++t.puts;
+    }
   }
 
 private:
-  T table[PIECE_NB][SQUARE_NB];
+  T table[PIECE_NB][2][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;
-typedef Stats<Value, false> HistoryStats;
-typedef Stats<Value,  true> CounterMoveStats;
+typedef Stats<TriValue, false> HistoryStats;
+typedef Stats<TriValue,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 

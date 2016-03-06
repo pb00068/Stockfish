@@ -173,6 +173,8 @@ enum Bound {
   BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
+
+
 enum Value : int {
   VALUE_ZERO      = 0,
   VALUE_DRAW      = 0,
@@ -191,6 +193,12 @@ enum Value : int {
   QueenValueMg  = 2521,  QueenValueEg  = 2558,
 
   MidgameLimit  = 15581, EndgameLimit  = 3998
+};
+
+struct TriValue {
+  Value value;
+  int puts;
+  float avgPly;
 };
 
 enum PieceType {
