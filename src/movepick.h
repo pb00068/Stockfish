@@ -70,7 +70,7 @@ struct Stats {
     }
 
 
-    if (bv.maxply == 0 || bv.maxply >= gameply - 10) {
+    if (bv.maxply == 0 || bv.maxply >= gameply - 100) {
       bv.value -= bv.value * abs(int(v)) / (CM ? 936 : 324);
       bv.value += int(v) * 32;
       bv.maxply = std::max(bv.maxply, gameply);
