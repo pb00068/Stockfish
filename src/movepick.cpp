@@ -143,11 +143,11 @@ void MovePicker::score<QUIETS>() {
   for (auto& m : *this) {
     BiVal v1 = history[pos.moved_piece(m)][to_sq(m)];
     BiVal v2 = history[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
-    BiVal v = v1.maxply <= pos.game_ply() - 2 ||  v2.maxply == 0 ? v1 : v2;
+    BiVal v = v1.maxply <= pos.game_ply() - 5 ||  v2.maxply == 0 ? v1 : v2;
 
     BiVal c1 = (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
     BiVal c2 = (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
-    BiVal c = c1.maxply <= pos.game_ply() - 2 || c2.maxply == 0 ? c1 : c2;
+    BiVal c = c1.maxply <= pos.game_ply() - 5 || c2.maxply == 0 ? c1 : c2;
 
 
       m.value =  v.value + c.value;
