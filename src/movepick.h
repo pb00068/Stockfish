@@ -42,32 +42,44 @@ struct Stats {
 
   static const Value Max = Value(1 << 28);
 
-  const T* operator[](Piece pc) const { return table[pc]; }
-  T* operator[](Piece pc) { return table[pc]; }
+  const T* operator[](Piece pc) const { return table[pc % PIECE_NB][pc > PIECE_NB]; }
+  T* operator[](Piece pc) { return table[pc % PIECE_NB][pc > PIECE_NB]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
   void update(Piece pc, Square to, Move m) {
 
-    if (m != table[pc][to])
-        table[pc][to] = m;
+    if (m != table[pc][0][to])
+        table[pc][0][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, int gameply, int ply) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    BiVal bv = table[pc][0][to];
+    if (bv.maxply == 0 || bv.maxply >= gameply + ply - 20) {
+      bv.value -= bv.value * abs(int(v)) / (CM ? 936 : 324);
+      bv.value += int(v) * 32;
+      bv.maxply = std::max(bv.maxply, gameply + ply);
+      table[pc][0][to] = bv;
+    }
+    else {
+      bv = table[pc][1][to];
+      bv.value -= bv.value * abs(int(v)) / (CM ? 936 : 324);
+      bv.value += int(v) * 32;
+      bv.maxply = std::max(bv.maxply, gameply + ply);
+      table[pc][1][to] = bv;
+    }
   }
 
 private:
-  T table[PIECE_NB][SQUARE_NB];
+  T table[PIECE_NB][2][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;
-typedef Stats<Value, false> HistoryStats;
-typedef Stats<Value,  true> CounterMoveStats;
+typedef Stats<BiVal, false> HistoryStats;
+typedef Stats<BiVal,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 

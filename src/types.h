@@ -193,6 +193,11 @@ enum Value : int {
   MidgameLimit  = 15581, EndgameLimit  = 3998
 };
 
+struct BiVal {
+  Value value;
+  int maxply;
+};
+
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
   ALL_PIECES = 0,

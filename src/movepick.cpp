@@ -140,9 +140,19 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this)
-      m.value =  history[pos.moved_piece(m)][to_sq(m)]
-               + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+  for (auto& m : *this) {
+    int ply = pos.game_ply() + ss->ply;
+    BiVal v1 = history[pos.moved_piece(m)][to_sq(m)];
+    BiVal v2 = history[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+    BiVal v = v1.maxply <= ply ||  v2.maxply == 0 ? v1 : v2;
+
+    BiVal c1 = (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+    BiVal c2 = (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB][to_sq(m)];
+    BiVal c = c1.maxply <= ply || c2.maxply == 0 ? c1 : c2;
+
+
+      m.value =  v.value + c.value;
+  }
 }
 
 template<>
@@ -160,7 +170,7 @@ void MovePicker::score<EVASIONS>() {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          m.value = history[pos.moved_piece(m)][to_sq(m)];
+          m.value = history[pos.moved_piece(m)][to_sq(m)].value;
 }
 
 
