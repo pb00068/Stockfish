@@ -58,17 +58,29 @@ struct Stats {
         return;
 
     BiVal bv = table[pc][0][to];
-    if (bv.maxply == 0 || bv.maxply >= gameply + ply - 20) {
+    int rootPly = gameply - ply;
+
+    if (bv.maxply < rootPly - 10) { // first entry obsolete, shift and reset 2nd entry
+      BiVal bv2 = table[pc][1][to];
+      bv.value = bv2.value;
+      bv.maxply = bv2.maxply;
+      bv2.value = VALUE_ZERO;
+      bv2.maxply = 0;
+      table[pc][0][to] = bv;
+    }
+
+
+    if (bv.maxply == 0 || bv.maxply >= gameply - 10) {
       bv.value -= bv.value * abs(int(v)) / (CM ? 936 : 324);
       bv.value += int(v) * 32;
-      bv.maxply = std::max(bv.maxply, gameply + ply);
+      bv.maxply = std::max(bv.maxply, gameply);
       table[pc][0][to] = bv;
     }
     else {
       bv = table[pc][1][to];
       bv.value -= bv.value * abs(int(v)) / (CM ? 936 : 324);
       bv.value += int(v) * 32;
-      bv.maxply = std::max(bv.maxply, gameply + ply);
+      bv.maxply = std::max(bv.maxply, gameply);
       table[pc][1][to] = bv;
     }
   }
