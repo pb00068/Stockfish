@@ -68,6 +68,12 @@ struct Stats {
      else {
        table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
        table[pc][to] += int(v) * 32;
+
+       if (v > 200) {
+         v = v / 17;
+         table_lowplies[pc][to] -= table_lowplies[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+         table_lowplies[pc][to] += int(v) * 32;
+       }
      }
    }
 
