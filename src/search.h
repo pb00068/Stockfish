@@ -39,6 +39,7 @@ namespace Search {
 struct Stack {
   Move* pv;
   int ply;
+  Move oldPvMove;
   Move currentMove;
   Move excludedMove;
   Move killers[2];
@@ -63,6 +64,7 @@ struct RootMove {
   Value score = -VALUE_INFINITE;
   Value previousScore = -VALUE_INFINITE;
   std::vector<Move> pv;
+//  std::vector<Move> oldmoves;
 };
 
 typedef std::vector<RootMove> RootMoveVector;

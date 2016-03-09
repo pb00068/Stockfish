@@ -1122,8 +1122,13 @@ moves_loop: // When in check search starts from here
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
-              if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              if (PvNode && value < beta) { // Update alpha! Always alpha < beta
                   alpha = value;
+                  if (ss->pv != nullptr)
+                    ss->oldPvMove=ss->pv[0];
+                  (ss+1)->oldPvMove=MOVE_NONE;
+//                  (ss+2)->oldPvMove=MOVE_NONE;
+              }
               else
               {
                   assert(value >= beta); // Fail high

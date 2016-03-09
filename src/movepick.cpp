@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, GOOD_QUIETS, BAD_QUIETS, BAD_CAPTURES,
+    MAIN_SEARCH, COMEBACK, GOOD_CAPTURES, KILLERS, GOOD_QUIETS, BAD_QUIETS, BAD_CAPTURES,
     EVASION, ALL_EVASIONS,
     QSEARCH_WITH_CHECKS, QCAPTURES_1, CHECKS,
     QSEARCH_WITHOUT_CHECKS, QCAPTURES_2,
@@ -189,6 +189,18 @@ void MovePicker::generate_next_stage() {
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
       break;
 
+
+  case COMEBACK:
+      if (depth <= 17 || ss->oldPvMove == MOVE_NONE) {
+        endMoves = cur;
+        break;
+      }
+      ExtMove comeback;
+      comeback.move=ss->oldPvMove;
+      cur = &comeback;
+      endMoves = cur + 1;
+      break;
+
   case GOOD_QUIETS:
       endQuiets = endMoves = generate<QUIETS>(pos, moves);
       score<QUIETS>();
@@ -253,7 +265,7 @@ Move MovePicker::next_move() {
 
       case GOOD_CAPTURES:
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && (move != ss->oldPvMove || depth <= 17))
           {
               if (pos.see_sign(move) >= VALUE_ZERO)
                   return move;
@@ -263,11 +275,20 @@ Move MovePicker::next_move() {
           }
           break;
 
+      case COMEBACK:
+         move = *cur++;
+         if (    move != MOVE_NONE
+             &&  move != ttMove
+             &&  pos.pseudo_legal(move))
+             return move;
+         break;
+
       case KILLERS:
           move = *cur++;
           if (    move != MOVE_NONE
               &&  move != ttMove
               &&  pos.pseudo_legal(move)
+              && (move != ss->oldPvMove || depth <= 17)
               && !pos.capture(move))
               return move;
           break;
@@ -277,7 +298,8 @@ Move MovePicker::next_move() {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2])
+              && move != killers[2]
+              && (move != ss->oldPvMove || depth <= 17))
               return move;
           break;
 
