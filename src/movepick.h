@@ -85,7 +85,7 @@ public:
 
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, const HistoryStats&, Value);
-  MovePicker(const Position&, Move, Depth, const HistoryStats&, const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, const HistoryStats&, const CounterMoveStats&, const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
 
   Move next_move();
 
@@ -99,6 +99,7 @@ private:
   const HistoryStats& history;
   const CounterMoveStats* counterMoveHistory;
   const CounterMoveStats* followupMoveHistory;
+  const CounterMoveStats* countercounterMoveHistory;
   Search::Stack* ss;
   Move countermove;
   Depth depth;

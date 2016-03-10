@@ -159,6 +159,7 @@ namespace {
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
+  CounterMoveHistoryStats CounterCounterMoveHistory;
 
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
@@ -871,11 +872,13 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
+    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : SQ_NONE;
     Move cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
+    const CounterMoveStats& ccmh = CounterCounterMoveHistory[pos.piece_on(prevprevSq)][prevprevSq];
 
-    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
+    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, ccmh, cm, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1445,8 +1448,10 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
+    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : SQ_NONE;
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
+    CounterMoveStats& ccmh = CounterCounterMoveHistory[pos.piece_on(prevprevSq)][prevprevSq];
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
@@ -1460,6 +1465,9 @@ moves_loop: // When in check search starts from here
     if (is_ok((ss-2)->currentMove))
         fmh.update(pos.moved_piece(move), to_sq(move), bonus);
 
+    if (ss->ply > 3 && is_ok((ss-3)->currentMove))
+    	ccmh.update(pos.moved_piece(move), to_sq(move), bonus);
+
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
@@ -1470,6 +1478,9 @@ moves_loop: // When in check search starts from here
 
         if (is_ok((ss-2)->currentMove))
             fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+        if (ss->ply > 3 && is_ok((ss-3)->currentMove))
+        	ccmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
