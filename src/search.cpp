@@ -872,7 +872,7 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : SQ_NONE;
+    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : to_sq((ss-1)->currentMove);
     Move cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
@@ -1448,7 +1448,7 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : SQ_NONE;
+    Square prevprevSq = ss->ply > 3 ? to_sq((ss-3)->currentMove) : to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
     CounterMoveStats& ccmh = CounterCounterMoveHistory[pos.piece_on(prevprevSq)][prevprevSq];
