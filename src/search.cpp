@@ -169,7 +169,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
-  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, bool* quietsWRaise, int quietsCnt);
   void check_time();
 
 } // namespace
@@ -610,6 +610,7 @@ namespace {
     assert(DEPTH_ZERO < depth && depth < DEPTH_MAX);
 
     Move pv[MAX_PLY+1], quietsSearched[64];
+    bool quietsWithRaise[64];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -692,7 +693,7 @@ namespace {
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+            update_stats(pos, ss, ttMove, depth, nullptr, nullptr, 0);
 
         return ttValue;
     }
@@ -1134,8 +1135,10 @@ moves_loop: // When in check search starts from here
           }
       }
 
-      if (!captureOrPromotion && move != bestMove && quietCount < 64)
-          quietsSearched[quietCount++] = move;
+      if (!captureOrPromotion &&  quietCount < 64) {
+          quietsSearched[quietCount] = move;
+          quietsWithRaise[quietCount++] = (move == bestMove);
+      }
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1156,7 +1159,7 @@ moves_loop: // When in check search starts from here
 
     // Quiet best move: update killers, history and countermoves
     else if (bestMove && !pos.capture_or_promotion(bestMove))
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        update_stats(pos, ss, bestMove, depth, quietsSearched, quietsWithRaise, quietCount);
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1433,7 +1436,7 @@ moves_loop: // When in check search starts from here
   // history when a new quiet best move is found.
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Depth depth, Move* quiets, int quietsCnt) {
+                    Depth depth, Move* quiets, bool* quietsWithRaise, int quietsCnt) {
 
     if (ss->killers[0] != move)
     {
@@ -1460,16 +1463,19 @@ moves_loop: // When in check search starts from here
     if (is_ok((ss-2)->currentMove))
         fmh.update(pos.moved_piece(move), to_sq(move), bonus);
 
-    // Decrease all the other played quiet moves
+    // Decrease all the other played quiet moves, threat different the ones which produced a raise
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (quiets[i] == move)
+          continue;
+
+        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), quietsWithRaise[i] ? bonus / 2 : -bonus);
 
         if (is_ok((ss-1)->currentMove))
-            cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), quietsWithRaise[i] ? bonus / 2 : -bonus);
 
         if (is_ok((ss-2)->currentMove))
-            fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), quietsWithRaise[i] ? bonus / 2 : -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
