@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, COMEBACK, GOOD_CAPTURES, KILLERS, GOOD_QUIETS, BAD_QUIETS, BAD_CAPTURES,
+    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, COMEBACK, GOOD_QUIETS, BAD_QUIETS, BAD_CAPTURES,
     EVASION, ALL_EVASIONS,
     QSEARCH_WITH_CHECKS, QCAPTURES_1, CHECKS,
     QSEARCH_WITHOUT_CHECKS, QCAPTURES_2,
@@ -191,7 +191,7 @@ void MovePicker::generate_next_stage() {
 
 
   case COMEBACK:
-      if (depth <= 17 || ss->oldPvMove == MOVE_NONE) {
+      if (depth <= 20 || ss->oldPvMove == MOVE_NONE) {
         endMoves = cur;
         break;
       }
@@ -265,7 +265,7 @@ Move MovePicker::next_move() {
 
       case GOOD_CAPTURES:
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && (move != ss->oldPvMove || depth <= 17))
+          if (move != ttMove)
           {
               if (pos.see_sign(move) >= VALUE_ZERO)
                   return move;
@@ -288,7 +288,6 @@ Move MovePicker::next_move() {
           if (    move != MOVE_NONE
               &&  move != ttMove
               &&  pos.pseudo_legal(move)
-              && (move != ss->oldPvMove || depth <= 17)
               && !pos.capture(move))
               return move;
           break;
@@ -299,7 +298,7 @@ Move MovePicker::next_move() {
               && move != killers[0]
               && move != killers[1]
               && move != killers[2]
-              && (move != ss->oldPvMove || depth <= 17))
+              && (move != ss->oldPvMove || depth <= 20))
               return move;
           break;
 
