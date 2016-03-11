@@ -206,6 +206,10 @@ enum Piece {
   PIECE_NB = 16
 };
 
+enum Direction {
+  LEFT = 1, RIGHT = 2
+};
+
 enum Depth {
 
   ONE_PLY = 1,

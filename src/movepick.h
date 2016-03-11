@@ -42,27 +42,33 @@ struct Stats {
 
   static const Value Max = Value(1 << 28);
 
-  const T* operator[](Piece pc) const { return table[pc]; }
-  T* operator[](Piece pc) { return table[pc]; }
+  const T* operator[](Piece pc) const { return table[pc % PIECE_NB][pc / PIECE_NB]; }
+  T* operator[](Piece pc) { return table[pc % PIECE_NB][pc / PIECE_NB]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
-  void update(Piece pc, Square to, Move m) {
+  void update(Piece pc, Square to, Move m, Direction dir) {
 
-    if (m != table[pc][to])
-        table[pc][to] = m;
+    if (m != table[pc][0][to])
+        table[pc][0][to] = m;
+
+    if (m != table[pc][dir][to])
+            table[pc][dir][to] = m;
   }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, Direction dir) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    table[pc][0][to] -= table[pc][0][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][0][to] += int(v) * 32;
+
+    table[pc][dir][to] -= table[pc][dir][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][dir][to] += int(v) * 32;
   }
 
 private:
-  T table[PIECE_NB][SQUARE_NB];
+  T table[PIECE_NB][3][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;

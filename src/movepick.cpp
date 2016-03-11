@@ -140,9 +140,14 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this)
+  for (auto& m : *this) {
+      Direction dir = file_of(to_sq(m.move)) > file_of(from_sq(m.move)) ? RIGHT : LEFT;
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
-               + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+               + history[pos.moved_piece(m) + PIECE_NB * (1 + dir)][to_sq(m)] / 3
+               + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)]
+               + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB * (1 + dir)][to_sq(m)] / 3;
+
+  }
 }
 
 template<>
