@@ -99,7 +99,7 @@ private:
   const HistoryStats& history;
   const CounterMoveStats* counterMoveHistory;
   const CounterMoveStats* followupMoveHistory;
-  const CounterMoveStats* countercounterMoveHistory;
+  const CounterMoveStats* followUpfollowUpMoveHistory;
   Search::Stack* ss;
   Move countermove;
   Depth depth;
