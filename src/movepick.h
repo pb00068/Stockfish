@@ -46,20 +46,15 @@ struct Stats {
   T* operator[](Piece pc) { return table[pc % PIECE_NB][pc / PIECE_NB]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
-  void update(Piece pc, Square to, Move m, Direction dir) {
-
-    if (m != table[pc][0][to])
-        table[pc][0][to] = m;
-
-    if (m != table[pc][dir][to])
-            table[pc][dir][to] = m;
+  void update(Piece pc, Square to, Move m) {
+	  if (m != table[pc][0][to])
+	             table[pc][0][to] = m;
   }
 
   void update(Piece pc, Square to, Value v, Direction dir) {
 
     if (abs(int(v)) >= 324)
         return;
-
     table[pc][0][to] -= table[pc][0][to] * abs(int(v)) / (CM ? 936 : 324);
     table[pc][0][to] += int(v) * 32;
 
@@ -68,7 +63,7 @@ struct Stats {
   }
 
 private:
-  T table[PIECE_NB][3][SQUARE_NB];
+  T table[PIECE_NB][2][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;

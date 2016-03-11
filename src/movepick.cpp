@@ -141,15 +141,15 @@ template<>
 void MovePicker::score<QUIETS>() {
 
   for (auto& m : *this) {
-//    File fileto  = file_of(to_sq(m));
-//    File filefrom =file_of(from_sq(m));
-//    Direction dir = fileto > filefrom || (fileto == filefrom && rank_of(to_sq(m)) > rank_of(from_sq(m)))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
-	  Direction dir =  file_of(to_sq(m)) > file_of(from_sq(m)) ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
-      m.value =  history[pos.moved_piece(m)][to_sq(m)]
-               + history[pos.moved_piece(m) + PIECE_NB * dir][to_sq(m)] / 3
-               + (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)]
-               + (*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB * dir][to_sq(m)] / 3;
+    File fileto  = file_of(to_sq(m));
+    File filefrom =file_of(from_sq(m));
+    Direction dir = fileto > filefrom || (fileto == filefrom && rank_of(to_sq(m)) > rank_of(from_sq(m)))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
+	//  Direction dir =  LEFT_OR_STRAIGHT_DOWN;//file_of(to_sq(m)) > file_of(from_sq(m)) ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
 
+      m.value =   history[pos.moved_piece(m)][to_sq(m)] +
+    		      history[pos.moved_piece(m) + PIECE_NB * dir][to_sq(m)] +
+                (*counterMoveHistory)[pos.moved_piece(m)][to_sq(m)] +
+				(*counterMoveHistory)[pos.moved_piece(m) + PIECE_NB * dir][to_sq(m)];
   }
 }
 

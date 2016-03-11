@@ -1167,10 +1167,10 @@ moves_loop: // When in check search starts from here
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
-//        File fileto  = file_of(to_sq((ss - 2)->currentMove));
-//        File filefrom =file_of(from_sq((ss - 2)->currentMove));
-        //Direction dir = fileto > filefrom || (fileto == filefrom && rank_of(to_sq((ss - 2)->currentMove)) > rank_of(from_sq((ss - 2)->currentMove)))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
-        Direction dir = file_of(to_sq((ss - 2)->currentMove)) > file_of(from_sq((ss - 2)->currentMove)) ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
+        File fileto  = file_of(to_sq((ss - 2)->currentMove));
+        File filefrom =file_of(from_sq((ss - 2)->currentMove));
+        Direction dir = fileto > filefrom || (fileto == filefrom && rank_of(to_sq((ss - 2)->currentMove)) > rank_of(from_sq((ss - 2)->currentMove)))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
+//        Direction dir = LEFT_OR_STRAIGHT_DOWN;//file_of(to_sq((ss - 2)->currentMove)) > file_of(from_sq((ss - 2)->currentMove)) ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus, dir);
     }
 
@@ -1448,14 +1448,14 @@ moves_loop: // When in check search starts from here
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     Thread* thisThread = pos.this_thread();
-//    File fileto  = file_of(to_sq(move));
-//    File filefrom =file_of(from_sq(move));
-    Direction dir = file_of(to_sq(move)) > file_of(from_sq(move))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
+    File fileto  = file_of(to_sq(move));
+    File filefrom =file_of(from_sq(move));
+    Direction dir = fileto > filefrom || (fileto == filefrom && rank_of(to_sq(move)) > rank_of(from_sq(move)))  ? RIGHT_OR_STRIGHT_UP : LEFT_OR_STRAIGHT_DOWN;
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus, dir);
 
     if (is_ok((ss-1)->currentMove))
     {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move, dir);
+        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus, dir);
     }
 
