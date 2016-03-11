@@ -207,7 +207,7 @@ enum Piece {
 };
 
 enum Direction {
-  LEFT_OR_STRAIGHT_DOWN = 1, RIGHT_OR_STRIGHT_UP = 2
+  UP_OR_SAME_RANK = 1, DOWN = 2
 };
 
 enum Depth {
