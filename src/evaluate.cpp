@@ -418,6 +418,7 @@ namespace {
                 attackUnits += QueenContactCheck * popcount<Max15>(b);
         }
         }
+        else attackUnits = 0;
 
         // Analyse the enemy's safe distance checks for sliders and knights
         safe = ~(ei.attackedBy[Us][ALL_PIECES] | pos.pieces(Them));
