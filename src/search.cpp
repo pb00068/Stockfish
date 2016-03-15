@@ -1167,7 +1167,7 @@ moves_loop: // When in check search starts from here
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
-        prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
+        prevCmh.update(pos.piece_on(prevSq), prevSq, bonus, depth - 2);
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
@@ -1447,27 +1447,27 @@ moves_loop: // When in check search starts from here
     CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
     Thread* thisThread = pos.this_thread();
 
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus, depth);
 
     if (is_ok((ss-1)->currentMove))
     {
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh.update(pos.moved_piece(move), to_sq(move), bonus);
+        cmh.update(pos.moved_piece(move), to_sq(move), bonus, depth - 2);
     }
 
     if (is_ok((ss-2)->currentMove))
-        fmh.update(pos.moved_piece(move), to_sq(move), bonus);
+        fmh.update(pos.moved_piece(move), to_sq(move), bonus, depth - 2);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus, depth);
 
         if (is_ok((ss-1)->currentMove))
-            cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus, depth - 2);
 
         if (is_ok((ss-2)->currentMove))
-            fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus, depth - 2);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1477,7 +1477,7 @@ moves_loop: // When in check search starts from here
     {
         Square prevPrevSq = to_sq((ss-2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
-        prevCmh.update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+        prevCmh.update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY, depth - 2);
     }
   }
 
