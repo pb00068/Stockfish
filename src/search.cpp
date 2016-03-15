@@ -1456,7 +1456,7 @@ moves_loop: // When in check search starts from here
     }
 
     if (is_ok((ss-2)->currentMove))
-        fmh.update(pos.moved_piece(move), to_sq(move), bonus);
+        fmh.updatefmh(pos.moved_piece(move), to_sq(move), bonus);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
@@ -1467,7 +1467,7 @@ moves_loop: // When in check search starts from here
             cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
         if (is_ok((ss-2)->currentMove))
-            fmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh.updatefmh(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
