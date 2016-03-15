@@ -383,6 +383,7 @@ namespace {
     // Main king safety evaluation
     if (ei.kingAttackersCount[Them])
     {
+        if (ei.me->game_phase() > 0) {
         // Find the attacked squares around the king which have no defenders
         // apart from the king itself.
         undefended =  ei.attackedBy[Them][ALL_PIECES]
@@ -415,6 +416,7 @@ namespace {
 
             if (b)
                 attackUnits += QueenContactCheck * popcount<Max15>(b);
+        }
         }
 
         // Analyse the enemy's safe distance checks for sliders and knights
