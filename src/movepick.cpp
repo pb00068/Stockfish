@@ -188,9 +188,11 @@ void MovePicker::generate_next_stage() {
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove;
-      killers[3] =  (*counterMoveHistory )[pos.moved_piece(altCountermove)][to_sq(altCountermove)] >= 0 ? altCountermove : MOVE_NONE;
+      killers[3] =  altCountermove;
+      if (killers[2] == killers[0] || killers[2] == killers[1])
+        killers[2] = altCountermove;
       cur = killers;
-      endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]) +  (killers[3] != killers[0] && killers[3] != killers[1]);
+      endMoves = cur + 2 + (killers[2] != killers[0] && killers[2] != killers[1]) +  (killers[3] != killers[0] && killers[3] != killers[1] && killers[3] != killers[2]);
       break;
 
   case GOOD_QUIETS:
