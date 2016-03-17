@@ -603,6 +603,9 @@ namespace {
             }
             else if (pos.pieces(Us) & blockSq)
                 mbonus += rr + r * 2, ebonus += rr + r * 2;
+
+            if (StepAttacksBB[Us == WHITE ? W_PAWN : B_PAWN][s] & pos.pieces(Them))
+            	mbonus += 29 * rr, ebonus += 29 * rr;
         } // rr != 0
 
         if (pos.count<PAWN>(Us) < pos.count<PAWN>(Them))

@@ -22,6 +22,7 @@
 
 #include "movepick.h"
 #include "thread.h"
+//#include <iostream>
 
 namespace {
 
@@ -187,7 +188,11 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
-      killers[2] = countermove;
+      killers[2] = (depth < 10 || (*counterMoveHistory )[pos.moved_piece(countermove)][to_sq(countermove)] >=0) ? countermove : MOVE_NONE;
+//      if ((*counterMoveHistory )[pos.moved_piece(countermove)][to_sq(countermove)] < 0 && pos.game_ply() - ss->ply == 30)
+//      sync_cout << "pos gameply: " << pos.game_ply() << " k1: " << killers[0] << " k2: " << killers[1] << " cm: " << countermove <<" discarded with score score: " << (*counterMoveHistory )[pos.moved_piece(countermove)][to_sq(countermove)] << sync_endl;
+
+
       cur = killers;
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
       break;
