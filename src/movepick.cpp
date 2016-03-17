@@ -69,9 +69,9 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       Move cm, Search::Stack* s)
+                       Move cm, Move altCm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
-             followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
+             followupMoveHistory(&fmh), ss(s), countermove(cm), altCountermove(altCm), depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -188,8 +188,9 @@ void MovePicker::generate_next_stage() {
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove;
+      killers[3] = altCountermove;
       cur = killers;
-      endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
+      endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]) +  (altCountermove != killers[0] && altCountermove != killers[1]);
       break;
 
   case GOOD_QUIETS:
@@ -280,7 +281,8 @@ Move MovePicker::next_move() {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2])
+              && move != killers[2]
+              && move != killers[3])
               return move;
           break;
 

@@ -46,7 +46,7 @@ struct Stats {
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
-  void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
+  Move update(Piece pc, Square to, Move m) { Move old = table[pc][to]; table[pc][to] = m; return old; }
 
   void update(Piece pc, Square to, Value v) {
 
@@ -82,7 +82,7 @@ public:
   MovePicker(const Position&, Move, const HistoryStats&, Value);
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, Depth, const HistoryStats&,
-             const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
+             const CounterMoveStats&, const CounterMoveStats&, Move, Move, Search::Stack*);
 
   Move next_move();
 
@@ -98,9 +98,10 @@ private:
   const CounterMoveStats* followupMoveHistory;
   Search::Stack* ss;
   Move countermove;
+  Move altCountermove;
   Depth depth;
   Move ttMove;
-  ExtMove killers[3];
+  ExtMove killers[4];
   Square recaptureSquare;
   Value threshold;
   int stage;
