@@ -1436,12 +1436,12 @@ moves_loop: // When in check search starts from here
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
-        //ss->killer_attacked[1] = ss->killer_attacked[0];
+        ss->killer_attacked[1] = ss->killer_attacked[0];
         ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
-        //ss->killer_attacked[0] = pos.attackers_to(to_sq(move), pos.pieces(~pos.side_to_move()));
-        CheckInfo ci(pos);
-        ss->killer_checks[0] = pos.gives_check(move, ci);
+        ss->killer_attacked[0] = pos.attackers_to(to_sq(move), pos.pieces(~pos.side_to_move()));
+//        CheckInfo ci(pos);
+//        ss->killer_checks[0] = pos.gives_check(move, ci);
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);

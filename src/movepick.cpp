@@ -186,27 +186,27 @@ void MovePicker::generate_next_stage() {
 
   case KILLERS:
       killers[0] = ss->killers[0];
-      if (killers[0] != MOVE_NONE) {
-          CheckInfo ci(pos);
-          if (ss->killer_checks[0] && !pos.gives_check(killers[0], ci)) {
-                  killers[0] = MOVE_NONE;
-          }
-      }
+//      if (killers[0] != MOVE_NONE) {
+//          CheckInfo ci(pos);
+//          if (ss->killer_checks[0] && !pos.gives_check(killers[0], ci)) {
+//                  killers[0] = MOVE_NONE;
+//          }
+//      }
       killers[1] = ss->killers[1];
-      if (killers[1] != MOVE_NONE) {
-          CheckInfo ci(pos);
-          if (ss->killer_checks[1] && !pos.gives_check(killers[1], ci)) {
-                  killers[1] = MOVE_NONE;
-          }
+//      if (killers[1] != MOVE_NONE) {
+//          CheckInfo ci(pos);
+//          if (ss->killer_checks[1] && !pos.gives_check(killers[1], ci)) {
+//                  killers[1] = MOVE_NONE;
+//          }
+//      }
+
+      if (killers[0] != MOVE_NONE && ss->killer_attacked[0] != !!pos.attackers_to(to_sq(killers[0]), pos.pieces(~pos.side_to_move()))) {
+        killers[0] = MOVE_NONE;
       }
 
-//      if (ss->killer_attacked[0] != !!pos.attackers_to(to_sq(killers[0]), pos.pieces(~pos.side_to_move()))) {
-//        killers[0] = MOVE_NONE;
-//      }
-//      killers[1] = ss->killers[1];
-//      if (ss->killer_attacked[1] != !!pos.attackers_to(to_sq(killers[1]), pos.pieces(~pos.side_to_move()))) {
-//              killers[1] = MOVE_NONE;
-//      }
+      if (killers[1] != MOVE_NONE && ss->killer_attacked[1] != !!pos.attackers_to(to_sq(killers[1]), pos.pieces(~pos.side_to_move()))) {
+              killers[1] = MOVE_NONE;
+      }
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != ss->killers[0] && countermove != ss->killers[1]);
