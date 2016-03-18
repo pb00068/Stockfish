@@ -188,8 +188,14 @@ void MovePicker::generate_next_stage() {
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove;
+
       cur = killers;
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
+      if (countermove != MOVE_NONE && (*counterMoveHistory )[pos.moved_piece(countermove)][to_sq(countermove)] > 2000) {
+          	  killers[0] = countermove;
+          	  killers[1] = ss->killers[0];
+          	  killers[2] = ss->killers[1];
+      }
       break;
 
   case GOOD_QUIETS:
