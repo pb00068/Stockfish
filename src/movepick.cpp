@@ -71,7 +71,7 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       Move cm, Search::Stack* s)
+                       MoveBin cm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
              followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
 
@@ -192,9 +192,10 @@ void MovePicker::generate_next_stage() {
       killerAttacked[0] = ss->killer_attacked[0];
       killers[1] = ss->killers[1];
       killerAttacked[1] = ss->killer_attacked[1];
-      killers[2] = countermove;
+      killers[2] = countermove.move;
+      killerAttacked[1] = countermove.attacked;
       cur = killers;
-      endMoves = cur + 2 + (countermove != ss->killers[0] && countermove != ss->killers[1]);
+      endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
       killercount=0;
       break;
 
@@ -280,7 +281,7 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (killercount < 3 && !killerAttacked[killercount - 1] && type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
+                 if (!killerAttacked[killercount - 1] && type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " attacked by minor" << sync_endl;
                    killers[killercount - 1]=MOVE_NONE;
 

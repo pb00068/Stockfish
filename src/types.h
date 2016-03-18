@@ -121,6 +121,11 @@ enum Move {
   MOVE_NULL = 65
 };
 
+struct MoveBin {
+	  Move move;
+	  bool attacked;
+	};
+
 enum MoveType {
   NORMAL,
   PROMOTION = 1 << 14,
