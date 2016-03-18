@@ -287,7 +287,7 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (killercount < 2 && !wasAttacked && heavyPiece &&  !!(pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()))) {
+                 if (killercount < 2 && !wasAttacked && heavyPiece && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    break;
                  }
                  killercount++;
