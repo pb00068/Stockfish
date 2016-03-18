@@ -275,7 +275,7 @@ Move MovePicker::next_move() {
 
       case KILLERS:
           move = *cur++;
-          killercount++;
+
           wasAttacked = false;
           heavyPiece = type_of(pos.moved_piece(move)) >= ROOK;
           if (heavyPiece && type_of(move) == PROMOTION) {
@@ -290,9 +290,11 @@ Move MovePicker::next_move() {
               && !pos.capture(move)) {
                  if (killercount < 2 && !wasAttacked && heavyPiece && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " attacked by minor" << sync_endl;
+                   killers[killercount]=MOVE_NONE;
+                   killercount++;
                    break;
                  }
-
+                 killercount++;
                  return move;
           }
           break;
