@@ -195,6 +195,7 @@ void MovePicker::generate_next_stage() {
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != ss->killers[0] && countermove != ss->killers[1]);
+      killercount=0;
       break;
 
   case GOOD_QUIETS:
@@ -286,10 +287,10 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (!wasAttacked && heavyPiece &&  !!(pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()))) {
+                 if (killercount < 2 && !wasAttacked && heavyPiece &&  !!(pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()))) {
                    break;
                  }
-
+                 killercount++;
                  return move;
           }
           break;
