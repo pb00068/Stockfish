@@ -187,29 +187,11 @@ void MovePicker::generate_next_stage() {
       break;
 
   case KILLERS:
+
       killers[0] = ss->killers[0];
-//      if (killers[0] != MOVE_NONE) {
-//          CheckInfo ci(pos);
-//          if (ss->killer_checks[0] && !pos.gives_check(killers[0], ci)) {
-//                  killers[0] = MOVE_NONE;
-//          }
-//      }
+
       killers[1] = ss->killers[1];
-//      if (killers[1] != MOVE_NONE) {
-//          CheckInfo ci(pos);
-//          if (ss->killer_checks[1] && !pos.gives_check(killers[1], ci)) {
-//                  killers[1] = MOVE_NONE;
-//          }
-//      }
 
-      if (!ss->killer_attacked[0] && killers[0] != MOVE_NONE && type_of(pos.moved_piece(killers[0])) >= ROOK && pos.pseudo_legal(killers[0]) && !!(pos.attackers_to(to_sq(killers[0])) & pos.pieces(~pos.side_to_move()))) {
-        killers[0] = MOVE_NONE;
-        //sync_cout << pos.fen() << " move " << UCI::move(ss->killers[0], false) << " orig killer was attacked " << ss->killer_attacked[0] << sync_endl;
-      }
-
-      if (!ss->killer_attacked[1] && killers[1] != MOVE_NONE && type_of(pos.moved_piece(killers[1])) >= ROOK && pos.pseudo_legal(killers[1]) && !!(pos.attackers_to(to_sq(killers[1])) & pos.pieces(~pos.side_to_move()))) {
-              killers[1] = MOVE_NONE;
-      }
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != ss->killers[0] && countermove != ss->killers[1]);
@@ -264,6 +246,7 @@ void MovePicker::generate_next_stage() {
 Move MovePicker::next_move() {
 
   Move move;
+  bool wasAttacked, heavyPiece;
 
   while (true)
   {
@@ -291,11 +274,24 @@ Move MovePicker::next_move() {
 
       case KILLERS:
           move = *cur++;
+          wasAttacked = false;
+          heavyPiece = type_of(pos.moved_piece(move)) >= ROOK;
+          if (heavyPiece && type_of(move) == PROMOTION) {
+           wasAttacked = true;
+           move = (Move)(move & (~PROMOTION));
+//                   sync_cout << "was attacked " << pos.fen() << " move " << UCI::move(move, false) << sync_endl;
+//                   abort();
+          }
           if (    move != MOVE_NONE
               &&  move != ttMove
-              &&  pos.pseudo_legal(move)
-              && !pos.capture(move))
-              return move;
+              && pos.pseudo_legal(move)
+              && !pos.capture(move)) {
+                 if (!wasAttacked && heavyPiece &&  !!(pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()))) {
+                   break;
+                 }
+
+                 return move;
+          }
           break;
 
       case GOOD_QUIETS: case BAD_QUIETS:
