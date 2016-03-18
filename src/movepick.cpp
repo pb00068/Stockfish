@@ -22,6 +22,8 @@
 
 #include "movepick.h"
 #include "thread.h"
+//#include <iostream>
+//#include "uci.h"
 
 namespace {
 
@@ -200,11 +202,12 @@ void MovePicker::generate_next_stage() {
 //          }
 //      }
 
-      if (killers[0] != MOVE_NONE && ss->killer_attacked[0] != !!pos.attackers_to(to_sq(killers[0]), pos.pieces(~pos.side_to_move()))) {
+      if (!ss->killer_attacked[0] && killers[0] != MOVE_NONE && type_of(pos.moved_piece(killers[0])) >= ROOK && pos.pseudo_legal(killers[0]) && !!(pos.attackers_to(to_sq(killers[0])) & pos.pieces(~pos.side_to_move()))) {
         killers[0] = MOVE_NONE;
+        //sync_cout << pos.fen() << " move " << UCI::move(ss->killers[0], false) << " orig killer was attacked " << ss->killer_attacked[0] << sync_endl;
       }
 
-      if (killers[1] != MOVE_NONE && ss->killer_attacked[1] != !!pos.attackers_to(to_sq(killers[1]), pos.pieces(~pos.side_to_move()))) {
+      if (!ss->killer_attacked[1] && killers[1] != MOVE_NONE && type_of(pos.moved_piece(killers[1])) >= ROOK && pos.pseudo_legal(killers[1]) && !!(pos.attackers_to(to_sq(killers[1])) & pos.pieces(~pos.side_to_move()))) {
               killers[1] = MOVE_NONE;
       }
       killers[2] = countermove;
