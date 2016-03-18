@@ -189,9 +189,9 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
 
       killers[0] = ss->killers[0];
-
+      killerAttacked[0] = ss->killer_attacked[0];
       killers[1] = ss->killers[1];
-
+      killerAttacked[1] = ss->killer_attacked[1];
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != ss->killers[0] && countermove != ss->killers[1]);
@@ -276,19 +276,11 @@ Move MovePicker::next_move() {
       case KILLERS:
           move = *cur++;
           killercount++;
-          wasAttacked = false;
-          heavyPiece = type_of(pos.moved_piece(move)) >= ROOK;
-          if (heavyPiece && type_of(move) == PROMOTION) {
-           wasAttacked = true;
-           move = (Move)(move & (~PROMOTION));
-//                   sync_cout << "was attacked " << pos.fen() << " move " << UCI::move(move, false) << sync_endl;
-//                   abort();
-          }
           if (    move != MOVE_NONE
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (killercount < 2 && !wasAttacked && heavyPiece && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
+                 if (killercount < 3 && !killerAttacked[killercount - 1] && type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " attacked by minor" << sync_endl;
                    killers[killercount - 1]=MOVE_NONE;
 
