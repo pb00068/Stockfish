@@ -186,7 +186,13 @@ void MovePicker::generate_next_stage() {
 
   case KILLERS:
       killers[0] = ss->killers[0];
+      if (ss->killer_attacked[0] != !pos.attackers_to(to_sq(killers[0]), pos.pieces(~pos.side_to_move()))) {
+        killers[0] = MOVE_NONE;
+      }
       killers[1] = ss->killers[1];
+      if (ss->killer_attacked[1] != !pos.attackers_to(to_sq(killers[1]), pos.pieces(~pos.side_to_move()))) {
+              killers[1] = MOVE_NONE;
+      }
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
