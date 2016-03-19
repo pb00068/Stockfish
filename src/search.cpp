@@ -1455,7 +1455,7 @@ moves_loop: // When in check search starts from here
     {
         Move altMove = thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
         if (altMove != move)
-          thisThread->altCounterMoves.update(pos.piece_on(prevSq), prevSq, altMove);
+          thisThread->altCounterMoves.update(pos.piece_on(prevSq), prevSq,  depth < 12 ? altMove : MOVE_NONE);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }
 
