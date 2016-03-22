@@ -23,6 +23,7 @@
 #include "movepick.h"
 #include "thread.h"
 
+
 namespace {
 
   enum Stages {
@@ -194,7 +195,7 @@ void MovePicker::generate_next_stage() {
       killers[1] = ss->killers[1];
       killerAttacked[1] = ss->killer_attacked[1];
       killers[2] = countermove.move;
-      killerAttacked[1] = countermove.attacked;
+      killerAttacked[2] = countermove.attacked;
       cur = killers;
       endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
       killercount=0;
@@ -285,11 +286,8 @@ Move MovePicker::next_move() {
                  if (!killerAttacked[killercount - 1] && pos.see_sign(move) < VALUE_ZERO) {
                    killed = move;
                    killers[killercount - 1] = MOVE_NONE;
-
-                   break;
                  }
-                 killercount++;
-                 return move;
+                 else return move;
           }
           break;
 

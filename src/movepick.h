@@ -102,7 +102,7 @@ private:
   Move ttMove;
   ExtMove killers[3];
   ExtMove killed; // here we save a smothered killer move (when negative SEE)
-  bool killerAttacked[2];
+  bool killerAttacked[3];
   Square recaptureSquare;
   Value threshold;
   int stage;
