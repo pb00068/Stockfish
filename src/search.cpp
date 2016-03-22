@@ -1440,7 +1440,7 @@ moves_loop: // When in check search starts from here
         ss->killer_attacked[1] = ss->killer_attacked[0];
         //ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
-        ss->killer_attacked[0] = pos.see_sign(move) >= VALUE_ZERO;
+        ss->killer_attacked[0] = pos.see_sign(move) < VALUE_ZERO;
             //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN));
         //if (attacked)
           //ss->killers[0] = (Move)(move | PROMOTION);
