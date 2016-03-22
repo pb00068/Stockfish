@@ -22,8 +22,6 @@
 
 #include "movepick.h"
 #include "thread.h"
-//#include <iostream>
-//#include "uci.h"
 
 namespace {
 
@@ -144,10 +142,13 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+      if (m == killed)
+         m.value= VALUE_ZERO;
+  }
 }
 
 template<>
@@ -282,11 +283,8 @@ Move MovePicker::next_move() {
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
                  if (!killerAttacked[killercount - 1] && pos.see_sign(move) < VALUE_ZERO) {
-                     //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
-                   //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
-                   //abort();
                    killed = move;
-                   killers[killercount - 1]=MOVE_NONE;
+                   killers[killercount - 1] = MOVE_NONE;
 
                    break;
                  }
@@ -295,30 +293,14 @@ Move MovePicker::next_move() {
           }
           break;
 
-      case GOOD_QUIETS:
+      case GOOD_QUIETS: case BAD_QUIETS:
           move = *cur++;
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2]
-              && move != killed
-          )
-              return move;
+              && move != killers[2])
+          return move;
           break;
-
-      case BAD_QUIETS:
-               if (killed != MOVE_NONE) {
-                 Move ret = killed;
-                 killed = MOVE_NONE;
-                 return ret;
-               }
-               move = *cur++;
-               if (   move != ttMove
-                   && move != killers[0]
-                   && move != killers[1]
-                   && move != killers[2])
-                   return move;
-               break;
 
       case BAD_CAPTURES:
           return *cur--;
