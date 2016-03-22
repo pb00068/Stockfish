@@ -870,7 +870,6 @@ moves_loop: // When in check search starts from here
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
     MoveBin mb = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    Move cm = mb.move;
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 

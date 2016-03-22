@@ -197,6 +197,7 @@ void MovePicker::generate_next_stage() {
       cur = killers;
       endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
       killercount=0;
+      killed = MOVE_NONE;
       break;
 
   case GOOD_QUIETS:
@@ -248,7 +249,6 @@ void MovePicker::generate_next_stage() {
 Move MovePicker::next_move() {
 
   Move move;
-  bool wasAttacked, heavyPiece;
 
   while (true)
   {
@@ -285,6 +285,7 @@ Move MovePicker::next_move() {
                      //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
                    //abort();
+                   killed = move;
                    killers[killercount - 1]=MOVE_NONE;
 
                    break;
@@ -294,14 +295,27 @@ Move MovePicker::next_move() {
           }
           break;
 
-      case GOOD_QUIETS: case BAD_QUIETS:
+      case GOOD_QUIETS:
           move = *cur++;
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2])
+              && move != killers[2]
+              && move != killed
+          )
               return move;
           break;
+
+      case BAD_QUIETS:
+               if (killed != MOVE_NONE)
+                 return killed;
+               move = *cur++;
+               if (   move != ttMove
+                   && move != killers[0]
+                   && move != killers[1]
+                   && move != killers[2])
+                   return move;
+               break;
 
       case BAD_CAPTURES:
           return *cur--;
