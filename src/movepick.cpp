@@ -307,8 +307,11 @@ Move MovePicker::next_move() {
           break;
 
       case BAD_QUIETS:
-               if (killed != MOVE_NONE)
-                 return killed;
+               if (killed != MOVE_NONE) {
+                 Move ret = killed;
+                 killed = MOVE_NONE;
+                 return ret;
+               }
                move = *cur++;
                if (   move != ttMove
                    && move != killers[0]
