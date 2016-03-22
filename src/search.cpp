@@ -159,6 +159,7 @@ namespace {
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
+  SequenceMoveHistoryStats SequenceMoveHistory;
 
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
@@ -209,6 +210,7 @@ void Search::clear() {
 
   TT.clear();
   CounterMoveHistory.clear();
+  SequenceMoveHistory.clear();
 
   for (Thread* th : Threads)
   {
@@ -873,7 +875,11 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
-    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
+    //int index1 = (((from_sq((ss-2)->currentMove) << 0) + ownPrevSq) << 4) + type_of(pos.piece_on(ownPrevSq));
+    //int index2 = (((from_sq((ss-1)->currentMove) << 0) + prevSq   ) << 4) + type_of(pos.piece_on(prevSq));
+    const CounterMoveStats& smh = SequenceMoveHistory[pos.piece_on(prevSq) + pos.piece_on(ownPrevSq)][prevSq + ownPrevSq];
+
+    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, smh, cm, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1445,6 +1451,11 @@ moves_loop: // When in check search starts from here
     Square ownPrevSq = to_sq((ss-2)->currentMove);
     CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
+    //int index1 = (((from_sq((ss-2)->currentMove) << 0) + ownPrevSq) << 4) + type_of(pos.piece_on(ownPrevSq));
+    //int index2 = (((from_sq((ss-1)->currentMove) << 0) + prevSq   ) << 4) + type_of(pos.piece_on(prevSq));
+    CounterMoveStats& smh = SequenceMoveHistory[pos.piece_on(prevSq) + pos.piece_on(ownPrevSq)][prevSq + ownPrevSq];
+
+
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
@@ -1457,6 +1468,10 @@ moves_loop: // When in check search starts from here
 
     if (is_ok((ss-2)->currentMove))
         fmh.update(pos.moved_piece(move), to_sq(move), bonus);
+
+    if (is_ok((ss-1)->currentMove) && is_ok((ss-2)->currentMove)) {
+        smh.update(pos.moved_piece(move), to_sq(move), bonus);
+    }
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)

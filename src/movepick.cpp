@@ -68,10 +68,10 @@ namespace {
 /// ordering is at the current node.
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
-                       const CounterMoveStats& cmh, const CounterMoveStats& fmh,
+                       const CounterMoveStats& cmh, const CounterMoveStats& fmh, const CounterMoveStats& smh,
                        Move cm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
-             followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
+             followupMoveHistory(&fmh), sequenceMoveHistory(&smh), ss(s), countermove(cm), depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -145,7 +145,9 @@ void MovePicker::score<QUIETS>() {
   for (auto& m : *this)
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
-               + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+               + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)]
+               + 4 * (*sequenceMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+
 }
 
 template<>

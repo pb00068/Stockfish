@@ -29,6 +29,16 @@
 #include "search.h"
 #include "types.h"
 
+template<typename Z>
+struct SeqStats {
+  const Z* operator[](int index) const { return table[index]; }
+  Z* operator[](int index)  { return table[index]; }
+  void clear() { std::memset(table, 0, sizeof(table)); }
+
+private:
+  Z table[32][128];
+};
+
 
 /// The Stats struct stores moves statistics. According to the template parameter
 /// the class can store History and Countermoves. History records how often
@@ -61,10 +71,14 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
+
 typedef Stats<Move> MoveStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
+typedef SeqStats<CounterMoveStats> SequenceMoveHistoryStats;
+
+
 
 
 /// MovePicker class is used to pick one pseudo legal move at a time from the
@@ -82,7 +96,7 @@ public:
   MovePicker(const Position&, Move, const HistoryStats&, Value);
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, Depth, const HistoryStats&,
-             const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
+             const CounterMoveStats&, const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
 
   Move next_move();
 
@@ -96,6 +110,7 @@ private:
   const HistoryStats& history;
   const CounterMoveStats* counterMoveHistory;
   const CounterMoveStats* followupMoveHistory;
+  const CounterMoveStats* sequenceMoveHistory;
   Search::Stack* ss;
   Move countermove;
   Depth depth;
