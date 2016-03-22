@@ -281,8 +281,10 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (!killerAttacked[killercount - 1] && type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
-                   //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " attacked by minor" << sync_endl;
+                 if (!killerAttacked[killercount - 1] && pos.see_sign(move) < VALUE_ZERO) {
+                     //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
+                   //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
+                   //abort();
                    killers[killercount - 1]=MOVE_NONE;
 
                    break;
