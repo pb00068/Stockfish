@@ -101,8 +101,8 @@ private:
   Depth depth;
   Move ttMove;
   ExtMove killers[3];
-  ExtMove killed; // Killer killed when now negative SEE
-  bool killerAttacked[2];
+  ExtMove killed[2]; // Killer killed when now negative SEE
+  Value killerSee[3];
   Square recaptureSquare;
   Value threshold;
   int stage;

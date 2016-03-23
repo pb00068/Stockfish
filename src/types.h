@@ -121,10 +121,7 @@ enum Move {
   MOVE_NULL = 65
 };
 
-struct MoveBin {
-	  Move move;
-	  bool attacked;
-	};
+
 
 enum MoveType {
   NORMAL,
@@ -197,6 +194,11 @@ enum Value : int {
 
   MidgameLimit  = 15581, EndgameLimit  = 3998
 };
+
+struct MoveBin {
+	  Move move;
+	  Value see;
+	};
 
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,

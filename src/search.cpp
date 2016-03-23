@@ -1437,11 +1437,11 @@ moves_loop: // When in check search starts from here
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
-        ss->killer_attacked[1] = ss->killer_attacked[0];
+        ss->killer_see[1] = ss->killer_see[0];
         //ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
         seeval = pos.see_sign(move);
-        ss->killer_attacked[0] = seeval < VALUE_ZERO;
+        ss->killer_see[0] = seeval;
             //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN));
         //if (attacked)
           //ss->killers[0] = (Move)(move | PROMOTION);
@@ -1467,7 +1467,7 @@ moves_loop: // When in check search starts from here
     {
     	MoveBin mb;
     	mb.move = move;
-    	mb.attacked = (seeval != VALUE_NONE ? seeval : pos.see_sign(move)) < VALUE_ZERO;
+    	mb.see = seeval != VALUE_NONE ? seeval : pos.see_sign(move);
     	    //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0;
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, mb);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);

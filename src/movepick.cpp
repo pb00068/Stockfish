@@ -144,10 +144,13 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
+      if (m == killed[0] || m == killed[1])
+    	  m.value=VALUE_ZERO;
+  }
 }
 
 template<>
@@ -189,15 +192,16 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
 
       killers[0] = ss->killers[0];
-      killerAttacked[0] = ss->killer_attacked[0];
+      killerSee[0] = ss->killer_see[0];
       killers[1] = ss->killers[1];
-      killerAttacked[1] = ss->killer_attacked[1];
+      killerSee[1] = ss->killer_see[1];
       killers[2] = countermove.move;
-      killerAttacked[1] = countermove.attacked;
+      killerSee[2] = countermove.see;
       cur = killers;
       endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
       killercount=0;
-      killed = MOVE_NONE;
+      killed[0] = MOVE_NONE;
+      killed[1] = MOVE_NONE;
       break;
 
   case GOOD_QUIETS:
@@ -281,44 +285,32 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (!killerAttacked[killercount - 1] && pos.see_sign(move) < VALUE_ZERO) {
+                 if (killerSee[killercount - 1]!=VALUE_ZERO && pos.see_sign(move) < killerSee[killercount - 1] - PawnValueMg) {
                      //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
                    //abort();
-                   killed = move;
-                   killers[killercount - 1]=MOVE_NONE;
+                   killed[1] = killed[0];
+                   killed[0] = move;
+                   //killers[killercount - 1]=MOVE_NONE;
 
                    break;
                  }
-                 killercount++;
+                 //killercount++;
                  return move;
           }
           break;
 
-      case GOOD_QUIETS:
+      case GOOD_QUIETS: case BAD_QUIETS:
           move = *cur++;
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
               && move != killers[2]
-              && move != killed
           )
               return move;
           break;
 
-      case BAD_QUIETS:
-               if (killed != MOVE_NONE) {
-                 Move ret = killed;
-                 killed = MOVE_NONE;
-                 return ret;
-               }
-               move = *cur++;
-               if (   move != ttMove
-                   && move != killers[0]
-                   && move != killers[1]
-                   && move != killers[2])
-                   return move;
-               break;
+
 
       case BAD_CAPTURES:
           return *cur--;
