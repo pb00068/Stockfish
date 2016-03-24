@@ -71,7 +71,7 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       MoveBin cm, Search::Stack* s)
+                       ExtMove2 cm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
              followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
 
@@ -149,7 +149,7 @@ void MovePicker::score<QUIETS>() {
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
       if (m == killed[0] || m == killed[1])
-    	  m.value=VALUE_ZERO;
+    	  m.value= -VALUE_KNOWN_WIN;
   }
 }
 
@@ -199,7 +199,7 @@ void MovePicker::generate_next_stage() {
       killerSee[2] = countermove.see;
       cur = killers;
       endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
-      killercount=0;
+      killercount=-1;
       killed[0] = MOVE_NONE;
       killed[1] = MOVE_NONE;
       break;
@@ -285,13 +285,13 @@ Move MovePicker::next_move() {
               &&  move != ttMove
               && pos.pseudo_legal(move)
               && !pos.capture(move)) {
-                 if (killerSee[killercount - 1]!=VALUE_ZERO && pos.see_sign(move) < killerSee[killercount - 1] - PawnValueMg) {
+                 if (depth > 3 && killerSee[killercount] == VALUE_ZERO && pos.see_sign(move) < VALUE_ZERO) {
                      //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
                    //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
                    //abort();
                    killed[1] = killed[0];
                    killed[0] = move;
-                   //killers[killercount - 1]=MOVE_NONE;
+                   killers[killercount]=MOVE_NONE;
 
                    break;
                  }

@@ -869,7 +869,7 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    MoveBin mb = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    ExtMove2 mb = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
@@ -1440,7 +1440,7 @@ moves_loop: // When in check search starts from here
         ss->killer_see[1] = ss->killer_see[0];
         //ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
-        seeval = pos.see_sign(move);
+        seeval = depth > 3 ? pos.see_sign(move) : VALUE_ZERO;
         ss->killer_see[0] = seeval;
             //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN));
         //if (attacked)
@@ -1465,10 +1465,9 @@ moves_loop: // When in check search starts from here
 
     if (is_ok((ss-1)->currentMove))
     {
-    	MoveBin mb;
+    	ExtMove2 mb;
     	mb.move = move;
-    	mb.see = seeval != VALUE_NONE ? seeval : pos.see_sign(move);
-    	    //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0;
+    	mb.see = seeval != VALUE_NONE ? seeval : (depth > 3 ? pos.see_sign(move) : VALUE_ZERO);
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, mb);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }

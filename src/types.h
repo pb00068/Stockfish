@@ -195,7 +195,7 @@ enum Value : int {
   MidgameLimit  = 15581, EndgameLimit  = 3998
 };
 
-struct MoveBin {
+struct ExtMove2 {
 	  Move move;
 	  Value see;
 	};
