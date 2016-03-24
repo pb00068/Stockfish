@@ -22,8 +22,6 @@
 
 #include "movepick.h"
 #include "thread.h"
-//#include <iostream>
-//#include "uci.h"
 
 namespace {
 
@@ -148,7 +146,7 @@ void MovePicker::score<QUIETS>() {
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-      if (m == killed[0] || m == killed[1])
+      if (m == smothered[0] || m == smothered[1])
     	  m.value= -VALUE_KNOWN_WIN;
   }
 }
@@ -198,10 +196,10 @@ void MovePicker::generate_next_stage() {
       killers[2] = countermove.move;
       killerSee[2] = countermove.see;
       cur = killers;
-      endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
-      killercount=-1;
-      killed[0] = MOVE_NONE;
-      killed[1] = MOVE_NONE;
+      endMoves = cur + 2 + (killers[2] != ss->killers[0] && killers[2] != ss->killers[1]);
+      kindex=-1;
+      smothered[0] = MOVE_NONE;
+      smothered[1] = MOVE_NONE;
       break;
 
   case GOOD_QUIETS:
@@ -280,22 +278,18 @@ Move MovePicker::next_move() {
 
       case KILLERS:
           move = *cur++;
-          killercount++;
+          kindex++;
           if (    move != MOVE_NONE
               &&  move != ttMove
-              && pos.pseudo_legal(move)
-              && !pos.capture(move)) {
-                 if (depth > 3 && killerSee[killercount] == VALUE_ZERO && pos.see_sign(move) < VALUE_ZERO) {
-                     //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
-                   //sync_cout << pos.fen() << " move " << UCI::move(move, false) << " negative see" << sync_endl;
-                   //abort();
-                   killed[1] = killed[0];
-                   killed[0] = move;
-                   killers[killercount]=MOVE_NONE;
+              &&  pos.pseudo_legal(move)
+              &&  !pos.capture(move)) {
+                 if (depth > 3 && killerSee[kindex] == VALUE_ZERO && pos.see_sign(move) < VALUE_ZERO) {
+                   smothered[1] = smothered[0];
+                   smothered[0] = move;
+                   killers[kindex]=MOVE_NONE;
 
                    break;
                  }
-                 //killercount++;
                  return move;
           }
           break;
@@ -305,12 +299,9 @@ Move MovePicker::next_move() {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2]
-          )
+              && move != killers[2])
               return move;
           break;
-
-
 
       case BAD_CAPTURES:
           return *cur--;

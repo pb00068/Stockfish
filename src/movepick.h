@@ -101,12 +101,12 @@ private:
   Depth depth;
   Move ttMove;
   ExtMove killers[3];
-  ExtMove killed[2]; // Killer killed when now negative SEE
+  ExtMove smothered[2]; // smothered killer when it gets a negative SEE value
   Value killerSee[3];
   Square recaptureSquare;
   Value threshold;
   int stage;
-  int killercount;
+  int kindex;
   ExtMove *endQuiets, *endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
 };

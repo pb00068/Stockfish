@@ -869,11 +869,11 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    ExtMove2 mb = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    ExtMove2 cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
-    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, mb, ss);
+    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1455,10 +1455,10 @@ moves_loop: // When in check search starts from here
 
     if (is_ok((ss-1)->currentMove))
     {
-    	ExtMove2 mb;
-    	mb.move = move;
-    	mb.see = seeval != VALUE_NONE ? seeval : (depth > 3 ? pos.see_sign(move) : VALUE_ZERO);
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, mb);
+    	ExtMove2 cm;
+    	cm.move = move;
+    	cm.see = seeval != VALUE_NONE ? seeval : (depth > 3 ? pos.see_sign(move) : VALUE_ZERO);
+        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, cm);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }
 
