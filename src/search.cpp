@@ -838,6 +838,7 @@ namespace {
 
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
+
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
             {
@@ -1152,13 +1153,8 @@ moves_loop: // When in check search starts from here
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
 
     // Quiet best move: update killers, history and countermoves
-    else if (bestMove && !pos.capture_or_promotion(bestMove)) {
+    else if (bestMove && !pos.capture_or_promotion(bestMove))
         update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
-//        if (bestisrelegate) {
-//        	sync_cout << pos.fen() << " move " << UCI::move(move, false) << " relegate is best" << sync_endl;
-//        	abort();
-//        }
-    }
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1442,19 +1438,9 @@ moves_loop: // When in check search starts from here
     {
         ss->killers[1] = ss->killers[0];
         ss->killer_see[1] = ss->killer_see[0];
-        //ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
         seeval = depth > 4 ? pos.see_sign(move) : VALUE_ZERO;
         ss->killer_see[0] = seeval;
-            //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN));
-        //if (attacked)
-          //ss->killers[0] = (Move)(move | PROMOTION);
-//        CheckInfo ci(pos);
-//        ss->killer_checks[0] = pos.gives_check(move, ci);
-//        if (ss->killer_attacked[0])
-//        {
-//          sync_cout << pos.fen() << " move " << UCI::move(move, false) << sync_endl;
-//        }
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);

@@ -22,8 +22,6 @@
 
 #include "movepick.h"
 #include "thread.h"
-//#include <iostream>
-//#include "uci.h"
 
 namespace {
 
