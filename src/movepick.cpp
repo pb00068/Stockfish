@@ -144,13 +144,10 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  for (auto& m : *this) {
+  for (auto& m : *this)
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-//      if ((m == killed[0] || m == killed[1]) && m.value > VALUE_ZERO)
-//    	  m.value/=10;
-  }
 }
 
 template<>
@@ -190,7 +187,6 @@ void MovePicker::generate_next_stage() {
       break;
 
   case KILLERS:
-
       killers[0] = ss->killers[0];
       killerSee[0] = ss->killer_see[0];
       killers[1] = ss->killers[1];
@@ -288,12 +284,11 @@ Move MovePicker::next_move() {
 
       case KILLERS:
           move = *cur++;
-          kindex++;
           if (    move != MOVE_NONE
               &&  move != ttMove
               &&  pos.pseudo_legal(move)
               && !pos.capture(move))
-                 return move;
+              return move;
           break;
 
       case GOOD_QUIETS: case BAD_QUIETS:
@@ -301,12 +296,9 @@ Move MovePicker::next_move() {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2]
-          )
+              && move != killers[2])
               return move;
           break;
-
-
 
       case BAD_CAPTURES:
           return *cur--;
