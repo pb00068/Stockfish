@@ -1433,14 +1433,12 @@ moves_loop: // When in check search starts from here
   void update_stats(const Position& pos, Stack* ss, Move move,
                     Depth depth, Move* quiets, int quietsCnt) {
 
-    Value seeval = VALUE_NONE;
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killer_see[1] = ss->killer_see[0];
         ss->killers[0] = move;
-        seeval = depth > 4 ? pos.see_sign(move) : VALUE_ZERO;
-        ss->killer_see[0] = seeval;
+        ss->killer_see[0] = pos.see_sign(move);
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);

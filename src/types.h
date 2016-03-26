@@ -121,8 +121,6 @@ enum Move {
   MOVE_NULL = 65
 };
 
-
-
 enum MoveType {
   NORMAL,
   PROMOTION = 1 << 14,
