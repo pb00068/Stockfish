@@ -148,8 +148,8 @@ void MovePicker::score<QUIETS>() {
       m.value =  history[pos.moved_piece(m)][to_sq(m)]
                + (*counterMoveHistory )[pos.moved_piece(m)][to_sq(m)]
                + (*followupMoveHistory)[pos.moved_piece(m)][to_sq(m)];
-      if ((m == killed[0] || m == killed[1]) && m.value > VALUE_ZERO)
-    	  m.value/=10;
+//      if ((m == killed[0] || m == killed[1]) && m.value > VALUE_ZERO)
+//    	  m.value/=10;
   }
 }
 
