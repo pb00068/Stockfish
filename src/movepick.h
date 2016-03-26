@@ -46,7 +46,7 @@ struct Stats {
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
-  void update(Piece pc, Square to, MoveBin m) { table[pc][to] = m; }
+  void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
 
   void update(Piece pc, Square to, Value v) {
 
@@ -61,7 +61,7 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
-typedef Stats<MoveBin> MoveStats;
+typedef Stats<Move> MoveStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
@@ -82,9 +82,9 @@ public:
   MovePicker(const Position&, Move, const HistoryStats&, Value);
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, Depth, const HistoryStats&,
-             const CounterMoveStats&, const CounterMoveStats&, MoveBin, Search::Stack*);
+             const CounterMoveStats&, const CounterMoveStats&, Move, Search::Stack*);
 
-  Move next_move(bool& relegate);
+  Move next_move();
 
 private:
   template<GenType> void score();
@@ -97,11 +97,11 @@ private:
   const CounterMoveStats* counterMoveHistory;
   const CounterMoveStats* followupMoveHistory;
   Search::Stack* ss;
-  MoveBin countermove;
+  Move countermove;
   Depth depth;
   Move ttMove;
   ExtMove killers[3];
-  ExtMove killed[2]; // Killer killed when now negative SEE
+//  ExtMove killed[2]; // Killer killed when now negative SEE
   Value killerSee[3];
   Square recaptureSquare;
   Value threshold;

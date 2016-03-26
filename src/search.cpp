@@ -838,8 +838,7 @@ namespace {
 
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
-        bool relegate = false;
-        while ((move = mp.next_move(relegate)) != MOVE_NONE)
+        while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
@@ -869,11 +868,11 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    MoveBin mb = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
-    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, mb, ss);
+    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -891,8 +890,7 @@ moves_loop: // When in check search starts from here
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
-    bool relegate = false, bestisrelegate = false;
-    while ((move = mp.next_move(relegate)) != MOVE_NONE)
+    while ((move = mp.next_move()) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1119,7 +1117,6 @@ moves_loop: // When in check search starts from here
                   EasyMove.clear();
 
               bestMove = move;
-              bestisrelegate = relegate;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1299,8 +1296,7 @@ moves_loop: // When in check search starts from here
     CheckInfo ci(pos);
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    bool relegate = false;
-    while ((move = mp.next_move(relegate)) != MOVE_NONE)
+    while ((move = mp.next_move()) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1473,11 +1469,7 @@ moves_loop: // When in check search starts from here
 
     if (is_ok((ss-1)->currentMove))
     {
-    	MoveBin mb;
-    	mb.move = move;
-    	mb.see = seeval != VALUE_NONE ? seeval : (depth > 4 ? pos.see_sign(move) : VALUE_ZERO);
-    	    //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0;
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, mb);
+        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }
 

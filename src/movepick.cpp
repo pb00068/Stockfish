@@ -71,7 +71,7 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       MoveBin cm, Search::Stack* s)
+                       Move cm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
              followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
 
@@ -195,13 +195,21 @@ void MovePicker::generate_next_stage() {
       killerSee[0] = ss->killer_see[0];
       killers[1] = ss->killers[1];
       killerSee[1] = ss->killer_see[1];
-      killers[2] = countermove.move;
-      killerSee[2] = countermove.see;
+      killers[2] = countermove;
       cur = killers;
-      endMoves = cur + 2 + (countermove.move != ss->killers[0] && countermove.move != ss->killers[1]);
-      kindex=-1;
-      killed[0] = MOVE_NONE;
-      killed[1] = MOVE_NONE;
+      endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
+
+      if (killers[0] != MOVE_NONE && killers[1] != MOVE_NONE){
+    	  Value diff0 = pos.see_sign(killers[0]) - killerSee[0];
+    	  Value diff1 = pos.see_sign(killers[1]) - killerSee[1];
+    	  if (diff1 > diff0 + PawnValueMg) {
+    		  killers[0] = ss->killers[1];
+    		  killerSee[0] = ss->killer_see[1];
+    		  killers[1] = ss->killers[0];
+    		  killerSee[1] = ss->killer_see[0];
+    	  }
+      }
+
       break;
 
   case GOOD_QUIETS:
@@ -250,10 +258,9 @@ void MovePicker::generate_next_stage() {
 /// left. It picks the move with the biggest value from a list of generated moves
 /// taking care not to return the ttMove if it has already been searched.
 
-Move MovePicker::next_move(bool& relegate) {
+Move MovePicker::next_move() {
 
   Move move;
-  relegate = false;
 
   while (true)
   {
@@ -284,21 +291,9 @@ Move MovePicker::next_move(bool& relegate) {
           kindex++;
           if (    move != MOVE_NONE
               &&  move != ttMove
-              && pos.pseudo_legal(move)
-              && !pos.capture(move)) {
-                 if (depth > 4 && killerSee[kindex] == VALUE_ZERO && pos.see_sign(move) <= - RookValueMg) {
-                     //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0) {
-//                   sync_cout << pos.fen() << " move " << UCI::move(move, false) << " relegated rook see" << sync_endl;
-//                   abort();
-                   killed[1] = killed[0];
-                   killed[0] = move;
-                   killers[kindex]=MOVE_NONE;
-
-                   break;
-                 }
-                 //killercount++;
+              &&  pos.pseudo_legal(move)
+              && !pos.capture(move))
                  return move;
-          }
           break;
 
       case GOOD_QUIETS: case BAD_QUIETS:
@@ -308,7 +303,7 @@ Move MovePicker::next_move(bool& relegate) {
               && move != killers[1]
               && move != killers[2]
           )
-              return relegate = (move == killed[0] ||  move == killed[1]), move;
+              return move;
           break;
 
 
