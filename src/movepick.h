@@ -84,7 +84,7 @@ public:
   MovePicker(const Position&, Move, Depth, const HistoryStats&,
              const CounterMoveStats&, const CounterMoveStats&, MoveBin, Search::Stack*);
 
-  Move next_move();
+  Move next_move(bool& relegate);
 
 private:
   template<GenType> void score();
@@ -106,7 +106,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   int stage;
-  int killercount;
+  int kindex;
   ExtMove *endQuiets, *endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
 };

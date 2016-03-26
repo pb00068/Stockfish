@@ -838,8 +838,8 @@ namespace {
 
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
-
-        while ((move = mp.next_move()) != MOVE_NONE)
+        bool relegate = false;
+        while ((move = mp.next_move(relegate)) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
@@ -891,7 +891,8 @@ moves_loop: // When in check search starts from here
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    bool relegate = false, bestisrelegate = false;
+    while ((move = mp.next_move(relegate)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1118,6 +1119,7 @@ moves_loop: // When in check search starts from here
                   EasyMove.clear();
 
               bestMove = move;
+              bestisrelegate = relegate;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1153,8 +1155,13 @@ moves_loop: // When in check search starts from here
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
 
     // Quiet best move: update killers, history and countermoves
-    else if (bestMove && !pos.capture_or_promotion(bestMove))
+    else if (bestMove && !pos.capture_or_promotion(bestMove)) {
         update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+//        if (bestisrelegate) {
+//        	sync_cout << pos.fen() << " move " << UCI::move(move, false) << " relegate is best" << sync_endl;
+//        	abort();
+//        }
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1292,7 +1299,8 @@ moves_loop: // When in check search starts from here
     CheckInfo ci(pos);
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    bool relegate = false;
+    while ((move = mp.next_move(relegate)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1440,7 +1448,7 @@ moves_loop: // When in check search starts from here
         ss->killer_see[1] = ss->killer_see[0];
         //ss->killer_checks[1] = ss->killer_checks[0];
         ss->killers[0] = move;
-        seeval = pos.see_sign(move);
+        seeval = depth > 4 ? pos.see_sign(move) : VALUE_ZERO;
         ss->killer_see[0] = seeval;
             //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN));
         //if (attacked)
@@ -1467,7 +1475,7 @@ moves_loop: // When in check search starts from here
     {
     	MoveBin mb;
     	mb.move = move;
-    	mb.see = seeval != VALUE_NONE ? seeval : pos.see_sign(move);
+    	mb.see = seeval != VALUE_NONE ? seeval : (depth > 4 ? pos.see_sign(move) : VALUE_ZERO);
     	    //type_of(pos.moved_piece(move)) >= ROOK && (pos.attackers_to(to_sq(move)) & pos.pieces(~pos.side_to_move()) & ~pos.pieces(ROOK, QUEEN)) > 0;
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, mb);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
