@@ -869,7 +869,7 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     Square ownPrevSq = to_sq((ss-2)->currentMove);
-    Move cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    ExtMove2 cm = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
@@ -1432,11 +1432,13 @@ moves_loop: // When in check search starts from here
 
   void update_stats(const Position& pos, Stack* ss, Move move,
                     Depth depth, Move* quiets, int quietsCnt) {
+    Value seeVal = VALUE_NONE;
 
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
+        ss->seeEval[0] = seeVal = pos.see_sign(move);
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
@@ -1451,7 +1453,10 @@ moves_loop: // When in check search starts from here
 
     if (is_ok((ss-1)->currentMove))
     {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+        ExtMove2 cm;
+        cm.move = move;
+        cm.seeValue = seeVal != VALUE_NONE ? seeVal : pos.see_sign(move);
+        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, cm);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }
 
