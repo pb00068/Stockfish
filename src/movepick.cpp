@@ -190,10 +190,10 @@ void MovePicker::generate_next_stage() {
       killers[2] = countermove.move;
       cur = killers;
 
-      if (killers[0] != MOVE_NONE && killers[0] != killers[2]) {
+      if (depth > 3 && killers[0] != MOVE_NONE && killers[1] != MOVE_NONE && killers[0] != killers[2]) {
         Value diff0 = pos.see_sign(killers[0]) - ss->seeEval[0];
         Value diff2 = pos.see_sign(killers[2]) - countermove.seeValue;
-        if (diff2 > diff0 + PawnValueMg) { // switch them
+        if (diff2 > diff0 + PawnValueMg) { // swap them
             killers[0] = killers[2];
             killers[2] = ss->killers[0];
         }
