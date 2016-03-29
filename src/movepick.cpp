@@ -190,7 +190,7 @@ void MovePicker::generate_next_stage() {
       killers[2] = countermove.move;
       cur = killers;
 
-      if (depth > 3 && killers[0] != MOVE_NONE && killers[1] != MOVE_NONE && killers[0] != killers[2] && !pos.pinned_pieces(pos.side_to_move()) && !pos.pinned_pieces(~pos.side_to_move()))
+      if (depth > 6 && killers[0] != MOVE_NONE && killers[1] != MOVE_NONE && killers[0] != killers[2] && !pos.pinned_pieces(pos.side_to_move()) && !pos.pinned_pieces(~pos.side_to_move()))
       {
         Value diff0 = pos.see_sign(killers[0]) - ss->seeEval[0];
         Value diff2 = pos.see_sign(killers[2]) - countermove.seeValue;

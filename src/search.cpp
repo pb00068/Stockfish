@@ -1438,7 +1438,7 @@ moves_loop: // When in check search starts from here
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
-        ss->seeEval[0] = seeVal = depth > 3 ? pos.see_sign(move) : VALUE_NONE;
+        ss->seeEval[0] = seeVal = depth > 6 ? pos.see_sign(move) : VALUE_NONE;
     }
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
@@ -1455,7 +1455,7 @@ moves_loop: // When in check search starts from here
     {
         ExtMove2 cm;
         cm.move = move;
-        cm.seeValue = seeVal != VALUE_NONE ? seeVal : (depth > 3 ? pos.see_sign(move) : VALUE_NONE);
+        cm.seeValue = seeVal != VALUE_NONE ? seeVal : (depth > 6 ? pos.see_sign(move) : VALUE_NONE);
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, cm);
         cmh.update(pos.moved_piece(move), to_sq(move), bonus);
     }
