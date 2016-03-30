@@ -137,8 +137,8 @@ void MovePicker::score<CAPTURES>() {
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
-      if (ss != nullptr && m.move == ss->capturekiller)
-        m.value+= Value(1000);
+      if (ss != nullptr && m.move == ss->capturekiller[pos.captured_piece_type()])
+        m.value+= Value(2 * PawnValueMg);
   }
 }
 
@@ -261,7 +261,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if (move == ss->capturekiller[pos.captured_piece_type()] || pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
