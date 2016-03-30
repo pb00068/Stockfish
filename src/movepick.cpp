@@ -138,7 +138,7 @@ void MovePicker::score<CAPTURES>() {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
       if (ss != nullptr && m.move == ss->capturekiller)
-        m.value+= Value(400);
+        m.value+= Value(1000);
   }
 }
 
