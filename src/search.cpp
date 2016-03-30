@@ -666,7 +666,7 @@ namespace {
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+1)->skipEarlyPruning = false;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->capturekiller = MOVE_NONE;
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
     // search to overwrite a previous full search TT value, so we use a different
@@ -1168,6 +1168,10 @@ moves_loop: // When in check search starts from here
         Square prevPrevSq = to_sq((ss - 2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
+    }
+
+    if (moveCount && bestMove && pos.capture_or_promotion(bestMove)) {
+          ss->capturekiller = move;
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
