@@ -117,7 +117,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
+          && pos.see(ttm, false) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
 }
@@ -156,7 +156,7 @@ void MovePicker::score<EVASIONS>() {
   Value see;
 
   for (auto& m : *this)
-      if ((see = pos.see_sign(m)) < VALUE_ZERO)
+      if ((see = pos.see_sign(m, false)) < VALUE_ZERO)
           m.value = see - HistoryStats::Max; // At the bottom
 
       else if (pos.capture(m))
@@ -178,9 +178,11 @@ void MovePicker::generate_next_stage() {
 
   switch (++stage) {
 
-  case GOOD_CAPTURES: case QCAPTURES_1: case QCAPTURES_2:
+  case GOOD_CAPTURES: goodcapturecounter=0;
+  case QCAPTURES_1: case QCAPTURES_2:
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
+      capturemoves = endMoves - cur;
       score<CAPTURES>();
       break;
 
@@ -255,10 +257,11 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
+          goodcapturecounter++;
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if (pos.see_sign(move, goodcapturecounter == 1 && capturemoves >= 2) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
@@ -295,7 +298,7 @@ Move MovePicker::next_move() {
 
       case PROBCUT_CAPTURES:
            move = pick_best(cur++, endMoves);
-           if (move != ttMove && pos.see(move) > threshold)
+           if (move != ttMove && pos.see(move, false) > threshold)
                return move;
            break;
 

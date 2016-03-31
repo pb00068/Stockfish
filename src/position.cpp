@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+//#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -979,7 +980,7 @@ Key Position::key_after(Move m) const {
 /// Position::see() is a static exchange evaluator: It tries to estimate the
 /// material gain or loss resulting from a move.
 
-Value Position::see_sign(Move m) const {
+Value Position::see_sign(Move m,bool checkpins) const {
 
   assert(is_ok(m));
 
@@ -989,14 +990,15 @@ Value Position::see_sign(Move m) const {
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
-  return see(m);
+  return see(m, checkpins);
 }
 
-Value Position::see(Move m) const {
+Value Position::see(Move m, bool checkpins) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
+  Bitboard pinneds[2];
   int slIndex = 1;
   PieceType captured;
   Color stm;
@@ -1028,6 +1030,26 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
+
+  if (checkpins) {
+    Square ksq = square<KING>(stm); // enemy king
+    Bitboard b;
+    pinneds[stm] = 0;
+    // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
+    Bitboard pinners = (  (pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & (pieces(~stm) ^ from);
+
+    while (pinners)
+    {
+      b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
+      if (!more_than_one(b))
+        pinneds[stm] |= b & pieces(stm);
+    }
+//    if (stmAttackers & pinneds[stm]) {
+//      sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds oppenent:\n" << Bitboards::pretty(pinneds[stm]) << sync_endl;
+//    }
+    stmAttackers = stmAttackers & ~pinneds[stm];
+  }
+
   if (!stmAttackers)
       return swapList[0];
 
@@ -1049,6 +1071,31 @@ Value Position::see(Move m) const {
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
+
+      if (slIndex == 1 && checkpins && stmAttackers) {
+        Square ksq = square<KING>(stm); // enemy king
+        Bitboard b;
+        pinneds[stm] = 0;
+        // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
+        Bitboard pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm);
+
+        while (pinners)
+        {
+          Square sq = pop_lsb(&pinners);
+          if (sq == to)
+            continue;
+          b = between_bb(ksq, sq) & pieces();
+          if (!more_than_one(b))
+            pinneds[stm] |= b & pieces(stm);
+        }
+      }
+      if (checkpins && pinneds[stm]) {
+//        if (stmAttackers) {
+//              sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds of color " << stm << " :\n" << Bitboards::pretty(pinneds[stm]) << sync_endl;
+//        }
+        stmAttackers = stmAttackers & ~pinneds[stm];
+      }
+
       ++slIndex;
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
