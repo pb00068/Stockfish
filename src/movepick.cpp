@@ -19,9 +19,11 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
-#include "thread.h"
+//#include "thread.h"
+//#include "uci.h"
 
 namespace {
 
@@ -261,7 +263,11 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move, goodcapturecounter == 1) >= VALUE_ZERO)
+//            if (pos.see_sign(move, depth > 3 && pos.game_phase() > 100) >= VALUE_ZERO &&
+//               pos.see_sign(move, false) < VALUE_ZERO) {
+//              sync_cout << "pos\n" << pos << " move " << UCI::move(move, false) << " val1: " << pos.see_sign(move, true) << " val2: " <<  pos.see_sign(move, false)<< sync_endl;
+//            }
+            if (pos.see_sign(move, depth > 3 && pos.game_phase() > 100) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
