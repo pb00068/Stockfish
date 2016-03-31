@@ -1031,16 +1031,16 @@ Value Position::see(Move m, bool checkpins) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
-  if (checkpins) {
+  if (checkpins && stmAttackers) {
     Square ksq = square<KING>(stm); // enemy king
     Bitboard b;
     pinneds[stm] = 0;
     // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
-    Bitboard pinners = (  (pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & (pieces(~stm) ^ from);
+    Bitboard pinners = ((pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
 
     while (pinners)
     {
-      b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
+      b = between_bb(ksq, pop_lsb(&pinners)) & occupied;
       if (!more_than_one(b))
         pinneds[stm] |= b & pieces(stm);
     }
@@ -1072,21 +1072,21 @@ Value Position::see(Move m, bool checkpins) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (slIndex == 1 && checkpins && stmAttackers) {
+      if (checkpins && stmAttackers && captured != KING ) {
         Square ksq = square<KING>(stm); // enemy king
         Bitboard b;
         pinneds[stm] = 0;
         // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
-        Bitboard pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm);
+        Bitboard pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
 
         while (pinners)
         {
           Square sq = pop_lsb(&pinners);
           if (sq == to)
             continue;
-          b = between_bb(ksq, sq) & pieces();
+          b = between_bb(ksq, sq) & occupied;
           if (!more_than_one(b))
-            pinneds[stm] |= b & pieces(stm);
+            pinneds[stm] |= b & pieces(stm) & occupied;
         }
       }
       if (checkpins && pinneds[stm]) {

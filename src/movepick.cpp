@@ -261,7 +261,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move, goodcapturecounter == 1 && capturemoves >= 2) >= VALUE_ZERO)
+              if (pos.see_sign(move, goodcapturecounter == 1) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
