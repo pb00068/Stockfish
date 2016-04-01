@@ -175,6 +175,7 @@ public:
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = nullptr) const;
   void flip();
+  CheckInfo* checkInfo;
 
 private:
   // Initialization helpers (used while setting up a position)
@@ -207,6 +208,7 @@ private:
   Thread* thisThread;
   StateInfo* st;
   bool chess960;
+
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Position& pos);

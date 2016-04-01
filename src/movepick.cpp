@@ -268,7 +268,7 @@ Move MovePicker::next_move() {
 //               pos.see_sign(move, false) < VALUE_ZERO) {
 //              sync_cout << "pos\n" << pos << " move " << UCI::move(move, false) << " val1: " << pos.see_sign(move, true) << " val2: " <<  pos.see_sign(move, false)<< sync_endl;
 //            }
-            if (pos.see_sign(move, gamephase > 100) >= VALUE_ZERO)
+            if (pos.see_sign(move, true) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array

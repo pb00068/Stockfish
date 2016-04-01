@@ -1010,6 +1010,7 @@ Value Position::see(Move m, bool checkpins) const {
   swapList[0] = PieceValue[MG][piece_on(to)];
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
+  pinneds[0] = pinneds[1] = 0;
 
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
@@ -1031,24 +1032,24 @@ Value Position::see(Move m, bool checkpins) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
-  if (checkpins && stmAttackers) {
-    Square ksq = square<KING>(stm); // enemy king
-    Bitboard b;
-    pinneds[0] = pinneds[1] = 0;
-    // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
-    Bitboard pinners = ((pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
-
-    while (pinners)
-    {
-      b = between_bb(ksq, pop_lsb(&pinners)) & occupied;
-      if (!more_than_one(b))
-        pinneds[stm] |= b & pieces(stm);
-    }
-//    if (stmAttackers & pinneds[stm]) {
-//      sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds oppenent:\n" << Bitboards::pretty(pinneds[stm]) << sync_endl;
+//  if (checkpins && stmAttackers) {
+//    Square ksq = square<KING>(stm); // enemy king
+//    Bitboard b;
+//    pinneds[0] = pinneds[1] = 0;
+//    // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
+//    Bitboard pinners = ((pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
+//
+//    while (pinners)
+//    {
+//      b = between_bb(ksq, pop_lsb(&pinners)) & occupied;
+//      if (!more_than_one(b))
+//        pinneds[stm] |= b & pieces(stm);
 //    }
-    stmAttackers = stmAttackers & ~pinneds[stm];
-  }
+////    if (stmAttackers & pinneds[stm]) {
+////      sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds oppenent:\n" << Bitboards::pretty(pinneds[stm]) << sync_endl;
+////    }
+//    stmAttackers = stmAttackers & ~pinneds[stm];
+//  }
 
   if (!stmAttackers)
       return swapList[0];
@@ -1072,27 +1073,29 @@ Value Position::see(Move m, bool checkpins) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (checkpins && stmAttackers && captured != KING ) {
-        Square ksq = square<KING>(stm); // enemy king
-        Bitboard b;
-        pinneds[stm] = 0;
-        // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
-        Bitboard pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
-
-        while (pinners)
-        {
-          Square sq = pop_lsb(&pinners);
-          if (sq == to)
-            continue;
-          b = between_bb(ksq, sq) & occupied;
-          if (!more_than_one(b))
-            pinneds[stm] |= b & pieces(stm) & occupied;
-        }
-      }
-      if (checkpins && pinneds[stm]) {
-//        if (stmAttackers) {
-//              sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds of color " << stm << " :\n" << Bitboards::pretty(pinneds[stm]) << sync_endl;
+      if (checkpins && slIndex == 1 && stmAttackers && captured != KING ) {
+          pinneds[stm] = this->checkInfo->pinned;
+//        Square ksq = square<KING>(stm); // our king
+//        Bitboard b;
+//        pinneds[stm] = 0;
+//
+//        // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
+//        Bitboard pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
+//
+//        while (pinners)
+//        {
+//          Square sq = pop_lsb(&pinners);
+//          if (sq == to)
+//            continue;
+//          b = between_bb(ksq, sq) & occupied;
+//          if (!more_than_one(b))
+//            pinneds[stm] |= b & pieces(stm) & occupied;
 //        }
+      }
+      if (checkpins && (pinneds[stm] & stmAttackers)) {
+
+        //sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds of color " << stm << " :\n" << Bitboards::pretty(pinneds[stm] & stmAttackers) << sync_endl;
+
         stmAttackers = stmAttackers & ~pinneds[stm];
       }
 
