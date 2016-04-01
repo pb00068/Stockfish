@@ -181,6 +181,7 @@ void MovePicker::generate_next_stage() {
   switch (++stage) {
 
   case GOOD_CAPTURES: goodcapturecounter=0;
+                      gamephase = pos.game_phase();
   case QCAPTURES_1: case QCAPTURES_2:
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
@@ -267,7 +268,7 @@ Move MovePicker::next_move() {
 //               pos.see_sign(move, false) < VALUE_ZERO) {
 //              sync_cout << "pos\n" << pos << " move " << UCI::move(move, false) << " val1: " << pos.see_sign(move, true) << " val2: " <<  pos.see_sign(move, false)<< sync_endl;
 //            }
-            if (pos.see_sign(move, depth > 3 && pos.game_phase() > 100) >= VALUE_ZERO)
+            if (pos.see_sign(move, depth > 6 && gamephase > 100) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array

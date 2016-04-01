@@ -1034,7 +1034,7 @@ Value Position::see(Move m, bool checkpins) const {
   if (checkpins && stmAttackers) {
     Square ksq = square<KING>(stm); // enemy king
     Bitboard b;
-    pinneds[stm] = 0;
+    pinneds[0] = pinneds[1] = 0;
     // Pinners are sliders of our color (~stm) that give check when a pinned piece is removed
     Bitboard pinners = ((pieces(ROOK, QUEEN) & PseudoAttacks[ROOK][ksq]) | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~stm) & occupied;
 
