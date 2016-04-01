@@ -1072,7 +1072,7 @@ Value Position::see(Move m, bool checkpins) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (checkpins && slIndex == 1 && stmAttackers && captured != KING ) {
+      if (checkpins && stmAttackers && captured != KING ) {
         Square ksq = square<KING>(stm); // enemy king
         Bitboard b;
         pinneds[stm] = 0;
