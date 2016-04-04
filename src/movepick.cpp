@@ -78,7 +78,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
-  takeRelegate=false;
   relegate = MOVE_NONE;
 }
 
@@ -106,7 +105,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
 
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
-  takeRelegate=false;
   relegate = MOVE_NONE;
 }
 
@@ -124,7 +122,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
           && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
-  takeRelegate=false;
   relegate = MOVE_NONE;
 }
 
@@ -266,30 +263,33 @@ Move MovePicker::next_move() {
 
       case GOOD_CAPTURES:
         captIndex++;
-        if (relegate && (takeRelegate || cur == endMoves)) {
+        if (relegate) {
             move = relegate;
             relegate = MOVE_NONE;
-            takeRelegate = false;
         }
         else {
             move = pick_best(cur++, endMoves);
         }
 
+        capt_mark:
         if (move != ttMove)
         {
             Value val= pos.see_sign(move);
-            if (captures > 2 && captIndex == 1) {
-                Value expectance = PieceValue[MG][pos.piece_on(to_sq(move))];
-                if (val < expectance  && val >= VALUE_ZERO) {
+            if (captures > 1 && captIndex == 1 && val > VALUE_ZERO)
+            {
+                Move nextmove = pick_best(cur, endMoves);
+                Value nextval = pos.see_sign(nextmove);
+                if (val < nextval)
+                {
                     relegate = move;
-                    break;
+                    move = nextmove;
+                    captIndex++;
+                    cur++;
+                    goto capt_mark;
                 }
             }
-            if (val >= VALUE_ZERO) {
-                if (relegate)
-                  takeRelegate = true;
+            if (val >= VALUE_ZERO)
                 return move;
-            }
 
             // Losing capture, move it to the tail of the array
             *endBadCaptures-- = move;
