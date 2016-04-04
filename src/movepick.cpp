@@ -78,6 +78,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  takeRelegate=false;
+  relegate = MOVE_NONE;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
@@ -104,6 +106,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
 
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  takeRelegate=false;
+  relegate = MOVE_NONE;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value th)
@@ -120,6 +124,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
           && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
+  takeRelegate=false;
+  relegate = MOVE_NONE;
 }
 
 
@@ -134,9 +140,13 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+  captures = captIndex = 0;
+  relegate = MOVE_NONE;
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+      captures++;
+  }
 }
 
 template<>
@@ -244,7 +254,7 @@ Move MovePicker::next_move() {
 
   while (true)
   {
-      while (cur == endMoves && stage != STOP)
+      while (cur == endMoves && stage != STOP && relegate == MOVE_NONE)
           generate_next_stage();
 
       switch (stage) {
@@ -255,15 +265,35 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
-          move = pick_best(cur++, endMoves);
-          if (move != ttMove)
-          {
-              if (pos.see_sign(move) >= VALUE_ZERO)
-                  return move;
+        captIndex++;
+        if (relegate && (takeRelegate || cur == endMoves)) {
+            move = relegate;
+            relegate = MOVE_NONE;
+            takeRelegate = false;
+        }
+        else {
+            move = pick_best(cur++, endMoves);
+        }
 
-              // Losing capture, move it to the tail of the array
-              *endBadCaptures-- = move;
-          }
+        if (move != ttMove)
+        {
+            Value val= pos.see_sign(move);
+            if (captures > 2 && captIndex == 1) {
+                Value expectance = PieceValue[MG][pos.piece_on(to_sq(move))];
+                if (val < expectance  && val >= VALUE_ZERO) {
+                    relegate = move;
+                    break;
+                }
+            }
+            if (val >= VALUE_ZERO) {
+                if (relegate)
+                  takeRelegate = true;
+                return move;
+            }
+
+            // Losing capture, move it to the tail of the array
+            *endBadCaptures-- = move;
+        }
           break;
 
       case KILLERS:
