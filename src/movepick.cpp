@@ -263,29 +263,34 @@ Move MovePicker::next_move() {
 
       case GOOD_CAPTURES:
         captIndex++;
-        if (relegate) {
+        if (relegate)
+        {
             move = relegate;
             relegate = MOVE_NONE;
+            return move;
         }
-        else {
+        else
             move = pick_best(cur++, endMoves);
-        }
 
-        capt_mark:
         if (move != ttMove)
         {
             Value val= pos.see_sign(move);
-            if (captures > 1 && captIndex == 1 && val > VALUE_ZERO)
+            if (captures > 2 && captIndex == 1 && val > VALUE_ZERO)
             {
                 Move nextmove = pick_best(cur, endMoves);
+                if (nextmove == ttMove)
+                {
+//                   if (captures > 2)
+                     nextmove = pick_best(++cur, endMoves);
+//                   else
+//                     return move;
+                }
                 Value nextval = pos.see_sign(nextmove);
-                if (val < nextval)
+                if (val < nextval - PawnValueMg)
                 {
                     relegate = move;
-                    move = nextmove;
-                    captIndex++;
                     cur++;
-                    goto capt_mark;
+                    return nextmove;
                 }
             }
             if (val >= VALUE_ZERO)
