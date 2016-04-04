@@ -151,6 +151,8 @@ public:
   // Static exchange evaluation
   Value see(Move m) const;
   Value see_sign(Move m) const;
+  Value see(Move m, int& d) const;
+  Value see_sign(Move m, int& d) const;
 
   // Accessing hash keys
   Key key() const;

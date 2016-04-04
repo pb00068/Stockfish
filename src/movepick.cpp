@@ -78,6 +78,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  relegate = MOVE_NONE;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
@@ -104,6 +105,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
 
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  relegate = MOVE_NONE;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value th)
@@ -120,6 +122,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
           && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
+  relegate = MOVE_NONE;
 }
 
 
@@ -134,9 +137,13 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+  captures=0;
+  relegate = MOVE_NONE;
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+      captures++;
+  }
 }
 
 template<>
@@ -178,7 +185,8 @@ void MovePicker::generate_next_stage() {
 
   switch (++stage) {
 
-  case GOOD_CAPTURES: case QCAPTURES_1: case QCAPTURES_2:
+  case GOOD_CAPTURES: captindex=0;
+	  case QCAPTURES_1: case QCAPTURES_2:
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
       score<CAPTURES>();
@@ -244,7 +252,7 @@ Move MovePicker::next_move() {
 
   while (true)
   {
-      while (cur == endMoves && stage != STOP)
+      while (cur == endMoves && stage != STOP && relegate == MOVE_NONE)
           generate_next_stage();
 
       switch (stage) {
@@ -255,11 +263,33 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
-          move = pick_best(cur++, endMoves);
+    	  captindex++;
+    	  if (relegate) {
+    		  move = relegate;
+    		  relegate = MOVE_NONE;
+    	  }
+    	  else {
+    		  move = pick_best(cur++, endMoves);
+    	  }
+
+    	  capt_loop:
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+        	  Value val= pos.see_sign(move);
+        	  if (captures > 2 && captindex == 1) {
+        		  Value val2 = PieceValue[MG][pos.piece_on(to_sq(move))];
+        		  if (val < val2  && val >= VALUE_ZERO) {
+        			  relegate = move;
+        			  captindex++;
+        			  move = pick_best(cur++, endMoves);
+        			  goto capt_loop;
+        		  }
+        	  }
+              if (val >= VALUE_ZERO)
                   return move;
+
+//              if (d > 3 && val >= -PawnValueMg && gamephase)
+//            	  return move; // when many exchanges are happening, then the resulting pos might be very tactical
 
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;

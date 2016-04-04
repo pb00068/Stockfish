@@ -992,6 +992,19 @@ Value Position::see_sign(Move m) const {
   return see(m);
 }
 
+Value Position::see_sign(Move m, int& d) const {
+
+  assert(is_ok(m));
+
+  // Early return if SEE cannot be negative because captured piece value
+  // is not less then capturing one. Note that king moves always return
+  // here because king midgame value is set to 0.
+  if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
+      return VALUE_KNOWN_WIN;
+
+  return see(m,d);
+}
+
 Value Position::see(Move m) const {
 
   Square from, to;
@@ -1057,6 +1070,81 @@ Value Position::see(Move m) const {
   // achievable score from the point of view of the side to move.
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+
+  return swapList[0];
+}
+
+Value Position::see(Move m, int& d) const {
+
+  Square from, to;
+  Bitboard occupied, attackers, stmAttackers;
+  Value swapList[32];
+  int slIndex = 1;
+  PieceType captured;
+  Color stm;
+  d=1;
+  assert(is_ok(m));
+
+  from = from_sq(m);
+  to = to_sq(m);
+  swapList[0] = PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(from));
+  occupied = pieces() ^ from;
+
+  // Castling moves are implemented as king capturing the rook so cannot
+  // be handled correctly. Simply return VALUE_ZERO that is always correct
+  // unless in the rare case the rook ends up under attack.
+  if (type_of(m) == CASTLING)
+      return VALUE_ZERO;
+
+  if (type_of(m) == ENPASSANT)
+  {
+      occupied ^= to - pawn_push(stm); // Remove the captured pawn
+      swapList[0] = PieceValue[MG][PAWN];
+  }
+
+  // Find all attackers to the destination square, with the moving piece
+  // removed, but possibly an X-ray attacker added behind it.
+  attackers = attackers_to(to, occupied) & occupied;
+
+  // If the opponent has no attackers we are finished
+  stm = ~stm;
+  stmAttackers = attackers & pieces(stm);
+  if (!stmAttackers)
+      return swapList[0];
+
+  // The destination square is defended, which makes things rather more
+  // difficult to compute. We proceed by building up a "swap list" containing
+  // the material gain or loss at each stop in a sequence of captures to the
+  // destination square, where the sides alternately capture, and always
+  // capture with the least valuable piece. After each capture, we look for
+  // new X-ray attacks from behind the capturing piece.
+  captured = type_of(piece_on(from));
+
+  do {
+      assert(slIndex < 32);
+
+      // Add the new entry to the swap list
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+
+      // Locate and remove the next least valuable attacker
+      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+      ++slIndex;
+
+  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
+
+  // Having built the swap list, we negamax through it to find the best
+  // achievable score from the point of view of the side to move.
+  while (--slIndex) {
+	  if (-swapList[slIndex] < swapList[slIndex - 1])
+	  {
+		  swapList[slIndex - 1] = -swapList[slIndex];
+		  d++;
+	  }
+//	  swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+  }
 
   return swapList[0];
 }

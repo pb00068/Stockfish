@@ -104,6 +104,10 @@ private:
   Square recaptureSquare;
   Value threshold;
   int stage;
+  int gamephase;
+  int captures;
+  int captindex;
+  ExtMove relegate;
   ExtMove *endQuiets, *endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
 };
