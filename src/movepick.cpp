@@ -285,8 +285,8 @@ Move MovePicker::next_move() {
 //                   else
 //                     return move;
                 }
-                Value nextval = pos.see_sign(nextmove);
-                if (val < nextval - PawnValueMg)
+                Value nextexpectval = PieceValue[MG][pos.piece_on(to_sq(nextmove))];
+                if (val < nextexpectval - PawnValueMg)
                 {
                     relegate = move;
                     cur++;
