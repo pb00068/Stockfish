@@ -275,23 +275,15 @@ Move MovePicker::next_move() {
         if (move != ttMove)
         {
             Value val= pos.see_sign(move);
-            if (captures > 2 && captIndex == 1 && val > VALUE_ZERO)
+            if (captures > 3 && captIndex == 1 && val == VALUE_ZERO)
             {
                 Move nextmove = pick_best(cur, endMoves);
                 if (nextmove == ttMove)
-                {
-//                   if (captures > 2)
                      nextmove = pick_best(++cur, endMoves);
-//                   else
-//                     return move;
-                }
-                Value nextexpectval = PieceValue[MG][pos.piece_on(to_sq(nextmove))];
-                if (val < nextexpectval - PawnValueMg)
-                {
-                    relegate = move;
-                    cur++;
-                    return nextmove;
-                }
+
+                relegate = move;
+                cur++;
+                return nextmove;
             }
             if (val >= VALUE_ZERO)
                 return move;
