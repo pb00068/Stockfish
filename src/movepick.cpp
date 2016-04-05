@@ -263,7 +263,7 @@ Move MovePicker::next_move() {
 
       case GOOD_CAPTURES:
         captIndex++;
-        if (relegate)
+        if (relegate && cur >= endMoves)
         {
             move = relegate;
             relegate = MOVE_NONE;
@@ -275,11 +275,11 @@ Move MovePicker::next_move() {
         if (move != ttMove)
         {
             Value val= pos.see_sign(move);
-            if (captures > 3 && captIndex == 1 && val == VALUE_ZERO)
+            if (captures > 2 && captIndex == 1 && val == VALUE_ZERO)
             {
                 Move nextmove = pick_best(cur, endMoves);
                 if (nextmove == ttMove)
-                     nextmove = pick_best(++cur, endMoves);
+                    nextmove = pick_best(++cur, endMoves);
 
                 relegate = move;
                 cur++;
