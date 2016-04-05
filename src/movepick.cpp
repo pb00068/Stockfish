@@ -49,12 +49,19 @@ namespace {
     }
   }
 
+  bool cmp(const ExtMove &a, const ExtMove &b) {
+      return a.value <= b.value; // default implemetation operator is <
+  }
+
   // pick_best() finds the best move in the range (begin, end) and moves it to
   // the front. It's faster than sorting all the moves in advance when there
   // are few moves, e.g., the possible captures.
-  Move pick_best(ExtMove* begin, ExtMove* end)
+  Move pick_best(ExtMove* begin, ExtMove* end, bool alt)
   {
-      std::swap(*begin, *std::max_element(begin, end));
+      if (alt)
+        std::swap(*begin, *std::max_element(begin, end, cmp));
+      else
+        std::swap(*begin, *std::max_element(begin, end));
       return *begin;
   }
 
@@ -69,7 +76,7 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       Move cm, Search::Stack* s)
+                       Move cm, Search::Stack* s, bool altOrd)
            : pos(p), history(h), counterMoveHistory(&cmh),
              followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
 
@@ -78,10 +85,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  altOrder = altOrd;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
-                       const HistoryStats& h, Square s)
+                       const HistoryStats& h, Square s, bool altOrd)
            : pos(p), history(h) {
 
   assert(d <= DEPTH_ZERO);
@@ -104,9 +112,10 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
 
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  altOrder = altOrd;
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value th)
+MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value th, bool altOrd)
            : pos(p), history(h), threshold(th) {
 
   assert(!pos.checkers());
@@ -120,6 +129,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value
           && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
+  altOrder = altOrd;
 }
 
 
@@ -255,7 +265,7 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
-          move = pick_best(cur++, endMoves);
+          move = pick_best(cur++, endMoves, altOrder);
           if (move != ttMove)
           {
               if (pos.see_sign(move) >= VALUE_ZERO)
@@ -288,19 +298,19 @@ Move MovePicker::next_move() {
           return *cur--;
 
       case ALL_EVASIONS: case QCAPTURES_1: case QCAPTURES_2:
-          move = pick_best(cur++, endMoves);
+          move = pick_best(cur++, endMoves, altOrder);
           if (move != ttMove)
               return move;
           break;
 
       case PROBCUT_CAPTURES:
-           move = pick_best(cur++, endMoves);
+           move = pick_best(cur++, endMoves, altOrder);
            if (move != ttMove && pos.see(move) > threshold)
                return move;
            break;
 
       case RECAPTURES:
-          move = pick_best(cur++, endMoves);
+          move = pick_best(cur++, endMoves, altOrder);
           if (to_sq(move) == recaptureSquare)
               return move;
           break;
