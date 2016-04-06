@@ -668,6 +668,9 @@ namespace {
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
 
+    for (int i=0; i < PIECE_TYPE_NB; i ++)
+      (ss+2)->capturekiller[i] = MOVE_NONE;
+
     // Step 4. Transposition table lookup. We don't want the score of a partial
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
@@ -1170,7 +1173,7 @@ moves_loop: // When in check search starts from here
         prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    if (moveCount && bestMove && pos.captured_piece_type() && pos.capture_or_promotion(bestMove)) {
+    if (moveCount && bestMove && !pos.captured_piece_type() && pos.capture_or_promotion(bestMove)) {
           ss->capturekiller[pos.captured_piece_type()] = move;
     }
 
