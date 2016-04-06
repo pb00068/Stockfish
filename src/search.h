@@ -42,7 +42,7 @@ struct Stack {
   Move currentMove;
   Move excludedMove;
   Move killers[2];
-  Move capturekiller[PIECE_TYPE_NB];
+  Move capturekiller;
   Value staticEval;
   bool skipEarlyPruning;
   int moveCount;
