@@ -1003,19 +1003,17 @@ Value Position::see(Move m) const {
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
-  Bitboard pinneds[2];
   int slIndex = 1;
   PieceType captured;
-  Color stm;
+  Color stm, initial;
 
   assert(is_ok(m));
 
   from = from_sq(m);
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
-  stm = color_of(piece_on(from));
+  stm = initial = color_of(piece_on(from));
   occupied = pieces() ^ from;
-  pinneds[0] = pinneds[1] = 0;
 
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
@@ -1059,11 +1057,8 @@ Value Position::see(Move m) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (this->checkInfo != nullptr && slIndex == 1 && stmAttackers && captured != KING )
-          pinneds[stm] = this->checkInfo->pinned;
-
-      if (pinneds[stm] & stmAttackers)
-        stmAttackers = stmAttackers & ~pinneds[stm];
+      if (stmAttackers && this->checkInfo != nullptr && stm == initial && (this->checkInfo->pinned & stmAttackers))
+          stmAttackers = stmAttackers & ~this->checkInfo->pinned;
 
       ++slIndex;
 
