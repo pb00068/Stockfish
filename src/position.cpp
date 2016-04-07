@@ -1031,7 +1031,7 @@ Value Position::see(Move m, bool checkpins) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
-
+  checkpins = true;
 //  if (checkpins && stmAttackers) {
 //    Square ksq = square<KING>(stm); // enemy king
 //    Bitboard b;

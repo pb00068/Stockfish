@@ -837,6 +837,7 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NULL);
 
         CheckInfo ci(pos);
+        pos.checkInfo = &ci;
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
 
 
@@ -1292,6 +1293,7 @@ moves_loop: // When in check search starts from here
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
     CheckInfo ci(pos);
+    pos.checkInfo = &ci;
     MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove));
 
 
