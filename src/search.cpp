@@ -624,6 +624,7 @@ namespace {
     moveCount = quietCount =  ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->pinned=0;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -837,7 +838,8 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NULL);
 
         CheckInfo ci(pos);
-        pos.checkInfo = &ci;
+        pos.checkInfo = &ci; // movepicker constructor calls SEE
+        ss->pinned=ci.pinned;
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
 
         while ((move = mp.next_move()) != MOVE_NONE)
@@ -874,9 +876,10 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
     const CounterMoveStats& fmh = CounterMoveHistory[pos.piece_on(ownPrevSq)][ownPrevSq];
 
+    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
-    MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
+    ss->pinned = ci.pinned;
 
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1033,7 +1036,7 @@ moves_loop: // When in check search starts from here
           if (   r
               && type_of(move) == NORMAL
               && type_of(pos.piece_on(to_sq(move))) != PAWN
-              && pos.see(make_move(to_sq(move), from_sq(move))) < VALUE_ZERO)
+              && pos.see_pin_aware(make_move(to_sq(move), from_sq(move)), ss->pinned, (ss-1)->pinned) < VALUE_ZERO)
               r = std::max(DEPTH_ZERO, r - ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
@@ -1291,10 +1294,10 @@ moves_loop: // When in check search starts from here
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
+    MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove));
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
-    MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove));
-
+    ss->pinned = ci.pinned;
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1321,7 +1324,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && pos.see(move) <= VALUE_ZERO)
+          if (futilityBase <= alpha && pos.see_pin_aware(move, ss->pinned, (ss-1)->pinned) <= VALUE_ZERO)
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;

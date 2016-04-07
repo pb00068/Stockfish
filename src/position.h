@@ -151,6 +151,8 @@ public:
   // Static exchange evaluation
   Value see(Move m) const;
   Value see_sign(Move m) const;
+  Value see_pin_aware(Move m, Bitboard b1, Bitboard b2) const;
+  Value see_sign_pin_aware(Move m, Bitboard b1, Bitboard b2) const;
 
   // Accessing hash keys
   Key key() const;

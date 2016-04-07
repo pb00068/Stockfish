@@ -44,6 +44,7 @@ struct Stack {
   Move killers[2];
   Value staticEval;
   bool skipEarlyPruning;
+  Bitboard pinned;
   int moveCount;
 };
 

@@ -82,7 +82,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
                        const HistoryStats& h, Square s)
-           : pos(p), history(h) {
+           : pos(p), history(h), ss(nullptr) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -107,7 +107,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d,
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Value th)
-           : pos(p), history(h), threshold(th) {
+           : pos(p), history(h), ss(nullptr), threshold(th) {
 
   assert(!pos.checkers());
 
@@ -258,7 +258,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if (pos.see_sign_pin_aware(move, ss->pinned, (ss-1)->pinned) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
