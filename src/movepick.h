@@ -103,10 +103,7 @@ private:
   ExtMove killers[3];
   Square recaptureSquare;
   Value threshold;
-  int goodcapturecounter;
-  int capturemoves;
   int stage;
-  int gamephase;
   ExtMove *endQuiets, *endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
 };

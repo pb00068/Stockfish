@@ -838,10 +838,7 @@ namespace {
 
         CheckInfo ci(pos);
         pos.checkInfo = &ci;
-//            if (ci.pinned)
-//            sync_cout << "posti\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
-
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
@@ -879,8 +876,6 @@ moves_loop: // When in check search starts from here
 
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
-//    if (ci.pinned)
-//    sync_cout << "post\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
     MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
 
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -931,7 +926,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move, ci);
 
       // Step 12. Extend checks
-      if (givesCheck && pos.see_sign(move, false) >= VALUE_ZERO)
+      if (givesCheck && pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -993,7 +988,7 @@ moves_loop: // When in check search starts from here
           }
 
           // Prune moves with negative SEE at low depths
-          if (predictedDepth < 4 * ONE_PLY && pos.see_sign(move, false) < VALUE_ZERO)
+          if (predictedDepth < 4 * ONE_PLY && pos.see_sign(move) < VALUE_ZERO)
               continue;
       }
 
@@ -1038,7 +1033,7 @@ moves_loop: // When in check search starts from here
           if (   r
               && type_of(move) == NORMAL
               && type_of(pos.piece_on(to_sq(move))) != PAWN
-              && pos.see(make_move(to_sq(move), from_sq(move)), false) < VALUE_ZERO)
+              && pos.see(make_move(to_sq(move), from_sq(move))) < VALUE_ZERO)
               r = std::max(DEPTH_ZERO, r - ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
@@ -1298,8 +1293,6 @@ moves_loop: // When in check search starts from here
     // be generated.
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
-//    if (ci.pinned)
-//           sync_cout << "postqs\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
     MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove));
 
 
@@ -1328,7 +1321,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && pos.see(move, false) <= VALUE_ZERO)
+          if (futilityBase <= alpha && pos.see(move) <= VALUE_ZERO)
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1343,7 +1336,7 @@ moves_loop: // When in check search starts from here
       // Don't search moves with negative SEE values
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  pos.see_sign(move, false) < VALUE_ZERO)
+          &&  pos.see_sign(move) < VALUE_ZERO)
           continue;
 
       // Speculative prefetch as early as possible
