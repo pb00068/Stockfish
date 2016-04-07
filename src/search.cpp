@@ -847,6 +847,7 @@ namespace {
                 pos.do_move(move, st, pos.gives_check(move, ci));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
+                pos.checkInfo = &ci;
                 if (value >= rbeta)
                     return value;
             }
@@ -950,6 +951,7 @@ moves_loop: // When in check search starts from here
               extension = ONE_PLY;
       }
 
+      pos.checkInfo = &ci;
       // Update the current move (this must be done after singular extension search)
       newDepth = depth - ONE_PLY + extension;
 
@@ -1068,6 +1070,7 @@ moves_loop: // When in check search starts from here
 
       // Step 17. Undo move
       pos.undo_move(move);
+      pos.checkInfo = &ci;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1353,6 +1356,7 @@ moves_loop: // When in check search starts from here
       value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
                          : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
       pos.undo_move(move);
+      pos.checkInfo = &ci;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
