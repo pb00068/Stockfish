@@ -838,6 +838,8 @@ namespace {
 
         CheckInfo ci(pos);
         pos.checkInfo = &ci;
+//            if (ci.pinned)
+//            sync_cout << "posti\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()]);
 
 
@@ -877,6 +879,8 @@ moves_loop: // When in check search starts from here
 
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
+//    if (ci.pinned)
+//    sync_cout << "post\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
     MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
 
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1294,6 +1298,8 @@ moves_loop: // When in check search starts from here
     // be generated.
     CheckInfo ci(pos);
     pos.checkInfo = &ci;
+//    if (ci.pinned)
+//           sync_cout << "postqs\n" << pos << "  pinneds :\n" << Bitboards::pretty(ci.pinned)  << sync_endl;
     MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove));
 
 

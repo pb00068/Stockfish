@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
+#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -677,6 +677,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   ++nodes;
   Key k = st->key ^ Zobrist::side;
 
+  checkInfo = nullptr;
+
   // Copy some fields of the old state to our new StateInfo object except the
   // ones which are going to be recalculated from scratch anyway and then switch
   // our state pointer to point to the new (ready to be updated) state.
@@ -852,6 +854,7 @@ void Position::undo_move(Move m) {
 
   assert(empty(from) || type_of(m) == CASTLING);
   assert(st->capturedType != KING);
+  checkInfo = nullptr;
 
   if (type_of(m) == PROMOTION)
   {
@@ -927,6 +930,8 @@ void Position::do_null_move(StateInfo& newSt) {
   assert(!checkers());
   assert(&newSt != st);
 
+  checkInfo = nullptr;
+
   std::memcpy(&newSt, st, sizeof(StateInfo));
   newSt.previous = st;
   st = &newSt;
@@ -951,6 +956,7 @@ void Position::do_null_move(StateInfo& newSt) {
 void Position::undo_null_move() {
 
   assert(!checkers());
+  checkInfo = nullptr;
 
   st = st->previous;
   sideToMove = ~sideToMove;
@@ -1073,7 +1079,7 @@ Value Position::see(Move m, bool checkpins) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (checkpins && slIndex == 1 && stmAttackers && captured != KING ) {
+      if (checkpins && this->checkInfo != nullptr && slIndex == 1 && stmAttackers && captured != KING ) {
           pinneds[stm] = this->checkInfo->pinned;
 //        Square ksq = square<KING>(stm); // our king
 //        Bitboard b;
@@ -1091,6 +1097,9 @@ Value Position::see(Move m, bool checkpins) const {
 //          if (!more_than_one(b))
 //            pinneds[stm] |= b & pieces(stm) & occupied;
 //        }
+//
+//        if (this->checkInfo != nullptr && pinneds[stm] != this->checkInfo->pinned)
+//          sync_cout << "pos\n" << *this << " move " << UCI::move(m, false) << " pinneds of color " << stm << " :\n" << Bitboards::pretty(pinneds[stm]) << " pinneds pos " << Bitboards::pretty(this->checkInfo->pinned) << sync_endl;
       }
       if (checkpins && (pinneds[stm] & stmAttackers)) {
 
