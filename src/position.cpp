@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
+#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -993,7 +993,7 @@ Value Position::see_sign(Move m, Bitboard* pinneds) const {
   return see(m, pinneds);
 }
 
-Value Position::see(Move m, Bitboard* pinneds) const {
+Value Position::see(Move m, Bitboard* notpinned) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
@@ -1024,11 +1024,17 @@ Value Position::see(Move m, Bitboard* pinneds) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied;
+  attackers = attackers_to(to, occupied) & occupied & notpinned[0] & notpinned[1];
 
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
+
+//  if (pinneds[stm] & stmAttackers) {
+//       sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
+//       stmAttackers = stmAttackers & ~pinneds[stm];
+//  }
+
   if (!stmAttackers)
       return swapList[0];
 
@@ -1051,11 +1057,11 @@ Value Position::see(Move m, Bitboard* pinneds) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (pinneds[stm] & stmAttackers) {
-//          if (slIndex % 2 == 0)
-//          sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
-          stmAttackers = stmAttackers & ~pinneds[stm];
-      }
+//      if (pinneds[stm] & stmAttackers) {
+////          if (slIndex % 2 == 0)
+////          sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
+//          stmAttackers = stmAttackers & ~pinneds[stm];
+//      }
 
       ++slIndex;
 
