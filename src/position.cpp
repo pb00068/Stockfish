@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+//#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -979,7 +980,7 @@ Key Position::key_after(Move m) const {
 /// Position::see() is a static exchange evaluator: It tries to estimate the
 /// material gain or loss resulting from a move.
 
-Value Position::see_sign(Move m) const {
+Value Position::see_sign(Move m, Bitboard* pinneds) const {
 
   assert(is_ok(m));
 
@@ -989,10 +990,10 @@ Value Position::see_sign(Move m) const {
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
-  return see(m);
+  return see(m, pinneds);
 }
 
-Value Position::see(Move m) const {
+Value Position::see(Move m, Bitboard* pinneds) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
@@ -1049,6 +1050,13 @@ Value Position::see(Move m) const {
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
+
+      if (pinneds[stm] & stmAttackers) {
+//          if (slIndex % 2 == 0)
+//          sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
+          stmAttackers = stmAttackers & ~pinneds[stm];
+      }
+
       ++slIndex;
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
