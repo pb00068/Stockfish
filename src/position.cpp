@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
+//#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -993,7 +993,7 @@ Value Position::see_sign(Move m, Bitboard* pinneds) const {
   return see(m, pinneds);
 }
 
-Value Position::see(Move m, Bitboard* notpinned) const {
+Value Position::see(Move m, Bitboard* pinned) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
@@ -1024,8 +1024,10 @@ Value Position::see(Move m, Bitboard* notpinned) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied & notpinned[0] & notpinned[1];
+  attackers = attackers_to(to, occupied) & occupied & ~(pinned[0] | pinned[1]);
 
+//  if ((attackers & ~(pinned[0] | pinned[1])) != attackers)
+//    sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinned[0] | pinned[1])  << "\nattackers:\n" << Bitboards::pretty(attackers) << sync_endl;
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
