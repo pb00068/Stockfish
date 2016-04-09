@@ -45,6 +45,7 @@ struct Stack {
   Value staticEval;
   bool skipEarlyPruning;
   Bitboard pinneds[2]; // not pinned pieces by color, used by SEE
+  Bitboard pinners[2];
   int moveCount;
 };
 

@@ -47,6 +47,7 @@ struct CheckInfo {
 
   Bitboard dcCandidates;
   Bitboard pinned;
+  Bitboard pinners;
   Bitboard checkSquares[PIECE_TYPE_NB];
   Square   ksq;
 };
@@ -120,6 +121,7 @@ public:
   Bitboard checkers() const;
   Bitboard discovered_check_candidates() const;
   Bitboard pinned_pieces(Color c) const;
+  Bitboard pinned_pieces(Color c, Bitboard& pinners) const;
 
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
@@ -149,8 +151,8 @@ public:
   void undo_null_move();
 
   // Static exchange evaluation
-  Value see(Move m, Bitboard* pinneds) const;
-  Value see_sign(Move m, Bitboard* pinneds) const;
+  Value see(Move m, Bitboard* pinneds, Bitboard* pinners) const;
+  Value see_sign(Move m, Bitboard* pinneds, Bitboard* pinners) const;
 
   // Accessing hash keys
   Key key() const;
@@ -184,6 +186,7 @@ private:
 
   // Other helpers
   Bitboard check_blockers(Color c, Color kingColor) const;
+  Bitboard check_blockers(Color c, Color kingColor, Bitboard& pinners) const;
   void put_piece(Color c, PieceType pt, Square s);
   void remove_piece(Color c, PieceType pt, Square s);
   void move_piece(Color c, PieceType pt, Square from, Square to);
@@ -314,6 +317,10 @@ inline Bitboard Position::discovered_check_candidates() const {
 
 inline Bitboard Position::pinned_pieces(Color c) const {
   return check_blockers(c, c);
+}
+
+inline Bitboard Position::pinned_pieces(Color c, Bitboard& pinners) const {
+  return check_blockers(c, c, pinners);
 }
 
 inline bool Position::pawn_passed(Color c, Square s) const {

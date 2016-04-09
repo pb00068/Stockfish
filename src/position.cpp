@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
+#include <iostream>
 
 #include "bitcount.h"
 #include "misc.h"
@@ -93,7 +93,7 @@ CheckInfo::CheckInfo(const Position& pos) {
   Color them = ~pos.side_to_move();
   ksq = pos.square<KING>(them);
 
-  pinned = pos.pinned_pieces(pos.side_to_move());
+  pinned = pos.pinned_pieces(pos.side_to_move(), pinners);
   dcCandidates = pos.discovered_check_candidates();
 
   checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
@@ -467,6 +467,25 @@ Bitboard Position::check_blockers(Color c, Color kingColor) const {
   while (pinners)
   {
       b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
+
+      if (!more_than_one(b))
+          result |= b & pieces(c);
+  }
+  return result;
+}
+
+Bitboard Position::check_blockers(Color c, Color kingColor, Bitboard& pinners) const {
+
+  Bitboard b, pinnerz, result = 0;
+  Square ksq = square<KING>(kingColor);
+
+  // Pinners are sliders that give check when a pinned piece is removed
+  pinners = pinnerz = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
+             | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~kingColor);
+
+  while (pinnerz)
+  {
+      b = between_bb(ksq, pop_lsb(&pinnerz)) & pieces();
 
       if (!more_than_one(b))
           result |= b & pieces(c);
@@ -980,7 +999,7 @@ Key Position::key_after(Move m) const {
 /// Position::see() is a static exchange evaluator: It tries to estimate the
 /// material gain or loss resulting from a move.
 
-Value Position::see_sign(Move m, Bitboard* pinneds) const {
+Value Position::see_sign(Move m, Bitboard* pinneds, Bitboard* pinners) const {
 
   assert(is_ok(m));
 
@@ -990,10 +1009,10 @@ Value Position::see_sign(Move m, Bitboard* pinneds) const {
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
-  return see(m, pinneds);
+  return see(m, pinneds, pinners);
 }
 
-Value Position::see(Move m, Bitboard* pinned) const {
+Value Position::see(Move m, Bitboard* pinned, Bitboard* pinners) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
@@ -1024,7 +1043,7 @@ Value Position::see(Move m, Bitboard* pinned) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied & ~(pinned[0] | pinned[1]);
+  attackers = attackers_to(to, occupied) & occupied; // & ~(pinned[0] | pinned[1]);
 
 //  if ((attackers & ~(pinned[0] | pinned[1])) != attackers)
 //    sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinned[0] | pinned[1])  << "\nattackers:\n" << Bitboards::pretty(attackers) << sync_endl;
@@ -1032,10 +1051,13 @@ Value Position::see(Move m, Bitboard* pinned) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
-//  if (pinneds[stm] & stmAttackers) {
-//       sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
-//       stmAttackers = stmAttackers & ~pinneds[stm];
+//  if (pinned[stm] & stmAttackers) {
+//	   if ((pinners[stm] & occupied) != pinners[stm])
+//		   sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinned[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;
+//       stmAttackers = stmAttackers & ~pinned[stm];
 //  }
+  if ((pinned[stm] & stmAttackers) &&  (pinners[stm] & occupied) == pinners[stm])
+	  stmAttackers = stmAttackers & ~pinned[stm];
 
   if (!stmAttackers)
       return swapList[0];
@@ -1059,6 +1081,8 @@ Value Position::see(Move m, Bitboard* pinned) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
+      if ((pinned[stm] & stmAttackers) &&  (pinners[stm] & occupied) == pinners[stm])
+      	  stmAttackers = stmAttackers & ~pinned[stm];
 //      if (pinneds[stm] & stmAttackers) {
 ////          if (slIndex % 2 == 0)
 ////          sync_cout << "pos \n" << *this << "\nmove: " << UCI::move(m,false) << "\n pinned:\n" << Bitboards::pretty(pinneds[stm])  << "\nattackers:\n" << Bitboards::pretty(stmAttackers) << sync_endl;

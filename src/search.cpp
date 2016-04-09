@@ -838,7 +838,9 @@ namespace {
 
         CheckInfo ci(pos);
         ss->pinneds[pos.side_to_move()] = ci.pinned;
+        ss->pinners[pos.side_to_move()] = ci.pinners;
         ss->pinneds[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinneds[~pos.side_to_move()];
+        ss->pinners[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinners[~pos.side_to_move()];
         MovePicker mp(pos, ttMove, thisThread->history, PieceValue[MG][pos.captured_piece_type()], ss);
 
         while ((move = mp.next_move()) != MOVE_NONE)
@@ -878,7 +880,9 @@ moves_loop: // When in check search starts from here
     MovePicker mp(pos, ttMove, depth, thisThread->history, cmh, fmh, cm, ss);
     CheckInfo ci(pos);
     ss->pinneds[pos.side_to_move()] = ci.pinned;
+    ss->pinners[pos.side_to_move()] = ci.pinners;
     ss->pinneds[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinneds[~pos.side_to_move()];
+    ss->pinners[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinners[~pos.side_to_move()];
 
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -928,7 +932,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move, ci);
 
       // Step 12. Extend checks
-      if (givesCheck && pos.see_sign(move, ss->pinneds) >= VALUE_ZERO)
+      if (givesCheck && pos.see_sign(move, ss->pinneds, ss->pinners) >= VALUE_ZERO)
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -990,7 +994,7 @@ moves_loop: // When in check search starts from here
           }
 
           // Prune moves with negative SEE at low depths
-          if (predictedDepth < 4 * ONE_PLY && pos.see_sign(move, ss->pinneds) < VALUE_ZERO)
+          if (predictedDepth < 4 * ONE_PLY && pos.see_sign(move, ss->pinneds, ss->pinners) < VALUE_ZERO)
               continue;
       }
 
@@ -1035,7 +1039,7 @@ moves_loop: // When in check search starts from here
           if (   r
               && type_of(move) == NORMAL
               && type_of(pos.piece_on(to_sq(move))) != PAWN
-              && pos.see(make_move(to_sq(move), from_sq(move)), ss->pinneds) < VALUE_ZERO)
+              && pos.see(make_move(to_sq(move), from_sq(move)), ss->pinneds, ss->pinners) < VALUE_ZERO)
               r = std::max(DEPTH_ZERO, r - ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
@@ -1296,7 +1300,9 @@ moves_loop: // When in check search starts from here
     MovePicker mp(pos, ttMove, depth, pos.this_thread()->history, to_sq((ss-1)->currentMove), ss);
     CheckInfo ci(pos);
     ss->pinneds[pos.side_to_move()] = ci.pinned;
+    ss->pinners[pos.side_to_move()] = ci.pinners;
     ss->pinneds[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinneds[~pos.side_to_move()];
+    ss->pinners[~pos.side_to_move()] = (type_of( (ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING) ? 0 : (ss-1)->pinners[~pos.side_to_move()];
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1323,7 +1329,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && pos.see(move, ss->pinneds) <= VALUE_ZERO)
+          if (futilityBase <= alpha && pos.see(move, ss->pinneds, ss->pinners) <= VALUE_ZERO)
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1338,7 +1344,7 @@ moves_loop: // When in check search starts from here
       // Don't search moves with negative SEE values
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  pos.see_sign(move, ss->pinneds) < VALUE_ZERO)
+          &&  pos.see_sign(move, ss->pinneds, ss->pinners) < VALUE_ZERO)
           continue;
 
       // Speculative prefetch as early as possible
