@@ -694,8 +694,8 @@ namespace {
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
             update_stats(pos, ss, ttMove, depth, nullptr, 0);
-        if (ttValue >= beta && ttMove && pos.capture_or_promotion(ttMove)) {
-            ss->capturekiller[pos.captured_piece_type()] = move;
+        if (ttValue >= beta && ttMove && pos.capture_or_promotion(ttMove))
+            ss->capturekiller[pos.captured_piece_type()] = ttMove;
 
         return ttValue;
     }
