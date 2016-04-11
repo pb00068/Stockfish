@@ -694,7 +694,7 @@ namespace {
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
             update_stats(pos, ss, ttMove, depth, nullptr, 0);
-        if (ttValue >= beta && ttMove && pos.capture_or_promotion(ttMove))
+        if (ttValue >= beta && ttMove && pos.captured_piece_type() && pos.capture_or_promotion(ttMove))
             ss->capturekiller[pos.captured_piece_type()] = ttMove;
 
         return ttValue;
@@ -1177,7 +1177,6 @@ moves_loop: // When in check search starts from here
 
     if (moveCount && bestMove && pos.captured_piece_type() && pos.capture_or_promotion(bestMove))
           ss->capturekiller[pos.captured_piece_type()] = move;
-////      ss->capturekiller = move;
 
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
