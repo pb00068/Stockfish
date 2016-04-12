@@ -44,6 +44,7 @@ namespace PSQT {
 struct CheckInfo {
 
   explicit CheckInfo(const Position&);
+  explicit CheckInfo( Position&);
 
   Bitboard dcCandidates;
   Bitboard pinned;
@@ -73,6 +74,7 @@ struct StateInfo {
   Bitboard   checkersBB;
   PieceType  capturedType;
   StateInfo* previous;
+  Bitboard   dcCandidates;
 };
 
 
@@ -175,6 +177,7 @@ public:
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = nullptr) const;
   void flip();
+  Bitboard dcCandidates;
 
 private:
   // Initialization helpers (used while setting up a position)

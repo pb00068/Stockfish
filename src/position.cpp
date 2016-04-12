@@ -99,6 +99,22 @@ CheckInfo::CheckInfo(const Position& pos) {
   checkSquares[KING]   = 0;
 }
 
+CheckInfo::CheckInfo(Position& pos) {
+
+  Color them = ~pos.side_to_move();
+  ksq = pos.square<KING>(them);
+
+  pinned = pos.pinned_pieces(pos.side_to_move());
+  dcCandidates = pos.dcCandidates = pos.discovered_check_candidates();
+
+  checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
+  checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
+  checkSquares[BISHOP] = pos.attacks_from<BISHOP>(ksq);
+  checkSquares[ROOK]   = pos.attacks_from<ROOK>(ksq);
+  checkSquares[QUEEN]  = checkSquares[BISHOP] | checkSquares[ROOK];
+  checkSquares[KING]   = 0;
+}
+
 
 /// operator<<(Position) returns an ASCII representation of the position
 
@@ -825,6 +841,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Calculate checkers bitboard (if move gives check)
   st->checkersBB = givesCheck ? attackers_to(square<KING>(them)) & pieces(us) : 0;
 
+  st->dcCandidates = dcCandidates;
+
   sideToMove = ~sideToMove;
 
   assert(pos_is_ok());
@@ -886,6 +904,8 @@ void Position::undo_move(Move m) {
           put_piece(~us, st->capturedType, capsq); // Restore the captured piece
       }
   }
+
+  dcCandidates = st->dcCandidates;
 
   // Finally point our state pointer back to the previous state
   st = st->previous;

@@ -19,9 +19,11 @@
 */
 
 #include <cassert>
+//#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
+//#include "uci.h"
 
 namespace {
 
@@ -134,9 +136,14 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+      if (pos.dcCandidates & from_sq(m)) {
+        m.value += RookValueMg; //PieceValue[MG][pos.piece_on(to_sq(m))];
+//        sync_cout << pos << " \nmove: " << UCI::move(m,false) << "\ndccandidates:\n" << Bitboards::pretty(pos.dcCandidates) << sync_endl;
+      }
+  }
 }
 
 template<>
@@ -258,7 +265,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if ((pos.dcCandidates & from_sq(move)) || pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
