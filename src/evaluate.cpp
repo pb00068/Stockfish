@@ -24,7 +24,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "bitcount.h"
+#include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
@@ -132,21 +132,21 @@ namespace {
   // Outpost[knight/bishop][supported by pawn] contains bonuses for knights and
   // bishops outposts, bigger if outpost piece is supported by a pawn.
   const Score Outpost[][2] = {
-    { S(42,11), S(63,17) }, // Knights
-    { S(18, 5), S(27, 8) }  // Bishops
+    { S(43,11), S(65,20) }, // Knights
+    { S(20, 3), S(29, 8) }  // Bishops
   };
 
   // ReachableOutpost[knight/bishop][supported by pawn] contains bonuses for
   // knights and bishops which can reach an outpost square in one move, bigger
   // if outpost square is supported by a pawn.
   const Score ReachableOutpost[][2] = {
-    { S(21, 5), S(31, 8) }, // Knights
-    { S( 8, 2), S(13, 4) }  // Bishops
+    { S(21, 5), S(35, 8) }, // Knights
+    { S( 8, 0), S(14, 4) }  // Bishops
   };
 
   // RookOnFile[semiopen/open] contains bonuses for each rook when there is no
   // friendly pawn on the rook file.
-  const Score RookOnFile[2] = { S(19, 10), S(43, 21) };
+  const Score RookOnFile[2] = { S(20, 7), S(45, 20) };
 
   // ThreatBySafePawn[PieceType] contains bonuses according to which piece
   // type is attacked by a pawn which is protected or is not attacked.
@@ -169,7 +169,7 @@ namespace {
   // We don't use a Score because we process the two components independently.
   const Value Passed[][RANK_NB] = {
     { V(5), V( 5), V(31), V(73), V(166), V(252) },
-    { V(7), V(14), V(38), V(64), V(137), V(193) }
+    { V(7), V(14), V(38), V(73), V(166), V(252) }
   };
 
   // PassedFile[File] contains a bonus according to the file of a passed pawn
@@ -181,12 +181,13 @@ namespace {
   // Assorted bonuses and penalties used by evaluation
   const Score MinorBehindPawn     = S(16,  0);
   const Score BishopPawns         = S( 8, 12);
-  const Score RookOnPawn          = S( 7, 27);
+  const Score RookOnPawn          = S( 8, 24);
   const Score TrappedRook         = S(92,  0);
   const Score Checked             = S(20, 20);
-  const Score ThreatByHangingPawn = S(70, 63);
-  const Score Hanging             = S(48, 28);
-  const Score ThreatByPawnPush    = S(31, 19);
+  const Score ThreatByHangingPawn = S(71, 61);
+  const Score LooseEnemies        = S( 0, 25);
+  const Score Hanging             = S(48, 27);
+  const Score ThreatByPawnPush    = S(38, 22);
   const Score Unstoppable         = S( 0, 20);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
@@ -208,10 +209,10 @@ namespace {
 
   // Penalties for enemy's safe checks
   const int QueenContactCheck = 89;
-  const int QueenCheck        = 50;
+  const int QueenCheck        = 52;
   const int RookCheck         = 45;
-  const int BishopCheck       = 6;
-  const int KnightCheck       = 14;
+  const int BishopCheck       = 5;
+  const int KnightCheck       = 17;
 
 
   // eval_init() initializes king and attack bitboards for a given color
@@ -233,7 +234,7 @@ namespace {
     {
         ei.kingRing[Them] = b | shift_bb<Down>(b);
         b &= ei.attackedBy[Us][PAWN];
-        ei.kingAttackersCount[Us] = b ? popcount<Max15>(b) : 0;
+        ei.kingAttackersCount[Us] = b ? popcount(b) : 0;
         ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
     }
     else
@@ -277,7 +278,7 @@ namespace {
             ei.kingAttackersWeight[Us] += KingAttackWeights[Pt];
             bb = b & ei.attackedBy[Them][KING];
             if (bb)
-                ei.kingAdjacentZoneAttacksCount[Us] += popcount<Max15>(bb);
+                ei.kingAdjacentZoneAttacksCount[Us] += popcount(bb);
         }
 
         if (Pt == QUEEN)
@@ -285,7 +286,7 @@ namespace {
                    | ei.attackedBy[Them][BISHOP]
                    | ei.attackedBy[Them][ROOK]);
 
-        int mob = popcount<Pt == QUEEN ? Full : Max15>(b & mobilityArea[Us]);
+        int mob = popcount(b & mobilityArea[Us]);
 
         mobility[Us] += MobilityBonus[Pt][mob];
 
@@ -333,7 +334,7 @@ namespace {
             {
                 Bitboard alignedPawns = pos.pieces(Them, PAWN) & PseudoAttacks[ROOK][s];
                 if (alignedPawns)
-                    score += RookOnPawn * popcount<Max15>(alignedPawns);
+                    score += RookOnPawn * popcount(alignedPawns);
             }
 
             // Bonus when on an open or semi-open file
@@ -383,13 +384,16 @@ namespace {
     // Main king safety evaluation
     if (ei.kingAttackersCount[Them])
     {
-        // Find the attacked squares around the king which have no defenders
-        // apart from the king itself.
+        // Find the attacked squares which are defended only by the king...
         undefended =  ei.attackedBy[Them][ALL_PIECES]
                     & ei.attackedBy[Us][KING]
                     & ~(  ei.attackedBy[Us][PAWN]   | ei.attackedBy[Us][KNIGHT]
                         | ei.attackedBy[Us][BISHOP] | ei.attackedBy[Us][ROOK]
                         | ei.attackedBy[Us][QUEEN]);
+
+        // ... and those which are not defended at all in the larger king ring
+        b =  ei.attackedBy[Them][ALL_PIECES] & ~ei.attackedBy[Us][ALL_PIECES]
+           & ei.kingRing[Us] & ~pos.pieces(Them);
 
         // Initialize the 'attackUnits' variable, which is used later on as an
         // index into the KingDanger[] array. The initial value is based on the
@@ -398,8 +402,8 @@ namespace {
         // the pawn shelter (current 'score' value).
         attackUnits =  std::min(72, ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them])
                      +  9 * ei.kingAdjacentZoneAttacksCount[Them]
-                     + 27 * popcount<Max15>(undefended)
-                     + 11 * !!ei.pinnedPieces[Us]
+                     + 27 * popcount(undefended)
+                     + 11 * (popcount(b) + !!ei.pinnedPieces[Us])
                      - 64 * !pos.count<QUEEN>(Them)
                      - mg_value(score) / 8;
 
@@ -414,7 +418,7 @@ namespace {
                 | ei.attackedBy[Them][KING];
 
             if (b)
-                attackUnits += QueenContactCheck * popcount<Max15>(b);
+                attackUnits += QueenContactCheck * popcount(b);
         }
 
         // Analyse the enemy's safe distance checks for sliders and knights
@@ -469,6 +473,11 @@ namespace {
     Bitboard b, weak, defended, safeThreats;
     Score score = SCORE_ZERO;
 
+    // Small bonus if the opponent has loose pawns or pieces
+    if (   (pos.pieces(Them) ^ pos.pieces(Them, QUEEN, KING))
+        & ~(ei.attackedBy[Us][ALL_PIECES] | ei.attackedBy[Them][ALL_PIECES]))
+        score += LooseEnemies;
+
     // Non-pawn enemies attacked by a pawn
     weak = (pos.pieces(Them) ^ pos.pieces(Them, PAWN)) & ei.attackedBy[Us][PAWN];
 
@@ -507,7 +516,7 @@ namespace {
 
         b = weak & ~ei.attackedBy[Them][ALL_PIECES];
         if (b)
-            score += Hanging * popcount<Max15>(b);
+            score += Hanging * popcount(b);
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
@@ -527,7 +536,7 @@ namespace {
        & ~ei.attackedBy[Us][PAWN];
 
     if (b)
-        score += ThreatByPawnPush * popcount<Max15>(b);
+        score += ThreatByPawnPush * popcount(b);
 
     if (DoTrace)
         Trace::add(THREAT, Us, score);
@@ -605,9 +614,6 @@ namespace {
                 mbonus += rr + r * 2, ebonus += rr + r * 2;
         } // rr != 0
 
-        if (pos.count<PAWN>(Us) < pos.count<PAWN>(Them))
-            ebonus += ebonus / 4;
-
         score += make_score(mbonus, ebonus) + PassedFile[file_of(s)];
     }
 
@@ -650,7 +656,7 @@ namespace {
     assert(unsigned(safe >> (Us == WHITE ? 32 : 0)) == 0);
 
     // ...count safe + (behind & safe) with a single popcount
-    int bonus = popcount<Full>((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
+    int bonus = popcount((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
     int weight =  pos.count<KNIGHT>(Us) + pos.count<BISHOP>(Us)
                 + pos.count<KNIGHT>(Them) + pos.count<BISHOP>(Them);
 
