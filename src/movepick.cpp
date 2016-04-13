@@ -188,7 +188,7 @@ void MovePicker::generate_next_stage() {
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove.m1;
-      killers[3] = countermove.obsolescence2 > 3 ? MOVE_NONE : countermove.m2;
+      killers[3] = countermove.obsolescence2 > 1 ? MOVE_NONE : countermove.m2;
       if (killers[2] == killers[0] || killers[2] == killers[1])
         killers[2] = killers[3];
       cur = killers;
