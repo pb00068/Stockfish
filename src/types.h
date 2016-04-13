@@ -120,6 +120,12 @@ enum Move {
   MOVE_NULL = 65
 };
 
+struct ExtMove2 {
+  Move m1;
+  Move m2;
+  int obsolescence2;
+};
+
 enum MoveType {
   NORMAL,
   PROMOTION = 1 << 14,

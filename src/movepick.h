@@ -46,7 +46,30 @@ struct Stats {
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
 
-  Move update(Piece pc, Square to, Move m) { Move old = table[pc][to]; table[pc][to] = m; return old; }
+  void update(Piece pc, Square to, ExtMove2 m)
+  {
+    if (table[pc][to].m2 == m.m1) {
+      //swap 2 entries so that the first one is the actual one
+
+      table[pc][to].m2 = table[pc][to].m1;
+      table[pc][to].m1 = m.m1;
+
+      table[pc][to].obsolescence2 = 0;
+    }
+
+    if (table[pc][to].m1 == m.m1) {
+      // reconfimred move
+      table[pc][to].obsolescence2++;
+    }
+    else { // new move
+      // shift old actual one to 2nd position
+      table[pc][to].m2 = table[pc][to].m1;
+      table[pc][to].obsolescence2 = 1;
+
+      // and store the new one;
+      table[pc][to].m1 = m.m1;
+    }
+  }
 
   void update(Piece pc, Square to, Value v) {
 
@@ -61,7 +84,7 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
-typedef Stats<Move> MoveStats;
+typedef Stats<ExtMove2> MoveStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
@@ -82,7 +105,7 @@ public:
   MovePicker(const Position&, Move, const HistoryStats&, Value);
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, Depth, const HistoryStats&,
-             const CounterMoveStats&, const CounterMoveStats&, Move, Move, Search::Stack*);
+             const CounterMoveStats&, const CounterMoveStats&, ExtMove2, Search::Stack*);
 
   Move next_move();
 
@@ -97,8 +120,7 @@ private:
   const CounterMoveStats* counterMoveHistory;
   const CounterMoveStats* followupMoveHistory;
   Search::Stack* ss;
-  Move countermove;
-  Move altCountermove;
+  ExtMove2 countermove;
   Depth depth;
   Move ttMove;
   ExtMove killers[4];

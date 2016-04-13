@@ -69,9 +69,9 @@ namespace {
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
                        const CounterMoveStats& cmh, const CounterMoveStats& fmh,
-                       Move cm, Move altCm, Search::Stack* s)
+                       ExtMove2 cm, Search::Stack* s)
            : pos(p), history(h), counterMoveHistory(&cmh),
-             followupMoveHistory(&fmh), ss(s), countermove(cm), altCountermove(altCm), depth(d) {
+             followupMoveHistory(&fmh), ss(s), countermove(cm), depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -187,8 +187,8 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
-      killers[2] = countermove;
-      killers[3] =  depth < 5 ? altCountermove : MOVE_NONE;
+      killers[2] = countermove.m1;
+      killers[3] = countermove.obsolescence2 > 3 ? MOVE_NONE : countermove.m2;
       if (killers[2] == killers[0] || killers[2] == killers[1])
         killers[2] = killers[3];
       cur = killers;
