@@ -88,7 +88,21 @@ CheckInfo::CheckInfo(const Position& pos) {
   Color them = ~pos.side_to_move();
   ksq = pos.square<KING>(them);
 
-  pinned = pos.pinned_pieces(pos.side_to_move());
+  Bitboard b, pinnerz, result = 0;
+  Square ourksq = pos.square<KING>(pos.side_to_move());
+
+  // Pinners are sliders that give check when a pinned piece is removed
+  pinnerz = pinners =(  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
+             | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
+
+  while (pinners)
+  {
+      b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
+
+      if (!more_than_one(b))
+          result |= b & pos.pieces(pos.side_to_move());
+  }
+  pinned = result;
   dcCandidates = pos.discovered_check_candidates();
 
   checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);

@@ -49,7 +49,7 @@ struct CheckInfo {
   explicit CheckInfo(const Position&);
 
   Bitboard dcCandidates;
-  Bitboard pinned;
+  Bitboard pinned, pinners;
   Bitboard checkSquares[PIECE_TYPE_NB];
   Square   ksq;
 };

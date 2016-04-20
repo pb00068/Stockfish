@@ -867,6 +867,8 @@ moves_loop: // When in check search starts from here
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
+    ss->pinners = ci.pinners;
+    ss->pinneds = ci.pinned;
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
                || ss->staticEval == VALUE_NONE
@@ -1287,6 +1289,8 @@ moves_loop: // When in check search starts from here
     // be generated.
     MovePicker mp(pos, ttMove, depth, to_sq((ss-1)->currentMove));
     CheckInfo ci(pos);
+    ss->pinners = ci.pinners;
+    ss->pinneds = ci.pinned;
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
