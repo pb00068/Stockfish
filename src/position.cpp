@@ -92,9 +92,9 @@ CheckInfo::CheckInfo(const Position& pos) {
   Square ourksq = pos.square<KING>(~them);
 
   // Pinners are sliders that give check when a pinned piece is removed
-  pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
+  pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
-
+  pinnerz = pinners;
   while (pinnerz)
   {
       b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();

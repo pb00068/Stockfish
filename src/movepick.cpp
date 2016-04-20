@@ -271,26 +271,28 @@ Move MovePicker::next_move() {
 
               if (depth > 7 && (ss-1)->pinneds && pos.getNonPawnMaterial() > 2000) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
 
-                  if (pos.side_to_move()) {
-                    //black
-                    pinneds[0] = (ss-1)->pinneds;
-                    pinneds[1] = ss->pinneds;
+                if (pos.side_to_move()) {
+                  //black
 
-                    pinners[0] = ss->pinners;
-                    pinners[1] = (ss-1)->pinners;
-                  }
-                  else { // white
-                    pinneds[0] = ss->pinneds;
-                    pinneds[1] = (ss-1)->pinneds;
+                  pinners[1] = ss->pinners;
+                  pinneds[1] = ss->pinneds;
 
-                    pinners[0] = (ss-1)->pinners;
-                    pinners[1] = ss->pinners;
-                  }
+                  pinneds[0] = (ss-1)->pinneds;
+                  pinners[0] = (ss-1)->pinners;
+                }
+                else { // white
+                  pinners[0] = ss->pinners;
+                  pinneds[0] = ss->pinneds;
+
+                  pinneds[1] = (ss-1)->pinneds;
+                  pinners[1] = (ss-1)->pinners;
+                }
+
 
                   if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
                       //
                       if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING || type_of((ss-1)->currentMove) != CASTLING) {
-                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
+                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << " pinnersw\n" << Bitboards::pretty(pinners[0]) << " pinnersb\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
                         return move;
                       }
                   }
