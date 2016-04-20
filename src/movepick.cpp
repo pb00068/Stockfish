@@ -19,7 +19,8 @@
 */
 
 #include <cassert>
-
+#include <iostream>
+#include "uci.h"
 #include "movepick.h"
 #include "thread.h"
 
@@ -268,41 +269,32 @@ Move MovePicker::next_move() {
               if (pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
-              if (depth > 4 && (ss-1)->pinneds  && pos.getNonPawnMaterial() > 2000) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
-              //                if (!pinsCalculated)
-              //                  calculatePins();
-                              if (pos.side_to_move()) {
-                                //black
-                                pinneds[0] = (ss-1)->pinneds;
-                                pinneds[1] = ss->pinneds;
+              if (depth > 7 && (ss-1)->pinneds && pos.getNonPawnMaterial() > 2000) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
 
-                                pinners[0] = ss->pinners;
-                                pinners[1] = (ss-1)->pinners;
-                              }
-                              else { // white
-                                pinneds[0] = ss->pinneds;
-                                pinneds[1] = (ss-1)->pinneds;
+                  if (pos.side_to_move()) {
+                    //black
+                    pinneds[0] = (ss-1)->pinneds;
+                    pinneds[1] = ss->pinneds;
 
-                                pinners[0] = (ss-1)->pinners;
-                                pinners[1] = ss->pinners;
-                              }
-              //                pos.this_thread()->pinchecks++;
-              //                if (pos.getSt()->nonPawnMaterial[0] + pos.getSt()->nonPawnMaterial[1] < 2000) {
-              //                  sync_cout << "pos\n" << pos << " endgame " << UCI::move(move,false) << "\npincalcs: " << pos.this_thread()->pinchecks << " gamephase: " << (pos.getSt()->nonPawnMaterial[0] + pos.getSt()->nonPawnMaterial[1]) << sync_endl;
-              //                }
-                              if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
-              //                        sync_cout << "pos\n" << pos << " recovered capture " << UCI::move(move,false) << "\npincalcs: " << pos.this_thread()->pinchecks << " gamephase: " << pos.game_phase() << sync_endl;
-              //                        if (pos.game_phase() < 50)  abort();
-                                  if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING) {
-              //                      sync_cout << "pos\n" << pos << " recovered capture " << UCI::move(move,false) << "\npincalcs: " << pos.this_thread()->pinchecks << " gamephase: " << pos.game_phase() << sync_endl;
-              //                      pos.this_thread()->pinchecks=0;
-                                    return move;
-                                  }
-              //                    else {
-              //                      sync_cout << "pos\n" << pos << " recovered capture " << UCI::move(move,false) << "\npincalcs: " << pos.this_thread()->pinchecks << " gamephase: " << pos.game_phase() << sync_endl;
-              //                      abort();
-              //                    }
-                              }
+                    pinners[0] = ss->pinners;
+                    pinners[1] = (ss-1)->pinners;
+                  }
+                  else { // white
+                    pinneds[0] = ss->pinneds;
+                    pinneds[1] = (ss-1)->pinneds;
+
+                    pinners[0] = (ss-1)->pinners;
+                    pinners[1] = ss->pinners;
+                  }
+
+                  if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
+                      //
+                      if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING) {
+                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
+                        return move;
+                      }
+                  }
+              }
 
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;

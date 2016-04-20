@@ -95,7 +95,7 @@ CheckInfo::CheckInfo(const Position& pos) {
   pinnerz = pinners =(  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
 
-  while (pinners)
+  while (pinnerz)
   {
       b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
 
@@ -103,6 +103,7 @@ CheckInfo::CheckInfo(const Position& pos) {
           result |= b & pos.pieces(pos.side_to_move());
   }
   pinned = result;
+//  pinned = pos.pinned_pieces(pos.side_to_move());
   dcCandidates = pos.discovered_check_candidates();
 
   checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
@@ -1266,6 +1267,6 @@ bool Position::pos_is_ok(int* failedStep) const {
   return true;
 }
 
-Value getNonPawnMaterial() const {
-  return  nonPawnMaterial[0] + nonPawnMaterial[1];
+Value Position::getNonPawnMaterial() const {
+  return st->nonPawnMaterial[0] + st->nonPawnMaterial[1];
 }
