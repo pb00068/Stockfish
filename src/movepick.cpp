@@ -289,8 +289,8 @@ Move MovePicker::next_move() {
 
                   if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
                       //
-                      if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING) {
-                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
+                      if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING || type_of((ss-1)->currentMove) != CASTLING) {
+                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
                         return move;
                       }
                   }
