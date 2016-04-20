@@ -832,6 +832,8 @@ namespace {
 
         MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
+        ss->pinners = ci.pinners;
+        ss->pinneds = ci.pinned;
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
