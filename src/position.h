@@ -100,6 +100,8 @@ public:
   Position& set(const std::string& fenStr, bool isChess960, StateInfo* si, Thread* th);
   const std::string fen() const;
 
+  Value getNonPawnMaterial() const;
+
   // Position representation
   Bitboard pieces() const;
   Bitboard pieces(PieceType pt) const;
@@ -154,6 +156,7 @@ public:
 
   // Static exchange evaluation
   Value see(Move m) const;
+  Value see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const;
   Value see_sign(Move m) const;
 
   // Accessing hash keys
