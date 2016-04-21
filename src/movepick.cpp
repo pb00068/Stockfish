@@ -271,28 +271,21 @@ Move MovePicker::next_move() {
 
               if (depth > 7 && (ss-1)->pinneds && pos.getNonPawnMaterial() > 2000) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
 
-                if (pos.side_to_move()) {
-                  //black
+                  pinneds[~pos.side_to_move()] = (ss-1)->pinneds;
+                  pinneds[pos.side_to_move()] = ss->pinneds;
 
-                  pinners[0] = ss->pinners;
-                  pinneds[1] = ss->pinneds;
+                  pinners[~pos.side_to_move()] = ss->pinners;
+                  pinners[pos.side_to_move()] = (ss-1)->pinners;
 
-                  pinneds[0] = (ss-1)->pinneds;
-                  pinners[1] = (ss-1)->pinners;
-                }
-                else { // white
-                  pinners[1] = ss->pinners;
-                  pinneds[0] = ss->pinneds;
+                  if (depth > 9 || pos.captured_piece_type()) {
 
-                  pinneds[1] = (ss-1)->pinneds;
-                  pinners[0] = (ss-1)->pinners;
-                }
+                  }
 
 
                   if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
                       //
                       if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING || type_of((ss-1)->currentMove) != CASTLING) {
-                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << " pinnedsw\n" << Bitboards::pretty(pinneds[0]) << " pinnedsb\n" << Bitboards::pretty(pinneds[1]) << " pinnersw\n" << Bitboards::pretty(pinners[0]) << " pinnersb\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
+                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\nwpinneds\n" << Bitboards::pretty(pinneds[0]) << " bpinneds\n" << Bitboards::pretty(pinneds[1]) << " wpinners\n" << Bitboards::pretty(pinners[0]) << " bpinners\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
                         return move;
                       }
                   }

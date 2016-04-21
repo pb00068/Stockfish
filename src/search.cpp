@@ -834,6 +834,9 @@ namespace {
         CheckInfo ci(pos);
         ss->pinners = ci.pinners;
         ss->pinneds = ci.pinned;
+//        if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0)
+//              sync_cout << "probcut pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
+
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
@@ -871,6 +874,16 @@ moves_loop: // When in check search starts from here
     CheckInfo ci(pos);
     ss->pinners = ci.pinners;
     ss->pinneds = ci.pinned;
+//    if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0) {
+//          sync_cout << "search pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
+//          sync_cout << "before pinneds\n" << Bitboards::pretty((ss-1)->pinneds) << " before pinners\n" << Bitboards::pretty((ss-1)->pinners) << sync_endl;
+//    }
+//    std::string prefix("r4r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R");
+//    if (!pos.fen().compare(0, prefix.size(), prefix) ) {
+//
+//      sync_cout << "search pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
+//    }
+
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
                || ss->staticEval == VALUE_NONE
@@ -1293,6 +1306,10 @@ moves_loop: // When in check search starts from here
     CheckInfo ci(pos);
     ss->pinners = ci.pinners;
     ss->pinneds = ci.pinned;
+
+//    if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0)
+//      sync_cout << "qsearch pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
+
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)

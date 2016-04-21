@@ -86,32 +86,32 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 CheckInfo::CheckInfo(const Position& pos) {
 
   Color them = ~pos.side_to_move();
-  ksq = pos.square<KING>(them);
+    ksq = pos.square<KING>(them);
 
-  Bitboard b, pinnerz, result = 0;
-  Square ourksq = pos.square<KING>(~them);
+    Bitboard b, pinnerz, result = 0;
+      Square ourksq = pos.square<KING>(~them);
 
-  // Pinners are sliders that give check when a pinned piece is removed
-  pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
-             | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
-  pinnerz = pinners;
-  while (pinnerz)
-  {
-      b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
+      // Pinners are sliders that give check when a pinned piece is removed
+      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
+                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
 
-      if (!more_than_one(b))
-          result |= b & pos.pieces(~them);
-  }
-  pinned = result;
-//  pinned = pos.pinned_pieces(pos.side_to_move());
-  dcCandidates = pos.discovered_check_candidates();
+      while (pinnerz)
+      {
+          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
 
-  checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
-  checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
-  checkSquares[BISHOP] = pos.attacks_from<BISHOP>(ksq);
-  checkSquares[ROOK]   = pos.attacks_from<ROOK>(ksq);
-  checkSquares[QUEEN]  = checkSquares[BISHOP] | checkSquares[ROOK];
-  checkSquares[KING]   = 0;
+          if (!more_than_one(b))
+              result |= b & pos.pieces(~them);
+      }
+      pinned = result;
+    //pinned = pos.pinned_pieces(pos.side_to_move());
+    dcCandidates = pos.discovered_check_candidates();
+
+    checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
+    checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
+    checkSquares[BISHOP] = pos.attacks_from<BISHOP>(ksq);
+    checkSquares[ROOK]   = pos.attacks_from<ROOK>(ksq);
+    checkSquares[QUEEN]  = checkSquares[BISHOP] | checkSquares[ROOK];
+    checkSquares[KING]   = 0;
 }
 
 
@@ -444,16 +444,16 @@ Phase Position::game_phase() const {
 
 Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
-  Bitboard b, pinners, result = 0;
+  Bitboard b, pinnerz, result = 0;
   Square ksq = square<KING>(kingColor);
 
   // Pinners are sliders that give check when a pinned piece is removed
-  pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
+  pinnerz = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
              | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~kingColor);
 
-  while (pinners)
+  while (pinnerz)
   {
-      b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
+      b = between_bb(ksq, pop_lsb(&pinnerz)) & pieces();
 
       if (!more_than_one(b))
           result |= b & pieces(c);
