@@ -19,8 +19,8 @@
 */
 
 #include <cassert>
-#include <iostream>
-#include "uci.h"
+//#include <iostream>
+//#include "uci.h"
 #include "movepick.h"
 #include "thread.h"
 
@@ -270,22 +270,37 @@ Move MovePicker::next_move() {
                   return move;
 
               if (depth > 7 && (ss-1)->pinneds && pos.getNonPawnMaterial() > 2000) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
-
-                  pinneds[~pos.side_to_move()] = (ss-1)->pinneds;
                   pinneds[pos.side_to_move()] = ss->pinneds;
-
                   pinners[~pos.side_to_move()] = ss->pinners;
-                  pinners[pos.side_to_move()] = (ss-1)->pinners;
 
-                  if (depth > 9 || pos.captured_piece_type()) {
 
-                  }
-
+                  bool recalc = false;
+//                  if (depth > 9 || pos.captured_piece_type()) { // recalculate because captured piece could have been a pinner
+//                      Bitboard b, result = 0;
+//                      Square ksq = pos.square<KING>(~pos.side_to_move());
+//                      Bitboard pinnerz = pinners[pos.side_to_move()] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
+//                              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(pos.side_to_move());
+//
+//                      while (pinnerz)
+//                      {
+//                          b = between_bb(ksq, pop_lsb(&pinnerz)) & pos.pieces();
+//                          if (!more_than_one(b))
+//                              result |= b & pos.pieces(~pos.side_to_move());
+//                      }
+//                      pinneds[~pos.side_to_move()] = result;
+//                      pos.this_thread()->pinawarecalcs++;
+//                      recalc = true;
+//                  }
+//                  else {
+                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
+                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
+//                  }
 
                   if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
                       //
-                      if (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING || type_of((ss-1)->currentMove) != CASTLING) {
-                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\nwpinneds\n" << Bitboards::pretty(pinneds[0]) << " bpinneds\n" << Bitboards::pretty(pinneds[1]) << " wpinners\n" << Bitboards::pretty(pinners[0]) << " bpinners\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << sync_endl;
+                      if (recalc || (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING)) {
+//                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\nwpinneds\n" << Bitboards::pretty(pinneds[0]) << " bpinneds\n" << Bitboards::pretty(pinneds[1]) << " wpinners\n" << Bitboards::pretty(pinners[0]) << " bpinners\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << " pincalcs" << pos.this_thread()->pinawarecalcs << sync_endl;
+                        pos.this_thread()->pinawarecalcs = 0;
                         return move;
                       }
                   }
