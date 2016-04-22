@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1087,18 +1086,13 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
-//  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
-//       sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
-
-//  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
-//      stmAttackers = stmAttackers & ~pinnez[stm];
-    if (pinnez[stm] & stmAttackers)
-    {
+  if (pinnez[stm] & stmAttackers)
+  {
         pinner[~stm] &= occupied;
-        // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
-        if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+        // in case of 1 pinner, check if the exchange square lies between king and pinner so we handle partial pins
+        if (pinner[~stm] && (more_than_one(pinner[~stm] || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
             stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
-    }
+  }
 
   if (!stmAttackers)
       return swapList[0];
@@ -1122,18 +1116,11 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-//      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
-//        sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
-
-
-//      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
-//            stmAttackers = stmAttackers & ~pinnez[stm];
-
       if (pinnez[stm] & stmAttackers)
       {
           pinner[~stm] &= occupied;
-          // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
-          if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+          // in case of 1 pinner, check if the exchange square lies between king and pinner so we handle partial pins
+          if (pinner[~stm] && (more_than_one(pinner[~stm] || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
               stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
       }
 
