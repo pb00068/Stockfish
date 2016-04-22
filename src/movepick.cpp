@@ -190,6 +190,7 @@ void MovePicker::generate_next_stage() {
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
       score<CAPTURES>();
+      remainingCapturesBad=false;
       break;
 
   case KILLERS:
@@ -266,58 +267,14 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
+              if (!remainingCapturesBad) {
+                if (pos.see_sign(move) >= VALUE_ZERO)
+                    return move;
 
+                if (type_of(pos.piece_on(to_sq(move))) ==  ROOK && type_of(pos.piece_on(from_sq(move))) == QUEEN && !((ss-1)->pinneds & to_sq(move)))
+                    // Queen takes rook is bad and rook is'nt pinned, so probably remaining captures are bad since the rook can retaliate against the queen
+                    remainingCapturesBad=true;
 
-              if (pos.see_sign(move) >= VALUE_ZERO)
-                  return move;
-
-              if (depth > 5 && (ss-1)->pinneds && pos.getNonPawnMaterial() > 2000 &&
-                  PieceValue[MG][pos.piece_on(to_sq(move))] > PawnValueMg ) { // && pos.game_phase()) { // before we relegate a capture, we do a more accurate analysis with a pin aware SEE
-                  pinneds[pos.side_to_move()] = ss->pinneds;
-                  pinners[~pos.side_to_move()] = ss->pinners;
-
-
-                  bool recalc = false;
-//                  following block seems to hurt in elo-performance on lower depth
-                  if (depth > 0) { // at this depth we want accuracy
-                      Bitboard b, result = 0;
-                      Square ksq = pos.square<KING>(~pos.side_to_move());
-                      Bitboard pinnerz = pinners[pos.side_to_move()] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
-                              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(pos.side_to_move());
-
-                      while (pinnerz)
-                      {
-                          b = between_bb(ksq, pop_lsb(&pinnerz)) & pos.pieces();
-                          if (!more_than_one(b))
-                              result |= b & pos.pieces(~pos.side_to_move());
-                      }
-                      pinneds[~pos.side_to_move()] = result;
-                      pos.this_thread()->pinawarecalcs++;
-                      recalc = true;
-                  }
-                  else {
-                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
-                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
-                  }
-                  if (pinners[0] & to_sq(move))
-                     pinners[0] ^= to_sq(move);
-                  if (pinners[1] & to_sq(move))
-                     pinners[1] ^= to_sq(move);
-
-//                  Value prec = pos.see_pin_aware(move, pinners, pinneds);
-//                  if (val != prec && prec >= 0) {
-//                    sync_cout << "pos\n" << pos << "\n  capture " << UCI::move(move,false) << " values " << val << "   " << prec << "  lastmove: " << UCI::move( (ss-1)->currentMove, false) << "\nwpinneds\n" << Bitboards::pretty(pinneds[0]) << " bpinneds\n" << Bitboards::pretty(pinneds[1]) << " wpinners\n" << Bitboards::pretty(pinners[0]) << " bpinners\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << " pincalcs" << pos.this_thread()->pinawarecalcs << sync_endl;
-//                    pos.this_thread()->pinawarecalcs = 0;
-//                  }
-                  if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO) {
-                      //
-                      if (recalc || (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING)) {
-//                        sync_cout << "pos\n" << pos << "\nrecovered capture " << UCI::move(move,false) << " lastmove: " << UCI::move( (ss-1)->currentMove, false) //<< sync_endl;
-//                        << "\nwpinneds\n" << Bitboards::pretty(pinneds[0]) << " bpinneds\n" << Bitboards::pretty(pinneds[1]) << " wpinners\n" << Bitboards::pretty(pinners[0]) << " bpinners\n" << Bitboards::pretty(pinners[1]) << "\ngamenonpawnmat: " << pos.getNonPawnMaterial() << " pincalcs" << pos.this_thread()->pinawarecalcs << sync_endl;
-//                        pos.this_thread()->pinawarecalcs = 0;
-                        return move;
-                      }
-                  }
               }
 
               // Losing capture, move it to the tail of the array

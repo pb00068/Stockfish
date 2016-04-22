@@ -89,22 +89,22 @@ CheckInfo::CheckInfo(const Position& pos) {
   Color them = ~pos.side_to_move();
     ksq = pos.square<KING>(them);
 
-    Bitboard b, pinnerz, result = 0;
-      Square ourksq = pos.square<KING>(~them);
-
-      // Pinners are sliders that give check when a pinned piece is removed
-      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
-                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
-
-      while (pinnerz)
-      {
-          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
-
-          if (!more_than_one(b))
-              result |= b & pos.pieces(~them);
-      }
-      pinned = result;
-    //pinned = pos.pinned_pieces(pos.side_to_move());
+//    Bitboard b, pinnerz, result = 0;
+//      Square ourksq = pos.square<KING>(~them);
+//
+//      // Pinners are sliders that give check when a pinned piece is removed
+//      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
+//                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
+//
+//      while (pinnerz)
+//      {
+//          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
+//
+//          if (!more_than_one(b))
+//              result |= b & pos.pieces(~them);
+//      }
+//      pinned = result;
+    pinned = pos.pinned_pieces(pos.side_to_move());
     dcCandidates = pos.discovered_check_candidates();
 
     checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
@@ -1050,104 +1050,104 @@ Value Position::see(Move m) const {
   return swapList[0];
 }
 
-Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const {
-
-  Square from, to;
-  Bitboard occupied, attackers, stmAttackers;
-  Value swapList[32];
-  int slIndex = 1;
-  PieceType captured;
-  Color stm;
-
-  assert(is_ok(m));
-
-  from = from_sq(m);
-  to = to_sq(m);
-  swapList[0] = PieceValue[MG][piece_on(to)];
-  stm = color_of(piece_on(from));
-  occupied = pieces() ^ from;
-
-  // Castling moves are implemented as king capturing the rook so cannot
-  // be handled correctly. Simply return VALUE_ZERO that is always correct
-  // unless in the rare case the rook ends up under attack.
-  if (type_of(m) == CASTLING)
-      return VALUE_ZERO;
-
-  if (type_of(m) == ENPASSANT)
-  {
-      occupied ^= to - pawn_push(stm); // Remove the captured pawn
-      swapList[0] = PieceValue[MG][PAWN];
-  }
-
-  // Find all attackers to the destination square, with the moving piece
-  // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied;
-
-  // If the opponent has no attackers we are finished
-  stm = ~stm;
-  stmAttackers = attackers & pieces(stm);
-
-//  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
-//       sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
-
-//  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
-//      stmAttackers = stmAttackers & ~pinnez[stm];
-    if (pinnez[stm] & stmAttackers)
-    {
-        pinner[~stm] &= occupied;
-        // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
-        if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
-            stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
-    }
-
-  if (!stmAttackers)
-      return swapList[0];
-
-  // The destination square is defended, which makes things rather more
-  // difficult to compute. We proceed by building up a "swap list" containing
-  // the material gain or loss at each stop in a sequence of captures to the
-  // destination square, where the sides alternately capture, and always
-  // capture with the least valuable piece. After each capture, we look for
-  // new X-ray attacks from behind the capturing piece.
-  captured = type_of(piece_on(from));
-
-  do {
-      assert(slIndex < 32);
-
-      // Add the new entry to the swap list
-      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
-
-      // Locate and remove the next least valuable attacker
-      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
-      stm = ~stm;
-      stmAttackers = attackers & pieces(stm);
-
-//      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
-//        sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
-
-
-//      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
-//            stmAttackers = stmAttackers & ~pinnez[stm];
-
-      if (pinnez[stm] & stmAttackers)
-      {
-          pinner[~stm] &= occupied;
-          // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
-          if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
-              stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
-      }
-
-      ++slIndex;
-
-  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
-
-  // Having built the swap list, we negamax through it to find the best
-  // achievable score from the point of view of the side to move.
-  while (--slIndex)
-      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
-
-  return swapList[0];
-}
+//Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const {
+//
+//  Square from, to;
+//  Bitboard occupied, attackers, stmAttackers;
+//  Value swapList[32];
+//  int slIndex = 1;
+//  PieceType captured;
+//  Color stm;
+//
+//  assert(is_ok(m));
+//
+//  from = from_sq(m);
+//  to = to_sq(m);
+//  swapList[0] = PieceValue[MG][piece_on(to)];
+//  stm = color_of(piece_on(from));
+//  occupied = pieces() ^ from;
+//
+//  // Castling moves are implemented as king capturing the rook so cannot
+//  // be handled correctly. Simply return VALUE_ZERO that is always correct
+//  // unless in the rare case the rook ends up under attack.
+//  if (type_of(m) == CASTLING)
+//      return VALUE_ZERO;
+//
+//  if (type_of(m) == ENPASSANT)
+//  {
+//      occupied ^= to - pawn_push(stm); // Remove the captured pawn
+//      swapList[0] = PieceValue[MG][PAWN];
+//  }
+//
+//  // Find all attackers to the destination square, with the moving piece
+//  // removed, but possibly an X-ray attacker added behind it.
+//  attackers = attackers_to(to, occupied) & occupied;
+//
+//  // If the opponent has no attackers we are finished
+//  stm = ~stm;
+//  stmAttackers = attackers & pieces(stm);
+//
+////  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
+////       sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
+//
+////  if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
+////      stmAttackers = stmAttackers & ~pinnez[stm];
+//    if (pinnez[stm] & stmAttackers)
+//    {
+//        pinner[~stm] &= occupied;
+//        // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
+//        if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+//            stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+//    }
+//
+//  if (!stmAttackers)
+//      return swapList[0];
+//
+//  // The destination square is defended, which makes things rather more
+//  // difficult to compute. We proceed by building up a "swap list" containing
+//  // the material gain or loss at each stop in a sequence of captures to the
+//  // destination square, where the sides alternately capture, and always
+//  // capture with the least valuable piece. After each capture, we look for
+//  // new X-ray attacks from behind the capturing piece.
+//  captured = type_of(piece_on(from));
+//
+//  do {
+//      assert(slIndex < 32);
+//
+//      // Add the new entry to the swap list
+//      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+//
+//      // Locate and remove the next least valuable attacker
+//      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+//      stm = ~stm;
+//      stmAttackers = attackers & pieces(stm);
+//
+////      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) != pinner[~stm])
+////        sync_cout << *this << " move " << UCI::move(m,false) << " pinneds\n" << Bitboards::pretty(pinnez[stm]) << " attackers\n" << Bitboards::pretty(stmAttackers) << " pinners\n" << Bitboards::pretty(pinner[~stm]) << " occipied\n" << Bitboards::pretty(occupied) <<sync_endl;
+//
+//
+////      if ((pinnez[stm] & stmAttackers) &&  (pinner[~stm] & occupied) == pinner[~stm])
+////            stmAttackers = stmAttackers & ~pinnez[stm];
+//
+//      if (pinnez[stm] & stmAttackers)
+//      {
+//          pinner[~stm] &= occupied;
+//          // in case of 1 pinner check if the exchange square lies between king and pinner so we handle partial pins
+//          if (pinner[~stm] && ((more_than_one(pinner[~stm]) || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+//              stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+//      }
+//
+//      ++slIndex;
+//
+//  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
+//
+//  // Having built the swap list, we negamax through it to find the best
+//  // achievable score from the point of view of the side to move.
+//  while (--slIndex)
+//      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+//
+//  return swapList[0];
+//}
 
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule

@@ -46,7 +46,7 @@ struct Stack {
   Value staticEval;
   bool skipEarlyPruning;
   int moveCount;
-  Bitboard pinners, pinneds;
+  Bitboard pinneds;
   CounterMoveStats* counterMoves;
 };
 

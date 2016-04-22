@@ -832,7 +832,6 @@ namespace {
 
         MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
-        ss->pinners = ci.pinners;
         ss->pinneds = ci.pinned;
 //        if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0)
 //              sync_cout << "probcut pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
@@ -872,7 +871,6 @@ moves_loop: // When in check search starts from here
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
-    ss->pinners = ci.pinners;
     ss->pinneds = ci.pinned;
 //    if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0) {
 //          sync_cout << "search pos\n" << pos << "\n pinneds\n" << Bitboards::pretty(ss->pinneds) << " pinners\n" << Bitboards::pretty(ss->pinners) << sync_endl;
@@ -1304,7 +1302,6 @@ moves_loop: // When in check search starts from here
     // be generated.
     MovePicker mp(pos, ttMove, depth, to_sq((ss-1)->currentMove));
     CheckInfo ci(pos);
-    ss->pinners = ci.pinners;
     ss->pinneds = ci.pinned;
 
 //    if (pos.fen().compare("2r2r1k/2p3pp/2Pp4/p4p1b/2PNp2b/4B3/PP1R1PPP/2K4R w - - 0 22") == 0)
