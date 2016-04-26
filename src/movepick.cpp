@@ -190,6 +190,7 @@ void MovePicker::generate_next_stage() {
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
       score<CAPTURES>();
+      pins_calculated=false;
       break;
 
   case KILLERS:
@@ -266,39 +267,46 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if ((ss->pinneds || (ss-1)->pinneds)  &&
+//              if ((ss->pinneds || (ss-1)->pinneds)  &&
 //                  PieceValue[MG][pos.piece_on(to_sq(move))] > PawnValueMg &&
-                  (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING))
+//                  (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING))
+              if (PieceValue[MG][pos.moved_piece(move)] <= PieceValue[MG][pos.piece_on(to_sq(move))])
+                    return move; // legality of this move is verified in the search
+              if (depth > 5 && pos.getNonPawnMaterial() > 2000)
               {
-                  pinneds[pos.side_to_move()] = ss->pinneds;
-                  pinners[~pos.side_to_move()] = ss->pinners;
+//                  pinneds[pos.side_to_move()] = ss->pinneds;
+//                  pinners[~pos.side_to_move()] = ss->pinners;
 
 //                  if (depth > 9 ) {
-//                      Bitboard b, result = 0;
-//                      Square ksq = pos.square<KING>(~pos.side_to_move());
-//                      Bitboard pinnerz = pinners[pos.side_to_move()] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
-//                              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(pos.side_to_move());
-//
-//                      while (pinnerz)
-//                      {
-//                          b = between_bb(ksq, pop_lsb(&pinnerz)) & pos.pieces();
-//                          if (!more_than_one(b))
-//                              result |= b & pos.pieces(~pos.side_to_move());
-//                      }
-//                      pinneds[~pos.side_to_move()] = result;
-////                      pos.this_thread()->pinawarecalcs++;
+                if (!pins_calculated)
+                {
+                   pins_calculated=true;
+                   for (int i=0; i < 2; i++) {
+                      Color c = (Color) i;
+                      Bitboard b, result = 0;
+                      Square ksq = pos.square<KING>(~c);
+                      Bitboard pinner = pinners[c] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
+                              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(c);
+
+                      while (pinner)
+                      {
+                          b = between_bb(ksq, pop_lsb(&pinner)) & pos.pieces();
+                          if (!more_than_one(b))
+                              result |= b & pos.pieces(~c);
+                      }
+                      pinneds[~c] = result;
+                   }
+//                      pos.this_thread()->pinawarecalcs++;
 //                  }
 //                  else {
-                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
-                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
+//                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
+//                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
 //                  }
 
 
 
-                  if (pinners[0] & to_sq(move))
-                     pinners[0] ^= to_sq(move);
-                  if (pinners[1] & to_sq(move))
-                     pinners[1] ^= to_sq(move);
+
+                }
 
 //                  Value valp = pos.see_pin_aware(move, pinners, pinneds);
 //                  Value val  = pos.see(move);
@@ -310,11 +318,24 @@ Move MovePicker::next_move() {
 //                    sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
 //                    sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
 //                  }
-                  if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
-                    return move;
+                  if (pinneds[0] || pinneds[1]) {
+                    Bitboard pinnedz[2],pinnerz[2];
+                    pinnedz[0] = pinneds[0];
+                    pinnedz[1] = pinneds[1];
+                    pinnerz[0] = pinners[0];
+                    pinnerz[1] = pinners[1];
+                    if (pinnerz[0] & to_sq(move))
+                       pinnerz[0] ^= to_sq(move);
+                    if (pinnerz[1] & to_sq(move))
+                       pinnerz[1] ^= to_sq(move);
+                    if (pos.see_pin_aware(move, pinnerz, pinnedz) >= VALUE_ZERO)
+                      return move;
+                  }
+                  else if (pos.see_sign(move) >= VALUE_ZERO)
+                     return move;
               }
               else
-                if (pos.see_sign(move) >= VALUE_ZERO)
+                if (pos.see(move) >= VALUE_ZERO)
                 return move;
 
               // Losing capture, move it to the tail of the array

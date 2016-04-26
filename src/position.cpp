@@ -89,22 +89,22 @@ CheckInfo::CheckInfo(const Position& pos) {
   Color them = ~pos.side_to_move();
     ksq = pos.square<KING>(them);
 
-    Bitboard b, pinnerz, result = 0;
-      Square ourksq = pos.square<KING>(~them);
-
-      // Pinners are sliders that give check when a pinned piece is removed
-      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
-                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
-
-      while (pinnerz)
-      {
-          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
-
-          if (!more_than_one(b))
-              result |= b & pos.pieces(~them);
-      }
-      pinned = result;
-    //pinned = pos.pinned_pieces(pos.side_to_move());
+//    Bitboard b, pinnerz, result = 0;
+//      Square ourksq = pos.square<KING>(~them);
+//
+//      // Pinners are sliders that give check when a pinned piece is removed
+//      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
+//                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
+//
+//      while (pinnerz)
+//      {
+//          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
+//
+//          if (!more_than_one(b))
+//              result |= b & pos.pieces(~them);
+//      }
+//      pinned = result;
+    pinned = pos.pinned_pieces(pos.side_to_move());
     dcCandidates = pos.discovered_check_candidates();
 
     checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
