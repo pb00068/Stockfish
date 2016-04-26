@@ -266,24 +266,55 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if ((ss-1)->pinneds && pos.getNonPawnMaterial() > 2000 &&
-                  PieceValue[MG][pos.piece_on(to_sq(move))] > PawnValueMg &&
+              if ((ss->pinneds || (ss-1)->pinneds)  &&
+//                  PieceValue[MG][pos.piece_on(to_sq(move))] > PawnValueMg &&
                   (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING))
               {
                   pinneds[pos.side_to_move()] = ss->pinneds;
                   pinners[~pos.side_to_move()] = ss->pinners;
-                  pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
-                  pinners[pos.side_to_move()] = (ss-1)->pinners;  // a pinner was just captured or piece moved between pinner and king
+
+//                  if (depth > 9 ) {
+//                      Bitboard b, result = 0;
+//                      Square ksq = pos.square<KING>(~pos.side_to_move());
+//                      Bitboard pinnerz = pinners[pos.side_to_move()] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
+//                              | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(pos.side_to_move());
+//
+//                      while (pinnerz)
+//                      {
+//                          b = between_bb(ksq, pop_lsb(&pinnerz)) & pos.pieces();
+//                          if (!more_than_one(b))
+//                              result |= b & pos.pieces(~pos.side_to_move());
+//                      }
+//                      pinneds[~pos.side_to_move()] = result;
+////                      pos.this_thread()->pinawarecalcs++;
+//                  }
+//                  else {
+                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
+                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
+//                  }
+
+
+
                   if (pinners[0] & to_sq(move))
                      pinners[0] ^= to_sq(move);
                   if (pinners[1] & to_sq(move))
                      pinners[1] ^= to_sq(move);
 
-
+//                  Value valp = pos.see_pin_aware(move, pinners, pinneds);
+//                  Value val  = pos.see(move);
+//
+////                  if (pos.fen().compare("rn1qkb1r/pppbnppp/8/3p4/8/2N5/PPPPQPPP/R1B1KBNR w KQkq - 4 5") == 0) {
+//                  //if (valp != val) {
+//                  if ((valp >= VALUE_ZERO && val < VALUE_ZERO) || (valp < VALUE_ZERO && val >= VALUE_ZERO) ) {
+//                    sync_cout << pos << " move " << UCI::move(move, false) << " last " << UCI::move((ss-1)->currentMove, false) <<"  seep: " << valp << " see: " << val << sync_endl;
+//                    sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
+//                    sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
+//                  }
                   if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
                     return move;
               }
-              else if (pos.see_sign(move) >= VALUE_ZERO)
+              else
+                if (pos.see_sign(move) >= VALUE_ZERO)
                 return move;
 
               // Losing capture, move it to the tail of the array

@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1084,12 +1085,26 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
+//   if ((pinnez[stm] & stmAttackers) && pinner[~stm] == (pinner[~stm] & occupied))
+//     stmAttackers = stmAttackers & ~pinnez[stm];
+//  if (fen().compare("r1b1k1nr/ppp2ppp/2n1p3/8/1bPPqB2/2N5/PP2NPPP/R2QKB1R b KQkq - 6 7") == 0) {
+//          sync_cout << *this << "insee pinneds & stmattackers\n" <<  Bitboards::pretty(pinnez[stm] & stmAttackers) << sync_endl;
+//          sync_cout << "active pinners\n" <<  Bitboards::pretty(pinner[~stm] & occupied) << sync_endl;
+//  }
   if (pinnez[stm] & stmAttackers)
   {
         pinner[~stm] &= occupied;
-        // in case of 1 pinner, check if the exchange square lies between king and pinner so we handle partial pins
-        if (pinner[~stm] && (more_than_one(pinner[~stm] || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+        if (pinner[~stm])
+        {
+          if (more_than_one(pinner[~stm]))
             stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+          else
+          {
+            pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+            if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                stmAttackers = stmAttackers & ~pinnez[stm];
+          }
+        }
   }
 
   if (!stmAttackers)
@@ -1114,12 +1129,22 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
+//      if ((pinnez[stm] & stmAttackers) && pinner[~stm] == (pinner[~stm] & occupied))
+//           stmAttackers = stmAttackers & ~pinnez[stm];
       if (pinnez[stm] & stmAttackers)
       {
           pinner[~stm] &= occupied;
-          // in case of 1 pinner, check if the exchange square lies between king and pinner so we handle partial pins
-          if (pinner[~stm] && (more_than_one(pinner[~stm] || !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to))))
+          if (pinner[~stm])
+          {
+            if (more_than_one(pinner[~stm]))
               stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+            else
+            {
+              pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+              if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                  stmAttackers = stmAttackers & ~pinnez[stm];
+            }
+          }
       }
 
       ++slIndex;
