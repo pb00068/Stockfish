@@ -85,18 +85,18 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 CheckInfo::CheckInfo(const Position& pos) {
 
-    Color them = ~pos.side_to_move();
-    ksq = pos.square<KING>(them);
+  Color them = ~pos.side_to_move();
+  ksq = pos.square<KING>(them);
 
-    pinned = pos.pinned_pieces(pos.side_to_move());
-    dcCandidates = pos.discovered_check_candidates();
+  pinned = pos.pinned_pieces(pos.side_to_move());
+  dcCandidates = pos.discovered_check_candidates();
 
-    checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
-    checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
-    checkSquares[BISHOP] = pos.attacks_from<BISHOP>(ksq);
-    checkSquares[ROOK]   = pos.attacks_from<ROOK>(ksq);
-    checkSquares[QUEEN]  = checkSquares[BISHOP] | checkSquares[ROOK];
-    checkSquares[KING]   = 0;
+  checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
+  checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
+  checkSquares[BISHOP] = pos.attacks_from<BISHOP>(ksq);
+  checkSquares[ROOK]   = pos.attacks_from<ROOK>(ksq);
+  checkSquares[QUEEN]  = checkSquares[BISHOP] | checkSquares[ROOK];
+  checkSquares[KING]   = 0;
 }
 
 
@@ -1049,9 +1049,6 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
-  // Castling moves are implemented as king capturing the rook so cannot
-  // be handled correctly. Simply return VALUE_ZERO that is always correct
-  // unless in the rare case the rook ends up under attack.
   if (type_of(m) == CASTLING)
       return VALUE_ZERO;
 
@@ -1061,20 +1058,10 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
       swapList[0] = PieceValue[MG][PAWN];
   }
 
-  // Find all attackers to the destination square, with the moving piece
-  // removed, but possibly an X-ray attacker added behind it.
   attackers = attackers_to(to, occupied) & occupied;
-
-  // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
 
-//   if ((pinnez[stm] & stmAttackers) && pinner[~stm] == (pinner[~stm] & occupied))
-//     stmAttackers = stmAttackers & ~pinnez[stm];
-//  if (fen().compare("r1b1k1nr/ppp2ppp/2n1p3/8/1bPPqB2/2N5/PP2NPPP/R2QKB1R b KQkq - 6 7") == 0) {
-//          sync_cout << *this << "insee pinneds & stmattackers\n" <<  Bitboards::pretty(pinnez[stm] & stmAttackers) << sync_endl;
-//          sync_cout << "active pinners\n" <<  Bitboards::pretty(pinner[~stm] & occupied) << sync_endl;
-//  }
   if (pinnez[stm] & stmAttackers)
   {
         pinner[~stm] &= occupied;
@@ -1094,27 +1081,17 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
   if (!stmAttackers)
       return swapList[0];
 
-  // The destination square is defended, which makes things rather more
-  // difficult to compute. We proceed by building up a "swap list" containing
-  // the material gain or loss at each stop in a sequence of captures to the
-  // destination square, where the sides alternately capture, and always
-  // capture with the least valuable piece. After each capture, we look for
-  // new X-ray attacks from behind the capturing piece.
   captured = type_of(piece_on(from));
 
   do {
       assert(slIndex < 32);
 
-      // Add the new entry to the swap list
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
 
-      // Locate and remove the next least valuable attacker
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-//      if ((pinnez[stm] & stmAttackers) && pinner[~stm] == (pinner[~stm] & occupied))
-//           stmAttackers = stmAttackers & ~pinnez[stm];
       if (pinnez[stm] & stmAttackers)
       {
           pinner[~stm] &= occupied;
@@ -1135,8 +1112,6 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
 
-  // Having built the swap list, we negamax through it to find the best
-  // achievable score from the point of view of the side to move.
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
