@@ -19,8 +19,7 @@
 */
 
 #include <cassert>
-#include <iostream>
-#include "uci.h"
+
 #include "movepick.h"
 #include "thread.h"
 
@@ -267,21 +266,16 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-//              if ((ss->pinneds || (ss-1)->pinneds)  &&
-//                  PieceValue[MG][pos.piece_on(to_sq(move))] > PawnValueMg &&
-//                  (type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING && type_of((ss-1)->currentMove) != CASTLING))
               if (PieceValue[MG][pos.moved_piece(move)] <= PieceValue[MG][pos.piece_on(to_sq(move))])
-                    return move; // legality of this move is verified in the search
-              if (depth > 5 && pos.getNonPawnMaterial() > 2000)
+                    return move; // this is like see_sign, legality of the first move is verified in the search
+              if (depth > 2 && pos.getNonPawnMaterial() > 2000)
               {
-//                  pinneds[pos.side_to_move()] = ss->pinneds;
-//                  pinners[~pos.side_to_move()] = ss->pinners;
 
-//                  if (depth > 9 ) {
                 if (!pins_calculated)
                 {
                    pins_calculated=true;
-                   for (int i=0; i < 2; i++) {
+                   for (int i=0; i < 2; i++)
+                   {
                       Color c = (Color) i;
                       Bitboard b, result = 0;
                       Square ksq = pos.square<KING>(~c);
@@ -296,29 +290,11 @@ Move MovePicker::next_move() {
                       }
                       pinneds[~c] = result;
                    }
-//                      pos.this_thread()->pinawarecalcs++;
-//                  }
-//                  else {
-//                      pinneds[~pos.side_to_move()] = (ss-1)->pinneds; // these 2 might be obsolete due last move:
-//                      pinners[pos.side_to_move()] = (ss-1)->pinners;  // king moved, a pinner was just captured or piece moved between pinner and king
-//                  }
-
-
-
-
                 }
 
-//                  Value valp = pos.see_pin_aware(move, pinners, pinneds);
-//                  Value val  = pos.see(move);
-//
-////                  if (pos.fen().compare("rn1qkb1r/pppbnppp/8/3p4/8/2N5/PPPPQPPP/R1B1KBNR w KQkq - 4 5") == 0) {
-//                  //if (valp != val) {
-//                  if ((valp >= VALUE_ZERO && val < VALUE_ZERO) || (valp < VALUE_ZERO && val >= VALUE_ZERO) ) {
-//                    sync_cout << pos << " move " << UCI::move(move, false) << " last " << UCI::move((ss-1)->currentMove, false) <<"  seep: " << valp << " see: " << val << sync_endl;
-//                    sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
-//                    sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
-//                  }
-                  if (pinneds[0] || pinneds[1]) {
+
+                if (pinneds[0] || pinneds[1])
+                {
                     Bitboard pinnedz[2],pinnerz[2];
                     pinnedz[0] = pinneds[0];
                     pinnedz[1] = pinneds[1];
@@ -330,8 +306,8 @@ Move MovePicker::next_move() {
                        pinnerz[1] ^= to_sq(move);
                     if (pos.see_pin_aware(move, pinnerz, pinnedz) >= VALUE_ZERO)
                       return move;
-                  }
-                  else if (pos.see_sign(move) >= VALUE_ZERO)
+                 }
+                 else if (pos.see_sign(move) >= VALUE_ZERO)
                      return move;
               }
               else

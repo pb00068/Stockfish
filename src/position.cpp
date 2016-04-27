@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -86,24 +85,9 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 CheckInfo::CheckInfo(const Position& pos) {
 
-  Color them = ~pos.side_to_move();
+    Color them = ~pos.side_to_move();
     ksq = pos.square<KING>(them);
 
-//    Bitboard b, pinnerz, result = 0;
-//      Square ourksq = pos.square<KING>(~them);
-//
-//      // Pinners are sliders that give check when a pinned piece is removed
-//      pinnerz = pinners = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ourksq])
-//                 | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ourksq])) & pos.pieces(them);
-//
-//      while (pinnerz)
-//      {
-//          b = between_bb(ourksq, pop_lsb(&pinnerz)) & pos.pieces();
-//
-//          if (!more_than_one(b))
-//              result |= b & pos.pieces(~them);
-//      }
-//      pinned = result;
     pinned = pos.pinned_pieces(pos.side_to_move());
     dcCandidates = pos.discovered_check_candidates();
 
@@ -445,16 +429,16 @@ Phase Position::game_phase() const {
 
 Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
-  Bitboard b, pinnerz, result = 0;
+  Bitboard b, pinners, result = 0;
   Square ksq = square<KING>(kingColor);
 
   // Pinners are sliders that give check when a pinned piece is removed
-  pinnerz = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
+  pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
              | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~kingColor);
 
-  while (pinnerz)
+  while (pinners)
   {
-      b = between_bb(ksq, pop_lsb(&pinnerz)) & pieces();
+      b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
 
       if (!more_than_one(b))
           result |= b & pieces(c);
