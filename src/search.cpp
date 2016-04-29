@@ -682,8 +682,14 @@ namespace {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        if (ttValue >= beta && ttMove)
+        {
+        	if (pos.capture_or_promotion(ttMove))
+        		pos.saveCapt(bestMove);
+        	else
+        		update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        }
+
 
         return ttValue;
     }

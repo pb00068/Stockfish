@@ -107,6 +107,17 @@ void  Position::saveCapt (Move move) const {
   e->move = move;
 }
 
+void  Position::resetCapt (Move move) const {
+  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
+  if (key & from_sq(move))
+	  key ^= from_sq(move); // empty start field if not pawn
+  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
+  key|= relevantpawnstructure; // add entourage pawns
+  CaptEntry* e = this_thread()->captTable[key];
+  e->key = key;
+  e->move = MOVE_NONE;
+}
+
 /// CheckInfo constructor
 
 CheckInfo::CheckInfo(const Position& pos) {
