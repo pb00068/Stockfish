@@ -30,6 +30,7 @@
 
 #include "bitboard.h"
 #include "types.h"
+#include "misc.h"
 
 class Position;
 class Thread;
@@ -40,6 +41,14 @@ namespace PSQT {
 
   void init();
 }
+
+struct CaptEntry {
+	Key key;
+	Move move;
+};
+
+typedef HashTable<CaptEntry, 16384> CaptureTable;
+
 
 /// CheckInfo struct is initialized at constructor time and keeps info used to
 /// detect if a move gives check.
@@ -162,6 +171,9 @@ public:
   Key exclusion_key() const;
   Key material_key() const;
   Key pawn_key() const;
+
+  CaptEntry* probeCapt(Move move) const;
+  void saveCapt(Move move) const;
 
   // Other properties of the position
   Color side_to_move() const;

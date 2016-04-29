@@ -81,6 +81,32 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 } // namespace
 
 
+CaptEntry* Position::probeCapt(Move move) const {
+
+  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
+  if (key & from_sq(move))
+	  key ^= from_sq(move); // empty start field if not pawn
+  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
+  key|= relevantpawnstructure; // add entourage pawns
+  CaptEntry* e = this_thread()->captTable[key];
+
+  if (e->key == key)
+      return e;
+
+  return nullptr;
+}
+
+void  Position::saveCapt (Move move) const {
+  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
+  if (key & from_sq(move))
+	  key ^= from_sq(move); // empty start field if not pawn
+  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
+  key|= relevantpawnstructure; // add entourage pawns
+  CaptEntry* e = this_thread()->captTable[key];
+  e->key = key;
+  e->move = move;
+}
+
 /// CheckInfo constructor
 
 CheckInfo::CheckInfo(const Position& pos) {

@@ -58,6 +58,7 @@ public:
   void wait(std::atomic_bool& b);
 
   Pawns::Table pawnsTable;
+  CaptureTable captTable;
   Material::Table materialTable;
   Endgames endgames;
   size_t idx, PVIdx;
