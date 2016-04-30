@@ -174,7 +174,6 @@ public:
 
   CaptEntry* probeCapt(Move move) const;
   void saveCapt(Move move) const;
-  void resetCapt(Move move) const;
 
   // Other properties of the position
   Color side_to_move() const;

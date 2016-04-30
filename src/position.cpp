@@ -83,11 +83,8 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 CaptEntry* Position::probeCapt(Move move) const {
 
-  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
-  if (key & from_sq(move))
-	  key ^= from_sq(move); // empty start field if not pawn
-  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
-  key|= relevantpawnstructure; // add entourage pawns
+  Bitboard key = pieces() & Entourages[to_sq(move)];
+  key ^= from_sq(move); // empty start field
   CaptEntry* e = this_thread()->captTable[key];
 
   if (e->key == key)
@@ -97,26 +94,14 @@ CaptEntry* Position::probeCapt(Move move) const {
 }
 
 void  Position::saveCapt (Move move) const {
-  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
-  if (key & from_sq(move))
-	  key ^= from_sq(move); // empty start field if not pawn
-  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
-  key|= relevantpawnstructure; // add entourage pawns
+  Bitboard key = pieces() & Entourages[to_sq(move)];
+  key ^= from_sq(move); // empty start field
   CaptEntry* e = this_thread()->captTable[key];
   e->key = key;
   e->move = move;
 }
 
-void  Position::resetCapt (Move move) const {
-  Bitboard key = pieces() ^ pieces(PAWN); // pieces without pawns
-  if (key & from_sq(move))
-	  key ^= from_sq(move); // empty start field if not pawn
-  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
-  key|= relevantpawnstructure; // add entourage pawns
-  CaptEntry* e = this_thread()->captTable[key];
-  e->key = key;
-  e->move = MOVE_NONE;
-}
+
 
 /// CheckInfo constructor
 
