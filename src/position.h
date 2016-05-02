@@ -49,7 +49,7 @@ struct CaptEntry {
 //	std::string fen;
 };
 
-typedef HashTable<CaptEntry, 16384> CaptureTable;
+typedef HashTable<CaptEntry, 51384> CaptureTable;
 
 
 /// CheckInfo struct is initialized at constructor time and keeps info used to
