@@ -268,7 +268,7 @@ Move MovePicker::next_move() {
           {
               if (PieceValue[MG][pos.moved_piece(move)] <= PieceValue[MG][pos.piece_on(to_sq(move))])
                     return move; // this is like see_sign, legality of the first move is verified in the search
-              if (depth > 2 && pos.getNonPawnMaterial() > 2000)
+              if (depth > 7 && pos.getNonPawnMaterial() > 2000)
               {
 
                 if (!pins_calculated)
@@ -317,7 +317,7 @@ Move MovePicker::next_move() {
                     if (pos.see_pin_aware(move, pinnerz, pinnedz) >= VALUE_ZERO)
                       return move;
                  }
-                 else if (pos.see_sign(move) >= VALUE_ZERO)
+                 else if (pos.see(move) >= VALUE_ZERO)
                      return move;
               }
               else
