@@ -43,8 +43,10 @@ namespace PSQT {
 }
 
 struct CaptEntry {
-	Key key;
+	Bitboard pawns;
+	Bitboard nonpawns;
 	Move move;
+//	std::string fen;
 };
 
 typedef HashTable<CaptEntry, 16384> CaptureTable;

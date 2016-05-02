@@ -22,6 +22,8 @@
 
 #include "movepick.h"
 #include "thread.h"
+//#include "uci.h"
+//#include <iostream>
 
 namespace {
 
@@ -137,10 +139,12 @@ void MovePicker::score<CAPTURES>() {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
 
-      if (pos.probeCapt(m.move) != nullptr) {
-    	  CaptEntry* ce = pos.probeCapt(m.move);
-    	  if (to_sq(m) == to_sq(ce->move))
-    		  m.value += QueenValueMg;
+      CaptEntry* ce = pos.probeCapt(m.move);
+      if (ce != nullptr) {
+    	  if (to_sq(m) == to_sq(ce->move)) {
+    		  m.value += RookValueMg;
+//    		  sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
+    	  }
       }
   }
 }

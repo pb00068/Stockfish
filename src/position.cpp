@@ -83,22 +83,35 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 CaptEntry* Position::probeCapt(Move move) const {
 
-  Bitboard key = pieces() & Entourages[to_sq(move)];
-  key ^= from_sq(move); // empty start field
-  CaptEntry* e = this_thread()->captTable[key];
+  Bitboard nonpawns = pieces() ^ pieces(PAWN); // pieces without pawns
+  if (nonpawns & from_sq(move))
+     nonpawns ^= from_sq(move); // empty start field
 
-  if (e->key == key)
+  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
+  if (relevantpawnstructure & from_sq(move))
+    relevantpawnstructure ^= from_sq(move); // empty start field
+
+  CaptEntry* e = this_thread()->captTable[nonpawns | relevantpawnstructure];
+
+  if (e->pawns == relevantpawnstructure && e->nonpawns == nonpawns)
       return e;
-
   return nullptr;
 }
 
 void  Position::saveCapt (Move move) const {
-  Bitboard key = pieces() & Entourages[to_sq(move)];
-  key ^= from_sq(move); // empty start field
-  CaptEntry* e = this_thread()->captTable[key];
-  e->key = key;
+  Bitboard nonpawns = pieces() ^ pieces(PAWN); // pieces without pawns
+   if (nonpawns & from_sq(move))
+      nonpawns ^= from_sq(move); // empty start field
+
+   Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
+   if (relevantpawnstructure & from_sq(move))
+     relevantpawnstructure ^= from_sq(move); // empty start field
+
+  CaptEntry* e = this_thread()->captTable[nonpawns | relevantpawnstructure];
+  e->pawns = relevantpawnstructure;
+  e->nonpawns = nonpawns;
   e->move = move;
+//  e->fen = fen();
 }
 
 
