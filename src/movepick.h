@@ -102,8 +102,6 @@ private:
   int stage;
   ExtMove *endQuiets, *endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
-  Bitboard pinneds[2],pinners[2];
-  bool pins_calculated;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

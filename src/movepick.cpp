@@ -189,7 +189,6 @@ void MovePicker::generate_next_stage() {
   case PROBCUT_CAPTURES: case RECAPTURES:
       endMoves = generate<CAPTURES>(pos, moves);
       score<CAPTURES>();
-      pins_calculated=false;
       break;
 
   case KILLERS:
@@ -270,10 +269,7 @@ Move MovePicker::next_move() {
                     return move; // this is like see_sign, legality of the first move is verified in the search
               if (depth > 7 && pos.getNonPawnMaterial() > 2000)
               {
-
-                if (!pins_calculated)
-                {
-                   pins_calculated=true;
+                   Bitboard pinneds[2],pinners[2];
                    for (int i=0; i < 2; i++)
                    {
                       Color c = (Color) i;
@@ -290,20 +286,16 @@ Move MovePicker::next_move() {
                       }
                       pinneds[~c] = result;
                    }
-                }
+
 
 
                 if (pinneds[0] || pinneds[1])
                 {
-                    Bitboard pinnedz[2],pinnerz[2];
-                    pinnedz[0] = pinneds[0];
-                    pinnedz[1] = pinneds[1];
-                    pinnerz[0] = pinners[0];
-                    pinnerz[1] = pinners[1];
-                    if (pinnerz[0] & to_sq(move))
-                       pinnerz[0] ^= to_sq(move);
-                    if (pinnerz[1] & to_sq(move))
-                       pinnerz[1] ^= to_sq(move);
+
+                    if (pinners[0] & to_sq(move))
+                       pinners[0] ^= to_sq(move);
+                    if (pinners[1] & to_sq(move))
+                       pinners[1] ^= to_sq(move);
 //                  Value valp = pos.see_pin_aware(move, pinnerz, pinnedz);
 //                  Value val  = pos.see(move);
 //                    //
@@ -314,7 +306,7 @@ Move MovePicker::next_move() {
 //                      sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
 //                      sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
 //                    }
-                    if (pos.see_pin_aware(move, pinnerz, pinnedz) >= VALUE_ZERO)
+                    if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
                       return move;
                  }
                  else if (pos.see(move) >= VALUE_ZERO)
