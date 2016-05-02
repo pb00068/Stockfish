@@ -306,7 +306,8 @@ Move MovePicker::next_move() {
 //                      sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
 //                      sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
 //                    }
-                    if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
+                    if (pos.see(move) >= VALUE_ZERO)
+//                    if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
                       return move;
                  }
                  else if (pos.see(move) >= VALUE_ZERO)
