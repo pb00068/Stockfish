@@ -262,16 +262,65 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
-          move = pick_best(cur++, endMoves);
-          if (move != ttMove)
-          {
-              if (pos.see_sign(move) >= VALUE_ZERO)
-                  return move;
+               move = pick_best(cur++, endMoves);
+               if (move != ttMove)
+               {
+                   if (PieceValue[MG][pos.moved_piece(move)] <= PieceValue[MG][pos.piece_on(to_sq(move))])
+                         return move; // this is like see_sign, legality of the first move is verified in the search
+                   if (depth > 5)
+                   {
+                        Bitboard pinneds[2],pinners[2];
+                        for (int i=0; i < 2; i++)
+                        {
+                           Color c = (Color) i;
+                           Bitboard b, result = 0;
+                           Square ksq = pos.square<KING>(~c);
+                           Bitboard pinner = pinners[c] = (  (pos.pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
+                                   | (pos.pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pos.pieces(c);
 
-              // Losing capture, move it to the tail of the array
-              *endBadCaptures-- = move;
-          }
-          break;
+                           while (pinner)
+                           {
+                               b = between_bb(ksq, pop_lsb(&pinner)) & pos.pieces();
+                               if (!more_than_one(b))
+                                   result |= b & pos.pieces(~c);
+                           }
+                           pinneds[~c] = result;
+                        }
+
+
+
+                     if (pinneds[0] || pinneds[1])
+                     {
+
+                         if (pinners[0] & to_sq(move))
+                            pinners[0] ^= to_sq(move);
+                         if (pinners[1] & to_sq(move))
+                            pinners[1] ^= to_sq(move);
+     //                  Value valp = pos.see_pin_aware(move, pinnerz, pinnedz);
+     //                  Value val  = pos.see(move);
+     //                    //
+     //                    //                  if (pos.fen().compare("rn1qkb1r/pppbnppp/8/3p4/8/2N5/PPPPQPPP/R1B1KBNR w KQkq - 4 5") == 0) {
+     //                    //                  //if (valp != val) {
+     //                    if ((valp >= VALUE_ZERO && val < VALUE_ZERO) || (valp < VALUE_ZERO && val >= VALUE_ZERO) ) {
+     //                      sync_cout << pos << " move " << UCI::move(move, false) << " last " << UCI::move((ss-1)->currentMove, false) <<"  seep: " << valp << " see: " << val << sync_endl;
+     //                      sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
+     //                      sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
+     //                    }
+                         if (pos.see(move) >= VALUE_ZERO)
+     //                    if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
+                           return move;
+                      }
+                      else if (pos.see(move) >= VALUE_ZERO)
+                          return move;
+                   }
+                   else
+                     if (pos.see(move) >= VALUE_ZERO)
+                     return move;
+
+                   // Losing capture, move it to the tail of the array
+                   *endBadCaptures-- = move;
+               }
+               break;
 
       case KILLERS:
           move = *cur++;
