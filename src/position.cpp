@@ -1032,6 +1032,92 @@ Value Position::see(Move m) const {
   return swapList[0];
 }
 
+Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const {
+
+  Square from, to;
+  Bitboard occupied, attackers, stmAttackers;
+  Value swapList[32];
+  int slIndex = 1;
+  PieceType captured;
+  Color stm;
+
+  assert(is_ok(m));
+
+  from = from_sq(m);
+  to = to_sq(m);
+  swapList[0] = PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(from));
+  occupied = pieces() ^ from;
+
+  if (type_of(m) == CASTLING)
+      return VALUE_ZERO;
+
+  if (type_of(m) == ENPASSANT)
+  {
+      occupied ^= to - pawn_push(stm); // Remove the captured pawn
+      swapList[0] = PieceValue[MG][PAWN];
+  }
+
+  attackers = attackers_to(to, occupied) & occupied;
+  stm = ~stm;
+  stmAttackers = attackers & pieces(stm);
+
+  if (pinnez[stm] & stmAttackers)
+  {
+        pinner[~stm] &= occupied;
+        if (pinner[~stm])
+        {
+          if (more_than_one(pinner[~stm]))
+            stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+          else
+          {
+            pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+            if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                stmAttackers = stmAttackers & ~pinnez[stm];
+          }
+        }
+  }
+
+  if (!stmAttackers)
+      return swapList[0];
+
+  captured = type_of(piece_on(from));
+
+  do {
+      assert(slIndex < 32);
+
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+
+      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+
+      if (pinnez[stm] & stmAttackers)
+      {
+          pinner[~stm] &= occupied;
+          if (pinner[~stm])
+          {
+            if (more_than_one(pinner[~stm]))
+              stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+            else
+            {
+              pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+              if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                  stmAttackers = stmAttackers & ~pinnez[stm];
+            }
+          }
+      }
+
+      ++slIndex;
+
+  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
+
+  while (--slIndex)
+      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+
+  return swapList[0];
+}
+
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.

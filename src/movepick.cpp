@@ -267,7 +267,7 @@ Move MovePicker::next_move() {
                {
                    if (PieceValue[MG][pos.moved_piece(move)] <= PieceValue[MG][pos.piece_on(to_sq(move))])
                          return move; // this is like see_sign, legality of the first move is verified in the search
-                   if (depth > 5)
+                   if (depth > 3)
                    {
                         Bitboard pinneds[2],pinners[2];
                         for (int i=0; i < 2; i++)
@@ -306,8 +306,8 @@ Move MovePicker::next_move() {
      //                      sync_cout << Bitboards::pretty(between_bb(pos.square<KING>(~pos.side_to_move()), lsb(pinners[pos.side_to_move()])) & to_sq(move)) << sync_endl;
      //                      sync_cout << Bitboards::pretty(pinneds[~pos.side_to_move()]) << sync_endl;
      //                    }
-                         if (pos.see(move) >= VALUE_ZERO)
-     //                    if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
+//                         if (pos.see(move) >= VALUE_ZERO)
+                         if (pos.see_pin_aware(move, pinners, pinneds) >= VALUE_ZERO)
                            return move;
                       }
                       else if (pos.see(move) >= VALUE_ZERO)
