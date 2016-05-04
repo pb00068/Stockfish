@@ -175,7 +175,7 @@ public:
   Key pawn_key() const;
 
   CaptEntry* probeCapt(Move move) const;
-  void saveCapt(Move move) const;
+  void saveCapt(Move capture, Move quiet) const;
 
   // Other properties of the position
   Color side_to_move() const;

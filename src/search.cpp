@@ -1158,8 +1158,11 @@ moves_loop: // When in check search starts from here
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
 
     // Quiet best move: update killers, history and countermoves
-    else if (bestMove && !pos.capture_or_promotion(bestMove))
+    else if (bestMove && !pos.capture_or_promotion(bestMove)) {
         update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        if (pos.captured_piece_type())
+            pos.saveCapt((ss-1)->currentMove, bestMove);
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1179,8 +1182,6 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    if (bestMove && pos.capture_or_promotion(bestMove))
-    	pos.saveCapt(bestMove);
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :

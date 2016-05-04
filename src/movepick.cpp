@@ -138,14 +138,6 @@ void MovePicker::score<CAPTURES>() {
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
-
-      CaptEntry* ce = pos.probeCapt(m.move);
-      if (ce != nullptr) {
-    	  if (to_sq(m) == to_sq(ce->move)) {
-    		  m.value += RookValueMg;
-//    		  sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
-    	  }
-      }
   }
 }
 
@@ -163,6 +155,18 @@ void MovePicker::score<QUIETS>() {
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
+
+//  if (pos.captured_piece_type() && pos.probeCapt()) {
+//    for (auto& m : *this) {
+//          CaptEntry* ce = pos.probeCapt(m.move);
+//          if (ce != nullptr) {
+//              if (m == ce->move) {
+//                  m.value += 100000;
+//    //            sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
+//              }
+//          }
+//    }
+//  }
 }
 
 template<>
@@ -205,6 +209,13 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
+      if (pos.captured_piece_type()) {
+        CaptEntry* ce = pos.probeCapt((ss-1)->currentMove);
+        if (ce != nullptr && ce->move != MOVE_NONE && ce->move != killers[0]) {
+          killers[0] = ce->move;
+          killers[1] = ss->killers[0];
+        }
+      }
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
