@@ -159,7 +159,6 @@ namespace {
   const Score Threat[][PIECE_TYPE_NB] = {
     { S(0, 0), S(0, 33), S(45, 43), S(46, 47), S(72,107), S(48,118) }, // by Minor
     { S(0, 0), S(0, 25), S(40, 62), S(40, 59), S( 0, 34), S(35, 48) },  // by Rook
-    { S(0, 0), S(2, 15), S(20, 20), S(23, 23), S(31, 52), S(24, 58), S(35, 68) }  // by Knight on follow move
   };
 
   // ThreatByKing[on one/on many] contains bonuses for King attacks on
@@ -517,20 +516,13 @@ namespace {
     // Add a bonus according to the kind of attacking pieces
     if (defended | weak)
     {
-        b = (defended | weak) & ei.attackedBy[Us][BISHOP];
+        b = (defended | weak) & (ei.attackedBy[Us][BISHOP] | ei.attackedBy[Us][KNIGHT]);
+        weak&=~b;
         while (b)
             score += Threat[Minor][type_of(pos.piece_on(pop_lsb(&b)))];
 
-        b = ((defended | weak) & ei.attackedBy[Us][KNIGHT] & ~ei.attackedBy[Us][BISHOP]);
-        while (b) {
-              Square target = pop_lsb(&b);
-              score += Threat[Minor][type_of(pos.piece_on(target))];
-              Bitboard followthreads = StepAttacksBB[KNIGHT][target] & weak;
-              while (followthreads)
-                score += Threat[Knight][type_of(pos.piece_on(pop_lsb(&followthreads)))];
-        }
-
         b = (pos.pieces(Them, QUEEN) | weak) & ei.attackedBy[Us][ROOK];
+        weak&=~b;
         while (b)
             score += Threat[Rook ][type_of(pos.piece_on(pop_lsb(&b)))];
 
