@@ -145,7 +145,7 @@ void MovePicker::score<QUIETS>() {
 
   const CounterMoveStats* cm = (ss-1)->counterMoves;
   const CounterMoveStats* fm = (ss-2)->counterMoves;
-  const CounterMoveStats* f2 = (ss-4)->counterMoves;
+  const CounterMoveStats* f2 = (ss-3)->captureOrPromotion || (ss-2)->captureOrPromotion || (ss-1)->captureOrPromotion ? nullptr : (ss-4)->counterMoves;
 
   for (auto& m : *this)
       m.value =      history[pos.moved_piece(m)][to_sq(m)]

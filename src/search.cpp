@@ -909,7 +909,7 @@ moves_loop: // When in check search starts from here
           (ss+1)->pv = nullptr;
 
       extension = DEPTH_ZERO;
-      captureOrPromotion = pos.capture_or_promotion(move);
+      captureOrPromotion = ss->captureOrPromotion = pos.capture_or_promotion(move);
 
       givesCheck =  type_of(move) == NORMAL && !ci.dcCandidates
                   ? ci.checkSquares[type_of(pos.piece_on(from_sq(move)))] & to_sq(move)
@@ -1446,7 +1446,7 @@ moves_loop: // When in check search starts from here
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
     CounterMoveStats* fmh  = (ss-2)->counterMoves;
-    CounterMoveStats* fmh2 = (ss-4)->counterMoves;
+    CounterMoveStats* fmh2 = (ss-3)->captureOrPromotion || (ss-2)->captureOrPromotion || (ss-1)->captureOrPromotion ? nullptr : (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
