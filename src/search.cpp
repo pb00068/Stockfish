@@ -683,14 +683,8 @@ namespace {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove)
-        {
-        	if (!pos.capture_or_promotion(ttMove))
-//        		pos.saveCapt(bestMove);
-//        	else
-        		update_stats(pos, ss, ttMove, depth, nullptr, 0);
-        }
-
+        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
+        	update_stats(pos, ss, ttMove, depth, nullptr, 0);
 
         return ttValue;
     }
@@ -1182,9 +1176,6 @@ moves_loop: // When in check search starts from here
 
     if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 2)
     	pos.saveCapt(bestMove, depth);
-
-    // Store previous capture TT move as bad when it gets refuted
-    //if (bestMove && (ss-1)->moveCount == 1 && pos.captured_piece_type())
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :

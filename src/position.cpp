@@ -126,8 +126,6 @@ void  Position::saveCapt (Move move, Depth d) const {
   e->move = move;
   e->capturedpiece = piece_on(to_sq(move));
   e->aggressor = piece_on(from_sq(move));
-
-  //e->fen = fen();
 }
 
 
