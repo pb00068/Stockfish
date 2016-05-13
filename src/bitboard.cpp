@@ -193,7 +193,7 @@ void Bitboards::init() {
 
               DistanceRingBB[s1][SquareDistance[s1][s2] - 1] |= s2;
 
-              if (SquareDistance[s1][s2] < 3 || file_of(s1) == file_of(s2))
+              if (SquareDistance[s1][s2] < 4 || file_of(s1) == file_of(s2))
             	  Entourages[s1]|= s2;
           }
           else {

@@ -609,12 +609,12 @@ namespace {
     Value bestValue, value, ttValue, eval, nullValue, futilityValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch;
-    int moveCount, quietCount;
+    int moveCount, quietCount, captureCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    moveCount = quietCount =  ss->moveCount = 0;
+    moveCount = quietCount =  captureCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
 
@@ -1138,6 +1138,8 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
+      if (captureOrPromotion)
+        captureCount++;
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1178,8 +1180,11 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    if (bestMove && pos.capture_or_promotion(bestMove))
-    	pos.saveCapt(bestMove);
+    if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 2)
+    	pos.saveCapt(bestMove, depth);
+
+    // Store previous capture TT move as bad when it gets refuted
+    //if (bestMove && (ss-1)->moveCount == 1 && pos.captured_piece_type())
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :

@@ -135,17 +135,24 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
+//  if (depth > 2) {
+  int captures=0;
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+      captures++;
+  }
 
-      CaptEntry* ce = pos.probeCapt(m.move);
-      if (ce != nullptr) {
-    	  if (to_sq(m) == to_sq(ce->move)) {
-    		  m.value += RookValueMg;
-//    		  sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
-    	  }
-      }
+
+  if (captures > 2) {
+    for (auto& m : *this) {
+      CaptEntry* ce = pos.probeCapt(m.move, depth);
+            if (ce != nullptr) {
+                    m.value += QueenValueMg;
+      //            if (depth > 6)
+      //            sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
+            }
+  }
   }
 }
 

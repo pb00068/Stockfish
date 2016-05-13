@@ -44,9 +44,12 @@ namespace PSQT {
 
 struct CaptEntry {
 	Bitboard pawns;
-	Bitboard nonpawns;
+	Bitboard nonpawns[2];
 	Move move;
-//	std::string fen;
+	Depth depth;
+	Piece capturedpiece;
+	Piece aggressor;
+	//std::string fen;
 };
 
 typedef HashTable<CaptEntry, 51384> CaptureTable;
@@ -174,8 +177,8 @@ public:
   Key material_key() const;
   Key pawn_key() const;
 
-  CaptEntry* probeCapt(Move move) const;
-  void saveCapt(Move move) const;
+  CaptEntry* probeCapt(Move move, Depth d) const;
+  void saveCapt(Move move, Depth d) const;
 
   // Other properties of the position
   Color side_to_move() const;
