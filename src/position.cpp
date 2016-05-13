@@ -99,7 +99,7 @@ CaptEntry* Position::probeCapt(Move move, Depth d) const {
   CaptEntry* e = this_thread()->captTable[nonpawns[0] | nonpawns[1] | relevantpawnstructure];
 
   if (e->pawns == relevantpawnstructure && e->nonpawns[0] == nonpawns[0] && e->nonpawns[1] == nonpawns[1] && e->depth >= d &&
-      to_sq(move) == to_sq(e->move) && e->capturedpiece == piece_on(to_sq(move)) &&  e->aggressor == piece_on(from_sq(move)))
+      to_sq(move) == to_sq(e->move) && e->capturedpieceType == type_of(piece_on(to_sq(move))) &&  e->aggressor == piece_on(from_sq(move)))
       return e;
   return nullptr;
 }
@@ -124,8 +124,35 @@ void  Position::saveCapt (Move move, Depth d) const {
   e->nonpawns[0] = nonpawns[0];
   e->nonpawns[1] = nonpawns[1];
   e->move = move;
-  e->capturedpiece = piece_on(to_sq(move));
+  e->capturedpieceType = type_of(piece_on(to_sq(move)));
   e->aggressor = piece_on(from_sq(move));
+  e->isBad = false;
+
+  //e->fen = fen();
+}
+
+// when a previous TT-move was a capture and now its refuted
+void  Position::saveBadCapt (Move prevMove, Depth d) const {
+   Bitboard nonpawns[2];
+    for (int color=0; color<2; color++) {
+      Color c = (Color) color;
+      nonpawns[c] = pieces(c) ^ pieces(c,PAWN); // pieces without pawns
+
+    }
+
+  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(prevMove)];
+
+
+  CaptEntry* e = this_thread()->captTable[nonpawns[0] | nonpawns[1] | relevantpawnstructure];
+  if (d > e->depth ||  e->pawns != relevantpawnstructure || e->nonpawns[0] != nonpawns[0] || e->nonpawns[1] != nonpawns[1])
+    e->depth = d;
+  e->pawns = relevantpawnstructure;
+  e->nonpawns[0] = nonpawns[0];
+  e->nonpawns[1] = nonpawns[1];
+  e->move = prevMove;
+  e->capturedpieceType = captured_piece_type();
+  e->aggressor = piece_on(to_sq(prevMove));
+  e->isBad = true;
 
   //e->fen = fen();
 }

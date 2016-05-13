@@ -1184,7 +1184,8 @@ moves_loop: // When in check search starts from here
     	pos.saveCapt(bestMove, depth);
 
     // Store previous capture TT move as bad when it gets refuted
-    //if (bestMove && (ss-1)->moveCount == 1 && pos.captured_piece_type())
+    if (bestMove && captureCount > 2 && (ss-1)->moveCount == 1 && pos.captured_piece_type())
+      pos.saveBadCapt((ss-1)->currentMove, (Depth)(depth + 1));
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :

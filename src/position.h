@@ -47,9 +47,10 @@ struct CaptEntry {
 	Bitboard nonpawns[2];
 	Move move;
 	Depth depth;
-	Piece capturedpiece;
+	PieceType capturedpieceType;
 	Piece aggressor;
 	//std::string fen;
+	bool isBad;
 };
 
 typedef HashTable<CaptEntry, 51384> CaptureTable;
@@ -179,6 +180,7 @@ public:
 
   CaptEntry* probeCapt(Move move, Depth d) const;
   void saveCapt(Move move, Depth d) const;
+  void saveBadCapt (Move prevMove, Depth d) const;
 
   // Other properties of the position
   Color side_to_move() const;

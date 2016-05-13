@@ -60,6 +60,12 @@ namespace {
       return *begin;
   }
 
+  ExtMove* pick_bestExt(ExtMove* begin, ExtMove* end)
+   {
+       std::swap(*begin, *std::max_element(begin, end));
+       return begin;
+   }
+
 } // namespace
 
 
@@ -148,6 +154,9 @@ void MovePicker::score<CAPTURES>() {
     for (auto& m : *this) {
       CaptEntry* ce = pos.probeCapt(m.move, depth);
             if (ce != nullptr) {
+              if (ce->isBad)
+                    m.value = -VALUE_KNOWN_WIN;
+              else
                     m.value += QueenValueMg;
       //            if (depth > 6)
       //            sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << "\n  position fen: " << pos.fen() << sync_endl;
@@ -264,7 +273,7 @@ void MovePicker::generate_next_stage() {
 Move MovePicker::next_move() {
 
   Move move;
-
+  ExtMove* ext;
   while (true)
   {
       while (cur == endMoves && stage != STOP)
@@ -278,10 +287,11 @@ Move MovePicker::next_move() {
           return ttMove;
 
       case GOOD_CAPTURES:
-          move = pick_best(cur++, endMoves);
+          ext = pick_bestExt(cur++, endMoves);
+          move = ext->move;
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if (ext->value != -VALUE_KNOWN_WIN && pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
