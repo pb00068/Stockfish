@@ -1174,8 +1174,12 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 3 && depth > 5)
+    if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 3 && depth > 4)
     	pos.saveCapt(bestMove, depth);
+
+    // Store previous capture TT move as bad when it gets refuted
+    if (bestMove && captureCount > 3 &&  depth > 5 && (ss-1)->moveCount == 1 && pos.captured_piece_type())
+      pos.saveRefutedPos();
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :

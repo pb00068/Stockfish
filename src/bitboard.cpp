@@ -49,7 +49,6 @@ Bitboard ForwardBB[COLOR_NB][SQUARE_NB];
 Bitboard PassedPawnMask[COLOR_NB][SQUARE_NB];
 Bitboard PawnAttackSpan[COLOR_NB][SQUARE_NB];
 Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
-Bitboard Entourages[SQUARE_NB];
 
 namespace {
 
@@ -185,21 +184,12 @@ void Bitboards::init() {
       }
 
   for (Square s1 = SQ_A1; s1 <= SQ_H8; ++s1)
-      for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2) {
-
+      for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
           if (s1 != s2)
           {
               SquareDistance[s1][s2] = std::max(distance<File>(s1, s2), distance<Rank>(s1, s2));
-
               DistanceRingBB[s1][SquareDistance[s1][s2] - 1] |= s2;
-
-              if (SquareDistance[s1][s2] < 4 || file_of(s1) == file_of(s2))
-            	  Entourages[s1]|= s2;
           }
-          else {
-        	  Entourages[s1]|= s2;
-          }
-      }
 
   int steps[][9] = { {}, { 7, 9 }, { 17, 15, 10, 6, -6, -10, -15, -17 },
                      {}, {}, {}, { 9, 7, -7, -9, 8, 1, -1, -8 } };
@@ -225,7 +215,6 @@ void Bitboards::init() {
   {
       PseudoAttacks[QUEEN][s1]  = PseudoAttacks[BISHOP][s1] = attacks_bb<BISHOP>(s1, 0);
       PseudoAttacks[QUEEN][s1] |= PseudoAttacks[  ROOK][s1] = attacks_bb<  ROOK>(s1, 0);
-      Entourages[s1]|= PseudoAttacks[QUEEN][s1];
 
       for (Piece pc = W_BISHOP; pc <= W_ROOK; ++pc)
           for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)

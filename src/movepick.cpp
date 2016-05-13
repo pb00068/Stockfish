@@ -22,8 +22,7 @@
 
 #include "movepick.h"
 #include "thread.h"
-#include "uci.h"
-#include <iostream>
+
 
 namespace {
 
@@ -143,24 +142,11 @@ void MovePicker::score<CAPTURES>() {
       captures++;
   }
 
+  if (captures > 3 && depth > 4)
+    for (auto& m : *this)
+         if (pos.probeCapt(m.move, depth) != nullptr)
+             m.value += QueenValueMg;
 
-  if (captures > 3 && depth > 5) {
-    for (auto& m : *this) {
-      CaptEntry* ce = pos.probeCapt(m.move, depth);
-            if (ce != nullptr) {
-//                    Value max = VALUE_MATED_IN_MAX_PLY;
-//                    for (auto& z : *this) {
-//                      if (z.move == m.move)
-//                        continue;
-//                      if (z.value > max)
-//                        max = z.value;
-//                    }
-//                    if (m.value < max && m.value + QueenValueMg > max)
-//                    sync_cout << pos << "\ncapture hit fen " << ce->fen <<  " move: " << UCI::move(m, false) << " depth: " << ce->depth << "\n  position fen: " << pos.fen() << " depth: " << depth << sync_endl;
-                    m.value += QueenValueMg;
-            }
-  }
-  }
 }
 
 template<>

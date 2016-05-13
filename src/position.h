@@ -43,8 +43,7 @@ namespace PSQT {
 }
 
 struct CaptEntry {
-	Bitboard pawns;
-	Bitboard nonpawns[2];
+    Bitboard structure;
 	Move move;
 	Depth depth;
 	Piece capturedpiece;
@@ -179,6 +178,7 @@ public:
 
   CaptEntry* probeCapt(Move move, Depth d) const;
   void saveCapt(Move move, Depth d) const;
+  void saveRefutedPos() const;
 
   // Other properties of the position
   Color side_to_move() const;
