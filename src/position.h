@@ -49,7 +49,7 @@ struct CaptEntry {
 	Depth depth;
 	Piece capturedpiece;
 	Piece aggressor;
-	//std::string fen;
+	std::string fen;
 };
 
 typedef HashTable<CaptEntry, 51384> CaptureTable;

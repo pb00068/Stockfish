@@ -1174,7 +1174,7 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
-    if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 2)
+    if (bestMove && pos.capture_or_promotion(bestMove) && captureCount > 3 && depth > 5)
     	pos.saveCapt(bestMove, depth);
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
