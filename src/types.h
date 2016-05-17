@@ -255,6 +255,7 @@ enum Rank {
 struct CaptEntry {
     Depth depth;
     Value seeval;
+    Bitboard structure;
     int gameply;
 //    std::string fen;
 };

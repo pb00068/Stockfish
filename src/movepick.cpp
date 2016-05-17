@@ -19,7 +19,8 @@
 */
 
 #include <cassert>
-
+#include <iostream>
+#include "uci.h"
 #include "movepick.h"
 #include "thread.h"
 
@@ -133,9 +134,19 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+
+  }
+
+  if (depth > 5) {
+    for (auto& m : *this) {
+             CaptEntry * ce = &pos.this_thread()->badgood[pos.piece_on(from_sq(m))][type_of(pos.piece_on(to_sq(m)))][to_sq(m)];
+             if (ce->gameply == pos.game_ply() && ce->structure == pos.pieces() && depth < ce->depth + 6)
+               m.value += QueenValueMg;
+       }
+  }
 }
 
 template<>
@@ -267,10 +278,13 @@ Move MovePicker::next_move() {
               if (val >= VALUE_ZERO)
                   return move;
 
-              CaptEntry * ce = &pos.this_thread()->badgood[pos.piece_on(from_sq(move))][type_of(pos.piece_on(to_sq(move)))][to_sq(move)];
-              if (ce->seeval == val && ce->gameply == pos.game_ply() && depth < ce->depth + 4)
-//                threshold = VALUE_ZERO;
-                return move; // we assume this capture is still good
+//              if (depth > 3) {
+//              CaptEntry * ce = &pos.this_thread()->badgood[pos.piece_on(from_sq(move))][type_of(pos.piece_on(to_sq(move)))][to_sq(move)];
+//              if (ce->seeval == val && ce->gameply == pos.game_ply() && ce->structure == pos.pieces() && depth < ce->depth + 6)
+////                threshold = VALUE_ZERO;
+////                sync_cout << "bad capure move again bestmove " << UCI::move(move, false) << " ! depth: " << depth <<  " stored " << ce->depth << " fen " << pos.fen() << sync_endl;
+//                return move; // we assume this capture is still good
+//              }
 
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;
