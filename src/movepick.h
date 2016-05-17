@@ -23,7 +23,6 @@
 
 #include <algorithm> // For std::max
 #include <cstring>   // For std::memset
-
 #include "movegen.h"
 #include "position.h"
 #include "search.h"

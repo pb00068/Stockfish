@@ -134,7 +134,7 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-//  if (depth > 2) {
+
   int captures=0;
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]

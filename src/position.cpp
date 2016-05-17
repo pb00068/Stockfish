@@ -82,24 +82,7 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 
 CaptEntry* Position::probeCapt(Move move, Depth d) const {
-
-//  Bitboard nonpawns[2];
-//  for (int color=0; color<2; color++) {
-//    Color c = (Color) color;
-//    nonpawns[c] = pieces(c) ^ pieces(c,PAWN); // pieces without pawns
-//    if (nonpawns[c] & from_sq(move))
-//       nonpawns[c] ^= from_sq(move); // empty start field
-//  }
-//
-//  Bitboard relevantpawnstructure = pieces(PAWN) & Entourages[to_sq(move)];
-//  if (relevantpawnstructure & from_sq(move))
-//    relevantpawnstructure ^= from_sq(move); // empty start field
-//
-//
-//  CaptEntry* e = this_thread()->captTable[nonpawns[0] | nonpawns[1] | relevantpawnstructure];
   CaptEntry* e = this_thread()->captTable[pieces() ^ from_sq(move)];
-
-  //if (e->pawns == relevantpawnstructure && e->nonpawns[0] == nonpawns[0] && e->nonpawns[1] == nonpawns[1] &&
   if (e->structure == (pieces() ^ from_sq(move)) &&
       e->depth >= d && to_sq(move) == to_sq(e->move) && e->capturedpiece == piece_on(to_sq(move)) &&  e->aggressor == piece_on(from_sq(move)))
       return e;
