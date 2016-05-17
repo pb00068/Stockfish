@@ -263,8 +263,14 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+            Value val = pos.see_sign(move);
+              if (val >= VALUE_ZERO)
                   return move;
+
+              CaptEntry * ce = &pos.this_thread()->badgood[pos.piece_on(from_sq(move))][type_of(pos.piece_on(to_sq(move)))][to_sq(move)];
+              if (ce->seeval == val && ce->gameply == pos.game_ply() && depth < ce->depth + 4)
+//                threshold = VALUE_ZERO;
+                return move; // we assume this capture is still good
 
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;

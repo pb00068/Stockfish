@@ -55,6 +55,10 @@ struct CheckInfo {
 };
 
 
+
+//typedef HashTable<CaptEntry, 51384> CaptureTable;
+
+
 /// StateInfo struct stores information needed to restore a Position object to
 /// its previous state when we retract a move. Whenever a move is made on the
 /// board (by calling Position::do_move), a StateInfo object must be passed.

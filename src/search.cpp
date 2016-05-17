@@ -1172,6 +1172,14 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
+    if (bestMove && moveCount > 10 && pos.capture_or_promotion(bestMove))
+    { // we assume here a bad capture has become best move
+      CaptEntry * ce = &thisThread->badgood[pos.piece_on(from_sq(bestMove))][type_of(pos.piece_on(to_sq(bestMove)))][to_sq(bestMove)];
+      ce->depth = depth;
+      ce->seeval = pos.see_sign(bestMove);
+      ce->gameply = pos.game_ply();
+    }
+
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,

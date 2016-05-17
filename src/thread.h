@@ -70,6 +70,7 @@ public:
   MoveStats counterMoves;
   Depth completedDepth;
   std::atomic_bool resetCalls;
+  CaptEntry badgood[15][7][SQUARE_NB];
 };
 
 
