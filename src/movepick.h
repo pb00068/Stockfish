@@ -48,13 +48,15 @@ struct Stats {
 
   void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, ValPly vp) {
 
-    if (abs(int(v)) >= 324)
+    if (abs(int(vp.val)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    table[pc][to].val -= table[pc][to].val * abs(int(vp.val)) / (CM ? 936 : 324);
+    table[pc][to].val += int(vp.val) * 32;
+    if (vp.val > 0)
+      table[pc][to].gameply = (table[pc][to].gameply + vp.gameply) / 2;
   }
 
 private:
@@ -62,8 +64,8 @@ private:
 };
 
 typedef Stats<Move> MoveStats;
-typedef Stats<Value, false> HistoryStats;
-typedef Stats<Value,  true> CounterMoveStats;
+typedef Stats<ValPly, false> HistoryStats;
+typedef Stats<ValPly,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 
@@ -88,6 +90,7 @@ public:
 private:
   template<GenType> void score();
   void generate_next_stage();
+  Value getValue(CounterMoveStats* cmh, Piece p, Square s, int gamePly);
   ExtMove* begin() { return moves; }
   ExtMove* end() { return endMoves; }
 

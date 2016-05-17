@@ -143,15 +143,28 @@ void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
 
-  const CounterMoveStats* cm = (ss-1)->counterMoves;
-  const CounterMoveStats* fm = (ss-2)->counterMoves;
-  const CounterMoveStats* f2 = (ss-4)->counterMoves;
+  CounterMoveStats* cm = (ss-1)->counterMoves;
+  CounterMoveStats* fm = (ss-2)->counterMoves;
+  CounterMoveStats* f2 = (ss-4)->counterMoves;
+
+
 
   for (auto& m : *this)
-      m.value =      history[pos.moved_piece(m)][to_sq(m)]
-               + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
+      m.value =      history[pos.moved_piece(m)][to_sq(m)].val
+               + getValue(cm, pos.moved_piece(m), to_sq(m), pos.game_ply())
+               + getValue(fm, pos.moved_piece(m), to_sq(m), pos.game_ply())
+               + getValue(f2, pos.moved_piece(m), to_sq(m), pos.game_ply());
+}
+
+Value MovePicker::getValue(CounterMoveStats* cmh, Piece p, Square s, int gamePly) {
+  if (!cmh)
+    return VALUE_ZERO;
+
+  float diff = ((*cmh)[p][s].gameply - gamePly) * ((*cmh)[p][s].gameply - gamePly);
+  if (diff < 400)
+    return (*cmh)[p][s].val;
+
+  return VALUE_ZERO;
 }
 
 template<>
@@ -170,7 +183,7 @@ void MovePicker::score<EVASIONS>() {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          m.value = history[pos.moved_piece(m)][to_sq(m)];
+          m.value = history[pos.moved_piece(m)][to_sq(m)].val;
 }
 
 

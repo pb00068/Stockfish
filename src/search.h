@@ -29,7 +29,7 @@
 #include "types.h"
 
 template<typename T, bool CM> struct Stats;
-typedef Stats<Value, true> CounterMoveStats;
+typedef Stats<ValPly, true> CounterMoveStats;
 
 namespace Search {
 

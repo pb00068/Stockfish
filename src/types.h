@@ -192,6 +192,11 @@ enum Value : int {
   MidgameLimit  = 15581, EndgameLimit  = 3998
 };
 
+struct ValPly {
+  Value val;
+  float gameply;
+};
+
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
   ALL_PIECES = 0,
