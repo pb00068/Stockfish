@@ -160,11 +160,11 @@ Value MovePicker::getValue(CounterMoveStats* cmh, Piece p, Square s, int gamePly
   if (!cmh)
     return VALUE_ZERO;
 
-  float diff = ((*cmh)[p][s].gameply - gamePly) * ((*cmh)[p][s].gameply - gamePly);
-  if (diff < 400)
-    return (*cmh)[p][s].val;
+//  int diff = abs((*cmh)[p][s].gameply - gamePly);
+//  if (diff < 3) // && (*cmh)[p][s].val > 0)
+//    return 4 * (*cmh)[p][s].val;
 
-  return VALUE_ZERO;
+  return (*cmh)[p][s].val;
 }
 
 template<>

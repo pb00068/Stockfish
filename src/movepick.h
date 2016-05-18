@@ -55,7 +55,7 @@ struct Stats {
 
     table[pc][to].val -= table[pc][to].val * abs(int(vp.val)) / (CM ? 936 : 324);
     table[pc][to].val += int(vp.val) * 32;
-    if (vp.val > 0)
+    //if (vp.val > 0)
       table[pc][to].gameply = (table[pc][to].gameply + vp.gameply) / 2;
   }
 

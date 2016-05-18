@@ -194,7 +194,7 @@ enum Value : int {
 
 struct ValPly {
   Value val;
-  float gameply;
+  int gameply;
 };
 
 enum PieceType {
