@@ -83,13 +83,15 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 
 /// CheckInfo constructor
 
-CheckInfo::CheckInfo(const Position& pos) {
+CheckInfo::CheckInfo(const Position& pos, bool complete) {
 
   Color them = ~pos.side_to_move();
   ksq = pos.square<KING>(them);
 
+  if (complete) {
   pinned = pos.pinned_pieces(pos.side_to_move());
   dcCandidates = pos.discovered_check_candidates();
+  }
 
   checkSquares[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
   checkSquares[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);

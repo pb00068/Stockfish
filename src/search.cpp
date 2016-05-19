@@ -113,8 +113,8 @@ namespace {
           std::copy(newPv.begin(), newPv.begin() + 3, pv);
 
           StateInfo st[2];
-          pos.do_move(newPv[0], st[0], pos.gives_check(newPv[0], CheckInfo(pos)));
-          pos.do_move(newPv[1], st[1], pos.gives_check(newPv[1], CheckInfo(pos)));
+          pos.do_move(newPv[0], st[0], pos.gives_check(newPv[0], CheckInfo(pos, true)));
+          pos.do_move(newPv[1], st[1], pos.gives_check(newPv[1], CheckInfo(pos, true)));
           expectedPosKey = pos.key();
           pos.undo_move(newPv[1]);
           pos.undo_move(newPv[0]);
@@ -168,7 +168,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
-  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt, CheckInfo* ci, bool incheck);
   void check_time();
 
 } // namespace
@@ -226,7 +226,7 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 
   StateInfo st;
   uint64_t cnt, nodes = 0;
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
   const bool leaf = (depth == 2 * ONE_PLY);
 
   for (const auto& m : MoveList<LEGAL>(pos))
@@ -683,8 +683,10 @@ namespace {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove)) {
+            CheckInfo ci(pos, false);
+            update_stats(pos, ss, ttMove, depth, nullptr, 0, &ci, inCheck);
+        }
 
         return ttValue;
     }
@@ -832,7 +834,7 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NULL);
 
         MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()]);
-        CheckInfo ci(pos);
+        CheckInfo ci(pos, true);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
@@ -867,7 +869,8 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, ss);
-    CheckInfo ci(pos);
+    CheckInfo ci(pos, true);
+
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
                || ss->staticEval == VALUE_NONE
@@ -1152,7 +1155,7 @@ moves_loop: // When in check search starts from here
 
     // Quiet best move: update killers, history and countermoves
     else if (bestMove && !pos.capture_or_promotion(bestMove))
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount, &ci, inCheck);
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1291,7 +1294,7 @@ moves_loop: // When in check search starts from here
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
     MovePicker mp(pos, ttMove, depth, to_sq((ss-1)->currentMove));
-    CheckInfo ci(pos);
+    CheckInfo ci(pos, true);
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1433,7 +1436,7 @@ moves_loop: // When in check search starts from here
   // follow-up move history when a new quiet best move is found.
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Depth depth, Move* quiets, int quietsCnt) {
+                    Depth depth, Move* quiets, int quietsCnt, CheckInfo *ci, bool incheck) {
 
     if (ss->killers[0] != move)
     {
@@ -1449,24 +1452,30 @@ moves_loop: // When in check search starts from here
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
-
-    if (cmh)
+    Piece p = pos.moved_piece(move);
+    if (!(ci->checkSquares[type_of(pos.moved_piece(move))] & to_sq(move)))
     {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+      thisThread->history.update(p, to_sq(move), bonus);
+
+      if (cmh)
+      {
+          thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+          cmh->update(p, to_sq(move), bonus);
+      }
+
+      if (fmh)
+          fmh->update(p, to_sq(move), bonus);
+
+      if (fmh2)
+          fmh2->update(p, to_sq(move), bonus);
     }
-
-    if (fmh)
-        fmh->update(pos.moved_piece(move), to_sq(move), bonus);
-
-    if (fmh2)
-        fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (!(ci->checkSquares[type_of(pos.moved_piece(quiets[i]))] & to_sq(quiets[i])))
+        {
+        thisThread->history.update(p, to_sq(quiets[i]), -bonus);
 
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
@@ -1476,11 +1485,13 @@ moves_loop: // When in check search starts from here
 
         if (fmh2)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        }
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
     if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
     {
+        if (!incheck) {
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
 
@@ -1489,6 +1500,7 @@ moves_loop: // When in check search starts from here
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+        }
     }
   }
 
@@ -1630,7 +1642,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
           tte->save(pos.key(), VALUE_NONE, BOUND_NONE, DEPTH_NONE,
                     m, VALUE_NONE, TT.generation());
 
-      pos.do_move(m, *st++, pos.gives_check(m, CheckInfo(pos)));
+      pos.do_move(m, *st++, pos.gives_check(m, CheckInfo(pos, true)));
   }
 
   for (size_t i = pv.size(); i > 0; )
@@ -1650,7 +1662,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos)
 
     assert(pv.size() == 1);
 
-    pos.do_move(pv[0], st, pos.gives_check(pv[0], CheckInfo(pos)));
+    pos.do_move(pv[0], st, pos.gives_check(pv[0], CheckInfo(pos, true)));
     TTEntry* tte = TT.probe(pos.key(), ttHit);
     pos.undo_move(pv[0]);
 

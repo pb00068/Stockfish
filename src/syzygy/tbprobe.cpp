@@ -361,7 +361,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
   } else
     end = generate<EVASIONS>(pos, stack);
 
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   for (moves = stack; moves < end; moves++) {
     Move capture = moves->move;
@@ -424,7 +424,7 @@ int Tablebases::probe_wdl(Position& pos, int *success)
   else
     end = generate<EVASIONS>(pos, stack);
 
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   for (moves = stack; moves < end; moves++) {
     Move capture = moves->move;
@@ -479,7 +479,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
   ExtMove stack[192];
   ExtMove *moves, *end = NULL;
   StateInfo st;
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   if (wdl > 0) {
     // Generate at least all legal non-capturing pawn moves
@@ -604,7 +604,7 @@ int Tablebases::probe_dtz(Position& pos, int *success)
     end = generate<CAPTURES>(pos, stack);
   else
     end = generate<EVASIONS>(pos, stack);
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   for (moves = stack; moves < end; moves++) {
     Move capture = moves->move;
@@ -696,7 +696,7 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves, Value& 
   if (!success) return false;
 
   StateInfo st;
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   // Probe each move.
   for (size_t i = 0; i < rootMoves.size(); i++) {
@@ -804,7 +804,7 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves, Val
   score = wdl_to_Value[wdl + 2];
 
   StateInfo st;
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
 
   int best = -2;
 

@@ -335,7 +335,7 @@ ExtMove* generate<QUIET_CHECKS>(const Position& pos, ExtMove* moveList) {
   assert(!pos.checkers());
 
   Color us = pos.side_to_move();
-  CheckInfo ci(pos);
+  CheckInfo ci(pos, true);
   Bitboard dc = ci.dcCandidates;
 
   while (dc)
