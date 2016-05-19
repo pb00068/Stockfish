@@ -263,8 +263,11 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+            Value val = pos.see_sign(move);
+              if (val >= 0)
                   return move;
+              if (val == KnightValueMg - BishopValueMg && pos.count<BISHOP>(pos.side_to_move()) == 1)
+                  return move; // giving up our last bishop for a knight might be good
 
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;
