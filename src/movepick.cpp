@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, COMEBACK, QUIET, BAD_CAPTURES,
     EVASION, ALL_EVASIONS,
     QSEARCH_WITH_CHECKS, QCAPTURES_1, CHECKS,
     QSEARCH_WITHOUT_CHECKS, QCAPTURES_2,
@@ -199,6 +199,17 @@ void MovePicker::generate_next_stage() {
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
       break;
 
+  case COMEBACK:
+      if (ss->oldPvMove == MOVE_NONE) {
+        endMoves = cur;
+        break;
+      }
+      ExtMove comeback;
+      comeback.move=ss->oldPvMove;
+      cur = &comeback;
+      endMoves = cur + 1;
+      break;
+
   case QUIET:
       endMoves = generate<QUIETS>(pos, moves);
       score<QUIETS>();
@@ -280,12 +291,22 @@ Move MovePicker::next_move() {
               return move;
           break;
 
+      case COMEBACK:
+         move = *cur++;
+         if (   move != ttMove
+             && move != killers[0]
+             && move != killers[1]
+             && move != killers[2])
+             return move;
+         break;
+
       case QUIET:
           move = *cur++;
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-              && move != killers[2])
+              && move != killers[2]
+              && move != ss->oldPvMove)
               return move;
           break;
 

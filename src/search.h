@@ -42,6 +42,7 @@ struct Stack {
   int ply;
   Move currentMove;
   Move excludedMove;
+  Move oldPvMove;
   Move killers[2];
   Value staticEval;
   bool skipEarlyPruning;
