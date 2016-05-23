@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, COMEBACK, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, QUIET, BAD_CAPTURES,
     EVASION, ALL_EVASIONS,
     QSEARCH_WITH_CHECKS, QCAPTURES_1, CHECKS,
     QSEARCH_WITHOUT_CHECKS, QCAPTURES_2,
@@ -67,8 +67,8 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
-           : pos(p), ss(s), depth(d) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, bool PVNode)
+           : pos(p), ss(s), depth(d), pvnode(PVNode) {
 
   assert(d > DEPTH_ZERO);
 
@@ -199,17 +199,6 @@ void MovePicker::generate_next_stage() {
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
       break;
 
-  case COMEBACK:
-      if (ss->oldPvMove == MOVE_NONE) {
-        endMoves = cur;
-        break;
-      }
-      ExtMove comeback;
-      comeback.move=ss->oldPvMove;
-      cur = &comeback;
-      endMoves = cur + 1;
-      break;
-
   case QUIET:
       endMoves = generate<QUIETS>(pos, moves);
       score<QUIETS>();
@@ -274,7 +263,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              if ((move == ss->oldPvMove && pvnode) || pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array
@@ -291,14 +280,6 @@ Move MovePicker::next_move() {
               return move;
           break;
 
-      case COMEBACK:
-         move = *cur++;
-         if (   move != ttMove
-             && move != killers[0]
-             && move != killers[1]
-             && move != killers[2])
-             return move;
-         break;
 
       case QUIET:
           move = *cur++;

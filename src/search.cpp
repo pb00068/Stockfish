@@ -869,7 +869,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+    MovePicker mp(pos, ttMove, depth, ss, PvNode);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1121,7 +1121,7 @@ moves_loop: // When in check search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
               {
-                  if (ss->pv[0] != move && pos.capture_or_promotion(ss->pv[0]))
+                  if (pos.capture_or_promotion(ss->pv[0]) && pos.see_sign(ss->pv[0]) < 0)
                       ss->oldPvMove=ss->pv[0];
                   (ss+1)->oldPvMove=MOVE_NONE;
                   (ss+2)->oldPvMove=MOVE_NONE;

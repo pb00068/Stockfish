@@ -81,7 +81,7 @@ public:
 
   MovePicker(const Position&, Move, Value);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, Search::Stack*, bool PVNode);
 
   Move next_move();
 
@@ -100,6 +100,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   int stage;
+  bool pvnode;
   ExtMove* endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
 };
