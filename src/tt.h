@@ -30,7 +30,8 @@
 /// move       16 bit
 /// value      16 bit
 /// eval value 16 bit
-/// generation  6 bit
+/// generation  5 bit
+/// badGood     1 bit true if once a bad capture was bestmove
 /// bound type  2 bit
 /// depth       8 bit
 
@@ -41,12 +42,16 @@ struct TTEntry {
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)depth8; }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
+  bool badGood() const { return genBound8 & 0x4; }
 
-  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g) {
+  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g, bool badGood) {
 
     // Preserve any existing move for the same position
     if (m || (k >> 48) != key16)
         move16 = (uint16_t)m;
+
+    if ((k >> 48) == key16)
+      badGood |=  genBound8 & 0x4;
 
     // Don't overwrite more valuable entries
     if (  (k >> 48) != key16
@@ -57,7 +62,7 @@ struct TTEntry {
         key16     = (uint16_t)(k >> 48);
         value16   = (int16_t)v;
         eval16    = (int16_t)ev;
-        genBound8 = (uint8_t)(g | b);
+        genBound8 = (uint8_t)(g | badGood << 2 | b);
         depth8    = (int8_t)d;
     }
   }
@@ -95,7 +100,7 @@ class TranspositionTable {
 
 public:
  ~TranspositionTable() { free(mem); }
-  void new_search() { generation8 += 4; } // Lower 2 bits are used by Bound
+  void new_search() { generation8 += 8; } // Lower 2 bits are used by Bound
   uint8_t generation() const { return generation8; }
   TTEntry* probe(const Key key, bool& found) const;
   int hashfull() const;

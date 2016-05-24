@@ -607,7 +607,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth, predictedDepth;
     Value bestValue, value, ttValue, eval, nullValue, futilityValue;
-    bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
+    bool ttHit, badGood, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch;
     Piece moved_piece;
     int moveCount, quietCount;
@@ -672,6 +672,7 @@ namespace {
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
+    badGood = ttHit ? tte->badGood() : false;
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -714,7 +715,7 @@ namespace {
 
                 tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
                           std::min(DEPTH_MAX - ONE_PLY, depth + 6 * ONE_PLY),
-                          MOVE_NONE, VALUE_NONE, TT.generation());
+                          MOVE_NONE, VALUE_NONE, TT.generation(), false);
 
                 return value;
             }
@@ -746,7 +747,7 @@ namespace {
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  ss->staticEval, TT.generation());
+                  ss->staticEval, TT.generation(), false);
     }
 
     if (ss->skipEarlyPruning)
@@ -860,6 +861,7 @@ namespace {
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
+        badGood = ttHit ? tte->badGood() : false;
     }
 
 moves_loop: // When in check search starts from here
@@ -869,7 +871,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+    MovePicker mp(pos, ttMove, depth, ss, badGood);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1174,10 +1176,14 @@ moves_loop: // When in check search starts from here
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
 
+//    if ( depth > 8 && ttMove != bestMove && bestMove != MOVE_NONE && pos.capture_or_promotion(ttMove) && pos.see_sign(ttMove) < 0) {
+//      sync_cout << "pos" << pos << " move " << UCI::move(ttMove, false) << " see:" << pos.see_sign(ttMove) << " new best move " << UCI::move(bestMove, false) << " depth : " << depth << sync_endl;
+//      //abort();
+//    }
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-              depth, bestMove, ss->staticEval, TT.generation());
+              depth, bestMove, ss->staticEval, TT.generation(), depth > 8 && ttMove != bestMove && bestMove != MOVE_NONE && pos.capture_or_promotion(ttMove) && pos.see_sign(ttMove) < 0);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1277,7 +1283,7 @@ moves_loop: // When in check search starts from here
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation());
+                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), false);
 
             return bestValue;
         }
@@ -1373,7 +1379,7 @@ moves_loop: // When in check search starts from here
               else // Fail high
               {
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
-                            ttDepth, move, ss->staticEval, TT.generation());
+                            ttDepth, move, ss->staticEval, TT.generation(), false);
 
                   return value;
               }
@@ -1388,7 +1394,7 @@ moves_loop: // When in check search starts from here
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
-              ttDepth, bestMove, ss->staticEval, TT.generation());
+              ttDepth, bestMove, ss->staticEval, TT.generation(), false);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1630,7 +1636,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 
       if (!ttHit || tte->move() != m) // Don't overwrite correct entries
           tte->save(pos.key(), VALUE_NONE, BOUND_NONE, DEPTH_NONE,
-                    m, VALUE_NONE, TT.generation());
+                    m, VALUE_NONE, TT.generation(), ttHit ? tte->badGood() : false);
 
       pos.do_move(m, *st++, pos.gives_check(m, CheckInfo(pos)));
   }
