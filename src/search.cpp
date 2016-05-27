@@ -158,6 +158,7 @@ namespace {
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
+  std::atomic<Depth> MaxCompletedDepth;
 
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
@@ -261,6 +262,7 @@ void MainThread::search() {
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
 
+  MaxCompletedDepth = DEPTH_ZERO;
   TB::Hits = 0;
   TB::RootInTB = false;
   TB::UseRule50 = Options["Syzygy50MoveRule"];
@@ -421,6 +423,16 @@ void Thread::search() {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
+
+
+      }
+
+      rootDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
+
+      if (!mainThread && rootDepth < DEPTH_MAX - ONE_PLY) {
+        const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+        if (row[(rootDepth + rootPos.game_ply()) % row.size()] && !row[(rootDepth + 1 + rootPos.game_ply()) % row.size()])
+          rootDepth++;
       }
 
       // Age out PV variability metric
@@ -518,7 +530,11 @@ void Thread::search() {
       }
 
       if (!Signals.stop)
-          completedDepth = rootDepth;
+      {
+            completedDepth = rootDepth;
+            if (MaxCompletedDepth < rootDepth)
+                MaxCompletedDepth = rootDepth;
+      }
 
       if (!mainThread)
           continue;
