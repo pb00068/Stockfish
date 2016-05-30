@@ -424,15 +424,14 @@ void Thread::search() {
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
 
-         Depth newDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
-         if (row[(newDepth + rootPos.game_ply()) % row.size()])
-         { // prior to violate the fixed scheme, try if we can fit by searching on an adjacent depth
-           if (!row[(newDepth + 1 + rootPos.game_ply()) % row.size()] && newDepth < DEPTH_MAX - ONE_PLY)
-             newDepth += ONE_PLY;
-           else if (!row[(newDepth - 1 + rootPos.game_ply()) % row.size()] && newDepth - 1 >= rootDepth)
-             newDepth =- ONE_PLY;
+         rootDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
+         if (row[(rootDepth + rootPos.game_ply()) % row.size()])
+         { // prior to violate the half-density scheme, try if we can find a compromise by searching on an adjacent rootdepth
+           if (!row[(rootDepth + 1 + rootPos.game_ply()) % row.size()] && rootDepth < DEPTH_MAX - ONE_PLY)
+             rootDepth += ONE_PLY;
+           else if (!row[(rootDepth - 1 + rootPos.game_ply()) % row.size()] )
+             rootDepth =- ONE_PLY;
          }
-         rootDepth = newDepth;
       }
 
 
