@@ -424,16 +424,18 @@ void Thread::search() {
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
 
-
+         Depth newDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
+         if (row[(newDepth + rootPos.game_ply()) % row.size()])
+         { // prior to violate the fixed scheme, try if we can fit by searching on an adjacent depth
+           if (!row[(newDepth + 1 + rootPos.game_ply()) % row.size()] && newDepth < DEPTH_MAX - ONE_PLY)
+             newDepth += ONE_PLY;
+           else if (!row[(newDepth - 1 + rootPos.game_ply()) % row.size()] && newDepth - 1 >= rootDepth)
+             newDepth =- ONE_PLY;
+         }
+         rootDepth = newDepth;
       }
 
-      rootDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
 
-      if (!mainThread && rootDepth < DEPTH_MAX - ONE_PLY) {
-        const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
-        if (row[(rootDepth + rootPos.game_ply()) % row.size()] && !row[(rootDepth + 1 + rootPos.game_ply()) % row.size()])
-          rootDepth++;
-      }
 
       // Age out PV variability metric
       if (mainThread)
