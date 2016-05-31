@@ -430,7 +430,7 @@ void Thread::search() {
            if (!row[(rootDepth + 1 + rootPos.game_ply()) % row.size()] && rootDepth < DEPTH_MAX - ONE_PLY)
              rootDepth += ONE_PLY;
            else if (!row[(rootDepth - 1 + rootPos.game_ply()) % row.size()] )
-             rootDepth =- ONE_PLY;
+             rootDepth -= ONE_PLY;
          }
       }
 
