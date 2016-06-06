@@ -158,6 +158,7 @@ namespace {
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
+  std::atomic<Depth> MaxCompletedDepth;
 
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
@@ -391,6 +392,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  MaxCompletedDepth = DEPTH_ZERO;
 
   if (mainThread)
   {
@@ -421,6 +423,10 @@ void Thread::search() {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
+
+          Depth pushDepth = std::max(rootDepth, std::min(MaxCompletedDepth + ONE_PLY, DEPTH_MAX - ONE_PLY));
+          if (!row[(pushDepth + rootPos.game_ply()) % row.size()])
+            rootDepth = pushDepth;
       }
 
       // Age out PV variability metric
@@ -517,8 +523,11 @@ void Thread::search() {
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
 
-      if (!Signals.stop)
+      if (!Signals.stop) {
           completedDepth = rootDepth;
+          if (MaxCompletedDepth < rootDepth)
+              MaxCompletedDepth = rootDepth;
+      }
 
       if (!mainThread)
           continue;
