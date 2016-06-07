@@ -36,6 +36,7 @@ public:
   int elapsed() const { return int(Search::Limits.npmsec ? Threads.nodes_searched() : now() - startTime); }
 
   int64_t availableNodes; // When in 'nodes as time' mode
+  bool ponderGame;
 
 private:
   TimePoint startTime;

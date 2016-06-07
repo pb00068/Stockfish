@@ -354,10 +354,22 @@ void MainThread::search() {
       && !Skill(Options["Skill Level"]).enabled()
       &&  rootMoves[0].pv[0] != MOVE_NONE)
   {
-      for (Thread* th : Threads)
+      for (Thread* th : Threads) {
           if (   th->completedDepth > bestThread->completedDepth
               && th->rootMoves[0].score > bestThread->rootMoves[0].score)
               bestThread = th;
+      }
+      if (Time.ponderGame && !Limits.ponder) {
+        for (Thread* th : Threads)
+        {
+            if (th->rootMoves[0].pv.size() > 1 && bestThread->rootMoves[0].pv.size() > 1
+             && th->rootMoves[0].pv[1] != bestThread->rootMoves[0].pv[1]
+             && th->rootMoves[0].pv[0] == bestThread->rootMoves[0].pv[0]
+             && th->completedDepth == bestThread->completedDepth
+             && th->rootMoves[0].score < bestThread->rootMoves[0].score)
+                bestThread = th;
+        }
+      }
   }
 
   previousScore = bestThread->rootMoves[0].score;
@@ -1595,6 +1607,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
 
       ss << " tbhits "   << TB::Hits
          << " time "     << elapsed
+//        ss << " th " << pos.this_thread()->idx
          << " pv";
 
       for (Move m : rootMoves[i].pv)

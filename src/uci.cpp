@@ -130,7 +130,7 @@ namespace {
         else if (token == "movetime")  is >> limits.movetime;
         else if (token == "mate")      is >> limits.mate;
         else if (token == "infinite")  limits.infinite = 1;
-        else if (token == "ponder")    limits.ponder = 1;
+        else if (token == "ponder")    { limits.ponder = 1; Time.ponderGame = true;}
 
     Threads.start_thinking(pos, States, limits);
   }
@@ -187,6 +187,7 @@ void UCI::loop(int argc, char* argv[]) {
       {
           Search::clear();
           Time.availableNodes = 0;
+          Time.ponderGame = false;
       }
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
       else if (token == "go")         go(pos, is);
