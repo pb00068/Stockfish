@@ -354,10 +354,26 @@ void MainThread::search() {
       && !Skill(Options["Skill Level"]).enabled()
       &&  rootMoves[0].pv[0] != MOVE_NONE)
   {
-      for (Thread* th : Threads)
-          if (   th->completedDepth > bestThread->completedDepth
-              && th->rootMoves[0].score > bestThread->rootMoves[0].score)
-              bestThread = th;
+      bool done = true;
+      do {
+        for (Thread* th : Threads)
+            if (   th->completedDepth > bestThread->completedDepth
+                && th->rootMoves[0].score > bestThread->rootMoves[0].score)
+                bestThread = th;
+        done = true;
+        for (Thread* th : Threads)
+        {
+            if (th->rootMoves[0].score < bestThread->rootMoves[0].score
+             && th->rootMoves[0].pv[0] == bestThread->rootMoves[0].pv[0]
+             && th->completedDepth >= bestThread->completedDepth)
+            {
+                bestThread->rootMoves[0].score = th->rootMoves[0].score;
+                bestThread = th;
+                done = false;
+            }
+        }
+      }
+      while (!done);
   }
 
   previousScore = bestThread->rootMoves[0].score;
