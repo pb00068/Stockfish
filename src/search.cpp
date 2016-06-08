@@ -356,9 +356,10 @@ void MainThread::search() {
       &&  rootMoves[0].pv[0] != MOVE_NONE)
   {
       for (Thread* th : Threads)
-          if ( (th->completedDepth > bestThread->completedDepth && !th->scout)
+          if (th->completedDepth > bestThread->completedDepth
+              && !th->scout
               && th->rootMoves[0].score > bestThread->rootMoves[0].score)
-              bestThread = th;
+            bestThread = th;
   }
 
   previousScore = bestThread->rootMoves[0].score;
@@ -520,9 +521,10 @@ void Thread::search() {
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
 
-      scout = false;
+
       if (!Signals.stop) {
           completedDepth = rootDepth;
+          scout = false;
           if (MaxCompletedDepth < completedDepth) {
               MaxCompletedDepth = completedDepth;
               const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
