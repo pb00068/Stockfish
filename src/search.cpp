@@ -158,7 +158,7 @@ namespace {
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
-
+  std::atomic<Depth> MaxCompletedDepth;
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
@@ -260,6 +260,7 @@ void MainThread::search() {
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
+  MaxCompletedDepth = DEPTH_ZERO;
 
   TB::Hits = 0;
   TB::RootInTB = false;
@@ -354,26 +355,10 @@ void MainThread::search() {
       && !Skill(Options["Skill Level"]).enabled()
       &&  rootMoves[0].pv[0] != MOVE_NONE)
   {
-      bool done = true;
-      do {
-        for (Thread* th : Threads)
-            if (   th->completedDepth > bestThread->completedDepth
-                && th->rootMoves[0].score > bestThread->rootMoves[0].score)
-                bestThread = th;
-        done = true;
-        for (Thread* th : Threads)
-        {
-            if (th->rootMoves[0].score < bestThread->rootMoves[0].score
-             && th->rootMoves[0].pv[0] == bestThread->rootMoves[0].pv[0]
-             && th->completedDepth >= bestThread->completedDepth)
-            {
-                bestThread->rootMoves[0].score = th->rootMoves[0].score;
-                bestThread = th;
-                done = false;
-            }
-        }
-      }
-      while (!done);
+      for (Thread* th : Threads)
+          if ( (th->completedDepth > bestThread->completedDepth && !th->scout)
+              && th->rootMoves[0].score > bestThread->rootMoves[0].score)
+              bestThread = th;
   }
 
   previousScore = bestThread->rootMoves[0].score;
@@ -407,6 +392,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  scout = false;
 
   if (mainThread)
   {
@@ -438,6 +424,7 @@ void Thread::search() {
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
       }
+
 
       // Age out PV variability metric
       if (mainThread)
@@ -533,8 +520,16 @@ void Thread::search() {
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
 
-      if (!Signals.stop)
+      scout = false;
+      if (!Signals.stop) {
           completedDepth = rootDepth;
+          if (MaxCompletedDepth < completedDepth) {
+              MaxCompletedDepth = completedDepth;
+              const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+              if (row[(rootDepth - 1 + rootPos.game_ply()) % row.size()])
+                scout = true;
+          }
+      }
 
       if (!mainThread)
           continue;
