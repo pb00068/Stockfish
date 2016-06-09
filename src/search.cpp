@@ -685,7 +685,7 @@ namespace {
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, tte->depth() > depth + ONE_PLY ? depth + ONE_PLY : depth, nullptr, 0);
+            update_stats(pos, ss, ttMove, depth, nullptr, 0);
 
         return ttValue;
     }
@@ -1448,13 +1448,14 @@ moves_loop: // When in check search starts from here
     if (cmh)
     {
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+        if (quiets != nullptr)
+          cmh->update(pos.moved_piece(move), to_sq(move), bonus);
     }
 
-    if (fmh)
+    if (fmh && quiets != nullptr)
         fmh->update(pos.moved_piece(move), to_sq(move), bonus);
 
-    if (fmh2)
+    if (fmh2 && quiets != nullptr)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
     // Decrease all the other played quiet moves
@@ -1462,13 +1463,13 @@ moves_loop: // When in check search starts from here
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (cmh)
+        if (cmh  && quiets != nullptr)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh)
+        if (fmh  && quiets != nullptr)
             fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh2)
+        if (fmh2  && quiets != nullptr)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
 
