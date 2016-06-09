@@ -48,12 +48,12 @@ struct Stats {
 
   void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
 
-  void update(Piece pc, Square to, Value v) {
+  void update(Piece pc, Square to, Value v, bool FM) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][to] -= table[pc][to] * abs(int(v)) / (FM ? 612 : (CM ? 936 : 324));
     table[pc][to] += int(v) * 32;
   }
 
