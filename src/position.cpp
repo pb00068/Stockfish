@@ -962,6 +962,49 @@ Value Position::see_sign(Move m) const {
   return see(m);
 }
 
+
+Value Position::see_pinaware_sign(Move m, Depth d) const {
+
+  assert(is_ok(m));
+
+  if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
+      return VALUE_KNOWN_WIN;
+
+  if (d < 5)
+    return see(m);
+
+  Bitboard pinneds[2],pinners[2];
+  for (int i=0; i < 2; i++)
+  {
+     Color c = (Color) i;
+     Bitboard b, result = 0;
+     Square ksq = square<KING>(~c);
+     Bitboard pinner = pinners[c] = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK][ksq])
+             | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(c);
+
+     while (pinner)
+     {
+         b = between_bb(ksq, pop_lsb(&pinner)) & pieces();
+         if (!more_than_one(b))
+             result |= b & pieces(~c);
+     }
+     pinneds[~c] = result;
+  }
+
+
+  if (pinneds[0] || pinneds[1])
+  {
+     if (pinners[0] & to_sq(m))
+        pinners[0] ^= to_sq(m);
+     if (pinners[1] & to_sq(m))
+        pinners[1] ^= to_sq(m);
+
+     return see_pin_aware(m, pinners, pinneds);
+  }
+
+  return see(m);
+}
+
 Value Position::see(Move m) const {
 
   Square from, to;
@@ -1025,6 +1068,92 @@ Value Position::see(Move m) const {
 
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
+  while (--slIndex)
+      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+
+  return swapList[0];
+}
+
+Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const {
+
+  Square from, to;
+  Bitboard occupied, attackers, stmAttackers;
+  Value swapList[32];
+  int slIndex = 1;
+  PieceType captured;
+  Color stm;
+
+  assert(is_ok(m));
+
+  from = from_sq(m);
+  to = to_sq(m);
+  swapList[0] = PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(from));
+  occupied = pieces() ^ from;
+
+  if (type_of(m) == CASTLING)
+      return VALUE_ZERO;
+
+  if (type_of(m) == ENPASSANT)
+  {
+      occupied ^= to - pawn_push(stm); // Remove the captured pawn
+      swapList[0] = PieceValue[MG][PAWN];
+  }
+
+  attackers = attackers_to(to, occupied) & occupied;
+  stm = ~stm;
+  stmAttackers = attackers & pieces(stm);
+
+  if (pinnez[stm] & stmAttackers)
+  {
+        pinner[~stm] &= occupied;
+        if (pinner[~stm])
+        {
+          if (more_than_one(pinner[~stm]))
+            stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+          else
+          {
+            pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+            if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                stmAttackers = stmAttackers & ~pinnez[stm];
+          }
+        }
+  }
+
+  if (!stmAttackers)
+      return swapList[0];
+
+  captured = type_of(piece_on(from));
+
+  do {
+      assert(slIndex < 32);
+
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+
+      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+
+      if (pinnez[stm] & stmAttackers)
+      {
+          pinner[~stm] &= occupied;
+          if (pinner[~stm])
+          {
+            if (more_than_one(pinner[~stm]))
+              stmAttackers = stmAttackers & ~pinnez[stm]; // we assume pinned pieces can't attack
+            else
+            {
+              pinnez[stm] &= between_bb(square<KING>(stm), lsb(pinner[~stm]));
+              if ( !(between_bb(square<KING>(stm), lsb(pinner[~stm])) & to)) // partial pin check
+                  stmAttackers = stmAttackers & ~pinnez[stm];
+            }
+          }
+      }
+
+      ++slIndex;
+
+  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
+
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
