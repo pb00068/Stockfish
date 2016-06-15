@@ -879,6 +879,16 @@ moves_loop: // When in check search starts from here
 
             extension = ONE_PLY;
       }
+      else {
+        int captures = 0;
+        for (int i=0; i < 5; i++) {
+          if ((ss-i) -> moveIsaNotExtendedCaptureOrPromotion)
+            captures++;
+        }
+        if (captures > 4) {
+          extension = ONE_PLY;
+        }
+      }
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
@@ -947,6 +957,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
+      ss->moveIsaNotExtendedCaptureOrPromotion = captureOrPromotion && !extension;
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
