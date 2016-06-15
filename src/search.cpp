@@ -873,12 +873,21 @@ moves_loop: // When in check search starts from here
                         && moveCount >= FutilityMoveCounts[improving][depth];
 
       // Step 12. Extend checks
-      if (   givesCheck
-          && (    moveCount == 1
-              || (!moveCountPruning && pos.see_sign(move) >= VALUE_ZERO))) {
-
-            extension = ONE_PLY;
+      if (   givesCheck) {
+          if ( moveCount == 1 || (!moveCountPruning && pos.see_sign(move) >= VALUE_ZERO))
+              extension = ONE_PLY;
+          else { // extend the check if there is only one evasion, this can't produce a search explosion
+              StateInfo st2;
+              pos.do_move(move, st2, true);
+              ss->currentMove = move;
+              MovePicker mpevasion(pos, MOVE_NONE, depth, ss+1);
+              if (mpevasion.next_move() != MOVE_NONE && mpevasion.next_move() == MOVE_NONE)
+                extension = ONE_PLY;
+              pos.undo_move(move);
+          }
       }
+
+
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
