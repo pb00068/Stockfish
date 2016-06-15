@@ -970,7 +970,7 @@ Value Position::see_pinaware_sign(Move m, Depth d) const {
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
-  if (d < 5)
+  if (d < 3)
     return see(m);
 
   Bitboard pinneds[2],pinners[2];
@@ -993,14 +993,7 @@ Value Position::see_pinaware_sign(Move m, Depth d) const {
 
 
   if (pinneds[0] || pinneds[1])
-  {
-     if (pinners[0] & to_sq(m))
-        pinners[0] ^= to_sq(m);
-     if (pinners[1] & to_sq(m))
-        pinners[1] ^= to_sq(m);
-
      return see_pin_aware(m, pinners, pinneds);
-  }
 
   return see(m);
 }
@@ -1088,6 +1081,8 @@ Value Position::see_pin_aware(Move m, Bitboard *pinner, Bitboard *pinnez) const 
   from = from_sq(m);
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
+  if (swapList[0])
+    occupied ^= to; // so pinners on exchangesquare will be ignored
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
