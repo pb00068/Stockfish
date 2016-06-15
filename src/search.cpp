@@ -875,8 +875,10 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (   givesCheck
           && (    moveCount == 1
-              || (!moveCountPruning && pos.see_sign(move) >= VALUE_ZERO)))
-          extension = ONE_PLY;
+              || (!moveCountPruning && pos.see_sign(move) >= VALUE_ZERO))) {
+
+            extension = ONE_PLY;
+      }
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
