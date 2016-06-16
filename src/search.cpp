@@ -168,6 +168,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
+  template <bool useCMH>
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
 
@@ -198,6 +199,11 @@ void Search::init() {
   {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
+  }
+
+  for (Thread* th : Threads)
+  {
+    th->useCMH = th->idx <= HalfDensitySize;
   }
 }
 
@@ -634,8 +640,12 @@ namespace {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove)) {
+          if (thisThread->useCMH)
+            update_stats<true>(pos, ss, ttMove, depth, nullptr, 0);
+          else
+            update_stats<false>(pos, ss, ttMove, depth, nullptr, 0);
+        }
 
         return ttValue;
     }
@@ -815,9 +825,9 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    const CounterMoveStats* fmh  = (ss-2)->counterMoves;
-    const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
+    const CounterMoveStats* cmh  = thisThread->useCMH ? (ss-1)->counterMoves : nullptr;
+    const CounterMoveStats* fmh  = thisThread->useCMH ? (ss-2)->counterMoves : nullptr;
+    const CounterMoveStats* fmh2 = thisThread->useCMH ? (ss-4)->counterMoves : nullptr;
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -1102,14 +1112,20 @@ moves_loop: // When in check search starts from here
 
     // Quiet best move: update killers, history and countermoves
     else if (bestMove && !pos.capture_or_promotion(bestMove))
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+    {
+        if (thisThread->useCMH)
+          update_stats<true>(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        else
+          update_stats<false>(pos, ss, bestMove, depth, quietsSearched, quietCount);
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
              && !bestMove
              && !inCheck
              && !pos.captured_piece_type()
-             && is_ok((ss-1)->currentMove))
+             && is_ok((ss-1)->currentMove)
+             && thisThread->useCMH)
     {
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
         if ((ss-2)->counterMoves)
@@ -1382,6 +1398,7 @@ moves_loop: // When in check search starts from here
   // update_stats() updates killers, history, countermove and countermove plus
   // follow-up move history when a new quiet best move is found.
 
+  template <bool useCMH>
   void update_stats(const Position& pos, Stack* ss, Move move,
                     Depth depth, Move* quiets, int quietsCnt) {
 
@@ -1401,35 +1418,41 @@ moves_loop: // When in check search starts from here
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
 
-    if (cmh)
-    {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+    if (useCMH) {
+      if (cmh)
+      {
+          thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+          cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+      }
+
+      if (fmh)
+          fmh->update(pos.moved_piece(move), to_sq(move), bonus);
+
+      if (fmh2)
+          fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
     }
-
-    if (fmh)
-        fmh->update(pos.moved_piece(move), to_sq(move), bonus);
-
-    if (fmh2)
-        fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
+    else
+      thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (cmh)
-            cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (useCMH) {
+          if (cmh)
+              cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh)
-            fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+          if (fmh)
+              fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh2)
-            fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+          if (fmh2)
+              fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        }
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
-    if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+    if (useCMH && (ss-1)->moveCount == 1 && !pos.captured_piece_type())
     {
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);

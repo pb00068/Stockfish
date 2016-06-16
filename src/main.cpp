@@ -38,10 +38,10 @@ int main(int argc, char* argv[]) {
   Bitboards::init();
   Position::init();
   Bitbases::init();
-  Search::init();
   Eval::init();
   Pawns::init();
   Threads.init();
+  Search::init();
   Tablebases::init(Options["SyzygyPath"]);
   TT.resize(Options["Hash"]);
 

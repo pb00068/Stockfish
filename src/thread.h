@@ -70,6 +70,7 @@ public:
   MoveStats counterMoves;
   Depth completedDepth;
   std::atomic_bool resetCalls;
+  bool useCMH;
 };
 
 
