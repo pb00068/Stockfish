@@ -819,6 +819,21 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
+    bool doExtend = false;
+    if (inCheck && depth > 3 && !(ss-1)->extended) {
+        MovePicker evasions (pos, ttMove, depth, ss);
+        int moves = evasions.movesInStage();
+        if (moves < 3)
+        {
+          doExtend = true;
+          Move mov;
+          while ((mov = evasions.next_move()) != MOVE_NONE)
+            if (pos.capture_or_promotion(mov))
+              doExtend = false;
+//          dbg_hit_on(doExtend); dbg_mean_of(moves);
+        }
+    }
+
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -826,7 +841,7 @@ moves_loop: // When in check search starts from here
                || ss->staticEval == VALUE_NONE
                ||(ss-2)->staticEval == VALUE_NONE;
 
-    singularExtensionNode =   !rootNode
+    singularExtensionNode =  !doExtend &&  !rootNode
                            &&  depth >= 8 * ONE_PLY
                            &&  ttMove != MOVE_NONE
                        /*  &&  ttValue != VALUE_NONE Already implicit in the next condition */
@@ -834,6 +849,7 @@ moves_loop: // When in check search starts from here
                            && !excludedMove // Recursive singular search is not allowed
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
+
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -873,7 +889,9 @@ moves_loop: // When in check search starts from here
                         && moveCount >= FutilityMoveCounts[improving][depth];
 
       // Step 12. Extend checks
-      if (   givesCheck
+      if (doExtend)
+        extension = ONE_PLY;
+      else if (   givesCheck
           && (    moveCount == 1
               || (!moveCountPruning && pos.see_sign(move) >= VALUE_ZERO))) {
 
@@ -900,6 +918,7 @@ moves_loop: // When in check search starts from here
           if (value < rBeta)
               extension = ONE_PLY;
       }
+      ss->extended = extension == ONE_PLY;
 
       // Update the current move (this must be done after singular extension search)
       newDepth = depth - ONE_PLY + extension;
@@ -951,6 +970,7 @@ moves_loop: // When in check search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1121,6 +1141,7 @@ moves_loop: // When in check search starts from here
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
+
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
