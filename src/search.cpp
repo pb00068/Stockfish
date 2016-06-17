@@ -820,17 +820,16 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
     bool doExtend = false;
-    if (inCheck && depth > 3 && !(ss-1)->extended) {
+    if (inCheck && depth > 1 && !(ss-1)->extended) {
         MovePicker evasions (pos, ttMove, depth, ss);
         int moves = evasions.movesInStage();
-        if (moves < 3)
+        if (moves <= 3)
         {
           doExtend = true;
           Move mov;
           while ((mov = evasions.next_move()) != MOVE_NONE)
             if (pos.capture_or_promotion(mov))
               doExtend = false;
-//          dbg_hit_on(doExtend); dbg_mean_of(moves);
         }
     }
 
@@ -970,7 +969,6 @@ moves_loop: // When in check search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
-
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1141,7 +1139,6 @@ moves_loop: // When in check search starts from here
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
-
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
