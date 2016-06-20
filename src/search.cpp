@@ -675,6 +675,11 @@ namespace {
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
+        if (depth > 3 && (ss-1)->checkExtended) {
+            MovePicker evasions (pos, ttMove, depth, ss);
+            if (evasions.movesInStage() > 5) // undo extend if there are to many evasions
+               depth = depth - ONE_PLY;
+        }
         goto moves_loop;
     }
 
@@ -877,6 +882,8 @@ moves_loop: // When in check search starts from here
           && !moveCountPruning
           &&  pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
+
+      ss->checkExtended = extension == ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
