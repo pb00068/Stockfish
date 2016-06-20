@@ -675,9 +675,9 @@ namespace {
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
-        if (depth > 3 && (ss-1)->checkExtended) {
+        if (depth > 2 && (ss-1)->checkExtended) {
             MovePicker evasions (pos, ttMove, depth, ss);
-            if (evasions.movesInStage() > 5) // undo extend if there are to many evasions
+            if (evasions.movesInStage() > 6) // undo extend if there are to many evasions
                depth = depth - ONE_PLY;
         }
         goto moves_loop;
