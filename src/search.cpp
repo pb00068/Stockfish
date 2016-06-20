@@ -675,6 +675,11 @@ namespace {
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
+        if (depth > 3 && (ss-1)->checkExtended) {
+            MovePicker evasions (pos, ttMove, depth, ss);
+            if (evasions.movesInStage() > 5) // undo extend if there are to many evasions
+               depth = depth - ONE_PLY;
+        }
         goto moves_loop;
     }
 
@@ -819,19 +824,6 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    bool doExtend = false;
-    if (inCheck && depth > 1 && !(ss-1)->extended) {
-        MovePicker evasions (pos, ttMove, depth, ss);
-        int moves = evasions.movesInStage();
-        if (moves <= 3)
-        {
-          doExtend = true;
-          Move mov;
-          while ((mov = evasions.next_move()) != MOVE_NONE)
-            if (pos.capture_or_promotion(mov))
-              doExtend = false;
-        }
-    }
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -840,7 +832,7 @@ moves_loop: // When in check search starts from here
                || ss->staticEval == VALUE_NONE
                ||(ss-2)->staticEval == VALUE_NONE;
 
-    singularExtensionNode =  !doExtend &&  !rootNode
+    singularExtensionNode =  !rootNode
                            &&  depth >= 8 * ONE_PLY
                            &&  ttMove != MOVE_NONE
                        /*  &&  ttValue != VALUE_NONE Already implicit in the next condition */
@@ -887,11 +879,12 @@ moves_loop: // When in check search starts from here
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth];
 
+      ss->checkExtended = false;
       // Step 12. Extend checks
-      if (doExtend)
+      if (givesCheck    && !moveCountPruning && pos.see_sign(move) >= VALUE_ZERO) {
         extension = ONE_PLY;
-      else if (givesCheck    && !moveCountPruning && pos.see_sign(move) >= VALUE_ZERO)
-        extension = ONE_PLY;
+        ss->checkExtended = true;
+      }
 
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -914,7 +907,7 @@ moves_loop: // When in check search starts from here
           if (value < rBeta)
               extension = ONE_PLY;
       }
-      ss->extended = extension == ONE_PLY;
+
 
       // Update the current move (this must be done after singular extension search)
       newDepth = depth - ONE_PLY + extension;

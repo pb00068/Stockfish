@@ -41,7 +41,7 @@ struct Stack {
   Move* pv;
   int ply;
   Move currentMove;
-  bool extended;
+  bool checkExtended;
   Move excludedMove;
   Move killers[2];
   Value staticEval;
