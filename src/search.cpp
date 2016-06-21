@@ -819,6 +819,12 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
+    bool doExtend = false;
+    if (inCheck && depth > 3 && !(ss-1)->extended) {
+
+
+    }
+
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -877,6 +883,8 @@ moves_loop: // When in check search starts from here
           && !moveCountPruning
           &&  pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
+
+      ss->extended = extension == ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
