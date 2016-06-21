@@ -27,7 +27,6 @@ UNAME = $(shell uname)
 ### Executable name
 EXE = stockfish
 
-
 ### Installation dir definitions
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
