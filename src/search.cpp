@@ -671,10 +671,32 @@ namespace {
         }
     }
 
+    bool doExtend = false;
+
     // Step 5. Evaluate the position statically
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
+        if (depth > 3 && !(ss-1)->extended) {
+          if (more_than_one(pos.checkers()))
+              doExtend = true;
+          else
+          {
+              Color us = pos.side_to_move();
+              Square ksq = pos.square<KING>(us);
+              Bitboard sliderAttacks = 0;
+              Bitboard sliders = pos.checkers() & ~pos.pieces(KNIGHT, PAWN);
+              if (sliders)
+              {
+                  Square checksq = pop_lsb(&sliders);
+                  sliderAttacks |= LineBB[checksq][ksq] ^ checksq;
+              }
+
+              // Generate evasions for king, capture and non capture moves
+              if (!more_than_one(pos.attacks_from<KING>(ksq) & ~pos.pieces(us) & ~sliderAttacks))
+                  doExtend = true;
+          }
+        }
         goto moves_loop;
     }
 
@@ -819,11 +841,6 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    bool doExtend = false;
-    if (inCheck && depth > 3 && !(ss-1)->extended) {
-
-
-    }
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -832,7 +849,7 @@ moves_loop: // When in check search starts from here
                || ss->staticEval == VALUE_NONE
                ||(ss-2)->staticEval == VALUE_NONE;
 
-    singularExtensionNode =   !rootNode
+    singularExtensionNode = !doExtend &&  !rootNode
                            &&  depth >= 8 * ONE_PLY
                            &&  ttMove != MOVE_NONE
                        /*  &&  ttValue != VALUE_NONE Already implicit in the next condition */
@@ -879,7 +896,9 @@ moves_loop: // When in check search starts from here
                         && moveCount >= FutilityMoveCounts[improving][depth];
 
       // Step 12. Extend checks
-      if (    givesCheck
+      if (doExtend)
+        extension = ONE_PLY;
+      else if (    givesCheck
           && !moveCountPruning
           &&  pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
