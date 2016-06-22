@@ -22,6 +22,7 @@
 #define MOVEGEN_H_INCLUDED
 
 #include "types.h"
+#include "position.h"
 
 class Position;
 
@@ -48,6 +49,8 @@ inline bool operator<(const ExtMove& f, const ExtMove& s) {
 
 template<GenType>
 ExtMove* generate(const Position& pos, ExtMove* moveList);
+
+bool fewcheckEvasions(const Position& pos);
 
 /// The MoveList struct is a simple wrapper around generate(). It sometimes comes
 /// in handy to use this class instead of the low level generate() function.

@@ -85,6 +85,8 @@ public:
 
   Move next_move();
 
+  bool kingHunt();
+
 private:
   template<GenType> void score();
   void generate_next_stage();

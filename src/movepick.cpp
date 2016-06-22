@@ -237,6 +237,10 @@ void MovePicker::generate_next_stage() {
   }
 }
 
+bool MovePicker::kingHunt() {
+  return fewcheckEvasions(pos);
+}
+
 
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves

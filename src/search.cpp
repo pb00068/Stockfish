@@ -678,24 +678,8 @@ namespace {
     {
         ss->staticEval = eval = VALUE_NONE;
         if (depth > 3 && !(ss-1)->extended) {
-          if (more_than_one(pos.checkers()))
-              doExtend = true;
-          else
-          {
-              Color us = pos.side_to_move();
-              Square ksq = pos.square<KING>(us);
-              Bitboard sliderAttacks = 0;
-              Bitboard sliders = pos.checkers() & ~pos.pieces(KNIGHT, PAWN);
-              if (sliders)
-              {
-                  Square checksq = pop_lsb(&sliders);
-                  sliderAttacks |= LineBB[checksq][ksq] ^ checksq;
-              }
-
-              // Generate evasions for king, capture and non capture moves
-              if (!more_than_one(pos.attacks_from<KING>(ksq) & ~pos.pieces(us) & ~sliderAttacks))
-                  doExtend = true;
-          }
+          MovePicker evasions(pos, ttMove, depth, ss);
+          doExtend = evasions.kingHunt();
         }
         goto moves_loop;
     }
