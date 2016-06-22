@@ -678,7 +678,7 @@ namespace {
     {
         ss->staticEval = eval = VALUE_NONE;
         if (depth > 3 && !(ss-1)->extended) {
-          MovePicker evasions(pos, ttMove, depth, ss);
+          MovePicker evasions(pos, MOVE_NONE, depth, ss);
           doExtend = evasions.kingHunt();
         }
         goto moves_loop;

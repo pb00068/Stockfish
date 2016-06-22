@@ -409,9 +409,6 @@ bool fewcheckEvasions(const Position& pos) {
     Bitboard sliders = pos.checkers() & ~pos.pieces(KNIGHT, PAWN);
     ExtMove moves[10], *mov = &moves[0];
 
-    // Find all the squares attacked by slider checkers. We will remove them from
-    // the king evasions in order to skip known illegal moves, which avoids any
-    // useless legality checks later on.
     while (sliders)
     {
         Square checksq = pop_lsb(&sliders);
@@ -433,40 +430,19 @@ bool fewcheckEvasions(const Position& pos) {
     if (more_than_one(pos.checkers()))
         return true;
 
-    // Generate blocking evasions or captures of the checking piece
-//    Square checksq = lsb(pos.checkers());
-//    Bitboard target = between_bb(checksq, ksq) | checksq;
-    Bitboard target = pos.checkers(); // we are only interested in legal recaptures
-
     CheckInfo ci(pos);
-    ExtMove *movep = us == WHITE ? generate_all<WHITE, EVASIONS>(pos, moves, target, &ci)
-                       : generate_all<BLACK, EVASIONS>(pos, moves, target, &ci);
-    if (movep != moves) {
-//      movep--;
-//      sync_cout << pos << " evasion capture " << UCI::move(movep->move, false) << sync_endl;
-//      abort();
+    ExtMove *movep = us == WHITE ? generate_all<WHITE, EVASIONS>(pos, moves, pos.checkers(), &ci)
+                       : generate_all<BLACK, EVASIONS>(pos, moves, pos.checkers(), &ci);
+    if (movep != moves)
       return false;
-    }
-//    else {
-//      sync_cout << pos << " no evasion capture possible"  << sync_endl;
-//            abort();
-//    }
 
-    target = between_bb(lsb(pos.checkers()), ksq);
+    Bitboard target = between_bb(lsb(pos.checkers()), ksq);
     ExtMove *movep2 = us == WHITE ? generate_all<WHITE, EVASIONS>(pos, moves, target, &ci)
                          : generate_all<BLACK, EVASIONS>(pos, moves, target, &ci);
 
     nm += (movep2 - moves);
-    if (nm <= 2)
-      return true;
-//    if (movep2 != moves) {
-//
-//         sync_cout << pos << " blocking evasion  " << (movep2 - moves) << sync_endl;
-//         abort();
-//         return false;
-//       }
 
-    return false;
+    return nm <= 2;
 }
 
 /// generate<LEGAL> generates all the legal moves in the given position
