@@ -22,7 +22,6 @@
 #define MOVEGEN_H_INCLUDED
 
 #include "types.h"
-#include "position.h"
 
 class Position;
 

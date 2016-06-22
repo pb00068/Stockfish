@@ -22,9 +22,7 @@
 
 #include "movegen.h"
 #include "position.h"
-#include <iostream>
-#include "misc.h"
-#include "uci.h"
+
 
 namespace {
 
