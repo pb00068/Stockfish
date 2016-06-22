@@ -238,7 +238,7 @@ void MovePicker::generate_next_stage() {
 }
 
 bool MovePicker::kingHunt() {
-  return fewcheckEvasions(pos);
+  return fewcheckEvasions(pos, (ss-1)->allmoves);
 }
 
 

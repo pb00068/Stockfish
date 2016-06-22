@@ -400,9 +400,10 @@ ExtMove* generate<EVASIONS>(const Position& pos, ExtMove* moveList) {
                      : generate_all<BLACK, EVASIONS>(pos, moveList, target);
 }
 
-bool fewcheckEvasions(const Position& pos) {
+bool fewcheckEvasions(const Position& pos, int movesavg) {
     assert(pos.checkers());
 
+    int max = movesavg > 20 ? 1 :  (movesavg > 10 ?  2 : 3);
     Color us = pos.side_to_move();
     Square ksq = pos.square<KING>(us);
     Bitboard sliderAttacks = 0;
@@ -423,7 +424,7 @@ bool fewcheckEvasions(const Position& pos) {
          *mov++ = make_move(ksq, to);
          if (!pos.empty(to))
              return false; // King captures a piece
-         if (++nm == 3)
+         if (++nm > max)
              return false; // to many evasions
     }
 
@@ -442,7 +443,7 @@ bool fewcheckEvasions(const Position& pos) {
 
     nm += (movep2 - moves);
 
-    return nm <= 2;
+    return nm <= max;
 }
 
 /// generate<LEGAL> generates all the legal moves in the given position
