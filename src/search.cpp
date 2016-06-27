@@ -819,8 +819,28 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
+
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
+
+    if (inCheck && (ss-1)->checkExtended  && !ttMove) {
+      Move capt = mp.legalCaptureInStage(ci.pinned, to_sq((ss-1)->currentMove));
+//      dbg_hit_on(capt);
+//      dbg_mean_of((ss-1)->checkSee);
+
+      if (capt) {
+        //sync_cout << pos << " checkmove " << UCI::move((ss-1)->currentMove, false) << " evasion " << UCI::move(capt, false) << "  evasionSee " << pos.see(capt) << sync_endl;
+        depth = depth - ONE_PLY;
+      }
+//        int remain = mp.remainingEvasions();
+////        dbg_hit_on(remain > 6);
+////        dbg_mean_of(remain);
+//        if (remain > 6) // || mp.legalCaptureInStage(ci.pinned) != MOVE_NONE)
+//        {
+//          depth = depth - ONE_PLY;
+//        }
+    }
+
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
@@ -843,6 +863,8 @@ moves_loop: // When in check search starts from here
 
       if (move == excludedMove)
           continue;
+
+      ss->checkExtended = false;
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
@@ -876,7 +898,14 @@ moves_loop: // When in check search starts from here
       if (    givesCheck
           && !moveCountPruning
           &&  pos.see_sign(move) >= VALUE_ZERO)
+      {
           extension = ONE_PLY;
+          ss->checkExtended=true;
+//          if (ss->checkSee >= VALUE_ZERO) {
+//            ss->checkSee = pos.see(move);
+//            //sync_cout << UCI::move(move, false) << " see" << pos.see(move) << sync_endl;
+//          }
+      }
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
@@ -943,6 +972,8 @@ moves_loop: // When in check search starts from here
           ss->moveCount = --moveCount;
           continue;
       }
+
+
 
       ss->currentMove = move;
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];

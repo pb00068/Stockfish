@@ -1032,6 +1032,50 @@ Value Position::see(Move m) const {
 }
 
 
+//Value Position::seeSpecial(Square to, Value v) const {
+//
+//  Square from;
+//  Bitboard occupied, attackers, stmAttackers;
+//  Value swapList[32];
+//  int slIndex = 1;
+//  PieceType captured;
+//  Color stm = side_to_move();
+//
+//  swapList[0] = v;
+//  occupied = pieces();
+//
+//
+//  attackers = attackers_to(to, occupied) & occupied;
+//
+//  stmAttackers = attackers & pieces(stm);
+//  if (!stmAttackers || !more_than_one(stmAttackers))
+//      return swapList[0];
+//
+//
+//  captured = type_of(piece_on(to));
+//
+//  do {
+//      assert(slIndex < 32);
+//
+//      // Add the new entry to the swap list
+//      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+//
+//      // Locate and remove the next least valuable attacker
+//      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+//      stm = ~stm;
+//      stmAttackers = attackers & pieces(stm);
+//      ++slIndex;
+//
+//  } while (stmAttackers && (stm != side_to_move() || !more_than_one(stmAttackers)) && (captured != KING || (--slIndex, false))); // Stop before a king capture
+//
+//  // Having built the swap list, we negamax through it to find the best
+//  // achievable score from the point of view of the side to move.
+//  while (--slIndex)
+//      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+//
+//  return swapList[0];
+//}
+
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.
 

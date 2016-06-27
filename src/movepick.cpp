@@ -238,6 +238,27 @@ void MovePicker::generate_next_stage() {
 }
 
 
+//int MovePicker::remainingEvasions() {
+//  if (cur == endMoves)
+//     generate_next_stage();
+//
+//  return endMoves - cur;
+//}
+
+Move MovePicker::legalCaptureInStage(Bitboard pinned, Square checkSquare) {
+  if (stage != ALL_EVASIONS && cur == endMoves)
+      generate_next_stage();
+  ExtMove* c = cur;
+  //Value v = pos.seeSpecial(checkSquare, PieceValue[MG][pos.captured_piece_type()];
+  while (c != endMoves) {
+    if (pos.capture(c->move) && to_sq(c->move) != checkSquare && PieceValue[MG][pos.piece_on(to_sq(c->move))]> PieceValue[MG][pos.captured_piece_type()] && pos.legal(c->move, pinned))
+      return c->move;
+    c++;
+  }
+  return MOVE_NONE;
+}
+
+
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves
 /// left. It picks the move with the biggest value from a list of generated moves

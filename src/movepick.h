@@ -84,6 +84,8 @@ public:
   MovePicker(const Position&, Move, Depth, Search::Stack*);
 
   Move next_move();
+  //int remainingEvasions();
+  Move legalCaptureInStage(Bitboard pinned, Square checkSquare);
 
 private:
   template<GenType> void score();
