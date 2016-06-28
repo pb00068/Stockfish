@@ -355,6 +355,8 @@ void Thread::search() {
       mainThread->bestMoveChanges = 0;
       TT.new_search();
   }
+  else if ((rootPos.game_ply() / 2) % Threads.size() == this->idx)
+      counterMoves.clear();
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
