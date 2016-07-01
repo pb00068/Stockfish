@@ -130,30 +130,51 @@ namespace {
   // the search depths across the threads.
   typedef std::vector<int> Row;
 
-  const Row HalfDensity[] = {
+  const Row SkipMap[] = {
     {0, 1},
     {1, 0},
-    {0, 0, 1, 1},
-    {0, 1, 1, 0},
-    {1, 1, 0, 0},
-    {1, 0, 0, 1},
-    {0, 0, 0, 1, 1, 1},
-    {0, 0, 1, 1, 1, 0},
-    {0, 1, 1, 1, 0, 0},
-    {1, 1, 1, 0, 0, 0},
-    {1, 1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 1, 1},
-    {0, 0, 0, 0, 1, 1, 1, 1},
-    {0, 0, 0, 1, 1, 1, 1, 0},
-    {0, 0, 1, 1, 1, 1, 0 ,0},
-    {0, 1, 1, 1, 1, 0, 0 ,0},
-    {1, 1, 1, 1, 0, 0, 0 ,0},
-    {1, 1, 1, 0, 0, 0, 0 ,1},
-    {1, 1, 0, 0, 0, 0, 1 ,1},
-    {1, 0, 0, 0, 0, 1, 1 ,1},
+
+    {0, 1, 1},
+    {1, 0, 1},
+    {1, 1, 0},
+
+    {0, 1, 1, 1},
+    {1, 0, 1, 1},
+    {1, 1, 0, 1},
+    {1, 1, 1, 0},
+
+    {0, 1, 1, 1, 1},
+    {1, 0, 1, 1, 1},
+    {1, 1, 0, 1, 1},
+    {1, 1, 1, 0, 1},
+    {1, 1, 1, 1, 0},
+
+    {0, 1, 1, 1, 1, 1},
+    {1, 0, 1, 1, 1, 1},
+    {1, 1, 0, 1, 1, 1},
+    {1, 1, 1, 0, 1, 1},
+    {1, 1, 1, 1, 0, 1},
+    {1, 1, 1, 1, 1, 0},
+
+    {0, 1, 1, 1, 1, 1, 1},
+    {1, 0, 1, 1, 1, 1, 1},
+    {1, 1, 0, 1, 1, 1, 1},
+    {1, 1, 1, 0, 1, 1, 1},
+    {1, 1, 1, 1, 0, 1, 1},
+    {1, 1, 1, 1, 1, 0, 1},
+    {1, 1, 1, 1, 1, 1, 0},
+
+    {0, 1, 1, 1, 1, 1, 1, 1},
+    {1, 0, 1, 1, 1, 1, 1, 1},
+    {1, 1, 0, 1, 1, 1, 1, 1},
+    {1, 1, 1, 0, 1, 1, 1, 1},
+    {1, 1, 1, 1, 0, 1, 1, 1},
+    {1, 1, 1, 1, 1, 0, 1, 1},
+    {1, 1, 1, 1, 1, 1, 0, 1},
+    {1, 1, 1, 1, 1, 1, 1, 0},
   };
 
-  const size_t HalfDensitySize = std::extent<decltype(HalfDensity)>::value;
+  const size_t SkipMapSize = std::extent<decltype(SkipMap)>::value;
 
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
@@ -369,11 +390,10 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
-      // Set up the new depths for the helper threads skipping on average every
-      // 2nd ply (using a half-density matrix).
+      // Set up the new depths for the helper threads
       if (!mainThread)
       {
-          const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+          const Row& row = SkipMap[(idx - 1) % SkipMapSize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
       }
@@ -950,6 +970,8 @@ moves_loop: // When in check search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
+      if (depth == DEPTH_ZERO && type_of(moved_piece) == KNIGHT && (file_of(to_sq(move)) == FILE_A || file_of(to_sq(move)) == FILE_H))
+        abort();
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
