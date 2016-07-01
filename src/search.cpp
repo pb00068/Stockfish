@@ -970,8 +970,6 @@ moves_loop: // When in check search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
-      if (depth == DEPTH_ZERO && type_of(moved_piece) == KNIGHT && (file_of(to_sq(move)) == FILE_A || file_of(to_sq(move)) == FILE_H))
-        abort();
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
