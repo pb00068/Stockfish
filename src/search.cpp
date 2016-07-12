@@ -37,7 +37,8 @@
 #include "syzygy/tbprobe.h"
 
 namespace Search {
-
+  
+  Value fromTo[PIECE_NB][SQUARE_NB][SQUARE_NB];
   SignalsType Signals;
   LimitsType Limits;
 }
@@ -170,6 +171,7 @@ namespace {
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
+  void update_fromTo(Move m, Piece p, Value b);
 
 } // namespace
 
@@ -214,6 +216,11 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
   }
+
+  for (Square f = SQ_A1; f < SQUARE_NB; ++f)
+	  for (Square t = SQ_A1; t < SQUARE_NB; ++t)
+		  for(Piece p = NO_PIECE; p < PIECE_NB; ++p)
+		  fromTo[p][f][t] = VALUE_ZERO;
 
   Threads.main()->previousScore = VALUE_INFINITE;
 }
@@ -958,7 +965,7 @@ moves_loop: // When in check search starts from here
           && !captureOrPromotion)
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
-          Value val = thisThread->history[moved_piece][to_sq(move)]
+          Value val = fromTo[moved_piece][from_sq(move)][to_sq(move)]
                      +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO);
@@ -1398,7 +1405,8 @@ moves_loop: // When in check search starts from here
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+   
+	update_fromTo(move, pos.moved_piece(move), bonus);
 
     if (cmh)
     {
@@ -1415,8 +1423,8 @@ moves_loop: // When in check search starts from here
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-
+        
+		update_fromTo(quiets[i], pos.moved_piece(quiets[i]), -bonus);
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
@@ -1439,6 +1447,19 @@ moves_loop: // When in check search starts from here
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
     }
+  }
+
+  void update_fromTo(Move m, Piece p, Value v)
+  {
+	  if (abs(int(v)) >= 324)
+		  return;
+
+	  Square t = to_sq(m);
+	  Square f = from_sq(m);
+	 
+	  fromTo[p][f][t] -= fromTo[p][f][t] * abs(int(v)) / 324;
+	  fromTo[p][f][t] += int(v) * 32;
+
   }
 
 
