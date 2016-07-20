@@ -39,6 +39,7 @@
 namespace Search {
 
   Value fromTo[COLOR_NB][SQUARE_NB][SQUARE_NB];
+  Value fromPt[SQUARE_NB][PIECE_NB];
   SignalsType Signals;
   LimitsType Limits;
 }
@@ -171,7 +172,7 @@ namespace {
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
-  void update_fromTo(Move m, Color c, Value b);
+  void update_fromTo(Move m, Color c, Value b, Piece pt);
 } // namespace
 
 
@@ -221,7 +222,7 @@ void Search::clear() {
 	   for (Square t = SQ_A1; t < SQUARE_NB; ++t)
 	   fromTo[c][f][t] = VALUE_ZERO;
 
-
+  std::memset(fromPt, 0, sizeof(fromPt));
   Threads.main()->previousScore = VALUE_INFINITE;
 }
 
@@ -969,7 +970,8 @@ moves_loop: // When in check search starts from here
                      +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-			         +     fromTo[~pos.side_to_move()][from_sq(move)][to_sq(move)];
+			         +     fromTo[~pos.side_to_move()][from_sq(move)][to_sq(move)]
+			         +     fromPt[from_sq(move)][moved_piece];
 
           // Increase reduction for cut nodes
           if (cutNode)
@@ -1410,7 +1412,7 @@ moves_loop: // When in check search starts from here
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
-	update_fromTo(move, c, bonus);
+	update_fromTo(move, c, bonus, pos.moved_piece(move));
 
     if (cmh)
     {
@@ -1428,7 +1430,7 @@ moves_loop: // When in check search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-		update_fromTo(quiets[i], c, -bonus);
+		update_fromTo(quiets[i], c, -bonus, pos.moved_piece(move));
 
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
@@ -1454,7 +1456,7 @@ moves_loop: // When in check search starts from here
     }
   }
 
-  void update_fromTo(Move m, Color c, Value v)
+  void update_fromTo(Move m, Color c, Value v, Piece p)
   {
 	  if (abs(int(v)) >= 324)
 		  return;
@@ -1464,6 +1466,9 @@ moves_loop: // When in check search starts from here
 
 	  fromTo[c][f][t] -= fromTo[c][f][t] * abs(int(v)) / 324;
 	  fromTo[c][f][t] += int(v) * 32;
+
+	  fromPt[f][p] -= fromPt[f][p] * abs(int(v)) / 324;
+	  fromPt[f][p] += int(v) * 32;
   }
 
 
