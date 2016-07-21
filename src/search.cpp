@@ -39,6 +39,7 @@
 namespace Search {
 
   Value fromTo[COLOR_NB][SQUARE_NB][SQUARE_NB];
+  Value fromPt[SQUARE_NB][PIECE_NB];
   SignalsType Signals;
   LimitsType Limits;
 }
@@ -171,7 +172,7 @@ namespace {
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
-  void update_fromTo(Move m, Color c, Value b);
+  void update_fromTo(Move m, Color c, Value b, Piece pt);
 } // namespace
 
 
@@ -221,7 +222,7 @@ void Search::clear() {
 	   for (Square t = SQ_A1; t < SQUARE_NB; ++t)
 	   fromTo[c][f][t] = VALUE_ZERO;
 
-
+  std::memset(fromPt, 0, sizeof(fromPt));
   Threads.main()->previousScore = VALUE_INFINITE;
 }
 
@@ -793,8 +794,8 @@ namespace {
 
         MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()]);
         CheckInfo ci(pos);
-
-        while ((move = mp.next_move()) != MOVE_NONE)
+        int clearval = 0;
+        while ((move = mp.next_move(clearval)) != MOVE_NONE)
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
@@ -845,7 +846,8 @@ moves_loop: // When in check search starts from here
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    int clearval = 0;
+    while ((move = mp.next_move(clearval)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1073,6 +1075,24 @@ moves_loop: // When in check search starts from here
                   EasyMove.clear();
 
               bestMove = move;
+              char c;
+              switch (pos.moved_piece(move)) {
+              case W_PAWN:
+              case B_PAWN: c=' '; break;
+              case W_KNIGHT:
+              case B_KNIGHT: c='N'; break;
+              case W_BISHOP:
+              case B_BISHOP: c='B'; break;
+              case W_ROOK:
+              case B_ROOK: c='R'; break;
+              case W_QUEEN:
+              case B_QUEEN: c='Q'; break;
+              case W_KING:
+              case B_KING: c='K'; break;
+              default: c='X';
+              }
+              if (clearval)
+              sync_cout << "info bestmove " << c << UCI::move(move, false) << " clearance val: " << clearval << sync_endl;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1251,7 +1271,8 @@ moves_loop: // When in check search starts from here
     CheckInfo ci(pos);
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    int clearval = 0;
+    while ((move = mp.next_move(clearval)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -1410,7 +1431,7 @@ moves_loop: // When in check search starts from here
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
-	update_fromTo(move, c, bonus);
+	update_fromTo(move, c, bonus, pos.moved_piece(move));
 
     if (cmh)
     {
@@ -1428,7 +1449,7 @@ moves_loop: // When in check search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-		update_fromTo(quiets[i], c, -bonus);
+		update_fromTo(quiets[i], c, -bonus, pos.moved_piece(move));
 
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
@@ -1454,7 +1475,7 @@ moves_loop: // When in check search starts from here
     }
   }
 
-  void update_fromTo(Move m, Color c, Value v)
+  void update_fromTo(Move m, Color c, Value v, Piece pt)
   {
 	  if (abs(int(v)) >= 324)
 		  return;
@@ -1464,6 +1485,9 @@ moves_loop: // When in check search starts from here
 
 	  fromTo[c][f][t] -= fromTo[c][f][t] * abs(int(v)) / 324;
 	  fromTo[c][f][t] += int(v) * 32;
+
+	  fromPt[f][pt] -= fromPt[f][pt] * abs(int(v)) / 324;
+	  fromPt[f][pt] += int(v) * 32;
   }
 
 

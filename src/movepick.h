@@ -83,7 +83,7 @@ public:
   MovePicker(const Position&, Move, Depth, Square);
   MovePicker(const Position&, Move, Depth, Search::Stack*);
 
-  Move next_move();
+  Move next_move(int& clearance);
 
 private:
   template<GenType> void score();
@@ -102,6 +102,7 @@ private:
   int stage;
   ExtMove* endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
+  int maxclear;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

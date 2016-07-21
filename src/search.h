@@ -37,6 +37,7 @@ namespace Search {
 /// shallower and deeper in the tree during the search. Each search thread has
 /// its own array of Stack objects, indexed by the current ply.
 extern Value fromTo[COLOR_NB][SQUARE_NB][SQUARE_NB];
+extern Value fromPt[SQUARE_NB][PIECE_NB];
 
 struct Stack {
   Move* pv;

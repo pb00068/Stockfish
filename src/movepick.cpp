@@ -78,6 +78,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  maxclear = 0;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
@@ -103,6 +104,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
 
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   endMoves += (ttMove != MOVE_NONE);
+  maxclear = 0;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Value th)
@@ -119,6 +121,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th)
           && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   endMoves += (ttMove != MOVE_NONE);
+  maxclear = 0;
 }
 
 
@@ -149,12 +152,16 @@ void MovePicker::score<QUIETS>() {
 
   Color c = pos.side_to_move();
 
-  for (auto& m : *this)
+  for (auto& m : *this) {
 	  m.value = history[pos.moved_piece(m)][to_sq(m)]
 	  + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
 	  + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
 	  + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
 	  + Search::fromTo[c][from_sq(m)][to_sq(m)];
+
+	  if (Search::fromPt[from_sq(m)][pos.moved_piece(m)] > maxclear)
+	    maxclear = Search::fromPt[from_sq(m)][pos.moved_piece(m)];
+  }
 }
 
 template<>
@@ -247,10 +254,10 @@ void MovePicker::generate_next_stage() {
 /// left. It picks the move with the biggest value from a list of generated moves
 /// taking care not to return the ttMove if it has already been searched.
 
-Move MovePicker::next_move() {
+Move MovePicker::next_move(int& clearance) {
 
   Move move;
-
+  clearance = 0;
   while (true)
   {
       while (cur == endMoves && stage != STOP)
@@ -290,7 +297,12 @@ Move MovePicker::next_move() {
               && move != killers[0]
               && move != killers[1]
               && move != killers[2])
+          {
+              clearance = Search::fromPt[from_sq(move)][pos.moved_piece(move)];
+              if (clearance < maxclear)
+                clearance = 0;
               return move;
+          }
           break;
 
       case BAD_CAPTURES:
