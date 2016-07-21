@@ -155,7 +155,7 @@ void MovePicker::score<QUIETS>() {
 	  + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
 	  + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
 	  + Search::fromTo[c][from_sq(m)][to_sq(m)]
-	  + Search::fromPt[from_sq(m)][pos.moved_piece(m)];
+	  + Search::fromPt[from_sq(m)][pos.moved_piece(m)] / 6;
 
 }
 

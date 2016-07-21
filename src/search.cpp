@@ -1467,10 +1467,8 @@ moves_loop: // When in check search starts from here
 	  fromTo[c][f][t] -= fromTo[c][f][t] * abs(int(v)) / 324;
 	  fromTo[c][f][t] += int(v) * 32;
 
-	  if (type_of(p) == KING) {
 	  fromPt[f][p] -= fromPt[f][p] * abs(int(v)) / 324;
 	  fromPt[f][p] += int(v) * 32;
-	  }
   }
 
 
