@@ -751,7 +751,7 @@ namespace {
     if (   !PvNode
         &&  depth >= 2 * ONE_PLY
         &&  eval >= beta
-        && (ss->staticEval >= beta || depth >= 12 * ONE_PLY)
+        && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
@@ -1594,16 +1594,16 @@ bool RootMove::extract_ponder_from_tt(Position& pos)
 
     pos.do_move(pv[0], st, pos.gives_check(pv[0], CheckInfo(pos)));
     TTEntry* tte = TT.probe(pos.key(), ttHit);
-    pos.undo_move(pv[0]);
 
     if (ttHit)
     {
         Move m = tte->move(); // Local copy to be SMP safe
         if (MoveList<LEGAL>(pos).contains(m))
-           return pv.push_back(m), true;
+            pv.push_back(m);
     }
 
-    return false;
+    pos.undo_move(pv[0]);
+    return pv.size() > 1;
 }
 
 void Tablebases::filter_root_moves(Position& pos, Search::RootMoves& rootMoves) {
