@@ -971,7 +971,7 @@ moves_loop: // When in check search starts from here
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
 			         +     fromTo[~pos.side_to_move()][from_sq(move)][to_sq(move)]
-			         +     fromPt[from_sq(move)][moved_piece];
+			         +     fromPt[from_sq(move)][moved_piece] / 6;
 
           // Increase reduction for cut nodes
           if (cutNode)
