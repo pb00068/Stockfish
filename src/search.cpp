@@ -371,11 +371,15 @@ void Thread::search() {
   {
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
+      int skips = 0;
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
-          if (row[(rootDepth + rootPos.game_ply()) % row.size()])
+          if ((!skips || rootDepth < 25) && row[(rootDepth + rootPos.game_ply()) % row.size()])
+          {
+             skips++;
              continue;
+          }
       }
 
       // Age out PV variability metric
