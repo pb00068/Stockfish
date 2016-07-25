@@ -367,21 +367,22 @@ void Thread::search() {
   multiPV = std::min(multiPV, rootMoves.size());
 
   // Iterative deepening loop until requested to stop or the target depth is reached.
+  int skips = 0;
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
-      int skips = 0;
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
-          if ((!skips || rootDepth < 25) && row[(rootDepth + rootPos.game_ply()) % row.size()])
+          if ((!skips || rootDepth < 20) && row[(rootDepth + rootPos.game_ply()) % row.size()])
           {
              skips++;
              continue;
           }
       }
 
+      skips=0;
       // Age out PV variability metric
       if (mainThread)
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
