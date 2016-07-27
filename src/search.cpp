@@ -674,6 +674,7 @@ namespace {
         }
     }
 
+    bool eval_calculated = false;
     // Step 5. Evaluate the position statically
     if (inCheck)
     {
@@ -685,7 +686,9 @@ namespace {
     {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos, ei);
+            eval_calculated = true, eval = ss->staticEval = evaluate(pos, ei);
+
+
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -695,7 +698,7 @@ namespace {
     else
     {
         eval = ss->staticEval =
-        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, ei)
+        (ss-1)->currentMove != MOVE_NULL ?  eval_calculated = true, evaluate(pos, ei)
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
@@ -737,7 +740,7 @@ namespace {
         bool doIt = false;
         if (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
           doIt = true;
-        else
+        else if (eval_calculated && !ei.me->specialized_eval_exists())
         {
           Color Them = ~pos.side_to_move();
           Bitboard hanging = pos.pieces(Them) & ~ei.attackedBy[Them][ALL_PIECES] & ei.attackedBy[pos.side_to_move()][ALL_PIECES];
