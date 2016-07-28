@@ -67,8 +67,8 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
-           : pos(p), ss(s), depth(d) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, EvalInfo& ei)
+           : pos(p), ss(s), depth(d), evalInfo(ei) {
 
   assert(d > DEPTH_ZERO);
 
@@ -133,9 +133,14 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+
+  Bitboard hanging = evalInfo.attacks_up2date ? pos.pieces(~pos.side_to_move()) & ~evalInfo.attackedBy[~pos.side_to_move()][ALL_PIECES] : 0;
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+     if (hanging & to_sq(m))
+       m.value += PieceValue[MG][pos.piece_on(to_sq(m))];
+  }
 }
 
 template<>
@@ -147,11 +152,16 @@ void MovePicker::score<QUIETS>() {
   const CounterMoveStats* fm = (ss-2)->counterMoves;
   const CounterMoveStats* f2 = (ss-4)->counterMoves;
 
-  for (auto& m : *this)
+  //Bitboard en_prise = evalInfo.attacks_up2date ? evalInfo.attackedBy[~pos.side_to_move()][ALL_PIECES] & ~evalInfo.attackedBy[pos.side_to_move()][ALL_PIECES]: 0;
+
+  for (auto& m : *this) {
       m.value =      history[pos.moved_piece(m)][to_sq(m)]
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
+    //if (m.value > 0 && (en_prise & to_sq(m)))
+    //  m.value/=10;
+  }
 }
 
 template<>
@@ -187,6 +197,8 @@ void MovePicker::generate_next_stage() {
 
   case GOOD_CAPTURES: case QCAPTURES_1: case QCAPTURES_2:
   case PROBCUT_CAPTURES: case RECAPTURES:
+     if (stage != GOOD_CAPTURES)
+       evalInfo.attacks_up2date = false;
       endMoves = generate<CAPTURES>(pos, moves);
       score<CAPTURES>();
       break;

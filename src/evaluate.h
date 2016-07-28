@@ -70,6 +70,7 @@ class Position;
     Bitboard pinnedPieces[COLOR_NB];
     Material::Entry* me;
     Pawns::Entry* pi;
+    bool attacks_up2date;
   };
 
 namespace Eval {

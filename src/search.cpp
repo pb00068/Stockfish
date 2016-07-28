@@ -674,6 +674,8 @@ namespace {
         }
     }
 
+
+    ei.attacks_up2date = true;
     // Step 5. Evaluate the position statically
     if (inCheck)
     {
@@ -686,6 +688,7 @@ namespace {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
             eval = ss->staticEval = evaluate(pos, ei);
+        else ei.attacks_up2date = false;
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -821,7 +824,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+    MovePicker mp(pos, ttMove, depth, ss, ei);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval

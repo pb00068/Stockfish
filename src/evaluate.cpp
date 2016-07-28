@@ -750,8 +750,10 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
 
   // If we have a specialized evaluation function for the current material
   // configuration, call it and return.
-  if (ei.me->specialized_eval_exists())
+  if (ei.me->specialized_eval_exists()) {
+      ei.attacks_up2date = false;
       return ei.me->evaluate(pos);
+  }
 
   // Probe the pawn hash table
   ei.pi = Pawns::probe(pos);
