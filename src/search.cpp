@@ -743,44 +743,47 @@ namespace {
         else if (eval_calculated && !ei.me->specialized_eval_exists())
         {
           Color Them = ~pos.side_to_move();
-          Bitboard hanging = pos.pieces(Them) & ~ei.attackedBy[Them][ALL_PIECES] & ei.attackedBy[pos.side_to_move()][ALL_PIECES];
-          if (ss->staticEval + popcount(hanging) * PawnValueMg >= beta - 35 * (depth / ONE_PLY - 6))
-              doIt = true;
+          Color Us = pos.side_to_move();
+          Bitboard hangingThem = pos.pieces(Them) & ~ei.attackedBy[Them][ALL_PIECES] & ei.attackedBy[Us][ALL_PIECES];
+          Bitboard hangingUs = pos.pieces(Us) & ~ei.attackedBy[Us][ALL_PIECES] & ei.attackedBy[Them][ALL_PIECES];
+          doIt = hangingThem && hangingUs;
         }
+
         if (doIt) {
-          ss->currentMove = MOVE_NULL;
-          ss->counterMoves = nullptr;
+        ss->currentMove = MOVE_NULL;
+        ss->counterMoves = nullptr;
 
-          assert(eval - beta >= 0);
+        assert(eval - beta >= 0);
 
-          // Null move dynamic reduction based on depth and value
-          Depth R = ((823 + 67 * depth) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
+        // Null move dynamic reduction based on depth and value
+        Depth R = ((823 + 67 * depth) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
-          pos.do_null_move(st);
-          (ss+1)->skipEarlyPruning = true;
-          nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
-                                        : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
-          (ss+1)->skipEarlyPruning = false;
-          pos.undo_null_move();
+        pos.do_null_move(st);
+        (ss+1)->skipEarlyPruning = true;
+        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
+                                      : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
+        (ss+1)->skipEarlyPruning = false;
+        pos.undo_null_move();
 
-          if (nullValue >= beta)
-          {
-              // Do not return unproven mate scores
-              if (nullValue >= VALUE_MATE_IN_MAX_PLY)
-                  nullValue = beta;
+        if (nullValue >= beta)
+        {
+            // Do not return unproven mate scores
+            if (nullValue >= VALUE_MATE_IN_MAX_PLY)
+                nullValue = beta;
 
-              if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
-                  return nullValue;
+            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
+                return nullValue;
+            }
 
-              // Do verification search at high depths
-              ss->skipEarlyPruning = true;
-              Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
-                                          :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
-              ss->skipEarlyPruning = false;
+            // Do verification search at high depths
+            ss->skipEarlyPruning = true;
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
+                                        :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+            ss->skipEarlyPruning = false;
 
-              if (v >= beta)
-                  return nullValue;
-          }
+            if (v >= beta)
+                return nullValue;
+        }
         }
     }
 
