@@ -35,7 +35,6 @@
 #include "tt.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
-#include "evaluate.h"
 
 namespace Search {
 
@@ -57,6 +56,7 @@ namespace TB = Tablebases;
 
 using std::string;
 using Eval::evaluate;
+using Eval::evaluate_hang;
 using namespace Search;
 
 namespace {
@@ -685,7 +685,7 @@ namespace {
     {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos, ei);
+            eval = ss->staticEval = evaluate(pos, ei) + evaluate_hang(pos, ei);
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -694,9 +694,8 @@ namespace {
     }
     else
     {
-        eval = ss->staticEval =
-        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, ei)
-                                         : -(ss-1)->staticEval + 2 * Eval::Tempo;
+        eval = ss->staticEval = ((ss-1)->currentMove != MOVE_NULL ) ? evaluate(pos, ei) + evaluate_hang(pos, ei) :
+    	                 -(ss-1)->staticEval + 2 * Eval::Tempo + evaluate_hang(pos, ei);
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
                   ss->staticEval, TT.generation());
@@ -794,8 +793,10 @@ namespace {
                 ss->currentMove = move;
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
+                ei.attacks_up2date = false;
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
+                ei.attacks_up2date = false;
                 if (value >= rbeta)
                     return value;
             }
@@ -958,6 +959,7 @@ moves_loop: // When in check search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+      ei.attacks_up2date = false;
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1020,6 +1022,7 @@ moves_loop: // When in check search starts from here
 
       // Step 17. Undo move
       pos.undo_move(move);
+      ei.attacks_up2date = false;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1305,9 +1308,11 @@ moves_loop: // When in check search starts from here
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
+      ei.attacks_up2date = false;
       value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
                          : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
       pos.undo_move(move);
+      ei.attacks_up2date = false;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 

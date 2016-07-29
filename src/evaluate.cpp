@@ -454,7 +454,7 @@ namespace {
   };
 
   template<Color Us, bool DoTrace>
-  Score evaluate_threats(const Position& pos, const EvalInfo& ei) {
+  Score evaluate_threats(const Position& pos, EvalInfo& ei) {
 
     const Color Them        = (Us == WHITE ? BLACK    : WHITE);
     const Square Up         = (Us == WHITE ? DELTA_N  : DELTA_S);
@@ -509,12 +509,14 @@ namespace {
         while (b)
             score += Threat[Rook ][type_of(pos.piece_on(pop_lsb(&b)))];
 
-        score += Hanging * popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
+        ei.hanging[Them] = popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
+        score += Hanging * ei.hanging[Them];
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
             score += ThreatByKing[more_than_one(b)];
     }
+    else ei.hanging[Them] = 0;
 
     // Bonus if some pawns can safely push and attack an enemy piece
     b = pos.pieces(Us, PAWN) & ~TRank7BB;
@@ -727,7 +729,13 @@ namespace {
 
 } // namespace
 
-
+Value Eval::evaluate_hang(const Position& pos, EvalInfo& ei) {
+	if (ei.me->specialized_eval_exists())
+		return VALUE_ZERO;
+	if (!ei.attacks_up2date)
+		evaluate<false>(pos, ei);
+	return PawnValueMg / 2 * (ei.hanging[~pos.side_to_move()] - ei.hanging[pos.side_to_move()]);
+}
 /// evaluate() is the main evaluation function. It returns a static evaluation
 /// of the position from the point of view of the side to move.
 
@@ -750,8 +758,11 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
 
   // If we have a specialized evaluation function for the current material
   // configuration, call it and return.
-  if (ei.me->specialized_eval_exists())
+  if (ei.me->specialized_eval_exists()) {
+	  ei.attacks_up2date = false;
       return ei.me->evaluate(pos);
+  }
+  ei.attacks_up2date = true;
 
   // Probe the pawn hash table
   ei.pi = Pawns::probe(pos);

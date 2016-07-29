@@ -67,9 +67,13 @@ class Position;
     // to kingAdjacentZoneAttacksCount[WHITE].
     int kingAdjacentZoneAttacksCount[COLOR_NB];
 
+    int hanging[COLOR_NB];
+
     Bitboard pinnedPieces[COLOR_NB];
     Material::Entry* me;
     Pawns::Entry* pi;
+
+    bool attacks_up2date;
   };
 
 namespace Eval {
@@ -81,6 +85,9 @@ std::string trace(const Position& pos);
 
 template<bool DoTrace = false>
 Value evaluate(const Position& pos, EvalInfo& ei);
+
+
+Value evaluate_hang(const Position& pos, EvalInfo& ei);
 }
 
 
