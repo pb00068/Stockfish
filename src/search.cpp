@@ -56,7 +56,7 @@ namespace TB = Tablebases;
 
 using std::string;
 using Eval::evaluate;
-using Eval::evaluate_hang;
+using Eval::evaluate_tempo_on_hanging;
 using namespace Search;
 
 namespace {
@@ -675,6 +675,7 @@ namespace {
     }
 
     // Step 5. Evaluate the position statically
+    ss->tempoOnHanging = VALUE_NONE;
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
@@ -684,8 +685,10 @@ namespace {
     else if (ttHit)
     {
         // Never assume anything on values stored in TT
-        if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos, ei) + evaluate_hang(pos, ei);
+        if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE){
+        	ss->staticEval = evaluate(pos, ei);
+            eval =  ss->staticEval + (ss->tempoOnHanging = evaluate_tempo_on_hanging(pos, ei));
+        }
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -694,8 +697,14 @@ namespace {
     }
     else
     {
-        eval = ss->staticEval = ((ss-1)->currentMove != MOVE_NULL ) ? evaluate(pos, ei) + evaluate_hang(pos, ei) :
-    	                 -(ss-1)->staticEval + 2 * Eval::Tempo + evaluate_hang(pos, ei);
+    	if ((ss-1)->currentMove != MOVE_NULL ) {
+    		ss->staticEval = evaluate(pos, ei);
+    		eval =  ss->staticEval + (ss->tempoOnHanging = evaluate_tempo_on_hanging(pos, ei));
+    	}
+    	else {
+    		ss->staticEval =    -(ss-1)->staticEval + 2 * Eval::Tempo;
+    		eval = ss->staticEval + (ss->tempoOnHanging = evaluate_tempo_on_hanging(pos, ei));
+    	}
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
                   ss->staticEval, TT.generation());
@@ -731,7 +740,7 @@ namespace {
     // Step 8. Null move search with verification search (is omitted in PV nodes)
     if (   !PvNode
         &&  eval >= beta
-        && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
+        && (ss->staticEval + ss->tempoOnHanging >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
@@ -805,7 +814,7 @@ namespace {
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= (PvNode ? 5 * ONE_PLY : 8 * ONE_PLY)
         && !ttMove
-        && (PvNode || ss->staticEval + 256 >= beta))
+        && (PvNode || ss->staticEval + ss->tempoOnHanging + 256 >= beta))
     {
         Depth d = depth - 2 * ONE_PLY - (PvNode ? DEPTH_ZERO : depth / 4);
         ss->skipEarlyPruning = true;
@@ -825,7 +834,7 @@ moves_loop: // When in check search starts from here
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
-    improving =   ss->staticEval >= (ss-2)->staticEval
+    improving =   ss->staticEval + ss->tempoOnHanging >= (ss-2)->staticEval + (ss-2)->tempoOnHanging
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
                ||(ss-2)->staticEval == VALUE_NONE;
 
@@ -929,7 +938,7 @@ moves_loop: // When in check search starts from here
 
           // Futility pruning: parent node
           if (   predictedDepth < 7 * ONE_PLY
-              && ss->staticEval + futility_margin(predictedDepth) + 256 <= alpha)
+              && ss->staticEval + ss->tempoOnHanging + futility_margin(predictedDepth) + 256 <= alpha)
               continue;
 
           // Prune moves with negative SEE at low depths and below a decreasing

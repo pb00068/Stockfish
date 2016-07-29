@@ -87,7 +87,7 @@ template<bool DoTrace = false>
 Value evaluate(const Position& pos, EvalInfo& ei);
 
 
-Value evaluate_hang(const Position& pos, EvalInfo& ei);
+Value evaluate_tempo_on_hanging(const Position& pos, EvalInfo& ei);
 }
 
 

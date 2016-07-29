@@ -729,12 +729,11 @@ namespace {
 
 } // namespace
 
-Value Eval::evaluate_hang(const Position& pos, EvalInfo& ei) {
-	if (ei.me->specialized_eval_exists())
-		return VALUE_ZERO;
+Value Eval::evaluate_tempo_on_hanging(const Position& pos, EvalInfo& ei) {
 	if (!ei.attacks_up2date)
-		evaluate<false>(pos, ei);
-	return PawnValueMg / 2 * (ei.hanging[~pos.side_to_move()] - ei.hanging[pos.side_to_move()]);
+		evaluate(pos, ei);
+
+	return PawnValueMg * ei.hanging[~pos.side_to_move()] - (PawnValueMg / 2) * ei.hanging[pos.side_to_move()];
 }
 /// evaluate() is the main evaluation function. It returns a static evaluation
 /// of the position from the point of view of the side to move.
