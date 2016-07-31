@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -206,6 +207,8 @@ namespace {
     }
     else
         ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
+
+    ei.uninitalized=false;
   }
 
 
@@ -730,6 +733,11 @@ namespace {
 } // namespace
 
 Value Eval::evaluate_tempo_on_hanging(const Position& pos, EvalInfo& ei) {
+	if (ei.uninitalized)
+	{
+		sync_cout << "DAEAD" << sync_endl;
+		abort();
+	}
 	if (!ei.attacks_up2date)
 		evaluate(pos, ei);
 

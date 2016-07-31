@@ -44,7 +44,7 @@ struct Stack {
   Move excludedMove;
   Move killers[2];
   Value staticEval;
-  Value tempoOnHanging;
+  Value tempoOnHanging[COLOR_NB];
   bool skipEarlyPruning;
   int moveCount;
   CounterMoveStats* counterMoves;

@@ -74,6 +74,7 @@ class Position;
     Pawns::Entry* pi;
 
     bool attacks_up2date;
+    bool uninitalized;
   };
 
 namespace Eval {
