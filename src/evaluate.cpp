@@ -738,8 +738,8 @@ Value Eval::evaluate_tempo_on_hanging(const Position& pos, EvalInfo& ei) {
 		sync_cout << "DAEAD" << sync_endl;
 		abort();
 	}
-	if (!ei.attacks_up2date)
-		evaluate(pos, ei);
+//	if (!ei.attacks_up2date)
+//		evaluate(pos, ei);
 
 	return PawnValueMg * ei.hanging[~pos.side_to_move()] - (PawnValueMg / 2) * ei.hanging[pos.side_to_move()];
 }
@@ -767,6 +767,8 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
   // configuration, call it and return.
   if (ei.me->specialized_eval_exists()) {
 	  ei.attacks_up2date = false;
+	  ei.uninitalized = false;
+	  ei.hanging[WHITE] = ei.hanging[BLACK] = 0;
       return ei.me->evaluate(pos);
   }
   ei.attacks_up2date = true;

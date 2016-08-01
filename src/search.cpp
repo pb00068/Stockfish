@@ -564,6 +564,9 @@ namespace {
     Piece moved_piece;
     int moveCount, quietCount;
     EvalInfo ei;
+    ei.attacks_up2date = false;
+    if ((ss-1)->currentMove != MOVE_NULL)
+      ss->tempoOnHanging = VALUE_ZERO;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -571,7 +574,7 @@ namespace {
     moveCount = quietCount =  ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
-    ss->tempoOnHanging[WHITE] = ss->tempoOnHanging[BLACK] = VALUE_NONE;
+
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -687,8 +690,9 @@ namespace {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE){
         	ss->staticEval = evaluate(pos, ei);
-            eval =  ss->staticEval + (ss->tempoOnHanging[pos.side_to_move()] = evaluate_tempo_on_hanging(pos, ei));
+            eval =  ss->staticEval + (ss->tempoOnHanging = evaluate_tempo_on_hanging(pos, ei));
         }
+
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -699,15 +703,15 @@ namespace {
     {
     	if ((ss-1)->currentMove != MOVE_NULL ) {
     		ss->staticEval = evaluate(pos, ei);
-    		eval =  ss->staticEval + (ss->tempoOnHanging[pos.side_to_move()] = evaluate_tempo_on_hanging(pos, ei));
+    		eval =  ss->staticEval + (ss->tempoOnHanging = evaluate_tempo_on_hanging(pos, ei));
     	}
     	else {
     		ss->staticEval =    -(ss-1)->staticEval + 2 * Eval::Tempo;
-    		eval = ss->staticEval + (ss-1)->tempoOnHanging[pos.side_to_move()];
-    		if ((ss-1)->tempoOnHanging[pos.side_to_move()]) {
-    			sync_cout << pos << " tempoval: " <<  (ss-1)->tempoOnHanging[pos.side_to_move()] << sync_endl;
-    			//abort();
-    		}
+    		eval = ss->staticEval; // + ss->tempoOnHanging;
+//    		if (ss->tempoOnHanging) {
+//    			sync_cout <<  " nullmove tempoval: " <<  ss->tempoOnHanging << sync_endl;
+//    			abort();
+//    		}
     	}
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
@@ -744,7 +748,7 @@ namespace {
     // Step 8. Null move search with verification search (is omitted in PV nodes)
     if (   !PvNode
         &&  eval >= beta
-        && (ss->staticEval + ss->tempoOnHanging[pos.side_to_move()] >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
+        && (ss->staticEval + ss->tempoOnHanging >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
@@ -756,7 +760,11 @@ namespace {
         Depth R = ((823 + 67 * depth) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
         pos.do_null_move(st);
-        ss->tempoOnHanging[pos.side_to_move()] = ei.attacks_up2date ? evaluate_tempo_on_hanging(pos, ei) : VALUE_ZERO;
+//        if (ei.uninitalized && ei.attacks_up2date){
+//          sync_cout << "DEAD" << ei.attacks_up2date << " in check " << inCheck <<  sync_endl;
+//          abort();
+//      }
+        (ss+1)->tempoOnHanging = ei.attacks_up2date ? evaluate_tempo_on_hanging(pos, ei) : VALUE_ZERO;
 //        sync_cout << pos << " nullmove tempoval: " <<  ss->tempoOnHanging[pos.side_to_move()] << sync_endl;
         (ss+1)->skipEarlyPruning = true;
         nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
@@ -808,10 +816,8 @@ namespace {
                 ss->currentMove = move;
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
-                ei.attacks_up2date = false;
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
-                ei.attacks_up2date = false;
                 if (value >= rbeta)
                     return value;
             }
@@ -820,7 +826,7 @@ namespace {
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= (PvNode ? 5 * ONE_PLY : 8 * ONE_PLY)
         && !ttMove
-        && (PvNode || ss->staticEval + ss->tempoOnHanging[pos.side_to_move()] + 256 >= beta))
+        && (PvNode || ss->staticEval + ss->tempoOnHanging + 256 >= beta))
     {
         Depth d = depth - 2 * ONE_PLY - (PvNode ? DEPTH_ZERO : depth / 4);
         ss->skipEarlyPruning = true;
@@ -840,7 +846,7 @@ moves_loop: // When in check search starts from here
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
-    improving =   ss->staticEval + ss->tempoOnHanging[pos.side_to_move()] >= (ss-2)->staticEval + (ss-2)->tempoOnHanging[pos.side_to_move()]
+    improving =   ss->staticEval + ss->tempoOnHanging >= (ss-2)->staticEval + (ss-2)->tempoOnHanging
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
                ||(ss-2)->staticEval == VALUE_NONE;
 
@@ -944,7 +950,7 @@ moves_loop: // When in check search starts from here
 
           // Futility pruning: parent node
           if (   predictedDepth < 7 * ONE_PLY
-              && ss->staticEval + ss->tempoOnHanging[pos.side_to_move()] + futility_margin(predictedDepth) + 256 <= alpha)
+              && ss->staticEval + ss->tempoOnHanging + futility_margin(predictedDepth) + 256 <= alpha)
               continue;
 
           // Prune moves with negative SEE at low depths and below a decreasing
@@ -974,7 +980,6 @@ moves_loop: // When in check search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
-      ei.attacks_up2date = false;
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1037,7 +1042,6 @@ moves_loop: // When in check search starts from here
 
       // Step 17. Undo move
       pos.undo_move(move);
-      ei.attacks_up2date = false;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1323,11 +1327,9 @@ moves_loop: // When in check search starts from here
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
-      ei.attacks_up2date = false;
       value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
                          : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
       pos.undo_move(move);
-      ei.attacks_up2date = false;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
