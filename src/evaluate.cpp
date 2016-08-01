@@ -208,7 +208,7 @@ namespace {
     else
         ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
 
-    ei.uninitalized=false;
+    //ei.uninitalized=false;
   }
 
 
@@ -501,6 +501,8 @@ namespace {
           & ~ei.attackedBy[Them][PAWN]
           &  ei.attackedBy[Us][ALL_PIECES];
 
+
+
     // Add a bonus according to the kind of attacking pieces
     if (defended | weak)
     {
@@ -511,15 +513,36 @@ namespace {
         b = (pos.pieces(Them, QUEEN) | weak) & ei.attackedBy[Us][ROOK];
         while (b)
             score += Threat[Rook ][type_of(pos.piece_on(pop_lsb(&b)))];
-
-        ei.hanging[Them] = popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
-        score += Hanging * ei.hanging[Them];
+        Bitboard hang = weak & ~ei.attackedBy[Them][ALL_PIECES];
+        if (hang) {
+          score += Hanging * popcount(hang);
+          while (hang) {
+            ei.hanging[Them] = pop_lsb(&hang);
+//            if (ei.hanging[Them] == 0) {
+//              sync_cout << pos << " was soll das? " << sync_endl;
+//              abort();
+//            }
+            if (type_of(pos.piece_on(ei.hanging[Them])) == PAWN) {
+              ei.hanging[Them] = SQ_NONE;
+              continue;
+            }
+            if (Us == WHITE && ei.hanging[WHITE] != SQ_NONE && type_of(pos.piece_on(ei.hanging[pos.side_to_move()])) != PAWN) {
+//              sync_cout << pos << " hang white: " <<  ei.hanging[WHITE]  << " hang black: " <<  ei.hanging[BLACK] << sync_endl;
+              if (ei.attackedBy[pos.side_to_move()][type_of(pos.piece_on(ei.hanging[pos.side_to_move()]))] & ei.hanging[~pos.side_to_move()]) {
+                ei.hang[~pos.side_to_move()] = PieceValue[MG][pos.piece_on(ei.hanging[~pos.side_to_move()])];
+                break;
+//                sync_cout << pos << " hang white: " <<  ei.hanging[WHITE]  << " hang black: " <<  ei.hanging[BLACK] <<  " hang " << ~pos.side_to_move() << " val "  <<
+//                    ei.hang[~pos.side_to_move()]   << sync_endl;
+//                abort();
+              }
+            }
+          }
+        }
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
             score += ThreatByKing[more_than_one(b)];
     }
-    else ei.hanging[Them] = 0;
 
     // Bonus if some pawns can safely push and attack an enemy piece
     b = pos.pieces(Us, PAWN) & ~TRank7BB;
@@ -733,15 +756,19 @@ namespace {
 } // namespace
 
 Value Eval::evaluate_tempo_on_hanging(const Position& pos, EvalInfo& ei) {
-	if (ei.uninitalized)
-	{
-		sync_cout << "DAEAD" << sync_endl;
-		abort();
-	}
+//	if (ei.uninitalized)
+//	{
+//		sync_cout << "DAEAD" << sync_endl;
+//		abort();
+//	}
 //	if (!ei.attacks_up2date)
 //		evaluate(pos, ei);
-
-	return PawnValueMg * ei.hanging[~pos.side_to_move()] - (PawnValueMg / 2) * ei.hanging[pos.side_to_move()];
+//  dbg_hit_on(ei.hanging[0] || ei.hanging[1]);
+//    if (ei.hanging[0] && ei.hanging[1])
+//      return (Value) (ei.hanging[~pos.side_to_move()] - ei.hanging[pos.side_to_move()] / 2);
+    if (ei.hang[~pos.side_to_move()])
+          return   ei.hang[~pos.side_to_move()] / 2;
+    return VALUE_ZERO;
 }
 /// evaluate() is the main evaluation function. It returns a static evaluation
 /// of the position from the point of view of the side to move.
@@ -767,8 +794,8 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
   // configuration, call it and return.
   if (ei.me->specialized_eval_exists()) {
 	  ei.attacks_up2date = false;
-	  ei.uninitalized = false;
-	  ei.hanging[WHITE] = ei.hanging[BLACK] = 0;
+	  //ei.uninitalized = false;
+	  ei.hanging[WHITE] = ei.hanging[BLACK] = SQ_NONE;
       return ei.me->evaluate(pos);
   }
   ei.attacks_up2date = true;
@@ -806,6 +833,7 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
   score +=  evaluate_king<WHITE, DoTrace>(pos, ei)
           - evaluate_king<BLACK, DoTrace>(pos, ei);
 
+  ei.hanging[WHITE] =  ei.hanging[BLACK] = SQ_NONE;
   // Evaluate tactical threats, we need full attack information including king
   score +=  evaluate_threats<WHITE, DoTrace>(pos, ei)
           - evaluate_threats<BLACK, DoTrace>(pos, ei);

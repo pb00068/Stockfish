@@ -67,14 +67,15 @@ class Position;
     // to kingAdjacentZoneAttacksCount[WHITE].
     int kingAdjacentZoneAttacksCount[COLOR_NB];
 
-    int hanging[COLOR_NB];
+    Square hanging[COLOR_NB];
+    Value hang[COLOR_NB];
 
     Bitboard pinnedPieces[COLOR_NB];
     Material::Entry* me;
     Pawns::Entry* pi;
 
     bool attacks_up2date;
-    bool uninitalized;
+    //bool uninitalized;
   };
 
 namespace Eval {

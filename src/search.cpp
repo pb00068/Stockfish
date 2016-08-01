@@ -565,6 +565,7 @@ namespace {
     int moveCount, quietCount;
     EvalInfo ei;
     ei.attacks_up2date = false;
+    ei.hang[0] = ei.hang[1] = VALUE_ZERO;
     if ((ss-1)->currentMove != MOVE_NULL)
       ss->tempoOnHanging = VALUE_ZERO;
 
@@ -717,6 +718,11 @@ namespace {
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
                   ss->staticEval, TT.generation());
     }
+
+//    if (ss->tempoOnHanging) {
+//        sync_cout << pos <<  " tempoval: " <<  ss->tempoOnHanging << "  staticEval: " << ss->staticEval <<  sync_endl;
+//
+//    }
 
     if (ss->skipEarlyPruning)
         goto moves_loop;
