@@ -498,6 +498,7 @@ namespace {
           & ~ei.attackedBy[Them][PAWN]
           &  ei.attackedBy[Us][ALL_PIECES];
 
+    ei.hanging[Them] = 0;
     // Add a bonus according to the kind of attacking pieces
     if (defended | weak)
     {
