@@ -50,6 +50,8 @@ class Position;
     // f7, g7, h7, f6, g6 and h6.
     Bitboard kingRing[COLOR_NB];
 
+    Bitboard hanging[COLOR_NB];
+
     // kingAttackersCount[color] is the number of pieces of the given color
     // which attack a square in the kingRing of the enemy king.
     int kingAttackersCount[COLOR_NB];
@@ -70,6 +72,8 @@ class Position;
     Bitboard pinnedPieces[COLOR_NB];
     Material::Entry* me;
     Pawns::Entry* pi;
+
+    bool attacksUp2Date;
   };
 
 namespace Eval {

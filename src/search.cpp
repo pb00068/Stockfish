@@ -564,6 +564,7 @@ namespace {
     Piece moved_piece;
     int moveCount, quietCount;
     EvalInfo ei;
+    ei.attacksUp2Date = false;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -785,7 +786,7 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NONE);
         assert((ss-1)->currentMove != MOVE_NULL);
 
-        MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()]);
+        MovePicker mp(pos, ttMove, PieceValue[MG][pos.captured_piece_type()], ei);
         CheckInfo ci(pos);
 
         while ((move = mp.next_move()) != MOVE_NONE)
@@ -821,7 +822,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+    MovePicker mp(pos, ttMove, depth, ss, ei);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -1163,6 +1164,7 @@ moves_loop: // When in check search starts from here
     bool ttHit, givesCheck, evasionPrunable;
     Depth ttDepth;
     EvalInfo ei;
+    ei.attacksUp2Date = false;
 
     if (PvNode)
     {
@@ -1248,7 +1250,7 @@ moves_loop: // When in check search starts from here
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
-    MovePicker mp(pos, ttMove, depth, to_sq((ss-1)->currentMove));
+    MovePicker mp(pos, ttMove, depth, to_sq((ss-1)->currentMove), ei);
     CheckInfo ci(pos);
 
     // Loop through the moves until no moves remain or a beta cutoff occurs

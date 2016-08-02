@@ -454,7 +454,7 @@ namespace {
   };
 
   template<Color Us, bool DoTrace>
-  Score evaluate_threats(const Position& pos, const EvalInfo& ei) {
+  Score evaluate_threats(const Position& pos, EvalInfo& ei) {
 
     const Color Them        = (Us == WHITE ? BLACK    : WHITE);
     const Square Up         = (Us == WHITE ? DELTA_N  : DELTA_S);
@@ -509,7 +509,9 @@ namespace {
         while (b)
             score += Threat[Rook ][type_of(pos.piece_on(pop_lsb(&b)))];
 
-        score += Hanging * popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
+        ei.hanging[Them] = weak & ~ei.attackedBy[Them][ALL_PIECES];
+
+        score += Hanging * popcount(ei.hanging[Them]);
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
@@ -753,6 +755,7 @@ Value Eval::evaluate(const Position& pos, EvalInfo& ei) {
   if (ei.me->specialized_eval_exists())
       return ei.me->evaluate(pos);
 
+  ei.attacksUp2Date = true;
   // Probe the pawn hash table
   ei.pi = Pawns::probe(pos);
   score += ei.pi->pawns_score();

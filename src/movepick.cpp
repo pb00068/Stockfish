@@ -19,9 +19,11 @@
 */
 
 #include <cassert>
+//#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
+//#include "uci.h"
 
 namespace {
 
@@ -67,8 +69,8 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
-           : pos(p), ss(s), depth(d) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, EvalInfo& ev)
+           : pos(p), ss(s), depth(d) , ei(ev){
 
   assert(d > DEPTH_ZERO);
 
@@ -80,8 +82,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
   endMoves += (ttMove != MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s, EvalInfo& ev)
+           : pos(p), ei(ev) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -105,8 +107,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
   endMoves += (ttMove != MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Value th)
-           : pos(p), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, EvalInfo& ev)
+           : pos(p), threshold(th), ei(ev) {
 
   assert(!pos.checkers());
 
@@ -133,9 +135,20 @@ void MovePicker::score<CAPTURES>() {
   // In the main search we want to push captures with negative SEE values to the
   // badCaptures[] array, but instead of doing it now we delay until the move
   // has been picked up, saving some SEE calls in case we get a cutoff.
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+
+   if (ei.attacksUp2Date && ei.hanging[~pos.side_to_move()]) {
+     for (auto& mm : *this)
+      mm.value += ei.hanging[~pos.side_to_move()] & to_sq(mm) ? Value(500) : VALUE_ZERO;
+   }
+
+//      if ((ei.attacksUp2Date && (ei.hanging[~pos.side_to_move()] & to_sq(m))))
+//      {
+//        sync_cout << pos << "move " << UCI::move(m, false) << sync_endl;
+//      }
+  }
 }
 
 template<>

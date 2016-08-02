@@ -28,6 +28,7 @@
 #include "position.h"
 #include "search.h"
 #include "types.h"
+#include "evaluate.h"
 
 
 /// The Stats struct stores moves statistics. According to the template parameter
@@ -79,9 +80,9 @@ public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
 
-  MovePicker(const Position&, Move, Value);
-  MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Value, EvalInfo&);
+  MovePicker(const Position&, Move, Depth, Square, EvalInfo&);
+  MovePicker(const Position&, Move, Depth, Search::Stack*,EvalInfo&);
 
   Move next_move();
 
@@ -102,6 +103,7 @@ private:
   int stage;
   ExtMove* endBadCaptures = moves + MAX_MOVES - 1;
   ExtMove moves[MAX_MOVES], *cur = moves, *endMoves = moves;
+  EvalInfo ei;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
