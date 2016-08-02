@@ -19,12 +19,9 @@
 */
 
 #include <cassert>
-#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
-#include "uci.h"
-#include "misc.h"
 
 namespace {
 
@@ -139,11 +136,8 @@ void MovePicker::score<CAPTURES>() {
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)))
-               + ((ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m))) ? Value(5000) : VALUE_ZERO);
-      //if (ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m)))
-      //sync_cout << "move " << UCI::move(m, false) << " val " <<  ((ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m))) ? Value(5000) : VALUE_ZERO) << sync_endl;
+               + ((ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m))) ? Value(200) : VALUE_ZERO);
   }
-
 }
 
 template<>
