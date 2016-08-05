@@ -136,8 +136,9 @@ void MovePicker::score<CAPTURES>() {
 
   for (auto& m : *this) {
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)))
-               + ((ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m))) ? Value(800) : VALUE_ZERO);
+               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+              // + ((ei.attacksUp2Date && (ei.hanging[pos.side_to_move()] & from_sq(m))) ? PieceValue[MG][pos.piece_on(to_sq(m))] : VALUE_ZERO);
+              // + ((ei.attacksUp2Date && endMoves > moves + 1 && (ei.hanging[~pos.side_to_move()] & to_sq(m))) ? Value(800) : VALUE_ZERO);
   }
 }
 
@@ -158,7 +159,8 @@ void MovePicker::score<QUIETS>() {
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + fromTo.get(c, m);
+               + fromTo.get(c, m)
+               + (ei.attacksUp2Date && (ei.hanging[c] & from_sq(m)) ? Value(16 * pow(std::min(depth / ONE_PLY , 17) , 2)) : VALUE_ZERO);
 }
 
 template<>
