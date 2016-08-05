@@ -112,6 +112,7 @@ public:
   bool empty(Square s) const;
   template<PieceType Pt> int count(Color c) const;
   template<PieceType Pt> const Square* squares(Color c) const;
+  const Square* squaris(PieceType Pt, Color c) const;
   template<PieceType Pt> Square square(Color c) const;
 
   // Castling
@@ -258,6 +259,10 @@ template<PieceType Pt> inline int Position::count(Color c) const {
 }
 
 template<PieceType Pt> inline const Square* Position::squares(Color c) const {
+  return pieceList[c][Pt];
+}
+
+inline const Square* Position::squaris(PieceType Pt, Color c) const {
   return pieceList[c][Pt];
 }
 

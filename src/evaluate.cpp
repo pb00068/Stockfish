@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -730,6 +731,49 @@ namespace {
 
 } // namespace
 
+
+//void calcAttackingInformation(const Position& pos, EvalInfo& ei)
+//{
+//
+//  if (pos.checkers() || Material::probe(pos)->specialized_eval_exists())
+//    return;
+//  Color c = ~pos.side_to_move(); // Them
+//  ei.attackedBy[c][ALL_PIECES] = ei.attackedBy[BLACK][ALL_PIECES] = 0;
+//  ei.attackedBy[c][KING] = pos.attacks_from<KING>(pos.square<KING>(c)); // King attacks
+//  ei.pi = Pawns::probe(pos);
+//
+//  eval_init<WHITE>(pos, ei); // Pawn attacks
+//  eval_init<BLACK>(pos, ei);
+//
+//
+//
+//  //for (Color c = WHITE; c < NO_COLOR; c = Color(c + 1))
+//      for (PieceType Pt = KNIGHT; Pt <= QUEEN; Pt= PieceType(Pt + 1))
+//      {
+//        Bitboard b;
+//        Square s;
+//        const Square* pl = pos.squaris(Pt, c);
+//        ei.attackedBy[c][Pt] = 0;
+//        while ((s = *pl++) != SQ_NONE)
+//        {
+//            // Find attacked squares, including x-ray attacks for bishops and rooks
+//            b = Pt == BISHOP ? attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(c, QUEEN))
+//              : Pt ==   ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(c, ROOK, QUEEN))
+//              : Pt == KNIGHT ? StepAttacksBB[KNIGHT][s]
+//              :  (pos.attacks_from<ROOK>(s) | pos.attacks_from<BISHOP>(s));
+//
+//            if (ei.pinnedPieces[c] & s)
+//                b &= LineBB[pos.square<KING>(c)][s];
+//
+//            ei.attackedBy2[c] |= ei.attackedBy[c][ALL_PIECES] & b;
+//            ei.attackedBy[c][ALL_PIECES] |= ei.attackedBy[c][Pt] |= b;
+//        }
+//      }
+//
+//
+//  ei.attacksUp2Date = true;
+//
+//}
 
 /// evaluate() is the main evaluation function. It returns a static evaluation
 /// of the position from the point of view of the side to move.

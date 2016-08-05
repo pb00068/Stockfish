@@ -22,6 +22,7 @@
 
 #include "movepick.h"
 #include "thread.h"
+#include "evaluate.h"
 
 namespace {
 
@@ -160,7 +161,8 @@ void MovePicker::score<QUIETS>() {
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + fromTo.get(c, m)
-               + (ei.attacksUp2Date && (ei.hanging[c] & from_sq(m)) ? Value(16 * pow(std::min(depth / ONE_PLY , 17) , 2)) : VALUE_ZERO);
+               + (ei.attacksUp2Date && (ei.hanging[c]     & from_sq(m))) ? Value(8 * pow(std::min(depth / ONE_PLY , 17) , 2)) : VALUE_ZERO;
+              // : (ei.attacksUp2Date && (ei.attackedBy2[c] & from_sq(m))) ? Value(((int)PieceValue[MG][pos.moved_piece(m)]) * pow(std::min(depth / ONE_PLY , 17) , 2) / 128) : VALUE_ZERO;
 }
 
 template<>
@@ -212,6 +214,8 @@ void MovePicker::generate_next_stage() {
 
   case QUIET:
       endMoves = generate<QUIETS>(pos, moves);
+//      if (!ei.attacksUp2Date)
+//          calcAttackingInformation(pos, ei);
       score<QUIETS>();
       if (depth < 3 * ONE_PLY)
       {
