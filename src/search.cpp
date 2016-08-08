@@ -272,8 +272,12 @@ void MainThread::search() {
   else
   {
       for (Thread* th : Threads)
-          if (th != this)
+          if (th != this) {
+              const Row& row = HalfDensity[(th->idx - 1) % HalfDensitySize];
+              th->skipSize = row.size() / 2;
               th->start_searching();
+          }
+          else th->skipSize = 0;
 
       Thread::search(); // Let's start searching!
   }
@@ -964,7 +968,7 @@ moves_loop: // When in check search starts from here
           &&  moveCount > 1
           && !captureOrPromotion)
       {
-          Depth r = reduction<PvNode>(improving, depth, moveCount);
+          Depth r = reduction<PvNode>(improving, depth, std::max(2, moveCount - pos.this_thread()->skipSize));
           Value val = thisThread->history[moved_piece][to_sq(move)]
                      +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)

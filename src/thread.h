@@ -62,6 +62,7 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
+  int skipSize;
 
   Position rootPos;
   Search::RootMoves rootMoves;
