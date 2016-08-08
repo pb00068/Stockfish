@@ -68,23 +68,32 @@ typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 struct FromToStats {
 
-    Value get(Color c, Move m) const { return table[c][from_sq(m)][to_sq(m)]; }
-    void clear() { std::memset(table, 0, sizeof(table)); }
+    Value get(Color c, Move m) const {
+      return table_ranks[c][rank_of(from_sq(m))][rank_of(to_sq(m))] + table_files[c][file_of(from_sq(m))][file_of(to_sq(m))];
+    }
+    void clear() { std::memset(table_ranks, 0, sizeof(table_ranks));
+    std::memset(table_files, 0, sizeof(table_files)); }
 
     void update(Color c, Move m, Value v)
     {
         if (abs(int(v)) >= 324)
             return;
 
-        Square f = from_sq(m);
-        Square t = to_sq(m);
+        Rank fromRank = rank_of(from_sq(m));
+        Rank toRank   = rank_of(to_sq(m));
+        File fromFile = file_of(from_sq(m));
+        File toFile   = file_of(to_sq(m));
 
-        table[c][f][t] -= table[c][f][t] * abs(int(v)) / 324;
-        table[c][f][t] += int(v) * 32;
+        table_ranks[c][fromRank][toRank] -= table_ranks[c][fromRank][toRank] * abs(int(v)) / 324;
+        table_ranks[c][fromRank][toRank] += int(v) * 32;
+
+        table_files[c][fromFile][toFile] -= table_files[c][fromFile][toFile] * abs(int(v)) / 324;
+        table_files[c][fromFile][toFile] += int(v) * 32;
     }
 
 private:
-    Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
+    Value table_ranks[COLOR_NB][FILE_NB][FILE_NB];
+    Value table_files[COLOR_NB][RANK_NB][RANK_NB];
 };
 
 /// MovePicker class is used to pick one pseudo legal move at a time from the
