@@ -407,7 +407,6 @@ void Thread::search() {
           {
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
 
-
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
               // first and eventually the new best one are set to -VALUE_INFINITE
@@ -444,13 +443,12 @@ void Thread::search() {
                   }
                   conseq_fh = 0;
               }
-              else if (mainThread && bestValue >= beta && (!Limits.depth || rootDepth <= Limits.depth))
+              else if (mainThread && rootDepth < 20 && bestValue >= beta && (!Limits.depth || rootDepth <= Limits.depth))
               {
                   conseq_fh++;
                   alpha = (alpha + conseq_fh * beta) / (1 + conseq_fh);
-                  beta = std::min(bestValue + conseq_fh * conseq_fh * delta, VALUE_INFINITE);
+                  beta = std::min(bestValue + conseq_fh * conseq_fh * conseq_fh * delta, VALUE_INFINITE);
                   break;
-
               }
               else if (bestValue >= beta)
               {
