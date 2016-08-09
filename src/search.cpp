@@ -368,6 +368,7 @@ void Thread::search() {
   multiPV = std::min(multiPV, rootMoves.size());
 
   // Iterative deepening loop until requested to stop or the target depth is reached.
+  int conseq_fh = 0;
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
       // Set up the new depths for the helper threads skipping on average every
@@ -392,7 +393,7 @@ void Thread::search() {
       for (PVIdx = 0; PVIdx < multiPV && !Signals.stop; ++PVIdx)
       {
           // Reset aspiration window starting size
-          if (rootDepth >= 5 * ONE_PLY)
+          if (rootDepth >= 5 * ONE_PLY && !conseq_fh)
           {
               delta = Value(18);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
@@ -405,6 +406,7 @@ void Thread::search() {
           while (true)
           {
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
+
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -440,14 +442,26 @@ void Thread::search() {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
+                  conseq_fh = 0;
+              }
+              else if (mainThread && bestValue >= beta && (!Limits.depth || rootDepth <= Limits.depth))
+              {
+                  conseq_fh++;
+                  alpha = (alpha + conseq_fh * beta) / (1 + conseq_fh);
+                  beta = std::min(bestValue + conseq_fh * conseq_fh * delta, VALUE_INFINITE);
+                  break;
+
               }
               else if (bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  conseq_fh = 0;
               }
-              else
+              else {
+                  conseq_fh = 0;
                   break;
+              }
 
               delta += delta / 4 + 5;
 
