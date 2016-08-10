@@ -214,6 +214,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
+      th->pieceSeq.clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -611,6 +612,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->movedPieceType = NO_PIECE_TYPE;
     ss->counterMoves = nullptr;
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
@@ -634,6 +636,7 @@ namespace {
                             : (tte->bound() & BOUND_UPPER)))
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
+        ss->movedPieceType = type_of(pos.moved_piece(ttMove));
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
@@ -735,7 +738,7 @@ namespace {
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
-        ss->counterMoves = nullptr;
+        ss->movedPieceType = NO_PIECE_TYPE;        ss->counterMoves = nullptr;
 
         assert(eval - beta >= 0);
 
@@ -791,6 +794,7 @@ namespace {
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
+                ss->movedPieceType = type_of(pos.moved_piece(move));
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
@@ -953,6 +957,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
+      ss->movedPieceType = type_of(moved_piece);
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
@@ -1171,6 +1176,7 @@ moves_loop: // When in check search starts from here
     }
 
     ss->currentMove = bestMove = MOVE_NONE;
+    ss->movedPieceType = NO_PIECE_TYPE;
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or if the maximum ply has been reached
@@ -1200,6 +1206,7 @@ moves_loop: // When in check search starts from here
                             : (tte->bound() &  BOUND_UPPER)))
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
+        ss->movedPieceType = type_of(pos.moved_piece(ttMove));
         return ttValue;
     }
 
@@ -1301,6 +1308,7 @@ moves_loop: // When in check search starts from here
           continue;
 
       ss->currentMove = move;
+      ss->movedPieceType = type_of(pos.moved_piece(move));
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
@@ -1419,6 +1427,9 @@ moves_loop: // When in check search starts from here
     if (fmh)
         fmh->update(pos.moved_piece(move), to_sq(move), bonus);
 
+    if ((ss-2)->movedPieceType && (ss-1)->movedPieceType)
+      thisThread->pieceSeq.update(c, (ss-2)->movedPieceType, (ss-1)->movedPieceType, type_of(pos.moved_piece(move)), to_sq(move), bonus);
+
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
@@ -1436,6 +1447,9 @@ moves_loop: // When in check search starts from here
 
         if (fmh2)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+        if ((ss-2)->movedPieceType && (ss-1)->movedPieceType)
+            thisThread->pieceSeq.update(c, (ss-2)->movedPieceType, (ss-1)->movedPieceType, type_of(pos.moved_piece(quiets[i])), to_sq(quiets[i]), -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted

@@ -143,6 +143,7 @@ void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
   const FromToStats& fromTo = pos.this_thread()->fromTo;
+  const PieceSequenceStats& seq = pos.this_thread()->pieceSeq;
 
   const CounterMoveStats* cm = (ss-1)->counterMoves;
   const CounterMoveStats* fm = (ss-2)->counterMoves;
@@ -155,7 +156,8 @@ void MovePicker::score<QUIETS>() {
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + fromTo.get(c, m);
+               + fromTo.get(c, m)
+               + (((ss-2)->movedPieceType && (ss-1)->movedPieceType) ? seq.get(c, (ss-2)->movedPieceType, (ss-1)->movedPieceType, type_of(pos.moved_piece(m)), to_sq(m)) : VALUE_ZERO);
 }
 
 template<>
