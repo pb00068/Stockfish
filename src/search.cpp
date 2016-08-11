@@ -969,7 +969,9 @@ moves_loop: // When in check search starts from here
                      +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                     +    thisThread->fromTo.get(~pos.side_to_move(), move);
+                     +    thisThread->fromTo.get(~pos.side_to_move(), move)
+                     + (((ss-2)->currentMove && (ss-1)->currentMove) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
+
 
           // Increase reduction for cut nodes
           if (cutNode)
@@ -1422,6 +1424,9 @@ moves_loop: // When in check search starts from here
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
+    if ((ss-2)->currentMove && (ss-1)->currentMove)
+      thisThread->moveSeq.update(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move), bonus);
+
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
@@ -1436,6 +1441,9 @@ moves_loop: // When in check search starts from here
 
         if (fmh2)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+        if ((ss-2)->currentMove && (ss-1)->currentMove )
+              thisThread->moveSeq.update(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(quiets[i]), -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
