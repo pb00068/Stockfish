@@ -970,7 +970,7 @@ moves_loop: // When in check search starts from here
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    thisThread->fromTo.get(~pos.side_to_move(), move)
-                     + ((is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove)) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
+                     + ((is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove) && !pos.captured_piece_type()) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
 
 
           // Increase reduction for cut nodes
@@ -1424,7 +1424,7 @@ moves_loop: // When in check search starts from here
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
-    if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
+    if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove) && !pos.captured_piece_type())
       thisThread->moveSeq.update(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move), bonus);
 
 
@@ -1443,7 +1443,7 @@ moves_loop: // When in check search starts from here
         if (fmh2)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
+        if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove) && !pos.captured_piece_type())
               thisThread->moveSeq.update(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(quiets[i]), -bonus);
     }
 
