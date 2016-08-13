@@ -89,20 +89,20 @@ private:
 
 struct MoveSequenceStats {
 
-    Value get(Square m1, Square m2, Square m3) const { return table[m1][m2][m3]; }
+    Value get(Color c, Square m1, Square m2, Square m3) const { return table[c][m1][m2][m3]; }
     void clear() { std::memset(table, 0, sizeof(table)); }
 
-    void update(Square m1, Square m2, Square m3, Value v)
+    void update(Color c, Square m1, Square m2, Square m3, Value v)
     {
         if (abs(int(v)) >= 324)
             return;
 
-        table[m1][m2][m3] -= table[m1][m2][m3] * abs(int(v)) / 324;
-        table[m1][m2][m3] += int(v) * 32;
+        table[c][m1][m2][m3] -= table[c][m1][m2][m3] * abs(int(v)) / 324;
+        table[c][m1][m2][m3] += int(v) * 32;
     }
 
 private:
-    Value table[SQUARE_NB][SQUARE_NB][SQUARE_NB];
+    Value table[COLOR_NB][SQUARE_NB][SQUARE_NB][SQUARE_NB];
 
 
 };
