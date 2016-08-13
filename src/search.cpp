@@ -954,6 +954,7 @@ moves_loop: // When in check search starts from here
 
       ss->currentMove = move;
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
+      bool capt = pos.captured_piece_type();
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -970,7 +971,7 @@ moves_loop: // When in check search starts from here
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    thisThread->fromTo.get(~pos.side_to_move(), move)
-                     + ((is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove) && !pos.captured_piece_type()) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
+                     + ((is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove) && !capt) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
 
 
           // Increase reduction for cut nodes
