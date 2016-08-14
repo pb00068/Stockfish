@@ -958,6 +958,8 @@ moves_loop: // When in check search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
+      bool capt = pos.captured_piece_type();
+
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
@@ -970,7 +972,7 @@ moves_loop: // When in check search starts from here
                      +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                      +    thisThread->fromTo.get(~pos.side_to_move(), move)
-                     + ((is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove)) ? pos.this_thread()->moveSeq.get(~pos.side_to_move(), to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
+                     + ((capt && is_ok((ss-2)->currentMove)) ? pos.this_thread()->moveSeq.get(~pos.side_to_move(), to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move)) : VALUE_ZERO);
 
 
           // Increase reduction for cut nodes
@@ -1424,7 +1426,7 @@ moves_loop: // When in check search starts from here
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
-    if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
+    if (pos.captured_piece_type() && is_ok((ss-2)->currentMove))
       thisThread->moveSeq.update(c, to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move), bonus);
 
 
@@ -1443,7 +1445,7 @@ moves_loop: // When in check search starts from here
         if (fmh2)
             fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
+        if (pos.captured_piece_type() && is_ok((ss-2)->currentMove))
               thisThread->moveSeq.update(c, to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(quiets[i]), -bonus);
     }
 
