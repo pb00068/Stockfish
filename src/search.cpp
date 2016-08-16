@@ -368,7 +368,7 @@ void Thread::search() {
   multiPV = std::min(multiPV, rootMoves.size());
 
   // Iterative deepening loop until requested to stop or the target depth is reached.
-  int conseq_fh = 0, pushWeight = 0;
+  int conseq_fh = 0, push_weight = 0;
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
       // Set up the new depths for the helper threads skipping on average every
@@ -443,12 +443,18 @@ void Thread::search() {
                   }
                   conseq_fh = 0;
               }
-              else if (mainThread && pushWeight < 160 && bestValue >= beta && (!Limits.depth || rootDepth <= Limits.depth))
+              else if (mainThread && push_weight < 160 && bestValue >= beta && (!Limits.depth || rootDepth <= Limits.depth))
               {
                   conseq_fh++;
-                  pushWeight+=rootDepth;
-                  alpha = (alpha + conseq_fh * beta) / (1 + conseq_fh);
-                  beta = std::min(bestValue + conseq_fh * conseq_fh * delta, VALUE_INFINITE);
+                  push_weight+=rootDepth;
+                  if (conseq_fh < 2) {
+                    //alpha = (alpha + conseq_fh * beta) / (1 + conseq_fh);
+                    //beta = std::min(bestValue + conseq_fh * (rootDepth > 25 ? delta/2 : delta), VALUE_INFINITE);
+                  }
+                  else {
+                    alpha = bestValue;
+                    beta = std::min(bestValue + (conseq_fh + 2) * (conseq_fh + 2) * delta, VALUE_INFINITE);
+                  }
                   break;
               }
               else if (bestValue >= beta)
