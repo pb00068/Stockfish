@@ -156,7 +156,7 @@ void MovePicker::score<QUIETS>() {
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + fromTo.get(c, m)
-               + pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(m), c);
+               + (((ss-1)->currentMove == MOVE_NULL) ? pos.this_thread()->moveSeq.get(to_sq((ss-2)->currentMove), to_sq(m), c) : VALUE_ZERO);
 }
 
 template<>

@@ -89,24 +89,23 @@ private:
 
 struct MoveSequenceStats {
 
-    Value get(Square m1, Square m2, Square m3, Color c) const {
+    Value get(Square m1, Square m2, Color c) const {
       //dbg_hit_on(c == table[m1][m2][m3].c);
-      return table[c][m1][m2][m3];
+      return table[c][m1][m2];
     }
     void clear() { std::memset(table, 0, sizeof(table)); }
 
-    void update(Square m1, Square m2, Square m3, Value v, Color c)
+    void update(Square m1, Square m2,  Value v, Color c)
     {
-        if (abs(int(v)) >= 324 || m1 == m2 || m2 == m3 || m1 == m3)
+        if (abs(int(v)) >= 324)
             return;
 
-        table[c][m1][m2][m3] -= table[c][m1][m2][m3]  * abs(int(v)) / 324;
-        table[c][m1][m2][m3]  += int(v) * 32;
-        //table[c][m1][m2][m3].c = c;
+        table[c][m1][m2]-= table[c][m1][m2]  * abs(int(v)) / 324;
+        table[c][m1][m2]  += int(v) * 32;
     }
 
 private:
-    Value table[COLOR_NB][SQUARE_NB][SQUARE_NB][SQUARE_NB];
+    Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 
 
 };
