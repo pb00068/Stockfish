@@ -402,6 +402,7 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we're not failing
           // high/low anymore.
+          int conseq_fail_h =0 , conseq_fail_l = 0;
           while (true)
           {
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
@@ -433,21 +434,27 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  alpha = std::max(bestValue - delta - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
 
                   if (mainThread)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
+                  conseq_fail_l++;
+                  conseq_fail_h=0;
               }
               else if (bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  beta = std::min(bestValue + delta + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
+                  conseq_fail_h++;
+                  conseq_fail_l=0;
               }
-              else
+              else {
+                  conseq_fail_h = conseq_fail_l = 0;
                   break;
+              }
 
               delta += delta / 4 + 5;
 
