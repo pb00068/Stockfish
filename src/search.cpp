@@ -433,21 +433,23 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
+                  beta  = std::max((alpha + beta) / 2 - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
+                  alpha = std::max(bestValue - delta  - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
 
                   if (mainThread)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
+
                   conseq_fail_l++;
                   conseq_fail_h=0;
               }
               else if (bestValue >= beta)
               {
-                  alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
+                  alpha = std::min((alpha + beta) / 2 + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
+                  beta  = std::min(bestValue + delta  + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
+
                   conseq_fail_h++;
                   conseq_fail_l=0;
               }
@@ -456,7 +458,7 @@ void Thread::search() {
                   break;
               }
 
-              delta += delta / 4 + 5;
+              delta += delta / 4 + 1;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
