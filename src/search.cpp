@@ -402,7 +402,7 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we're not failing
           // high/low anymore.
-          int conseq_fail_h =0 , conseq_fail_l = 0;
+          int conseq_fail_h =0 ;
           while (true)
           {
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
@@ -433,32 +433,29 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta  = std::max((alpha + beta) / 2 - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
-                  alpha = std::max(bestValue - delta  - conseq_fail_l * conseq_fail_l, -VALUE_INFINITE);
+                  beta  = (alpha + beta) / 2;
+                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
-
-                  conseq_fail_l++;
                   conseq_fail_h=0;
               }
               else if (bestValue >= beta)
               {
-                  alpha = std::min((alpha + beta) / 2 + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
-                  beta  = std::min(bestValue + delta  + conseq_fail_h * conseq_fail_h, VALUE_INFINITE);
+                  alpha = std::min((alpha + beta) / 2 + 2 * conseq_fail_h , VALUE_INFINITE);
+                  beta  = std::min(bestValue + delta  + 2 * conseq_fail_h , VALUE_INFINITE);
 
                   conseq_fail_h++;
-                  conseq_fail_l=0;
               }
               else {
-                  conseq_fail_h = conseq_fail_l = 0;
+                  conseq_fail_h = 0;
                   break;
               }
 
-              delta += delta / 4 + 1;
+              delta += delta / 4 + 4;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
