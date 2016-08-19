@@ -562,12 +562,12 @@ namespace {
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
-    int moveCount, quietCount;
+    int moveCount, quietCount, queenMoves;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    moveCount = quietCount =  ss->moveCount = 0;
+    moveCount = quietCount = queenMoves = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
 
@@ -864,13 +864,15 @@ moves_loop: // When in check search starts from here
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       moved_piece = pos.moved_piece(move);
+      if (type_of(moved_piece) == QUEEN)
+        queenMoves++;
 
       givesCheck =  type_of(move) == NORMAL && !ci.dcCandidates
                   ? ci.checkSquares[type_of(pos.piece_on(from_sq(move)))] & to_sq(move)
                   : pos.gives_check(move, ci);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth];
+                        && (moveCount - queenMoves/2) >= FutilityMoveCounts[improving][depth];
 
       // Step 12. Extend checks
       if (    givesCheck
