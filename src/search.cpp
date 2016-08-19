@@ -445,17 +445,16 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  alpha = std::min((alpha + beta) / 2 + 2 * conseq_fail_h , VALUE_INFINITE);
-                  beta  = std::min(bestValue + delta  + 2 * conseq_fail_h , VALUE_INFINITE);
-
                   conseq_fail_h++;
+                  alpha = std::min((alpha + beta) / 2, VALUE_INFINITE);
+                  beta  = std::min(beta + delta  + std::min(3,conseq_fail_h) * (bestValue - beta), VALUE_INFINITE);
               }
               else {
                   conseq_fail_h = 0;
                   break;
               }
 
-              delta += delta / 4 + 4;
+              delta += delta / 4 + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
