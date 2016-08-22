@@ -954,6 +954,11 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
 
+      Value seeval = VALUE_ZERO;
+      if (depth >= 3 * ONE_PLY  && captureOrPromotion && moveCountPruning) {
+        seeval = pos.see_sign(move);
+      }
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -965,8 +970,15 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-          if (captureOrPromotion)
-              r -= r ? ONE_PLY : DEPTH_ZERO;
+          if (captureOrPromotion) {
+              r -= ONE_PLY;
+              if (seeval < -KnightValueMg)
+                r -= ONE_PLY;
+              //dbg_hit_on(seeval < -KnightValueMg);
+              //dbg_mean_of(seeval);
+              if (r < DEPTH_ZERO)
+                r = DEPTH_ZERO;
+          }
           else
           {
               Value val = thisThread->history[moved_piece][to_sq(move)]
