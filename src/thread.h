@@ -68,7 +68,8 @@ public:
   Depth rootDepth;
   HistoryStats history;
   MoveStats counterMoves;
-  FromToStats fromTo;
+  SquareSquareStats fromTo;
+  SquareSquareStats nullMovefmh;
   Depth completedDepth;
   std::atomic_bool resetCalls;
 };

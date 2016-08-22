@@ -214,6 +214,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
+      th->nullMovefmh.clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -816,7 +817,7 @@ namespace {
 moves_loop: // When in check search starts from here
 
     const CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    const CounterMoveStats* fmh  = (ss-2)->counterMoves;
+    const CounterMoveStats* fmh  = (ss-1)->currentMove != MOVE_NULL ? (ss-2)->counterMoves : nullptr;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
     MovePicker mp(pos, ttMove, depth, ss);
@@ -973,7 +974,8 @@ moves_loop: // When in check search starts from here
                          +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                         +    thisThread->fromTo.get(~pos.side_to_move(), move);
+                         +    thisThread->fromTo.get(~pos.side_to_move(), from_sq(move), to_sq(move))
+                         + ((ss-1)->currentMove == MOVE_NULL ? thisThread->nullMovefmh.get(~pos.side_to_move(), to_sq((ss-2)->currentMove), to_sq(move)) : VALUE_ZERO);
 
               // Increase reduction for cut nodes
               if (cutNode)
@@ -1408,12 +1410,15 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    CounterMoveStats* fmh  = (ss-2)->counterMoves;
+    CounterMoveStats* fmh  = (ss-1)->currentMove != MOVE_NULL ? (ss-2)->counterMoves : nullptr;
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
-    thisThread->fromTo.update(c, move, bonus);
+    thisThread->fromTo.update(c, from_sq(move), to_sq(move), bonus);
+
+    if ((ss-1)->currentMove == MOVE_NULL)
+      thisThread->nullMovefmh.update(c, to_sq((ss-2)->currentMove), to_sq(move), bonus);
 
     if (cmh)
     {
@@ -1431,7 +1436,9 @@ moves_loop: // When in check search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-        thisThread->fromTo.update(c, quiets[i], -bonus);
+        thisThread->fromTo.update(c, from_sq(quiets[i]), to_sq(quiets[i]), -bonus);
+        if ((ss-1)->currentMove == MOVE_NULL)
+            thisThread->nullMovefmh.update(c, to_sq((ss-2)->currentMove), to_sq(quiets[i]), -bonus);
 
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);

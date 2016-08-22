@@ -66,18 +66,17 @@ typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
-struct FromToStats {
+struct SquareSquareStats {
 
-    Value get(Color c, Move m) const { return table[c][from_sq(m)][to_sq(m)]; }
+    Value get(Color c, Square f, Square t) const { return table[c][f][t]; }
     void clear() { std::memset(table, 0, sizeof(table)); }
 
-    void update(Color c, Move m, Value v)
+    void update(Color c, Square f, Square t, Value v)
     {
         if (abs(int(v)) >= 324)
             return;
 
-        Square f = from_sq(m);
-        Square t = to_sq(m);
+
 
         table[c][f][t] -= table[c][f][t] * abs(int(v)) / 324;
         table[c][f][t] += int(v) * 32;
