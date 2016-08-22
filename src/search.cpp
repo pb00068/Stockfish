@@ -967,14 +967,8 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-          if (captureOrPromotion) {
-              r -= ONE_PLY;
-//              if (mov.value <= -RookValueMg + PawnValueMg)
-//                r -= ONE_PLY;
-              //dbg_hit_on(seeval < -KnightValueMg);
-              //dbg_mean_of(mov.value);
-              if (r < DEPTH_ZERO)
-                r = DEPTH_ZERO;
+          if (captureOrPromotion && mov.value > -RookValueMg + PawnValueMg) {
+            r -= r ? ONE_PLY : DEPTH_ZERO;
           }
           else
           {
