@@ -837,8 +837,10 @@ moves_loop: // When in check search starts from here
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    ExtMove mov;
+    while ((mov = mp.next_move()) != MOVE_NONE)
     {
+      move = mov.move;
       assert(is_ok(move));
 
       if (move == excludedMove)
@@ -954,11 +956,6 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
 
-      Value seeval = VALUE_ZERO;
-      if (depth >= 3 * ONE_PLY  && captureOrPromotion && moveCountPruning) {
-        seeval = pos.see_sign(move);
-      }
-
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -972,10 +969,10 @@ moves_loop: // When in check search starts from here
 
           if (captureOrPromotion) {
               r -= ONE_PLY;
-              if (seeval < -KnightValueMg)
-                r -= ONE_PLY;
+//              if (mov.value <= -RookValueMg + PawnValueMg)
+//                r -= ONE_PLY;
               //dbg_hit_on(seeval < -KnightValueMg);
-              //dbg_mean_of(seeval);
+              //dbg_mean_of(mov.value);
               if (r < DEPTH_ZERO)
                 r = DEPTH_ZERO;
           }

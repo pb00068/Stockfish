@@ -249,9 +249,9 @@ void MovePicker::generate_next_stage() {
 /// left. It picks the move with the biggest value from a list of generated moves
 /// taking care not to return the ttMove if it has already been searched.
 
-Move MovePicker::next_move() {
+ExtMove MovePicker::next_move() {
 
-  Move move;
+  ExtMove move;
 
   while (true)
   {
@@ -269,9 +269,9 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= VALUE_ZERO)
+              move.value = pos.see_sign(move);
+              if (move.value >= VALUE_ZERO)
                   return move;
-
               // Losing capture, move it to the tail of the array
               *endBadCaptures-- = move;
           }
@@ -323,7 +323,8 @@ Move MovePicker::next_move() {
           break;
 
       case STOP:
-          return MOVE_NONE;
+          ttMove = MOVE_NONE;
+          return ttMove;
 
       default:
           assert(false);
