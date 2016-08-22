@@ -967,8 +967,10 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-          if (captureOrPromotion && mov.value > -RookValueMg + PawnValueMg) {
-            r -= r ? ONE_PLY : DEPTH_ZERO;
+          if (captureOrPromotion) {
+            if (r && (inCheck || mov.value > -RookValueMg + PawnValueMg)) {
+               r -= ONE_PLY;
+            }
           }
           else
           {
