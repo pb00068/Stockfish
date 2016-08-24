@@ -61,27 +61,27 @@ struct Stats {
        Premoves *p = &table[pc][to];
        int i=0;
        int z=p->i;
-       for (i=0; i < 5; i++) {
+       for (i=0; i < PREMOVES_SIZE; i++) {
           if (p->prevMove[i] == preMove && p->pt[i] == pt)
             break;
        }
-       if (i < 5)
+       if (i < PREMOVES_SIZE)
          z = i;
 
        p->prevMove[z] = preMove;
        p->pt[z]  = pt;
        p->depth[z]  = d;
-       if (i == 5)
+       if (i == PREMOVES_SIZE)
          p->i++;
-       if (p->i == 5)
+       if (p->i == PREMOVES_SIZE)
          p->i = 0;
   }
 
   void decreasePrev(Piece pc, Square to,  Move preMove, PieceType pt) {
         Premoves *p = &table[pc][to];
-        for (int i=0; i < 5; i++) {
-          if (p->prevMove[i] == preMove && p->pt[i] == pt && p->depth[i])
-              p->depth[i]= p->depth[i] - ONE_PLY;
+        for (int i=0; i < PREMOVES_SIZE; i++) {
+          if (p->prevMove[i] == preMove && p->pt[i] == pt)
+              p->prevMove[i] = MOVE_NONE;
         }
    }
 

@@ -140,7 +140,7 @@ void MovePicker::score<CAPTURES>() {
      for (auto& m : *this) {
            Premoves p = pos.this_thread()->preCaptStats[pos.moved_piece(m)][to_sq(m)];
            //int i=0;
-           for (int i=0; i < 5; i++) {
+           for (int i=0; i < PREMOVES_SIZE; i++) {
            if (p.depth[i] >= depth && p.prevMove[i] == (ss-1)->currentMove && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == p.pt[i]) {
                 m.value += QueenValueMg + p.depth[i];
                 break;
@@ -265,7 +265,7 @@ void MovePicker::generate_next_stage() {
 
 Move MovePicker::next_move() {
 
-  Move move;
+  ExtMove move;
 
   while (true)
   {

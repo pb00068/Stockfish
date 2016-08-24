@@ -218,11 +218,13 @@ enum Depth {
   DEPTH_MAX  = MAX_PLY
 };
 
+#define PREMOVES_SIZE 15
+
 struct Premoves {
   int i;
-  Move prevMove[5];
-  PieceType pt[5];
-  Depth depth[5];
+  Move prevMove[PREMOVES_SIZE];
+  PieceType pt[PREMOVES_SIZE];
+  Depth depth[PREMOVES_SIZE];
 };
 
 enum Square {
