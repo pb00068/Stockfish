@@ -1420,9 +1420,9 @@ moves_loop: // When in check search starts from here
 
     if (pos.capture_or_promotion(move)) {
         if (!pos.captured_piece_type()) {
-          pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(move), to_sq(move), (ss-1)->currentMove, (ss-2)->currentMove, depth);
-          for (int i = 0; i < captCnt; ++i)
-             pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(captures[i]), to_sq(captures[i]), MOVE_NONE, MOVE_NONE, DEPTH_ZERO);
+          pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(move), to_sq(move), (ss-1)->currentMove, type_of(pos.piece_on(to_sq((ss-1)->currentMove))), depth);
+//          for (int i = 0; i < captCnt; ++i)
+//             pos.this_thread()->preCaptStats.decreasePrev(pos.moved_piece(captures[i]), to_sq(captures[i]));
         }
 
         return;

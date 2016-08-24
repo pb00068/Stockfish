@@ -139,8 +139,15 @@ void MovePicker::score<CAPTURES>() {
   if (ss != nullptr && depth > 2 && !pos.captured_piece_type()) {
      for (auto& m : *this) {
            Premoves p = pos.this_thread()->preCaptStats[pos.moved_piece(m)][to_sq(m)];
-           if (p.depth >= depth && p.prevMove == (ss-1)->currentMove && p.ppMove == (ss-2)->currentMove)
-                m.value += QueenValueMg;
+           //int i=0;
+           for (int i=0; i < 5; i++) {
+           if (p.depth[i] >= depth && p.prevMove[i] == (ss-1)->currentMove && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == p.pt[i]) {
+                m.value += QueenValueMg + p.depth[i];
+                break;
+           }
+
+           }
+          // dbg_hit_on(i<5);
      }
  }
 }

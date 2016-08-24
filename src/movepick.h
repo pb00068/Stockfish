@@ -57,12 +57,33 @@ struct Stats {
     table[pc][to] += int(v) * 32;
   }
 
-  void updatePrev(Piece pc, Square to, Move preMove, Move ppMove, Depth d) {
+  void updatePrev(Piece pc, Square to, Move preMove, PieceType pt, Depth d) {
        Premoves *p = &table[pc][to];
-       p->prevMove = preMove;
-       p->ppMove = ppMove;
-       p->depth = d;
+       int i=0;
+       int z=p->i;
+       for (i=0; i < 5; i++) {
+          if (p->prevMove[i] == preMove && p->pt[i] == pt)
+            break;
+       }
+       if (i < 5)
+         z = i;
+
+       p->prevMove[z] = preMove;
+       p->pt[z]  = pt;
+       p->depth[z]  = d;
+       if (i == 5)
+         p->i++;
+       if (p->i == 5)
+         p->i = 0;
   }
+
+  void decreasePrev(Piece pc, Square to,  Move preMove, PieceType pt) {
+        Premoves *p = &table[pc][to];
+        for (int i=0; i < 5; i++) {
+          if (p->prevMove[i] == preMove && p->pt[i] == pt && p->depth[i])
+              p->depth[i]= p->depth[i] - ONE_PLY;
+        }
+   }
 
 private:
   T table[PIECE_NB][SQUARE_NB];

@@ -219,9 +219,10 @@ enum Depth {
 };
 
 struct Premoves {
-  Move prevMove;
-  Move ppMove;
-  Depth depth;
+  int i;
+  Move prevMove[5];
+  PieceType pt[5];
+  Depth depth[5];
 };
 
 enum Square {
