@@ -222,10 +222,8 @@ enum Depth {
 
 struct Premoves {
   Move prevMove;
-//  PieceType prevMovedType;
   Move ppMove;
   Depth depth;
-//  PieceType ownpreviousMovedPiece;
 };
 
 

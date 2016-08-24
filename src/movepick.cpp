@@ -141,7 +141,7 @@ void MovePicker::score<CAPTURES>() {
     for (auto& m : *this) {
           Premoves p = pos.this_thread()->preCaptStats[pos.moved_piece(m)][to_sq(m)];
           if (p.depth >= depth && p.prevMove == (ss-1)->currentMove && p.ppMove == (ss-2)->currentMove)
-               m.value += RookValueMg;
+               m.value += QueenValueMg;
     }
   }
 }

@@ -1458,9 +1458,6 @@ moves_loop: // When in check search starts from here
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
-
-//        if (pos.capture_or_promotion(move) && depth > 5)
-//          pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(move), to_sq(move), (ss-1)->currentMove, (ss-2)->currentMove);// type_of(pos.moved_piece((ss-1)->currentMove)));
     }
   }
 
