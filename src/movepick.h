@@ -57,6 +57,13 @@ struct Stats {
     table[pc][to] += int(v) * 32;
   }
 
+  void updatePrev(Piece pc, Square to, Move preMove, Move ppMove, Depth d) {
+       Premoves *p = &table[pc][to];
+       p->prevMove = preMove;
+       p->ppMove = ppMove;
+       p->depth = d;
+  }
+
 private:
   T table[PIECE_NB][SQUARE_NB];
 };
@@ -65,6 +72,7 @@ typedef Stats<Move> MoveStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
+typedef Stats<Premoves> PreCaptureStat;
 
 struct FromToStats {
 
