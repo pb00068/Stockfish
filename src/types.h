@@ -205,6 +205,8 @@ enum Piece {
   PIECE_NB = 16
 };
 
+
+
 enum Depth {
 
   ONE_PLY = 1,
@@ -217,6 +219,15 @@ enum Depth {
   DEPTH_NONE = -6,
   DEPTH_MAX  = MAX_PLY
 };
+
+struct Premoves {
+  Move prevMove;
+//  PieceType prevMovedType;
+  Move ppMove;
+  Depth depth;
+//  PieceType ownpreviousMovedPiece;
+};
+
 
 enum Square {
   SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,

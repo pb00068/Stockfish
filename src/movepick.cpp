@@ -81,7 +81,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) {
+           : pos(p), ss(nullptr) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -106,7 +106,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Value th)
-           : pos(p), threshold(th) {
+           : pos(p), ss(nullptr), threshold(th) {
 
   assert(!pos.checkers());
 
@@ -136,6 +136,14 @@ void MovePicker::score<CAPTURES>() {
   for (auto& m : *this)
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+
+  if (ss != nullptr && depth > 2) {
+    for (auto& m : *this) {
+          Premoves p = pos.this_thread()->preCaptStats[pos.moved_piece(m)][to_sq(m)];
+          if (p.depth >= depth && p.prevMove == (ss-1)->currentMove && p.ppMove == (ss-2)->currentMove)
+               m.value += RookValueMg;
+    }
+  }
 }
 
 template<>

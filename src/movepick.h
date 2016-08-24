@@ -57,11 +57,20 @@ struct Stats {
     table[pc][to] += int(v) * 32;
   }
 
+  void updatePrev(Piece pc, Square to, Move preMove, Move ppMove, Depth d) {// PieceType preMovedType) {
+     Premoves *p = &table[pc][to];
+     p->prevMove = preMove;
+     //p->prevMovedType = preMovedType;
+     p->ppMove = ppMove;
+     p->depth = d;
+   }
+
 private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
 typedef Stats<Move> MoveStats;
+typedef Stats<Premoves> PreCaptureStat;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
@@ -86,6 +95,8 @@ struct FromToStats {
 private:
     Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
+
+
 
 /// MovePicker class is used to pick one pseudo legal move at a time from the
 /// current position. The most important method is next_move(), which returns a
