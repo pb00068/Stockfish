@@ -168,7 +168,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
-  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt,  Move* captures, int captCnt);
   void check_time();
 
 } // namespace
@@ -552,7 +552,7 @@ namespace {
     assert(DEPTH_ZERO < depth && depth < DEPTH_MAX);
     assert(!(PvNode && cutNode));
 
-    Move pv[MAX_PLY+1], quietsSearched[64];
+    Move pv[MAX_PLY+1], quietsSearched[64], capturesSearched[16];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -562,12 +562,12 @@ namespace {
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
-    int moveCount, quietCount;
+    int moveCount, quietCount, capturesCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    moveCount = quietCount =  ss->moveCount = 0;
+    moveCount = quietCount = capturesCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
 
@@ -637,7 +637,7 @@ namespace {
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove)
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+            update_stats(pos, ss, ttMove, depth, nullptr, 0, nullptr, 0);
 
         return ttValue;
     }
@@ -1094,6 +1094,8 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
+      if (captureOrPromotion && move != bestMove && capturesCount < 16)
+        capturesSearched[capturesCount++] = move;
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1114,7 +1116,7 @@ moves_loop: // When in check search starts from here
 
     // Quiet best move: update killers, history and countermoves
     else if (bestMove)
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount, capturesSearched, capturesCount);
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
@@ -1394,7 +1396,7 @@ moves_loop: // When in check search starts from here
   // follow-up move history when a new quiet best move is found.
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Depth depth, Move* quiets, int quietsCnt) {
+                    Depth depth, Move* quiets, int quietsCnt, Move* captures, int captCnt) {
 
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
     Square prevSq = to_sq((ss-1)->currentMove);
@@ -1419,7 +1421,10 @@ moves_loop: // When in check search starts from here
     if (pos.capture_or_promotion(move)) {
         if (!pos.captured_piece_type()) {
           pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(move), to_sq(move), (ss-1)->currentMove, (ss-2)->currentMove, depth);
+          for (int i = 0; i < captCnt; ++i)
+             pos.this_thread()->preCaptStats.updatePrev(pos.moved_piece(captures[i]), to_sq(captures[i]), MOVE_NONE, MOVE_NONE, DEPTH_ZERO);
         }
+
         return;
     }
 
