@@ -631,18 +631,19 @@ namespace {
 
 
     if (rootNode && Threads.size() > 1) {
-       int i=0;
+//       int i=0;
        for (Thread* th : Threads) {
          Move mm = th->rootMoves[0].rootMove;
          if (th->completedDepth >= thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1] && !pos.capture(mm))
          {
 //            if (ss->killers[i])
 //              i++;
-            ss->killers[i++] = mm;
+            ss->killers[1] = ss->killers[0];
+            ss->killers[0] = mm;
 //            abort();
 //            sync_cout << pos << "Thread " << th->idx << " has move " << UCI::move(mm, false) << " as bestmove, setted as killer " << i << sync_endl;
-            if (i == 1)
-              break;
+//            if (i == 2)
+            break;
          }
        }
      }
