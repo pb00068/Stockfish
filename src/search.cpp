@@ -618,6 +618,7 @@ namespace {
     ss->counterMoves = nullptr;
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    ss->smpRootMoveOrder=0;
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
     // search to overwrite a previous full search TT value, so we use a different
@@ -634,14 +635,15 @@ namespace {
        int i=0;
        for (Thread* th : Threads) {
          Move mm = th->rootMoves[0].rootMove;
-         if (th->completedDepth >= thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1] && !pos.capture(mm))
+         if (th->completedDepth >= thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1])
          {
 //            if (ss->killers[i])
 //              i++;
             ss->killers[i++] = mm;
+            ss->smpRootMoveOrder = 1;
 //            abort();
 //            sync_cout << pos << "Thread " << th->idx << " has move " << UCI::move(mm, false) << " as bestmove, setted as killer " << i << sync_endl;
-            if (i == 1)
+            if (i == 2)
               break;
          }
        }

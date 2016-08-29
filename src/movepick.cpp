@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, GOOD_CAPTURES, KILLERS, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, SMP_ROOTMOVES, GOOD_CAPTURES, KILLERS, QUIET, BAD_CAPTURES,
     EVASION, ALL_EVASIONS,
     QSEARCH_WITH_CHECKS, QCAPTURES_1, CHECKS,
     QSEARCH_WITHOUT_CHECKS, QCAPTURES_2,
@@ -197,12 +197,25 @@ void MovePicker::generate_next_stage() {
       score<CAPTURES>();
       break;
 
+  case SMP_ROOTMOVES:
+      cur = endMoves;
+      if (ss->smpRootMoveOrder) {
+        killers[0] = ss->killers[0];
+        killers[1] = ss->killers[1];
+        cur = killers;
+        endMoves = cur + 2;
+      }
+
+      break;
+
   case KILLERS:
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove;
       cur = killers;
       endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
+      if (ss->smpRootMoveOrder)
+        cur = killers + 2;
       break;
 
   case QUIET:
@@ -269,6 +282,9 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
+              if (ss->smpRootMoveOrder && (move == killers[0] || move == killers[1]))
+                break;
+
               if (pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
@@ -276,6 +292,14 @@ Move MovePicker::next_move() {
               *endBadCaptures-- = move;
           }
           break;
+
+      case SMP_ROOTMOVES:
+                move = *cur++;
+                if (    move != MOVE_NONE
+                    &&  move != ttMove
+                    &&  pos.pseudo_legal(move))
+                    return move;
+                break;
 
       case KILLERS:
           move = *cur++;
