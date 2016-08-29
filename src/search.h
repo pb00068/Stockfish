@@ -64,6 +64,7 @@ struct RootMove {
   Value score = -VALUE_INFINITE;
   Value previousScore = -VALUE_INFINITE;
   std::vector<Move> pv;
+  Move rootMove;
 };
 
 typedef std::vector<RootMove> RootMoves;
