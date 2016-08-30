@@ -634,7 +634,8 @@ namespace {
             if (th->completedDepth >= best->completedDepth && th->rootMoves[0].score > best->rootMoves[0].score)
               best = th;
         }
-        ttMove = best->rootMoves[thisThread->PVIdx].rootMove;
+        ttMove = best->rootMoves[0].rootMove;
+        ttValue = best->rootMoves[0].score;
     }
 
     // At non-PV nodes we check for an early TT cutoff
