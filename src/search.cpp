@@ -218,6 +218,7 @@ void Search::clear() {
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
+  //Threads.main()->rootMovenotoverrides =  Threads.main()->rootMoveoverrides = 0;
 }
 
 
@@ -321,6 +322,8 @@ void MainThread::search() {
   // Send new PV when needed
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+
+  //sync_cout << "info rootMove overrides: " << Threads.main()->rootMoveoverrides << " not_overrides: " << Threads.main()->rootMovenotoverrides << sync_endl;
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -630,23 +633,7 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
 
 
-    if (rootNode && Threads.size() > 1) {
-//       int i=0;
-       for (Thread* th : Threads) {
-         Move mm = th->rootMoves[0].rootMove;
-         if (th->completedDepth >= thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1] && !pos.capture(mm))
-         {
-//            if (ss->killers[i])
-//              i++;
-            ss->killers[1] = ss->killers[0];
-            ss->killers[0] = mm;
-//            abort();
-//            sync_cout << pos << "Thread " << th->idx << " has move " << UCI::move(mm, false) << " as bestmove, setted as killer " << i << sync_endl;
-//            if (i == 2)
-            break;
-         }
-       }
-     }
+
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -890,6 +877,8 @@ moves_loop: // When in check search starts from here
 
       ss->moveCount = ++moveCount;
 
+
+
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
@@ -1100,6 +1089,32 @@ moves_loop: // When in check search starts from here
               // not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+
+          if (moveCount == 1 && Threads.size() > 1 && depth > ONE_PLY * 5) {
+                 int i=0;
+                 for (Thread* th : Threads) {
+                   Move mm = th->rootMoves[0].rootMove;
+                   if (th->completedDepth > thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1] && !pos.capture(mm))
+                   {
+                      if (ss->killers[0] && !i)
+                      {
+                        ss->killers[1] = ss->killers[0];
+                        ss->killers[0] = mm;
+                      }
+                      else
+                        ss->killers[i] = mm;
+                      i++;
+                      //Threads.main()->rootMoveoverrides++;
+//                      break;
+          //            abort();
+          //            sync_cout << pos << "Thread " << th->idx << " has move " << UCI::move(mm, false) << " as bestmove, setted as killer " << i << sync_endl;
+                      if (i == 2)
+                        break;
+                   }
+                 }
+          //       if (i == Threads.size() )
+          //         Threads.main()->rootMovenotoverrides++;
+               }
       }
 
       if (value > bestValue)

@@ -82,6 +82,8 @@ struct MainThread : public Thread {
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
   Value previousScore;
+//  int rootMoveoverrides;
+//  int rootMovenotoverrides;
 };
 
 
