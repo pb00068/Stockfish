@@ -55,7 +55,7 @@ struct Stack {
 
 struct RootMove {
 
-  explicit RootMove(Move m) : pv(1, m) {}
+  explicit RootMove(Move m) : pv(1, m) { rootMove = MOVE_NONE; }
 
   bool operator<(const RootMove& m) const { return m.score < score; } // Descending sort
   bool operator==(const Move& m) const { return pv[0] == m; }
@@ -64,6 +64,7 @@ struct RootMove {
   Value score = -VALUE_INFINITE;
   Value previousScore = -VALUE_INFINITE;
   std::vector<Move> pv;
+  Move rootMove;
 };
 
 typedef std::vector<RootMove> RootMoves;

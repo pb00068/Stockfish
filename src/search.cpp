@@ -628,6 +628,15 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
 
+    if (rootNode && Threads.size() > 1) {
+        Thread* best = thisThread;
+        for (Thread* th : Threads) {
+            if (th->completedDepth >= best->completedDepth && th->rootMoves[0].score > best->rootMoves[0].score)
+              best = th;
+        }
+        ttMove = best->rootMoves[thisThread->PVIdx].rootMove;
+    }
+
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
         && ttHit
@@ -1060,6 +1069,7 @@ moves_loop: // When in check search starts from here
           {
               rm.score = value;
               rm.pv.resize(1);
+              rm.rootMove = move;
 
               assert((ss+1)->pv);
 
