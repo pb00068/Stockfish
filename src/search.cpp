@@ -1059,6 +1059,7 @@ moves_loop: // When in check search starts from here
           if (moveCount == 1 || value > alpha)
           {
               rm.score = value;
+              rm.rootMove = move;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
@@ -1077,6 +1078,26 @@ moves_loop: // When in check search starts from here
               // not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+
+          if (moveCount == 1 && Threads.size() > 1 && depth > ONE_PLY * 5) {
+              int i=0;
+              for (Thread* th : Threads) {
+                Move mm = th->rootMoves[0].rootMove;
+                if (th->completedDepth > thisThread->completedDepth && mm != ttMove && mm != MOVE_NONE && mm != ss->killers[0] && mm != ss->killers[1] && !pos.capture(mm))
+                {
+                   if (ss->killers[0] && !i)
+                   {
+                     ss->killers[1] = ss->killers[0];
+                     ss->killers[0] = mm;
+                   }
+                   else
+                     ss->killers[i] = mm;
+                   i++;
+                   if (i == 2)
+                     break;
+                }
+              }
+          }
       }
 
       if (value > bestValue)
