@@ -573,6 +573,7 @@ namespace {
     moveCount = quietCount =  ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->ttMove = false;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -637,6 +638,7 @@ namespace {
                             : (tte->bound() & BOUND_UPPER)))
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
+        ss->ttMove = true;
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
         if (ttValue >= beta && ttMove)
@@ -649,8 +651,8 @@ namespace {
                 update_stats(pos, ss, ttMove, nullptr, 0, bonus);
             }
 
-            // Extra penalty for a quiet TT move in previous ply when it gets refuted
-            if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+            // Extra penalty for a top quiet (not-TT) move in previous ply when it gets refuted
+            if ((ss-1)->moveCount == 1 && !(ss-1)->ttMove && !pos.captured_piece_type())
             {
                 Value penalty = Value(d * d + 4 * d + 1);
                 Square prevSq = to_sq((ss-1)->currentMove);
@@ -1094,6 +1096,7 @@ moves_loop: // When in check search starts from here
 
               bestMove = move;
 
+
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
@@ -1129,6 +1132,8 @@ moves_loop: // When in check search starts from here
     else if (bestMove)
     {
         int d = depth / ONE_PLY;
+        if (bestMove == ttMove)
+            ss->ttMove=true;
 
         // Quiet best move: update killers, history and countermoves
         if (!pos.capture_or_promotion(bestMove))
@@ -1137,8 +1142,8 @@ moves_loop: // When in check search starts from here
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
         }
 
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+        // Extra penalty for a top quiet (not-TT) move in previous ply when it gets refuted
+        if ((ss-1)->moveCount == 1 && !(ss-1)->ttMove && !pos.captured_piece_type())
         {
             Value penalty = Value(d * d + 4 * d + 1);
             Square prevSq = to_sq((ss-1)->currentMove);
