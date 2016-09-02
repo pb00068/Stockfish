@@ -143,6 +143,7 @@ void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
   const FromToStats& fromTo = pos.this_thread()->fromTo;
+  const LowPlyStats& lowPlies = pos.this_thread()->lowPLyStat;
 
   const CounterMoveStats* cm = (ss-1)->counterMoves;
   const CounterMoveStats* fm = (ss-2)->counterMoves;
@@ -150,7 +151,15 @@ void MovePicker::score<QUIETS>() {
 
   Color c = pos.side_to_move();
 
-  for (auto& m : *this)
+  Value v = VALUE_ZERO;
+  if (depth > 15 && ss->ply <= 3) {
+    for (auto& m : *this) {
+         m.value = lowPlies.get(pos.moved_piece(m),to_sq(m));
+         v += m.value;
+    }
+  }
+  if (v == 0)
+     for (auto& m : *this)
       m.value =      history[pos.moved_piece(m)][to_sq(m)]
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)

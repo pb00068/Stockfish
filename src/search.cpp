@@ -169,7 +169,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_cm_stats(Stack* ss, Piece pc, Square s, Value bonus);
-  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, Value bonus);
+  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, Value bonus, int d);
   void check_time();
 
 } // namespace
@@ -646,7 +646,7 @@ namespace {
             if (!pos.capture_or_promotion(ttMove))
             {
                 Value bonus = Value(d * d + 2 * d - 2);
-                update_stats(pos, ss, ttMove, nullptr, 0, bonus);
+                update_stats(pos, ss, ttMove, nullptr, 0, bonus, d);
             }
 
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1134,7 +1134,7 @@ moves_loop: // When in check search starts from here
         if (!pos.capture_or_promotion(bestMove))
         {
             Value bonus = Value(d * d + 2 * d - 2);
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus, d);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1436,7 +1436,7 @@ moves_loop: // When in check search starts from here
   // follow-up move history when a new quiet best move is found.
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Move* quiets, int quietsCnt, Value bonus) {
+                    Move* quiets, int quietsCnt, Value bonus, int d) {
 
     if (ss->killers[0] != move)
     {
@@ -1448,7 +1448,11 @@ moves_loop: // When in check search starts from here
     Thread* thisThread = pos.this_thread();
     thisThread->fromTo.update(c, move, bonus);
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+    if (ss->ply <= 3)
+      thisThread->lowPLyStat.update(pos.moved_piece(move), to_sq(move), d);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
+
+    sync_cout << (ss - (ss->ply - 1))->currentMove << sync_endl;
 
     if ((ss-1)->counterMoves)
     {
@@ -1461,6 +1465,8 @@ moves_loop: // When in check search starts from here
     {
         thisThread->fromTo.update(c, quiets[i], -bonus);
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (ss->ply <= 3)
+             thisThread->lowPLyStat.decrease(pos.moved_piece(move), to_sq(move), d);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }

@@ -87,6 +87,42 @@ private:
     Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
 
+struct LowPlyStats {
+
+    Value get(Piece pc, Square s) const { return table[pc][s]; }
+    void clear() { std::memset(table, 0, sizeof(table)); }
+
+    void update(Piece pc, Square to, int d) {
+      if (d <= 17)
+        return;
+      d-=17;
+      Value v = Value(d * d + 2 * d - 2);
+
+      if (abs(int(v)) >= 324)
+          return;
+
+      table[pc][to] -= table[pc][to] * abs(int(v)) / (324);
+      table[pc][to] += int(v) * 32;
+    }
+
+    void decrease(Piece pc, Square to, int d) {
+          if (d <= 17)
+            return;
+          d-=17;
+          Value v = Value(d * d + 2 * d - 2);
+
+          if (abs(int(v)) >= 324)
+              return;
+
+          table[pc][to] -= table[pc][to] * abs(int(v)) / (324);
+          table[pc][to] -= int(v) * 32;
+        }
+
+private:
+    Value table[PIECE_NB][SQUARE_NB];
+};
+
+
 /// MovePicker class is used to pick one pseudo legal move at a time from the
 /// current position. The most important method is next_move(), which returns a
 /// new pseudo legal move each time it is called, until there are no moves left,
