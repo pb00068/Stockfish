@@ -69,7 +69,7 @@ public:
   HistoryStats history;
   MoveStats counterMoves;
   FromToStats fromTo;
-  LowPlyStats lowPLyStat;
+  LowPlyStats lowPlyStat;
   Depth completedDepth;
   std::atomic_bool resetCalls;
 };
