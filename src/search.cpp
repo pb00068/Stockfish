@@ -1452,7 +1452,7 @@ moves_loop: // When in check search starts from here
       thisThread->lowPLyStat.update(pos.moved_piece(move), to_sq(move), d);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
-    sync_cout << (ss - (ss->ply - 1))->currentMove << sync_endl;
+//    sync_cout << (ss - (ss->ply - 1))->currentMove << sync_endl;
 
     if ((ss-1)->counterMoves)
     {
