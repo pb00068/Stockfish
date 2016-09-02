@@ -54,6 +54,7 @@ namespace {
 
     Move m;
     string token, fen;
+    Search::lastOwn = Search::lastOpponent = MOVE_NONE;
 
     is >> token;
 
@@ -74,6 +75,8 @@ namespace {
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
+        Search::lastOwn = Search::lastOpponent;
+        Search::lastOpponent = m;
         States->push_back(StateInfo());
         pos.do_move(m, States->back(), pos.gives_check(m));
     }

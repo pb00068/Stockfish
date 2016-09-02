@@ -40,6 +40,8 @@ namespace Search {
 
   SignalsType Signals;
   LimitsType Limits;
+
+  Move lastOwn, lastOpponent;
 }
 
 namespace Tablebases {
@@ -215,6 +217,8 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
+      for (int i=0;i<20; i++)
+        th->pathhistory[i].clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -271,9 +275,23 @@ void MainThread::search() {
   }
   else
   {
-      for (Thread* th : Threads)
+      for (Thread* th : Threads) {
+          if (lastOwn) {
+            int path_index = (lastOwn) % 20;
+            std::memcpy(&th->history , &th->pathhistory[path_index], sizeof(th->history));
+//            for (Piece p = NO_PIECE; p < PIECE_NB; p = p + W_PAWN) {
+//              for (Square s = SQ_A1; s < SQUARE_NB; s = s + SQ_B1) {
+//                if (th->history[p][s] != th->pathhistory[path_index][p][s])
+//                  abort();
+//              }
+//            }
+
+          }
+          for (int i=0; i < 20; i++)
+            std::memcpy(&th->pathhistory[i], &th->history , sizeof(th->history));
           if (th != this)
               th->start_searching();
+      }
 
       Thread::search(); // Let's start searching!
   }
@@ -1448,6 +1466,14 @@ moves_loop: // When in check search starts from here
     Thread* thisThread = pos.this_thread();
     thisThread->fromTo.update(c, move, bonus);
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+    Move rootm   = (ss - (ss->ply - 1))->currentMove;
+    //Move ranswer = (ss - (ss->ply - 2))->currentMove;
+    int path_index = (rootm ) % 20;
+    if (ss->ply > 2)
+      thisThread->pathhistory[path_index].update(pos.moved_piece(move), to_sq(move), bonus);
+
+//    if (ss->ply == 16)
+//      sync_cout << "info " << UCI::move(ranswer, false) << sync_endl;
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
@@ -1461,6 +1487,8 @@ moves_loop: // When in check search starts from here
     {
         thisThread->fromTo.update(c, quiets[i], -bonus);
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (ss->ply > 2)
+            thisThread->pathhistory[path_index].update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }

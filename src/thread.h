@@ -67,6 +67,7 @@ public:
   Search::RootMoves rootMoves;
   Depth rootDepth;
   HistoryStats history;
+  HistoryStats pathhistory[20];
   MoveStats counterMoves;
   FromToStats fromTo;
   Depth completedDepth;
