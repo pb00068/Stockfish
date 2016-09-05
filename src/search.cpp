@@ -169,7 +169,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_cm_stats(Stack* ss, Piece pc, Square s, Value bonus);
-  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, Value bonus);
+  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int d);
   void check_time();
 
 } // namespace
@@ -645,8 +645,7 @@ namespace {
 
             if (!pos.capture_or_promotion(ttMove))
             {
-                Value bonus = Value(d * d + 2 * d - 2);
-                update_stats(pos, ss, ttMove, nullptr, 0, bonus);
+                update_stats(pos, ss, ttMove, nullptr, 0, d);
             }
 
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1133,8 +1132,8 @@ moves_loop: // When in check search starts from here
         // Quiet best move: update killers, history and countermoves
         if (!pos.capture_or_promotion(bestMove))
         {
-            Value bonus = Value(d * d + 2 * d - 2);
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
+            //Value bonus = Value(d * d + 2 * d - 2);
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, d);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1436,13 +1435,16 @@ moves_loop: // When in check search starts from here
   // follow-up move history when a new quiet best move is found.
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Move* quiets, int quietsCnt, Value bonus) {
+                    Move* quiets, int quietsCnt, int d) {
 
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
+    Value bonus = Value(d * d + 2 * d - 2);
+    if (d == 18)
+     bonus = Value(323);
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
@@ -1456,6 +1458,7 @@ moves_loop: // When in check search starts from here
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
 
+    if (d < 18)
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
