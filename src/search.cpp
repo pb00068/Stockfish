@@ -1443,8 +1443,8 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
     Value bonus = Value(d * d + 2 * d - 2);
-    if (d == 18)
-     bonus = Value(323);
+    if (bonus > 1)
+     bonus -= 2;
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
@@ -1458,7 +1458,7 @@ moves_loop: // When in check search starts from here
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
 
-    if (d < 18)
+    //if (d < 18)
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
