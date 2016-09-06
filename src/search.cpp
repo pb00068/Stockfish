@@ -1444,7 +1444,7 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
     if (bonus > 1)
-        bonus -= 2;
+        bonus += 3;
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
