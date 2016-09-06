@@ -204,7 +204,7 @@ void Search::init() {
 
   for (int d = 0; d < MAX_PLY+1; ++d)
   {
-       HistorySquare[d] = pow(d, 1.8);
+       HistorySquare[d] = pow(d, 1.9);
        if (d < 6)
                 sync_cout << "d: "  << d << " val "<< HistorySquare[d] << sync_endl;
        if (d==17)
