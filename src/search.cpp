@@ -70,6 +70,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
+  int HistorySquare[MAX_PLY + 1];
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -199,6 +200,15 @@ void Search::init() {
   {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
+  }
+
+  for (int d = 0; d < MAX_PLY+1; ++d)
+  {
+       HistorySquare[d] = pow(d, 1.8);
+       if (d < 6)
+                sync_cout << "d: "  << d << " val "<< HistorySquare[d] << sync_endl;
+       if (d==17)
+         sync_cout << "max: " << HistorySquare[d] << sync_endl;
   }
 }
 
@@ -651,7 +661,7 @@ namespace {
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             {
-                Value penalty = Value(d * d + 4 * d + 1);
+                Value penalty = Value(HistorySquare[d] + 4 * d + 1);
                 Square prevSq = to_sq((ss-1)->currentMove);
                 update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
             }
@@ -1139,7 +1149,7 @@ moves_loop: // When in check search starts from here
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
         {
-            Value penalty = Value(d * d + 4 * d + 1);
+            Value penalty = Value(HistorySquare[d] + 4 * d + 1);
             Square prevSq = to_sq((ss-1)->currentMove);
             update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
         }
@@ -1150,7 +1160,7 @@ moves_loop: // When in check search starts from here
              && is_ok((ss-1)->currentMove))
     {
         int d = depth / ONE_PLY;
-        Value bonus = Value(d * d + 2 * d - 2);
+        Value bonus = Value(HistorySquare[d] + 2 * d - 2);
         Square prevSq = to_sq((ss-1)->currentMove);
         update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, bonus);
     }
@@ -1442,9 +1452,8 @@ moves_loop: // When in check search starts from here
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
-    Value bonus = Value(d * d + 2 * d - 2);
-    if (d == 18)
-     bonus = Value(323);
+    Value bonus = Value(HistorySquare[d] + 2 * d - 2);
+
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
@@ -1458,7 +1467,10 @@ moves_loop: // When in check search starts from here
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
 
-    if (d < 18)
+//    if (d <= 17 && type_of(pos.moved_piece(move)) == PAWN)
+//      bonus /= 4;
+
+//    if (d < 13)
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
