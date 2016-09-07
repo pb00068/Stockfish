@@ -197,6 +197,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score Unstoppable         = S( 0, 20);
+  const Score UnattackedPinner    = S( 8,  8);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -360,8 +361,8 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard emptyb = 0;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, emptyb))
+            Bitboard blockers;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, blockers))
                 score -= WeakQueen;
         }
     }
@@ -585,6 +586,8 @@ namespace {
        & ~ei.attackedBy[Us][PAWN];
 
     score += ThreatByPawnPush * popcount(b);
+
+    score += UnattackedPinner * popcount(pos.pinnersForKing(Them) & ~ei.attackedBy[Them][ALL_PIECES]);
 
     if (DoTrace)
         Trace::add(THREAT, Us, score);

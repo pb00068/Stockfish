@@ -977,7 +977,6 @@ Value Position::see(Move m) const {
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
-
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
   // unless in the rare case the rook ends up under attack.
@@ -989,8 +988,6 @@ Value Position::see(Move m) const {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
       swapList[0] = PieceValue[MG][PAWN];
   }
-  else if (swapList[0])
-    occupied ^= to; // Remove the captured piece from occupied (needed to verify if pinners are still on board)
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
@@ -999,10 +996,6 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
-
-  if ((stmAttackers & pinned_pieces(stm)) && (pinnersForKing(stm) & occupied) == pinnersForKing(stm))
-      stmAttackers ^= (stmAttackers & pinned_pieces(stm)); // remove the pinned ones
-
   if (!stmAttackers)
       return swapList[0];
 
@@ -1024,10 +1017,6 @@ Value Position::see(Move m) const {
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
-
-      if ((stmAttackers & pinned_pieces(stm)) &&  (pinnersForKing(stm) & occupied) == pinnersForKing(stm))
-         stmAttackers ^= (stmAttackers & pinned_pieces(stm));
-
       ++slIndex;
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
