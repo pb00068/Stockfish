@@ -215,6 +215,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
+      th->moveSeqStat.clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -614,6 +615,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->movedPt = NO_PIECE_TYPE;
     ss->counterMoves = nullptr;
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
@@ -753,6 +755,7 @@ namespace {
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
+        ss->movedPt = NO_PIECE_TYPE;
         ss->counterMoves = nullptr;
 
         assert(eval - beta >= 0);
@@ -807,6 +810,7 @@ namespace {
             if (pos.legal(move))
             {
                 ss->currentMove = move;
+                ss->movedPt = type_of(pos.moved_piece(move));
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
@@ -968,6 +972,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
+      ss->movedPt = type_of(moved_piece);
       ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
@@ -1004,6 +1009,7 @@ moves_loop: // When in check search starts from here
                          +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
+                         //+ ((ss-2)->movedPt && (ss-1)->movedPt ? pos.this_thread()->moveSeqStat.get((ss-2)->movedPt, (ss-1)->movedPt, moved_piece, to_sq(move)) : VALUE_ZERO);
               int rHist = (val - 8000) / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
@@ -1445,10 +1451,13 @@ moves_loop: // When in check search starts from here
     }
 
     Color c = pos.side_to_move();
+    File f = file_of(to_sq((ss-1)->currentMove));
+    Rank r = rank_of(to_sq((ss-2)->currentMove));
     Thread* thisThread = pos.this_thread();
     thisThread->fromTo.update(c, move, bonus);
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
+    thisThread->moveSeqStat.update((ss-2)->movedPt, r,  (ss-1)->movedPt, f , pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
     {
@@ -1462,6 +1471,7 @@ moves_loop: // When in check search starts from here
         thisThread->fromTo.update(c, quiets[i], -bonus);
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        thisThread->moveSeqStat.update((ss-2)->movedPt, r, (ss-1)->movedPt, f, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }
 
