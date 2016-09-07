@@ -291,8 +291,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE));
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK));
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -422,17 +422,17 @@ Phase Position::game_phase() const {
 /// a discovered check piece, according if its color is the opposite or the same of
 /// the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners ) const {
 
-  Bitboard b, pinners, result = 0;
+  Bitboard b, p, result = 0;
 
   // Pinners are sliders that attack 's' when a pinned piece is removed
-  pinners = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
+  pinners = p = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
              | (PseudoAttacks[BISHOP][s] & pieces(QUEEN, BISHOP))) & sliders;
 
-  while (pinners)
+  while (p)
   {
-      b = between_bb(s, pop_lsb(&pinners)) & pieces();
+      b = between_bb(s, pop_lsb(&p)) & pieces();
 
       if (!more_than_one(b))
           result |= b;
@@ -977,6 +977,7 @@ Value Position::see(Move m) const {
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
+
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
   // unless in the rare case the rook ends up under attack.
@@ -988,6 +989,8 @@ Value Position::see(Move m) const {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
       swapList[0] = PieceValue[MG][PAWN];
   }
+  else if (swapList[0])
+    occupied ^= to; // Remove the captured piece from occupied (needed to verify if pinners are still on board)
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
@@ -996,6 +999,10 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
+
+  if ((stmAttackers & pinned_pieces(stm)) && (pinnersForKing(stm) & occupied) == pinnersForKing(stm))
+      stmAttackers ^= (stmAttackers & pinned_pieces(stm)); // remove the pinned ones
+
   if (!stmAttackers)
       return swapList[0];
 
@@ -1017,6 +1024,10 @@ Value Position::see(Move m) const {
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
+
+      if ((stmAttackers & pinned_pieces(stm)) &&  (pinnersForKing(stm) & occupied) == pinnersForKing(stm))
+         stmAttackers ^= (stmAttackers & pinned_pieces(stm));
+
       ++slIndex;
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
