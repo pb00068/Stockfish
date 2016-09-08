@@ -1443,7 +1443,6 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->fromTo.update(c, move, bonus);
@@ -1456,10 +1455,6 @@ moves_loop: // When in check search starts from here
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
 
-//    if (d <= 17 && type_of(pos.moved_piece(move)) == PAWN)
-//      bonus /= 4;
-
-//    if (d < 13)
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
