@@ -996,17 +996,16 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
-  if (stmAttackers & pinned_pieces(stm))
-  {
-      if (occupied & to)
-         occupied ^= to; // Remove the captured piece from occupied (needed to verify if pinners are still on board)
-      if ((pinnersForKing(stm) & occupied) == pinnersForKing(stm))
-         stmAttackers ^= (stmAttackers & pinned_pieces(stm)); // remove the pinned ones
-  }
-
   if (!stmAttackers)
-      return swapList[0];
+       return swapList[0];
 
+  // Consider absolute pins as long all pinners are on board (as soon a pinner is no longer on board, we fall back to traditional SEE)
+  if (stmAttackers && (stmAttackers & st->blockersForKing[stm]) && ((st->pinnersForKing[stm] & (occupied ^ (occupied & to))) == st->pinnersForKing[stm]))
+  {
+      stmAttackers ^= (stmAttackers & st->blockersForKing[stm]); // remove absolute pinners
+      if (!stmAttackers)
+         return swapList[0];
+  }
 
 
   // The destination square is defended, which makes things rather more
@@ -1027,13 +1026,8 @@ Value Position::see(Move m) const {
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
-      if (stmAttackers & pinned_pieces(stm))
-      {
-          if (occupied & to)
-             occupied ^= to; // Remove the captured piece from occupied (needed to verify if pinners are still on board)
-          if ((pinnersForKing(stm) & occupied) == pinnersForKing(stm))
-             stmAttackers ^= (stmAttackers & pinned_pieces(stm)); // remove the pinned ones
-      }
+      if (stmAttackers && (stmAttackers & st->blockersForKing[stm]) && ((st->pinnersForKing[stm] & (occupied ^ (occupied & to))) == st->pinnersForKing[stm]))
+          stmAttackers ^= (stmAttackers & st->blockersForKing[stm]);
       ++slIndex;
 
   } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
