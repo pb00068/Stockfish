@@ -422,17 +422,17 @@ Phase Position::game_phase() const {
 /// a discovered check piece, according if its color is the opposite or the same of
 /// the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners ) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinnerz ) const {
 
-  Bitboard b, p, result = 0;
+  Bitboard b, pinners, result = 0;
 
   // Pinners are sliders that attack 's' when a pinned piece is removed
-  pinners = p = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
+  pinnerz = pinners = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
              | (PseudoAttacks[BISHOP][s] & pieces(QUEEN, BISHOP))) & sliders;
 
-  while (p)
+  while (pinners)
   {
-      b = between_bb(s, pop_lsb(&p)) & pieces();
+      b = between_bb(s, pop_lsb(&pinners)) & pieces();
 
       if (!more_than_one(b))
           result |= b;
@@ -997,16 +997,15 @@ Value Position::see(Move m) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   if (!stmAttackers)
-       return swapList[0];
+      return swapList[0];
 
-  // Consider absolute pins as long all pinners are on board (as soon a pinner is no longer on board, we fall back to traditional SEE)
+  // Consider absolute pins as long all pinners are on board (as soon a pinner disappears, we fall back to traditional SEE)
   if (stmAttackers && (stmAttackers & st->blockersForKing[stm]) && ((st->pinnersForKing[stm] & (occupied ^ (occupied & to))) == st->pinnersForKing[stm]))
   {
       stmAttackers ^= (stmAttackers & st->blockersForKing[stm]); // remove absolute pinners
       if (!stmAttackers)
-         return swapList[0];
+          return swapList[0];
   }
-
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing

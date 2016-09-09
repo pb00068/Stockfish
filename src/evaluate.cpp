@@ -29,8 +29,6 @@
 #include "material.h"
 #include "pawns.h"
 
-//#include <iostream>
-
 namespace {
 
   namespace Trace {
