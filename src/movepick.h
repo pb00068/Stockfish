@@ -50,10 +50,10 @@ struct Stats {
 
   void update(Piece pc, Square to, Value v) {
 
-    if (abs(int(v)) >= 324)
+    if (abs(int(v)) >= 390)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 1123 : 390);
     table[pc][to] += int(v) * 32;
   }
 
@@ -73,13 +73,13 @@ struct FromToStats {
 
     void update(Color c, Move m, Value v)
     {
-        if (abs(int(v)) >= 324)
+        if (abs(int(v)) >= 390)
             return;
 
         Square f = from_sq(m);
         Square t = to_sq(m);
 
-        table[c][f][t] -= table[c][f][t] * abs(int(v)) / 324;
+        table[c][f][t] -= table[c][f][t] * abs(int(v)) / 390;
         table[c][f][t] += int(v) * 32;
     }
 
