@@ -559,7 +559,8 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, excludedMove, bestMove;
+    ExtMove move;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, nullValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -952,9 +953,16 @@ moves_loop: // When in check search starts from here
                   && pos.see_sign(move) < Value(-35 * lmrDepth * lmrDepth))
                   continue;
           }
-          else if (   depth < 7 * ONE_PLY
-                   && pos.see_sign(move) < Value(-35 * depth / ONE_PLY * depth / ONE_PLY))
-                  continue;
+          else if (   depth < 7 * ONE_PLY)
+          {
+            if (pos.capture(move) && type_of(move) != PROMOTION)
+            {
+               if (move.value < Value(-35 * depth / ONE_PLY * depth / ONE_PLY))
+                   continue;
+            }
+            else if (pos.see_sign(move) < Value(-35 * depth / ONE_PLY * depth / ONE_PLY))
+               continue;
+          }
       }
 
       // Speculative prefetch as early as possible
@@ -999,11 +1007,13 @@ moves_loop: // When in check search starts from here
                   r -= 2 * ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
-              Value val = thisThread->history[moved_piece][to_sq(move)]
-                         +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
-                         +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
-                         +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                         +    thisThread->fromTo.get(~pos.side_to_move(), move);
+              Value val = (!inCheck && move != ttMove) ? move.value :
+                       thisThread->history[moved_piece][to_sq(move)]
+                       +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
+                       +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
+                       +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
+                       +    thisThread->fromTo.get(~pos.side_to_move(), move);
+
               int rHist = (val - 8000) / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
