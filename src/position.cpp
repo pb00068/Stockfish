@@ -426,6 +426,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 
   Bitboard result = 0;
   pinners = 0;
+  Bitboard defensive = pieces(color_of(piece_on(s)));
 
   // Snipers are sliders that attack 's' when a piece is removed
   Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
@@ -438,7 +439,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
        if (!more_than_one(b))
        {
            result |= b;
-           if (b && color_of(piece_on(lsb(b))) == color_of(piece_on(s)))
+           if (b & defensive)
              pinners |= sniperSquare;
        }
   }
