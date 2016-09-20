@@ -974,7 +974,7 @@ Value Position::see(Move m) const {
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
   int slIndex = 1;
-  PieceType captured;
+  PieceType nextVictim;
   Color stm;
 
   assert(is_ok(m));
@@ -1031,25 +1031,42 @@ Value Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  captured = type_of(piece_on(from));
+  nextVictim = type_of(piece_on(from));
+  bool extended = false;
 
   do {
       assert(slIndex < 32);
 
       // Add the new entry to the swap list
-      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
 
       // Locate and remove the next least valuable attacker
-      captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, from);
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, from);
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
       if (stmAttackers && (st->blockersForKing[stm] & from)
-            && type_of(piece_on(from)) != PAWN && type_of(piece_on(from)) != KING) {
+           && !aligned(from, to, square<KING>(stm))) {
+           // && type_of(piece_on(from)) != PAWN && type_of(piece_on(from)) != KING) {
 //            sync_cout << *this << " condition " << (stm != side_to_move()) << " move: " << UCI::move(make_move(from, to),false) <<
 //                " startmove " << UCI::move(m,false) << sync_endl;
 //            abort();
             stmAttackers &= pieces(stm, KING);
+            if (!stmAttackers) // last resort: try to attack the discovered checker
+            {
+                Bitboard checkers = LineBB[square<KING>(stm)][from] & (pieces(~stm, ROOK, BISHOP) | pieces(~stm, QUEEN)) & occupied;
+                if (checkers) {
+                  to = lsb(checkers);
+                  nextVictim =  type_of(piece_on(to));
+                  attackers = attackers_to(to, occupied) & occupied;
+                  stmAttackers = attackers & pieces(stm);
+
+                  if (stmAttackers) {
+                    extended = true;
+                    sync_cout << *this << "  new target is checker on: " << to << " startmove " << UCI::move(m,false) << sync_endl;
+                  }
+                }
+            }
        }
 
       if (   (stmAttackers & pinned_pieces(stm))
@@ -1058,7 +1075,7 @@ Value Position::see(Move m) const {
 
       ++slIndex;
 
-  } while (stmAttackers && (captured != KING || (--slIndex, false))); // Stop before a king capture
+  } while (stmAttackers && (nextVictim != KING || (--slIndex, false))); // Stop before a king capture
 
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
