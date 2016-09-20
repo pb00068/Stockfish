@@ -298,8 +298,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE], si->snipersForKing[WHITE]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK], si->snipersForKing[BLACK]);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -430,20 +430,24 @@ Phase Position::game_phase() const {
 /// or the same of the color of the slider. The pinners bitboard get filled with
 /// real and potential pinners.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& snipers) const {
 
   Bitboard b, p, result = 0;
-
+  snipers = 0;
   // Pinners are sliders that attack 's' when a pinned piece is removed
   pinners = p = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
                  | (PseudoAttacks[BISHOP][s] & pieces(QUEEN, BISHOP))) & sliders;
 
   while (p)
   {
-      b = between_bb(s, pop_lsb(&p)) & pieces();
+      Square sniperSquare = pop_lsb(&p);
+      b = between_bb(s, sniperSquare) & pieces();
 
-      if (!more_than_one(b))
+      if (!more_than_one(b)) {
           result |= b;
+          if (b & pieces(~color_of(piece_on(s))))
+            snipers |= sniperSquare;
+      }
   }
   return result;
 }
@@ -1004,16 +1008,13 @@ Value Position::see(Move m) const {
   // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
-  if (!stmAttackers)
-     return swapList[0];
   occupied ^= to; // For the case when captured piece is a pinner
 
   // If m is a discovered check, the only possible defensive capture on
   // the destination square is a capture by the king to evade the check.
-  if ((st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm)))
-  {
-       //sync_cout << *this << " condition " << (stm != side_to_move()) << " move: " << UCI::move(m,false) << sync_endl;
+  if ((st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm))) {
        stmAttackers &= pieces(stm, KING);
+       assert(st->snipersForKing[stm]);
   }
   // Don't allow pinned pieces to attack as long all pinners (this includes also
   // potential ones) are on their original square. When a pinner moves to the
@@ -1044,13 +1045,8 @@ Value Position::see(Move m) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (stmAttackers && (st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm)))
-      {
-//            sync_cout << *this << " condition " << (stm != side_to_move()) << " move: " << UCI::move(make_move(from, to),false) <<
-//                " startmove " << UCI::move(m,false) << sync_endl;
-//            abort();
-            stmAttackers &= pieces(stm, KING);
-       }
+      if (stmAttackers && ((st->snipersForKing[stm] & occupied) == st->snipersForKing[stm]) && (st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm)))
+          stmAttackers &= pieces(stm, KING);
 
       if (   (stmAttackers & pinned_pieces(stm))
           && (st->pinnersForKing[stm] & occupied) == st->pinnersForKing[stm])
