@@ -1010,8 +1010,8 @@ Value Position::see(Move m) const {
 
   // If m is a discovered check, the only possible defensive capture on
   // the destination square is a capture by the king to evade the check.
-  if ((st->blockersForKing[stm] & from)
-       && type_of(piece_on(from)) != PAWN && type_of(piece_on(from)) != KING) {
+  if ((st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm)))
+  {
        //sync_cout << *this << " condition " << (stm != side_to_move()) << " move: " << UCI::move(m,false) << sync_endl;
        stmAttackers &= pieces(stm, KING);
   }
@@ -1044,8 +1044,8 @@ Value Position::see(Move m) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      if (stmAttackers && (st->blockersForKing[stm] & from)
-            && type_of(piece_on(from)) != PAWN && type_of(piece_on(from)) != KING) {
+      if (stmAttackers && (st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm)))
+      {
 //            sync_cout << *this << " condition " << (stm != side_to_move()) << " move: " << UCI::move(make_move(from, to),false) <<
 //                " startmove " << UCI::move(m,false) << sync_endl;
 //            abort();
