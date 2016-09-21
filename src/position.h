@@ -164,6 +164,7 @@ private:
   void set_castling_right(Color c, Square rfrom);
   void set_state(StateInfo* si) const;
   void set_check_info(StateInfo* si) const;
+  void handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const;
 
   // Other helpers
   void put_piece(Piece pc, Square s);
