@@ -66,12 +66,12 @@ namespace {
 
 
   template<GenType Type, Square Delta>
-  ExtMove* make_promotions(ExtMove* moveList, Square to, Square ksq) {
+  ExtMove* make_promotions(ExtMove* moveList, Square to, Square ksq, bool capture) {
 
     if (Type == CAPTURES || Type == EVASIONS || Type == NON_EVASIONS)
         *moveList++ = make<PROMOTION>(to - Delta, to, QUEEN);
 
-    if (Type == QUIETS || Type == EVASIONS || Type == NON_EVASIONS)
+    if ((Type == QUIETS && !capture) || (Type == CAPTURES && capture) || Type == EVASIONS || Type == NON_EVASIONS)
     {
         *moveList++ = make<PROMOTION>(to - Delta, to, ROOK);
         *moveList++ = make<PROMOTION>(to - Delta, to, BISHOP);
@@ -175,13 +175,13 @@ namespace {
         Square ksq = pos.square<KING>(Them);
 
         while (b1)
-            moveList = make_promotions<Type, Right>(moveList, pop_lsb(&b1), ksq);
+            moveList = make_promotions<Type, Right>(moveList, pop_lsb(&b1), ksq, true);
 
         while (b2)
-            moveList = make_promotions<Type, Left >(moveList, pop_lsb(&b2), ksq);
+            moveList = make_promotions<Type, Left >(moveList, pop_lsb(&b2), ksq, true);
 
         while (b3)
-            moveList = make_promotions<Type, Up   >(moveList, pop_lsb(&b3), ksq);
+            moveList = make_promotions<Type, Up   >(moveList, pop_lsb(&b3), ksq, false);
     }
 
     // Standard and en-passant captures
