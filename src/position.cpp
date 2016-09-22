@@ -971,29 +971,25 @@ Value Position::see_sign(Move m) const {
 }
 
 // In case of discovered check we  try to evade our king by capture on to, if that not works try to attack the checker
-void Position::handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const {
-  stmAttackers &= pieces(stm, KING);
-  //dbg_hit_on(stmAttackers);
-  if (stmAttackers)
-    return;
-  if (!(occupied & to))
-    occupied ^= to; // For handling this correct must have this set, example Nxa2 in r1b1k2r/ppp2ppp/5n2/q3P3/1nP5/5N2/PP3PPP/RN1QKB1R b KQkq - 0 9
-  Square kingsq = square<KING>(stm);
-  Bitboard snipers = st->snipersForKing[stm] & occupied & pieces(~stm);
-  while (snipers) {
-    Square checkerSquare = pop_lsb(&snipers);
-    if (!(between_bb(checkerSquare, kingsq) & occupied)) {
-      // effectively a discovered check and now we know the checker square
-      attackers = attackers_to(checkerSquare, occupied) & occupied;
-      stmAttackers = attackers & pieces(stm);
-      if (stmAttackers) {
-        to = checkerSquare;
-        nextVictim = type_of(piece_on(checkerSquare));
-      }
-      break;
-    }
-  }
-}
+//void Position::handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const {
+////  stmAttackers &= pieces(stm, KING);
+////  if (stmAttackers)
+////    return;
+//  if (!(occupied & to))
+//    occupied ^= to; // For handling this correct must have this set, example Nxa2 in r1b1k2r/ppp2ppp/5n2/q3P3/1nP5/5N2/PP3PPP/RN1QKB1R b KQkq - 0 9
+//  //Square kingsq = square<KING>(stm);
+//  //Bitboard snipers = st->snipersForKing[stm] & occupied;
+//  //dbg_hit_on(snipers & !more_than_one(snipers));
+//
+//  Square checkerSquare = lsb(st->snipersForKing[stm]);
+//  //if (!(between_bb(checkerSquare, kingsq) & occupied)) { also this is 99% true
+//  attackers = attackers_to(checkerSquare, occupied) & occupied;
+//  stmAttackers = attackers & pieces(stm);
+//  if (stmAttackers) {
+//     to = checkerSquare;
+//     nextVictim = type_of(piece_on(checkerSquare));
+//  }
+//}
 
 Value Position::see(Move m) const {
 
@@ -1005,6 +1001,7 @@ Value Position::see(Move m) const {
   Color stm;
 
   assert(is_ok(m));
+ // bool change = false;
 
   from = from_sq(m);
   to = to_sq(m);
@@ -1030,6 +1027,9 @@ Value Position::see(Move m) const {
 
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
+  // If the opponent has no attackers we are finished
+  if (!stmAttackers)
+      return swapList[0];
   occupied ^= to; // For the case when captured piece is a pinner
   nextVictim = type_of(piece_on(from));
 
@@ -1037,7 +1037,25 @@ Value Position::see(Move m) const {
   if (   (st->blockersForKing[stm] & from)
       && type_of(piece_on(from)) != KING
       && type_of(piece_on(from)) != PAWN)
-      handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
+  {
+    stmAttackers &= pieces(stm, KING);
+    if (!stmAttackers || (attackers & pieces(~stm) & occupied))
+    { // if king cannot reach to or would move into check then try to attack the discov. checker
+      if (!(occupied & to))
+        occupied ^= to; // For handling this correct must have this set, example Nxa2 in r1b1k2r/ppp2ppp/5n2/q3P3/1nP5/5N2/PP3PPP/RN1QKB1R b KQkq - 0 9
+
+      Square checkerSquare = lsb(st->snipersForKing[stm]);
+      //if (!(between_bb(checkerSquare, kingsq) & occupied)) { also this is 99% true
+      attackers = attackers_to(checkerSquare, occupied) & occupied;
+      stmAttackers = attackers & pieces(stm);
+      if (stmAttackers) {
+         to = checkerSquare;
+         nextVictim = type_of(piece_on(checkerSquare));
+        // change=true;
+      }
+    }
+  }
+
 
   // Don't allow pinned pieces to attack pieces except the king as long all
   // snipers (= enemy sliders in line with our king) are on their original square.
@@ -1045,8 +1063,12 @@ Value Position::see(Move m) const {
     stmAttackers &= ~st->blockersForKing[stm];
 
   // If the opponent has no attackers we are finished
-  if (!stmAttackers)
+  if (!stmAttackers) {
+//    if (change) {
+//       sync_cout << *this << "\nsee " << swapList[0] << " mov: " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(from, to),false) << sync_endl;
+//     }
       return swapList[0];
+  }
 
   // Prepare for both colors the discovered check candidates which might attack "to"
   Bitboard b = pieces() ^ pieces(KING);
@@ -1080,7 +1102,23 @@ Value Position::see(Move m) const {
       // If the last capture was a discovered check, the only next possible capture
       // on the destination square is a capture by the king to evade the check.
       if (dcAttackers)
-         handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
+      {
+          stmAttackers &= pieces(stm, KING);
+          if ((!stmAttackers || (attackers & pieces(~stm))) && (st->snipersForKing[stm] & occupied))
+          {
+            if (!(occupied & to))
+              occupied ^= to;
+
+            Square checkerSquare = lsb(st->snipersForKing[stm]);
+            attackers = attackers_to(checkerSquare, occupied) & occupied;
+            stmAttackers = attackers & pieces(stm);
+            if (stmAttackers) {
+               to = checkerSquare;
+               nextVictim = type_of(piece_on(checkerSquare));
+               //change=true;
+            }
+          }
+      }
 
       // Don't allow pinned pieces to attack pieces except the king
       if (   nextVictim != KING
@@ -1096,6 +1134,9 @@ Value Position::see(Move m) const {
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
+//  if (change) {
+//    sync_cout << *this << "\nsee " << swapList[0] << " mov: " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(from, to),false) << sync_endl;
+//  }
   return swapList[0];
 }
 
