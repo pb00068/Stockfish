@@ -171,6 +171,7 @@ private:
   void move_piece(Piece pc, Square from, Square to);
   template<bool Do>
   void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
+  void handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const;
 
   // Data members
   Piece board[SQUARE_NB];

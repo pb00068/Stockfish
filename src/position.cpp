@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -55,7 +56,7 @@ const string PieceToChar(" PNBRQK  pnbrqk");
 // valuable attacker for the side to move, remove the attacker we just found
 // from the bitboards and scan for new X-ray attacks behind it.
 
-template<int Pt>
+template<int Pt = PAWN>
 PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
                        Bitboard& occupied, Bitboard& attackers) {
 
@@ -79,6 +80,7 @@ template<>
 PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
   return KING; // No need to update bitboards: it is the last cycle
 }
+
 
 } // namespace
 
@@ -971,6 +973,26 @@ Value Position::see_sign(Move m) const {
   return see(m);
 }
 
+// In case of discovered check we first try to directly attack the checker instead to evade our king by capture
+void Position::handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const {
+  Square kingsq = square<KING>(stm);
+  Bitboard snipers = (  (PseudoAttacks[ROOK  ][kingsq] & pieces(QUEEN, ROOK))
+                      | (PseudoAttacks[BISHOP][kingsq] & pieces(QUEEN, BISHOP))) & occupied & pieces(~stm);
+  while (snipers) {
+    Square checkerSquare = pop_lsb(&snipers);
+    if (!(between_bb(checkerSquare, kingsq) & occupied)) {
+      // effectively a discovered check and now we know the checker square
+      attackers = attackers_to(checkerSquare, occupied) & occupied;
+      stmAttackers = attackers & pieces(stm);
+      if (stmAttackers) {
+        to = checkerSquare;
+        nextVictim = type_of(piece_on(checkerSquare));
+      }
+      break;
+    }
+  }
+}
+
 Value Position::see(Move m) const {
 
   Square from, to;
@@ -1004,18 +1026,35 @@ Value Position::see(Move m) const {
   // removed, but possibly an X-ray attacker added behind it.
   attackers = attackers_to(to, occupied) & occupied;
 
-  // If the opponent has no attackers we are finished
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   occupied ^= to; // For the case when captured piece is a pinner
+  nextVictim = type_of(piece_on(from));
+
+  // If m is a discovered check, the only possible defensive capture on
+  // the destination square is a capture by the king to evade the check.
+  if (   (st->blockersForKing[stm] & from)
+      && type_of(piece_on(from)) != KING
+      && type_of(piece_on(from)) != PAWN)
+  {
+      stmAttackers &= pieces(stm, KING);
+      if (!stmAttackers)
+        handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
+  }
 
   // Don't allow pinned pieces to attack pieces except the king as long all
   // pinners are on their original square.
   if (!(st->pinnersForKing[stm] & ~occupied))
-      stmAttackers &= ~st->blockersForKing[stm];
+    stmAttackers &= ~st->blockersForKing[stm];
 
+  // If the opponent has no attackers we are finished
   if (!stmAttackers)
-        return swapList[0];
+      return swapList[0];
+
+  // Prepare for both colors the discovered check candidates which might attack "to"
+  Bitboard b = pieces() ^ pieces(KING);
+  Bitboard dcCandidates[2] = { b & st->blockersForKing[BLACK] & ~LineBB[to][square<KING>(BLACK)],
+                               b & st->blockersForKing[WHITE] & ~LineBB[to][square<KING>(WHITE)] };
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1023,7 +1062,6 @@ Value Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  nextVictim = type_of(piece_on(from));
 
   do {
       assert(slIndex < 32);
@@ -1031,10 +1069,29 @@ Value Position::see(Move m) const {
       // Add the new entry to the swap list
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
 
-      // Locate and remove the next least valuable attacker
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      // Locate and remove the next least valuable attacker, starting
+      // with the discovered check candidates
+      Bitboard dcAttackers = stmAttackers & dcCandidates[stm];
+      nextVictim = dcAttackers ? min_attacker(byTypeBB, to, dcAttackers , occupied, attackers)
+                               : min_attacker(byTypeBB, to, stmAttackers, occupied, attackers);
+
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
+
+      // If the last capture was a discovered check, the only next possible capture
+      // on the destination square is a capture by the king to evade the check.
+      if (dcAttackers) {
+          stmAttackers &= pieces(stm, KING);
+          if (!stmAttackers) {
+              //Square orig = to;
+              handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
+//              if (orig != to) {
+//                //sync_cout << *this << " ses move: " << UCI::move(m, false) << " newtarget: " << UCI::move(make_move(from, to),false) << "\ndc-candidates " <<
+//                //    Bitboards::pretty(dcCandidates[~stm]) << sync_endl;
+//                dcCandidates[~stm] = 0;
+//              }
+          }
+      }
 
       // Don't allow pinned pieces to attack pieces except the king
       if (   nextVictim != KING
