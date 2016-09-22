@@ -298,8 +298,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->snipersForKing[WHITE]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->snipersForKing[BLACK]);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -429,13 +429,12 @@ Phase Position::game_phase() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& sniperz) const {
 
   Bitboard result = 0;
-  pinners = 0;
 
   // Snipers are sliders that attack 's' when a piece is removed
-  Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
+  Bitboard snipers = sniperz =(  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
                       | (PseudoAttacks[BISHOP][s] & pieces(QUEEN, BISHOP))) & sliders;
 
   while (snipers)
@@ -446,8 +445,6 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
     if (!more_than_one(b))
     {
         result |= b;
-        if (b & pieces(color_of(piece_on(s))))
-            pinners |= sniperSq;
     }
   }
   return result;
@@ -973,11 +970,16 @@ Value Position::see_sign(Move m) const {
   return see(m);
 }
 
-// In case of discovered check we first try to directly attack the checker instead to evade our king by capture
+// In case of discovered check we  try to evade our king by capture on to, if that not works try to attack the checker
 void Position::handleDiscoveredChecker(Color stm, Bitboard occupied, Bitboard& attackers, Bitboard& stmAttackers, PieceType& nextVictim, Square& to) const {
+  stmAttackers &= pieces(stm, KING);
+  //dbg_hit_on(stmAttackers);
+  if (stmAttackers)
+    return;
+  if (!(occupied & to))
+    occupied ^= to; // For handling this correct must have this set, example Nxa2 in r1b1k2r/ppp2ppp/5n2/q3P3/1nP5/5N2/PP3PPP/RN1QKB1R b KQkq - 0 9
   Square kingsq = square<KING>(stm);
-  Bitboard snipers = (  (PseudoAttacks[ROOK  ][kingsq] & pieces(QUEEN, ROOK))
-                      | (PseudoAttacks[BISHOP][kingsq] & pieces(QUEEN, BISHOP))) & occupied & pieces(~stm);
+  Bitboard snipers = st->snipersForKing[stm] & occupied & pieces(~stm);
   while (snipers) {
     Square checkerSquare = pop_lsb(&snipers);
     if (!(between_bb(checkerSquare, kingsq) & occupied)) {
@@ -1031,20 +1033,15 @@ Value Position::see(Move m) const {
   occupied ^= to; // For the case when captured piece is a pinner
   nextVictim = type_of(piece_on(from));
 
-  // If m is a discovered check, the only possible defensive capture on
-  // the destination square is a capture by the king to evade the check.
+  // If m is a discovered check, the only 2 captures are possible: KxTo or someone other attacks the discovered checker
   if (   (st->blockersForKing[stm] & from)
       && type_of(piece_on(from)) != KING
       && type_of(piece_on(from)) != PAWN)
-  {
-      stmAttackers &= pieces(stm, KING);
-      if (!stmAttackers)
-        handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
-  }
+      handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
 
   // Don't allow pinned pieces to attack pieces except the king as long all
-  // pinners are on their original square.
-  if (!(st->pinnersForKing[stm] & ~occupied))
+  // snipers (= enemy sliders in line with our king) are on their original square.
+  if (!(st->snipersForKing[stm] & ~occupied))
     stmAttackers &= ~st->blockersForKing[stm];
 
   // If the opponent has no attackers we are finished
@@ -1055,6 +1052,8 @@ Value Position::see(Move m) const {
   Bitboard b = pieces() ^ pieces(KING);
   Bitboard dcCandidates[2] = { b & st->blockersForKing[BLACK] & ~LineBB[to][square<KING>(BLACK)],
                                b & st->blockersForKing[WHITE] & ~LineBB[to][square<KING>(WHITE)] };
+  if (nextVictim == KING)
+    dcCandidates[stm] = 0;
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1080,22 +1079,12 @@ Value Position::see(Move m) const {
 
       // If the last capture was a discovered check, the only next possible capture
       // on the destination square is a capture by the king to evade the check.
-      if (dcAttackers) {
-          stmAttackers &= pieces(stm, KING);
-          if (!stmAttackers) {
-              //Square orig = to;
-              handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
-//              if (orig != to) {
-//                //sync_cout << *this << " ses move: " << UCI::move(m, false) << " newtarget: " << UCI::move(make_move(from, to),false) << "\ndc-candidates " <<
-//                //    Bitboards::pretty(dcCandidates[~stm]) << sync_endl;
-//                dcCandidates[~stm] = 0;
-//              }
-          }
-      }
+      if (dcAttackers)
+         handleDiscoveredChecker(stm, occupied, attackers, stmAttackers, nextVictim, to);
 
       // Don't allow pinned pieces to attack pieces except the king
       if (   nextVictim != KING
-          && !(st->pinnersForKing[stm] & ~occupied))
+          && !(st->snipersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
       ++slIndex;
