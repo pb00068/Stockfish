@@ -1059,7 +1059,7 @@ Value Position::see(Move m) const {
 
   // Don't allow pinned pieces to attack pieces except the king as long all
   // snipers (= enemy sliders in line with our king) are on their original square.
-  if (!(st->snipersForKing[stm] & ~occupied))
+  if ( (stmAttackers & st->blockersForKing[stm]) && !(st->snipersForKing[stm] & ~occupied))
     stmAttackers &= ~st->blockersForKing[stm];
 
   // If the opponent has no attackers we are finished
@@ -1122,6 +1122,7 @@ Value Position::see(Move m) const {
 
       // Don't allow pinned pieces to attack pieces except the king
       if (   nextVictim != KING
+          && (stmAttackers & st->blockersForKing[stm])
           && !(st->snipersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
