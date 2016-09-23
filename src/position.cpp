@@ -1016,7 +1016,8 @@ Value Position::see(Move m) const {
   nextVictim = type_of(piece_on(from));
   // If m is a discovered check, the only possible recapture on
   // the exchange square is a capture by the king
-  if ((st->blockersForKing[stm] & from) && nextVictim != PAWN && nextVictim != KING)
+  if ((st->blockersForKing[stm] & from) &&
+      ((nextVictim != PAWN && nextVictim != KING) || (stmAttackers && !aligned(from, to, square<KING>(stm)))))
         stmAttackers &= pieces(stm, KING);
 
   occupied ^= to; // For the case when captured piece is a pinner
@@ -1049,8 +1050,7 @@ Value Position::see(Move m) const {
       stmAttackers = attackers & pieces(stm);
 
       if ((st->blockersForKing[stm] & fromb)
-          && nextVictim != PAWN
-          && nextVictim != KING)
+          && ((nextVictim != PAWN && nextVictim != KING) || (stmAttackers && !aligned(lsb(fromb), to, square<KING>(stm)))))
           stmAttackers &= pieces(stm, KING);
 
       // Don't allow pinned pieces to attack pieces except the king
