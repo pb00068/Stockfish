@@ -298,8 +298,20 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE], si->dcLine[WHITE]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK], si->dcLine[BLACK]);
+  for (Color c = WHITE; true; c=~c) {
+    si->blockersForKing[c] = slider_blockers(pieces(~c), square<KING>(c), si->pinnersForKingAndQueen[c]);
+    Bitboard queen = pieces(c, QUEEN);
+    if (queen) {
+      Bitboard pinners;
+      si->blockersForKingAndQueen[c] = si->blockersForKing[c] | slider_blockers(pieces(~c, ROOK, BISHOP), lsb(queen), pinners);
+      si->pinnersForKingAndQueen[c] |= pinners;
+    }
+    if (c == BLACK)
+      break;
+  }
+
+
+
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -429,10 +441,10 @@ Phase Position::game_phase() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& dcLine) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
 
   Bitboard result = 0;
-  pinners = dcLine = 0;
+  pinners = 0;
 
   // Snipers are sliders that attack 's' when a piece is removed
   Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
@@ -449,8 +461,6 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         result |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
-        else if (b & pieces(~color_of(piece_on(s))))
-        	dcLine = bt | sniperSq;
     }
   }
   return result;
@@ -1011,15 +1021,18 @@ Value Position::see(Move m) const {
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   occupied ^= to; // For the case when captured piece is a pinner
+  nextVictim = type_of(piece_on(from));
 
-  // If m is a discovered check, the only possible defensive capture on
-  // the destination square is a capture by the king to evade the check.
-  if (   (st->blockersForKing[stm] & from) && !(st->dcLine[stm] & to))
-      stmAttackers &= pieces(stm, KING);
+//  // If m is a discovered check, the only possible defensive capture on
+//  // the destination square is a capture by the king to evade the check.
+//  if (   (st->blockersForKing[stm] & from)
+//      && nextVictim != KING
+//      && nextVictim != PAWN)
+//      stmAttackers &= pieces(stm, KING);
 
   // Don't allow pinned pieces to attack pieces except the king as long all
   // pinners are on their original square.
-  if (!(st->pinnersForKing[stm] & ~occupied))
+  if (!(st->pinnersForKingAndQueen[stm] & ~occupied))
       stmAttackers &= ~st->blockersForKing[stm];
 
   // If the opponent has no attackers we are finished
@@ -1032,7 +1045,7 @@ Value Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  nextVictim = type_of(piece_on(from));
+
 
   do {
       assert(slIndex < 32);
@@ -1045,15 +1058,17 @@ Value Position::see(Move m) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      // If the last capture was a discovered check, the only next possible capture 
-      // on the destination square is a capture by the king to evade the check.
-      // last term is to verify if the discovered checker is still on it's place
-      if (   (st->blockersForKing[stm] & fromb) && !(st->dcLine[stm] & to) && (st->dcLine[stm] & occupied))
-          stmAttackers &= pieces(stm, KING);
+//      // If the last capture was a discovered check, the only next possible capture
+//      // on the destination square is a capture by the king to evade the check.
+//      // last term is to verify if the discovered checker is still on it's place
+//      if (   (st->blockersForKing[stm] & fromb)
+//          &&  nextVictim != KING
+//          &&  nextVictim != PAWN)
+//          stmAttackers &= pieces(stm, KING);
 
       // Don't allow pinned pieces to attack pieces except the king
       if (   nextVictim != KING
-          && !(st->pinnersForKing[stm] & ~occupied))
+          && !(st->pinnersForKingAndQueen[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
       ++slIndex;

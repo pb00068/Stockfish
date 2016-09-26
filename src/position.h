@@ -52,8 +52,8 @@ struct StateInfo {
   Piece      capturedPiece;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
-  Bitboard   pinnersForKing[COLOR_NB];
-  Bitboard   dcLine[COLOR_NB]; // line along which moving dc-candidate not does discover a check
+  Bitboard   blockersForKingAndQueen[COLOR_NB];
+  Bitboard   pinnersForKingAndQueen[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
 
@@ -111,7 +111,7 @@ public:
   Bitboard attacks_from(Piece pc, Square s) const;
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& dcLine) const;
+  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -159,6 +159,7 @@ public:
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = nullptr) const;
   void flip();
+  StateInfo* st;
 
 private:
   // Initialization helpers (used while setting up a position)
@@ -187,7 +188,7 @@ private:
   int gamePly;
   Color sideToMove;
   Thread* thisThread;
-  StateInfo* st;
+
   bool chess960;
 };
 
