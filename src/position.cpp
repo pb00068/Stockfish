@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -809,6 +810,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
+  std::memset(st->attacks, 0, 64 * sizeof(Bitboard));
+
   assert(pos_is_ok());
 }
 
@@ -872,7 +875,7 @@ void Position::undo_move(Move m) {
   // Finally point our state pointer back to the previous state
   st = st->previous;
   --gamePly;
-
+  //std::memset(st->attacks, 0, 64 * sizeof(Bitboard));
   assert(pos_is_ok());
 }
 
@@ -999,10 +1002,22 @@ Value Position::see(Move m) const {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
       swapList[0] = PieceValue[MG][PAWN];
   }
+  nextVictim = type_of(piece_on(from));
+
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied;
+  if (!st->attacks[to]) {
+    st->attacks[to] = (attackers_to(to, pieces()) - 1);
+  }
+  attackers  = (st->attacks[to] + 1) & occupied;
+
+  if (nextVictim == PAWN || nextVictim == BISHOP || nextVictim == QUEEN)
+          attackers |= attacks_bb<BISHOP>(to, occupied) & (byTypeBB[BISHOP] | byTypeBB[QUEEN]);
+
+  if (nextVictim == ROOK || nextVictim == QUEEN || ((nextVictim == PAWN || nextVictim == KING) && (!swapList[0] || type_of(m) == ENPASSANT)))
+          attackers |= attacks_bb<ROOK>(to, occupied) & (byTypeBB[ROOK] | byTypeBB[QUEEN]);
+  attackers ^= (attackers & from);
 
   // If the opponent has no attackers we are finished
   stm = ~stm;
@@ -1023,7 +1038,7 @@ Value Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  nextVictim = type_of(piece_on(from));
+
 
   do {
       assert(slIndex < 32);

@@ -54,6 +54,7 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
+  Bitboard   attacks[SQUARE_NB];
 };
 
 // In a std::deque references to elements are unaffected upon resizing
