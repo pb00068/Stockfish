@@ -998,7 +998,12 @@ Value Position::see(Move m) const {
   {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
       swapList[0] = PieceValue[MG][PAWN];
+      nextVictim = PAWN;
   }
+  else if (type_of(m) == PROMOTION)
+    nextVictim = promotion_type(m);
+  else
+    nextVictim = type_of(piece_on(from));
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
@@ -1023,7 +1028,7 @@ Value Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  nextVictim = type_of(piece_on(from));
+
 
   do {
       assert(slIndex < 32);
