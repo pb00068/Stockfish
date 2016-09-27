@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -320,7 +321,7 @@ void Position::set_state(StateInfo* si) const {
   si->key = si->pawnKey = si->materialKey = 0;
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
   si->psq = SCORE_ZERO;
-  si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+
 
   set_check_info(si);
 
@@ -346,14 +347,46 @@ void Position::set_state(StateInfo* si) const {
       si->pawnKey ^= Zobrist::psq[piece_on(s)][s];
   }
 
-  for (Piece pc : Pieces)
+  int ptn=0, pn =0, pt = 0;
+  for (Piece pc : Piecez)
   {
       if (type_of(pc) != PAWN && type_of(pc) != KING)
           si->nonPawnMaterial[color_of(pc)] += pieceCount[pc] * PieceValue[MG][pc];
 
+      pn+= pieceCount[pc];
+
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
+
+      if ((ptn % 2) == 1 && pn) {
+        si->pieceTypeSeq[pt++] = type_of(pc);
+      }
+
+      if (!(++ptn % 2))
+         pn=0;
+
   }
+  si->pieceTypeSeq[pt] = KING;
+
+//  {
+//      PieceType pt;
+//      ptn=0;
+//      sync_cout << *this << " initial types on board " << sync_endl;
+//      do
+//      {
+//        pt = st->pieceTypeSeq[ptn++];
+//        sync_cout << pt << " ";
+//
+//      } while (pt != KING && ptn <6);
+//
+//      sync_cout << sync_endl;
+//      for (Piece pc : Piecez) {
+//        sync_cout << "  pc " << pc << " count: " << pieceCount[pc];
+//      }
+//      sync_cout << sync_endl;
+//  }
+
+  si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 }
 
 
@@ -455,14 +488,62 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
 /// given square. Slider attacks use the occupied bitboard to indicate occupancy.
 
+
 Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 
-  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
-        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
-        | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
-        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
-        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
-        | (attacks_from<KING>(s)           & pieces(KING));
+  Bitboard ret = attacks_from<KING>(s) & pieces(KING);
+  int ptn = 0;
+  bool bishops = false, rooks = false;
+  while (true) {
+    PieceType pt = st->pieceTypeSeq[ptn++];
+    switch (pt) {
+      case PAWN: ret |= (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+                     |  (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN));
+                 break;
+      case KNIGHT: ret |= (attacks_from<KNIGHT>(s)         & pieces(KNIGHT)); break;
+
+      case BISHOP: ret |= (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN)); bishops = true; break;
+
+      case ROOK:   ret |= (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN)); rooks = true; break;
+
+      case QUEEN:  if (!bishops)
+                      ret |= (attacks_bb<BISHOP>(s, occupied) & pieces(QUEEN));
+                   if (!rooks)
+                      ret |= (attacks_bb<ROOK>(s, occupied) & pieces(QUEEN));
+                   break;
+      case KING:
+      default:  return ret;
+    }
+//    if (pt == KING)
+//      break;
+  }
+
+  return 0;
+//  Bitboard ret2 =
+//          (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+//        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+//        | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
+//        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+//        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+//        | (attacks_from<KING>(s)           & pieces(KING));
+//
+//  if (ret != ret2) {
+//    sync_cout << " problem on pos " << *this << sync_endl;
+//    {
+//        int ptn=0;
+//        PieceType pt;
+//        sync_cout << *this << " types on board " << sync_endl;
+//        do
+//        {
+//          pt = st->pieceTypeSeq[ptn++];
+//          sync_cout << pt << " ";
+//
+//        } while (pt != KING && ptn < 6);
+//
+//        sync_cout << sync_endl;
+//      }
+//  }
+//  return ret;
 }
 
 
@@ -801,6 +882,29 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update the key with the final value
   st->key = k;
 
+  int pt, pts=0;
+  for (pt=1; pt<6; pt++)
+  {
+      if (pieceCount[pt] + pieceCount[pt+8]) {
+        st->pieceTypeSeq[pts++] = (PieceType)pt;
+      }
+  }
+  st->pieceTypeSeq[pts] = KING;
+
+//  if (!(nodes % 1000))
+//  {
+//    int ptn=0;
+//    sync_cout << *this << " types on board " << sync_endl;
+//    do
+//    {
+//      pt = st->pieceTypeSeq[ptn++];
+//      sync_cout << pt << " ";
+//
+//    } while (pt != KING && ptn < 6);
+//
+//    sync_cout << sync_endl;
+//  }
+
   // Calculate checkers bitboard (if move gives check)
   st->checkersBB = givesCheck ? attackers_to(square<KING>(them)) & pieces(us) : 0;
 
@@ -868,6 +972,15 @@ void Position::undo_move(Move m) {
           put_piece(st->capturedPiece, capsq); // Restore the captured piece
       }
   }
+
+//  int pt, pts=0;
+//  for (pt=1; pt<6; pt++)
+//  {
+//      if (pieceCount[pt] + pieceCount[pt+8]) {
+//        st->pieceTypeSeq[pts++] = (PieceType)pt;
+//      }
+//  }
+//  st->pieceTypeSeq[pts] = KING;
 
   // Finally point our state pointer back to the previous state
   st = st->previous;

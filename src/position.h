@@ -45,6 +45,7 @@ struct StateInfo {
   int    pliesFromNull;
   Score  psq;
   Square epSquare;
+  PieceType pieceTypeSeq[8]; // piece types on board ordered by type-value asc
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;

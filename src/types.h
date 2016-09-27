@@ -207,6 +207,9 @@ enum Piece {
 
 const Piece Pieces[] = { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
                          B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING };
+
+const Piece Piecez[] = { W_PAWN, B_PAWN, W_KNIGHT, B_KNIGHT, W_BISHOP, B_BISHOP, W_ROOK, B_ROOK, W_QUEEN, B_QUEEN, W_KING, B_KING };
+
 extern Value PieceValue[PHASE_NB][PIECE_NB];
 
 enum Depth {
