@@ -203,7 +203,7 @@ void Search::init() {
   }
 
   for (int d = 0; d < MAX_PLY+2; ++d)
-     Bonus[d] = Value(pow(d, 1.96) + 4 * d - 4);
+     Bonus[d] = Value(pow(d, 1.86) + 8 * d - 8);
 }
 
 
