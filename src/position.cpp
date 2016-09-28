@@ -444,13 +444,12 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
     Bitboard bt = between_bb(s, sniperSq);
     Bitboard b = bt & pieces();
 
-    if (!more_than_one(b))
+    if (b && !more_than_one(b))
     {
         result |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
-        else if (b & pieces(~color_of(piece_on(s))))
-        	dcLine = bt | sniperSq;
+        else dcLine = bt; // | sniperSq;
     }
   }
   return result;
@@ -603,6 +602,7 @@ bool Position::gives_check(Move m) const {
   // Is there a discovered check?
   if (   (discovered_check_candidates() & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
+      //&& !(st->dcLine[~sideToMove] & to)) produces same bench but not reliable in case of more dc-candidates
       return true;
 
   switch (type_of(m))
@@ -1048,7 +1048,7 @@ Value Position::see(Move m) const {
       // If the last capture was a discovered check, the only next possible capture 
       // on the destination square is a capture by the king to evade the check.
       // last term is to verify if the discovered checker is still on it's place
-      if (   (st->blockersForKing[stm] & fromb) && !(st->dcLine[stm] & to) && (st->dcLine[stm] & occupied))
+      if (   (st->blockersForKing[stm] & fromb) && !(st->dcLine[stm] & to)) // && (st->dcLine[stm] & occupied))
           stmAttackers &= pieces(stm, KING);
 
       // Don't allow pinned pieces to attack pieces except the king
