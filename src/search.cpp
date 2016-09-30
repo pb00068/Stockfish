@@ -71,7 +71,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
-  Value Bonus[MAX_PLY + 2];
+  Value Bonus[2][MAX_PLY + 2];
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -202,8 +202,10 @@ void Search::init() {
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
 
-  for (int d = 0; d < MAX_PLY+2; ++d)
-     Bonus[d] = Value(pow(d, 1.86) + 8 * d - 8);
+  for (int d = 0; d < MAX_PLY+2; ++d) {
+     Bonus[0][d] = Value(pow(d, 1.8) + 10 * d - 10);
+     Bonus[1][d] = Value(pow(d, 2  ) +  2 * d -  2);
+  }
 }
 
 
@@ -648,13 +650,13 @@ namespace {
             int d = depth / ONE_PLY;
 
             if (!pos.capture_or_promotion(ttMove))
-                update_stats(pos, ss, ttMove, nullptr, 0, Bonus[d]);
+                update_stats(pos, ss, ttMove, nullptr, 0, Bonus[thisThread->rootDepth >= 17][d]);
 
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             {
                 Square prevSq = to_sq((ss-1)->currentMove);
-                update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[d+1]);
+                update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth >= 17][d+1]);
             }
         }
         return ttValue;
@@ -1130,14 +1132,14 @@ moves_loop: // When in check search starts from here
 
         // Quiet best move: update killers, history and countermoves
         if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, Bonus[d]);
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, Bonus[thisThread->rootDepth >= 17][d]);
 
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
         {
             Square prevSq = to_sq((ss-1)->currentMove);
-            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[d+1]);
+            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth >= 17][d+1]);
         }
     }
     // Bonus for prior countermove that caused the fail low
@@ -1147,7 +1149,7 @@ moves_loop: // When in check search starts from here
     {
         int d = depth / ONE_PLY;
         Square prevSq = to_sq((ss-1)->currentMove);
-        update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, Bonus[d]);
+        update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, Bonus[thisThread->rootDepth >= 17][d]);
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
