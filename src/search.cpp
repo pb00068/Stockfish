@@ -888,7 +888,7 @@ moves_loop: // When in check search starts from here
 
       // Step 12. Extend checks
       if (    givesCheck
-          && !moveCountPruning
+          && (!moveCountPruning || (pos.discovered_check_candidates() && !(pos.discovered_check_candidates() & from_sq(move))) || pos.pinned_pieces(~pos.side_to_move()))
           &&  pos.see_sign(move) >= VALUE_ZERO)
           extension = ONE_PLY;
 
