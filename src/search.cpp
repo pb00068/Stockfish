@@ -203,9 +203,7 @@ void Search::init() {
   }
 
   for (int d = 0; d < MAX_PLY+2; ++d)
-     Bonus[d] = Value(pow(d, 2.184) + 10 * d - 10);
-
-//  sync_cout << " bonus 17: " << Bonus[17] << sync_endl; // bonus 17: 646
+     Bonus[d] = Value(pow(d, 1.86) + 8 * d - 8);
 }
 
 
@@ -1004,7 +1002,7 @@ moves_loop: // When in check search starts from here
                          +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
-              int rHist = (val - 16000) / 40000;
+              int rHist = (val - 8000) / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
