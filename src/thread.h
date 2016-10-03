@@ -66,6 +66,7 @@ public:
   Position rootPos;
   Search::RootMoves rootMoves;
   Depth rootDepth;
+  int statIndex;
   Depth completedDepth;
   std::atomic_bool resetCalls;
   HistoryStats history;
