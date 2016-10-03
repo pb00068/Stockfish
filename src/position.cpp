@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -354,6 +355,10 @@ void Position::set_state(StateInfo* si) const {
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
   }
+
+  //Material::Entry* e = Material::probe(*this);
+    si->typesMask[WHITE] = si->typesMask[BLACK] = 7;
+
 }
 
 
@@ -460,6 +465,65 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
   return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
         | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
         | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
+        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::K_attackers_to(Square s, Bitboard occupied) const  {
+  return  (attacks_from<KING>(s) & pieces(KING));
+}
+
+Bitboard Position::KP_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KN_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KPN_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KBRQ_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::ALL_attackers_to(Square s, Bitboard occupied) const {
+  sync_cout << "here we are" << sync_endl;
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
+        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KQRBP_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KQRBN_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
         | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
         | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
         | (attacks_from<KING>(s)           & pieces(KING));
@@ -809,6 +873,12 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
+  if (captured || type_of(m) == PROMOTION) {
+    Material::Entry* e = Material::probe(*this);
+    st->typesMask[WHITE] = e->typeMask[WHITE];
+    st->typesMask[BLACK] = e->typeMask[BLACK];
+  }
+
   assert(pos_is_ok());
 }
 
@@ -1002,7 +1072,10 @@ Value Position::see(Move m) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  attackers = attackers_to(to, occupied) & occupied;
+  //attackers = attackers_to(to, occupied) & occupied;
+  sync_cout << "first call of function" << sync_endl;
+  attackers = (this->*attackers_tot[7])(to, occupied) & occupied;
+  //attackers = (this->*attackers_tot[st->typesMask[stm]])(to, occupied) & occupied;
 
   // If the opponent has no attackers we are finished
   stm = ~stm;

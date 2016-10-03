@@ -218,6 +218,16 @@ Entry* probe(const Position& pos) {
   { pos.count<BISHOP>(BLACK) > 1, pos.count<PAWN>(BLACK), pos.count<KNIGHT>(BLACK),
     pos.count<BISHOP>(BLACK)    , pos.count<ROOK>(BLACK), pos.count<QUEEN >(BLACK) } };
 
+  e->typeMask[WHITE] =  ((PieceCount[WHITE][ROOK  ] + PieceCount[WHITE][QUEEN] > 0) << 3) +
+                        ((PieceCount[WHITE][BISHOP] + PieceCount[WHITE][QUEEN] > 0) << 2) +
+                        ((PieceCount[WHITE][KNIGHT] > 0) << 1) +
+                         (PieceCount[WHITE][PAWN  ] > 0);
+
+  e->typeMask[BLACK] =  ((PieceCount[BLACK][ROOK  ] + PieceCount[BLACK][QUEEN] > 0) << 3) +
+                        ((PieceCount[BLACK][BISHOP] + PieceCount[BLACK][QUEEN] > 0) << 2) +
+                        ((PieceCount[BLACK][KNIGHT] > 0) << 1) +
+                         (PieceCount[BLACK][PAWN  ] > 0);
+
   e->value = int16_t((imbalance<WHITE>(PieceCount) - imbalance<BLACK>(PieceCount)) / 16);
   return e;
 }

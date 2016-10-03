@@ -41,6 +41,7 @@ struct Entry {
 
   Score imbalance() const { return make_score(value, value); }
   Phase game_phase() const { return gamePhase; }
+  int getTypeMask(Color c) const { return typeMask[c]; }
   bool specialized_eval_exists() const { return evaluationFunction != nullptr; }
   Value evaluate(const Position& pos) const { return (*evaluationFunction)(pos); }
 
@@ -59,6 +60,7 @@ struct Entry {
   int16_t value;
   uint8_t factor[COLOR_NB];
   EndgameBase<Value>* evaluationFunction;
+  int typeMask[COLOR_NB]; // bit 1: pawn(s) on board, bit 2: knight(s), bit 3 Bishop(s) or queen(s) , bit 4: rook(s) or queen(s)
   EndgameBase<ScaleFactor>* scalingFunction[COLOR_NB]; // Could be one for each
                                                        // side (e.g. KPKP, KBPsKs)
   Phase gamePhase;

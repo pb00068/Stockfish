@@ -31,6 +31,7 @@
 #include "movepick.h"
 #include "position.h"
 #include "search.h"
+#include "material.h"
 #include "timeman.h"
 #include "thread.h"
 #include "tt.h"
@@ -967,6 +968,11 @@ moves_loop: // When in check search starts from here
 
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
+
+//      if (pos.nodes_searched() % 10000 ==0) {
+//         Material::Entry* e = Material::probe(pos);
+//         sync_cout << pos << e->getTypeMask(WHITE) << "  mask black: " << e->getTypeMask(BLACK) << sync_endl;
+//      }
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);

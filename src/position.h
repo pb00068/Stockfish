@@ -45,6 +45,7 @@ struct StateInfo {
   int    pliesFromNull;
   Score  psq;
   Square epSquare;
+  int    typesMask[COLOR_NB];
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -107,6 +108,18 @@ public:
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
+
+  typedef Bitboard ATFUNC(Square s, Bitboard occupied) const;
+
+
+
+  ATFUNC K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to, ALL_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to;
+
+
+  const ATFUNC Position::*attackers_tot[16] = {K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to,
+                              KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to,
+                              KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to};
+
   Bitboard attacks_from(Piece pc, Square s) const;
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
