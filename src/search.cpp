@@ -1128,19 +1128,21 @@ moves_loop: // When in check search starts from here
     {
         int d = depth / ONE_PLY;
 
-        // Quiet best move: update killers, history and countermoves
-        if (!pos.capture_or_promotion(bestMove))
-        {
-            Value bonus = Value(d * d + 2 * d - 2);
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
-        }
+        if (d > 1) {
+          // Quiet best move: update killers, history and countermoves
+          if (!pos.capture_or_promotion(bestMove))
+          {
+              Value bonus = Value(d * d + 2 * d - 2);
+              update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
+          }
 
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-        {
-            Value penalty = Value(d * d + 4 * d + 1);
-            Square prevSq = to_sq((ss-1)->currentMove);
-            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
+          // Extra penalty for a quiet TT move in previous ply when it gets refuted
+          if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+          {
+              Value penalty = Value(d * d + 4 * d + 1);
+              Square prevSq = to_sq((ss-1)->currentMove);
+              update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
+          }
         }
     }
     // Bonus for prior countermove that caused the fail low
