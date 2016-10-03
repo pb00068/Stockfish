@@ -28,6 +28,7 @@
 
 #include "bitboard.h"
 #include "types.h"
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
 
 /// StateInfo struct stores information needed to restore a Position object to
@@ -109,16 +110,19 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
 
-  typedef Bitboard ATFUNC(Square s, Bitboard occupied) const;
+
+
+  Bitboard K_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KP_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KN_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KPN_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KSLIDER_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard ALL_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KPSLIDER_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KNSLIDER_attackers_to(Square s, Bitboard occupied) const;
 
 
 
-  ATFUNC K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to, ALL_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to;
-
-
-  const ATFUNC Position::*attackers_tot[16] = {K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to,
-                              KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to,
-                              KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to};
 
   Bitboard attacks_from(Piece pc, Square s) const;
   template<PieceType> Bitboard attacks_from(Square s) const;

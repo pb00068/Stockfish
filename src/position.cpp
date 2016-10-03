@@ -52,6 +52,8 @@ namespace {
 
 const string PieceToChar(" PNBRQK  pnbrqk");
 
+
+
 // min_attacker() is a helper function used by see() to locate the least
 // valuable attacker for the side to move, remove the attacker we just found
 // from the bitboards and scan for new X-ray attacks behind it.
@@ -82,6 +84,7 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
 }
 
 } // namespace
+
 
 
 /// operator<<(Position) returns an ASCII representation of the position
@@ -359,6 +362,9 @@ void Position::set_state(StateInfo* si) const {
   //Material::Entry* e = Material::probe(*this);
     si->typesMask[WHITE] = si->typesMask[BLACK] = 7;
 
+//    si->attackers_tot[0] = ALL_attackers_to;
+//    si->attackers_tot[1] = KSLIDER_attackers_to;
+
 }
 
 
@@ -470,7 +476,19 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
+
+
+//KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to, ALL_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to;
+
+
+//const ATFUNC Position::*attackers_tot[16] = {K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to,
+//                            KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to,
+//                            KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to};
 Bitboard Position::K_attackers_to(Square s, Bitboard occupied) const  {
+  if (pieces() & ~pieces(KING))
+  {
+    sync_cout << *this << "here we are, the mask are" << st->typesMask[0] << " and " <<  st->typesMask[1] << sync_endl;
+  }
   return  (attacks_from<KING>(s) & pieces(KING));
 }
 
@@ -495,7 +513,7 @@ Bitboard Position::KPN_attackers_to(Square s, Bitboard occupied) const {
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
-Bitboard Position::KBRQ_attackers_to(Square s, Bitboard occupied) const {
+Bitboard Position::KSLIDER_attackers_to(Square s, Bitboard occupied) const {
 
   return  (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
         | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
@@ -503,7 +521,7 @@ Bitboard Position::KBRQ_attackers_to(Square s, Bitboard occupied) const {
 }
 
 Bitboard Position::ALL_attackers_to(Square s, Bitboard occupied) const {
-  sync_cout << "here we are" << sync_endl;
+  //sync_cout << "here we are" << sync_endl;
   return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
         | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
         | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
@@ -512,7 +530,7 @@ Bitboard Position::ALL_attackers_to(Square s, Bitboard occupied) const {
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
-Bitboard Position::KQRBP_attackers_to(Square s, Bitboard occupied) const {
+Bitboard Position::KPSLIDER_attackers_to(Square s, Bitboard occupied) const {
 
   return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
         | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
@@ -521,7 +539,7 @@ Bitboard Position::KQRBP_attackers_to(Square s, Bitboard occupied) const {
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
-Bitboard Position::KQRBN_attackers_to(Square s, Bitboard occupied) const {
+Bitboard Position::KNSLIDER_attackers_to(Square s, Bitboard occupied) const {
 
   return  (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
         | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
@@ -873,11 +891,11 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
-  if (captured || type_of(m) == PROMOTION) {
+  //if (captured || type_of(m) == PROMOTION) {
     Material::Entry* e = Material::probe(*this);
     st->typesMask[WHITE] = e->typeMask[WHITE];
     st->typesMask[BLACK] = e->typeMask[BLACK];
-  }
+  //}
 
   assert(pos_is_ok());
 }
@@ -1073,8 +1091,11 @@ Value Position::see(Move m) const {
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   //attackers = attackers_to(to, occupied) & occupied;
-  sync_cout << "first call of function" << sync_endl;
-  attackers = (this->*attackers_tot[7])(to, occupied) & occupied;
+
+  attackers = CALL_MEMBER_FN(*this, thisThread->attackers_tot[st->typesMask[~stm] | st->typesMask[stm]]) (to, occupied) & occupied;
+  //attackers = this->*thisThread->attackers_tot[0](to, occupied) & occupied;
+
+
   //attackers = (this->*attackers_tot[st->typesMask[stm]])(to, occupied) & occupied;
 
   // If the opponent has no attackers we are finished

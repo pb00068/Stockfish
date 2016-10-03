@@ -72,6 +72,30 @@ public:
   MoveStats counterMoves;
   FromToStats fromTo;
   CounterMoveHistoryStats counterMoveHistory;
+
+  typedef  Bitboard (Position::*AttackToFunction)(Square s, Bitboard occupied) const;
+
+
+
+   AttackToFunction attackers_tot[16] = {
+       Position::K_attackers_to,
+       Position::KP_attackers_to,
+       Position::KN_attackers_to,
+       Position::KPN_attackers_to,
+       Position::KSLIDER_attackers_to,
+       Position::KPSLIDER_attackers_to,
+       Position::KNSLIDER_attackers_to,
+       Position::ALL_attackers_to,
+       // Rook
+       Position::KSLIDER_attackers_to,
+       Position::KPSLIDER_attackers_to,
+       Position::KNSLIDER_attackers_to,
+       Position::ALL_attackers_to,
+       Position::KSLIDER_attackers_to,
+       Position::KPSLIDER_attackers_to,
+       Position::KNSLIDER_attackers_to,
+       Position::ALL_attackers_to,
+   };
 };
 
 
