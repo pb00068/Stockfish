@@ -650,13 +650,13 @@ namespace {
             int d = depth / ONE_PLY;
 
             if (!pos.capture_or_promotion(ttMove))
-                update_stats(pos, ss, ttMove, nullptr, 0, Bonus[thisThread->rootDepth >= 17][d]);
+                update_stats(pos, ss, ttMove, nullptr, 0, Bonus[thisThread->rootDepth > 19][d]);
 
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             {
                 Square prevSq = to_sq((ss-1)->currentMove);
-                update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth >= 17][d+1]);
+                update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth > 19][d+1]);
             }
         }
         return ttValue;
@@ -1132,14 +1132,14 @@ moves_loop: // When in check search starts from here
 
         // Quiet best move: update killers, history and countermoves
         if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, Bonus[thisThread->rootDepth >= 17][d]);
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, Bonus[thisThread->rootDepth > 19][d]);
 
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
         {
             Square prevSq = to_sq((ss-1)->currentMove);
-            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth >= 17][d+1]);
+            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -Bonus[thisThread->rootDepth > 19][d+1]);
         }
     }
     // Bonus for prior countermove that caused the fail low
@@ -1149,7 +1149,7 @@ moves_loop: // When in check search starts from here
     {
         int d = depth / ONE_PLY;
         Square prevSq = to_sq((ss-1)->currentMove);
-        update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, Bonus[thisThread->rootDepth >= 17][d]);
+        update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, Bonus[thisThread->rootDepth > 19][d]);
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
