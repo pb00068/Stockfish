@@ -429,12 +429,13 @@ Phase Position::game_phase() const {
 
 Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
 
-  Bitboard result = 0;
+  Bitboard result = 0, nosnipers;
   pinners = 0;
 
   // Snipers are sliders that attack 's' when a piece is removed
   Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
                       | (PseudoAttacks[BISHOP][s] & pieces(QUEEN, BISHOP))) & sliders;
+  nosnipers = ~snipers;
 
   while (snipers)
   {
@@ -448,7 +449,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
             pinners |= sniperSq;
     }
   }
-  return result;
+  return result & nosnipers;
 }
 
 
