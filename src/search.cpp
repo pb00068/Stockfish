@@ -920,7 +920,6 @@ moves_loop: // When in check search starts from here
 
       // Step 13. Pruning at shallow depth
       if (  !rootNode
-          && !inCheck
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           if (   !captureOrPromotion
@@ -1127,6 +1126,9 @@ moves_loop: // When in check search starts from here
     // All legal moves have been searched and if there are no legal moves, it
     // must be a mate or a stalemate. If we are in a singular extension search then
     // return a fail low score.
+
+    assert(moveCount || !inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
+
     if (!moveCount)
         bestValue = excludedMove ? alpha
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
