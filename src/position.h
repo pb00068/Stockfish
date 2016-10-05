@@ -120,6 +120,7 @@ public:
   Bitboard ALL_attackers_to(Square s, Bitboard occupied) const;
   Bitboard KPSLIDER_attackers_to(Square s, Bitboard occupied) const;
   Bitboard KNSLIDER_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard KRP_attackers_to(Square s, Bitboard occupied) const;
 
 
 

@@ -21,6 +21,7 @@
 #include <algorithm> // For std::min
 #include <cassert>
 #include <cstring>   // For std::memset
+#include <iostream>
 
 #include "material.h"
 #include "thread.h"
@@ -122,6 +123,7 @@ Entry* probe(const Position& pos) {
 
   Key key = pos.material_key();
   Entry* e = pos.this_thread()->materialTable[key];
+
 
   if (e->key == key)
       return e;

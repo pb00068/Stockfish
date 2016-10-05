@@ -88,7 +88,7 @@ public:
        Position::ALL_attackers_to,
        // Rook
        Position::KSLIDER_attackers_to,
-       Position::KPSLIDER_attackers_to,
+       Position::KRP_attackers_to,
        Position::KNSLIDER_attackers_to,
        Position::ALL_attackers_to,
        Position::KSLIDER_attackers_to,

@@ -262,6 +262,13 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
   chess960 = isChess960;
   thisThread = th;
   set_state(st);
+  //sync_cout << "first position set" << (th == nullptr) << sync_endl;
+  if (th != nullptr) {
+    Material::Entry* e = Material::probe(*this);
+    st->typesMask[WHITE] = e->typeMask[WHITE];
+    st->typesMask[BLACK] = e->typeMask[BLACK];
+    sync_cout << "here we are " << (th == nullptr) << sync_endl;
+  }
 
   assert(pos_is_ok());
 
@@ -359,8 +366,7 @@ void Position::set_state(StateInfo* si) const {
           si->materialKey ^= Zobrist::psq[pc][cnt];
   }
 
-  //Material::Entry* e = Material::probe(*this);
-    si->typesMask[WHITE] = si->typesMask[BLACK] = 7;
+
 
 //    si->attackers_tot[0] = ALL_attackers_to;
 //    si->attackers_tot[1] = KSLIDER_attackers_to;
@@ -477,18 +483,11 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 }
 
 
-
-//KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to, ALL_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to;
-
-
-//const ATFUNC Position::*attackers_tot[16] = {K_attackers_to, KP_attackers_to, KN_attackers_to, KPN_attackers_to, KBRQ_attackers_to,
-//                            KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to,
-//                            KQRBN_attackers_to, ALL_attackers_to, KBRQ_attackers_to, KQRBP_attackers_to, KQRBN_attackers_to, ALL_attackers_to};
 Bitboard Position::K_attackers_to(Square s, Bitboard occupied) const  {
-  if (pieces() & ~pieces(KING))
-  {
-    sync_cout << *this << "here we are, the mask are" << st->typesMask[0] << " and " <<  st->typesMask[1] << sync_endl;
-  }
+//  if (pieces() & ~pieces(KING))
+//  {
+//    sync_cout << *this << "here we are, the mask are" << st->typesMask[0] << " and " <<  st->typesMask[1] << sync_endl;
+//  }
   return  (attacks_from<KING>(s) & pieces(KING));
 }
 
@@ -544,6 +543,14 @@ Bitboard Position::KNSLIDER_attackers_to(Square s, Bitboard occupied) const {
   return  (attacks_from<KNIGHT>(s)         & pieces(KNIGHT))
         | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
         | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
+
+Bitboard Position::KRP_attackers_to(Square s, Bitboard occupied) const {
+  //sync_cout << "here we are" << sync_endl;
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK))
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
@@ -891,11 +898,12 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
-  //if (captured || type_of(m) == PROMOTION) {
+  if (st->previous->materialKey != st->materialKey)
+  {
     Material::Entry* e = Material::probe(*this);
     st->typesMask[WHITE] = e->typeMask[WHITE];
     st->typesMask[BLACK] = e->typeMask[BLACK];
-  //}
+  }
 
   assert(pos_is_ok());
 }
@@ -1248,7 +1256,13 @@ bool Position::pos_is_ok(int* failedStep) const {
       {
           StateInfo si = *st;
           set_state(&si);
-          if (std::memcmp(&si, st, sizeof(StateInfo)))
+
+
+          int ret = std::memcmp(&si, st, sizeof(StateInfo));
+          Material::Entry* e = Material::probe(*this);
+          st->typesMask[WHITE] = e->typeMask[WHITE];
+          st->typesMask[BLACK] = e->typeMask[BLACK];
+          if (ret)
               return false;
       }
 
