@@ -1018,37 +1018,20 @@ Value Position::see(Move m) const {
   while (true) {
       assert(slIndex < 32);
 
-      if (slIndex == 1) {
-        // If the opponent has no attackers we are finished
-         stm = ~stm;
-         stmAttackers = attackers & pieces(stm);
-
-
-         // Don't allow pinned pieces to attack pieces except the king as long all
-         // pinners are on their original square.
-         if (!(st->pinnersForKing[stm] & ~occupied))
-             stmAttackers &= ~st->blockersForKing[stm];
-
-         if (!stmAttackers)
-               return swapList[0];
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+      if (slIndex != 1 && stmAttackers && nextVictim == KING) {
+           --slIndex;
+           break; // Stop before a king capture
       }
-      else {
-        stm = ~stm;
-        stmAttackers = attackers & pieces(stm);
 
-        if (stmAttackers && nextVictim == KING) {
-             --slIndex;
-             break; // Stop before a king capture
-        }
+      // Don't allow pinned pieces to attack pieces except the king as long all
+      // pinners are on their original square.
+      if (!(st->pinnersForKing[stm] & ~occupied))
+          stmAttackers &= ~st->blockersForKing[stm];
 
-        // Don't allow pinned pieces to attack
-        if (!(st->pinnersForKing[stm] & ~occupied))
-            stmAttackers &= ~st->blockersForKing[stm];
-
-
-        if (!stmAttackers)
-          break;
-      }
+      if (!stmAttackers)
+           break;
 
       // Add the new entry to the swap list
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
