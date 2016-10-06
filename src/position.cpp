@@ -976,7 +976,7 @@ Value Position::see(Move m) const {
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
   Value swapList[32];
-  int slIndex = 1;
+  int slIndex = 0;
   PieceType nextVictim;
   Color stm;
 
@@ -986,7 +986,7 @@ Value Position::see(Move m) const {
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
   stm = color_of(piece_on(from));
-  occupied = pieces() ^ from ^ to; // 'to' must be flipped for the case captured piece is a pinner
+  occupied = pieces() ^ from ^ to; // flip 'to' for the case captured piece is a pinner
 
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
@@ -1007,14 +1007,13 @@ Value Position::see(Move m) const {
   attackers = attackers_to(to, occupied) & occupied;
 
   while (true) {
-      assert(slIndex < 32);
+      assert(slIndex < 31);
 
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
-      if (slIndex != 1 && stmAttackers && nextVictim == KING) {
-           --slIndex; // retire last move as King went into check
-           break;
-      }
+      if (slIndex && stmAttackers && nextVictim == KING)
+           break; // King went into check by last recapture so ignore it
+      ++slIndex;
 
       // Don't allow pinned pieces to attack as long all
       // pinners are on their original square.
@@ -1036,7 +1035,6 @@ Value Position::see(Move m) const {
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
-      ++slIndex;
   }
 
   // Having built the swap list, we negamax through it to find the best
