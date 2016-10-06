@@ -986,7 +986,7 @@ Value Position::see(Move m) const {
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
   stm = color_of(piece_on(from));
-  occupied = pieces() ^ from;
+  occupied = pieces() ^ from ^ to; // 'to' must be flipped for the case captured piece is a pinner
 
   // Castling moves are implemented as king capturing the rook so cannot
   // be handled correctly. Simply return VALUE_ZERO that is always correct
@@ -1000,20 +1000,11 @@ Value Position::see(Move m) const {
       swapList[0] = PieceValue[MG][PAWN];
   }
 
-  occupied ^= to; // For the case when captured piece is a pinner
   nextVictim = type_of(piece_on(from));
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   attackers = attackers_to(to, occupied) & occupied;
-
-  // If the destination square is defended, it makes the things rather more
-  // difficult to compute. We proceed by building up a "swap list" containing
-  // the material gain or loss at each stop in a sequence of captures to the
-  // destination square, where the sides alternately capture, and always
-  // capture with the least valuable piece. After each capture, we look for
-  // new X-ray attacks from behind the capturing piece.
-
 
   while (true) {
       assert(slIndex < 32);
@@ -1021,24 +1012,30 @@ Value Position::see(Move m) const {
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
       if (slIndex != 1 && stmAttackers && nextVictim == KING) {
-           --slIndex;
-           break; // Stop before a king capture
+           --slIndex; // retire last move as King went into check
+           break;
       }
 
-      // Don't allow pinned pieces to attack pieces except the king as long all
+      // Don't allow pinned pieces to attack as long all
       // pinners are on their original square.
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
       if (!stmAttackers)
-           break;
+           break; // If the opponent has no attackers we are finished
+
+      // The destination square is defended, which makes things rather more
+      // difficult to compute. We proceed by building up a "swap list" containing
+      // the material gain or loss at each stop in a sequence of captures to the
+      // destination square, where the sides alternately capture, and always
+      // capture with the least valuable piece. After each capture, we look for
+      // new X-ray attacks from behind the capturing piece.
 
       // Add the new entry to the swap list
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
-
       ++slIndex;
   }
 
