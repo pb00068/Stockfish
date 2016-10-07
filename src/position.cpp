@@ -374,7 +374,20 @@ void Position::set_state(StateInfo* si) const {
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
   }
-  st->noXRays = false;
+  si->noXRays = false;
+  if (!pieces(QUEEN, BISHOP))
+   {
+     Bitboard rooks = pieces(ROOK);
+     si->noXRays = true;
+     while (rooks) {
+       Square s = pop_lsb(&rooks);
+       if (PseudoAttacks[ROOK][s] & rooks)
+       {
+         si->noXRays = false;
+         break;
+       }
+     }
+   }
 }
 
 
@@ -830,6 +843,32 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
            }
          }
        }
+       else if (!pieces(ROOK, BISHOP))
+       {
+          Bitboard queens = pieces(QUEEN);
+          st->noXRays = true;
+          while (queens) {
+            Square s = pop_lsb(&queens);
+            if (PseudoAttacks[QUEEN][s] & (queens | pieces(PAWN)))
+            {
+              st->noXRays = false;
+              break;
+            }
+          }
+       }
+       else if (!pieces(ROOK, QUEEN))
+      {
+         Bitboard bishops = pieces(BISHOP);
+         st->noXRays = true;
+         while (bishops) {
+           Square s = pop_lsb(&bishops);
+           if (PseudoAttacks[BISHOP][s] & (bishops | pieces(PAWN)))
+           {
+             st->noXRays = false;
+             break;
+           }
+         }
+      }
   }
 
   // Update incremental scores
