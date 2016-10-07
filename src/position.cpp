@@ -80,6 +80,26 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
   return KING; // No need to update bitboards: it is the last cycle
 }
 
+template<int Pt>
+PieceType min_attacker_noXray(const Bitboard* bb, Square to, Bitboard stmAttackers,
+                       Bitboard& occupied, Bitboard& attackers) {
+
+  Bitboard b = stmAttackers & bb[Pt];
+  if (!b)
+      return min_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers);
+
+  occupied ^= b & ~(b - 1);
+  attackers &= occupied;
+  return (PieceType)Pt;
+}
+
+template<>
+PieceType min_attacker_noXray<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+  return KING; // No need to update bitboards: it is the last cycle
+}
+
+
+
 } // namespace
 
 
@@ -354,6 +374,7 @@ void Position::set_state(StateInfo* si) const {
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
   }
+  st->noXRays = false;
 }
 
 
@@ -782,6 +803,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
           // Update material
           st->nonPawnMaterial[us] += PieceValue[MG][promotion];
+          if (type_of(promotion) != KNIGHT)
+            st->noXRays = false;
       }
 
       // Update pawn hash key and prefetch access to pawnsTable
@@ -790,6 +813,23 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
       // Reset rule 50 draw counter
       st->rule50 = 0;
+  }
+
+  if (captured && type_of(captured) != PAWN)
+  {
+       if (!pieces(QUEEN, BISHOP))
+       {
+         Bitboard rooks = pieces(ROOK);
+         st->noXRays = true;
+         while (rooks) {
+           Square s = pop_lsb(&rooks);
+           if (PseudoAttacks[ROOK][s] & rooks)
+           {
+             st->noXRays = false;
+             break;
+           }
+         }
+       }
   }
 
   // Update incremental scores
@@ -1032,7 +1072,9 @@ Value Position::see(Move m) const {
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
 
       // Locate and remove the next least valuable attacker
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = noXrays() ?  min_attacker_noXray<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers)
+                             :  min_attacker       <PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      //dbg_hit_on(noXrays());
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 

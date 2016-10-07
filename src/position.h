@@ -45,6 +45,7 @@ struct StateInfo {
   int    pliesFromNull;
   Score  psq;
   Square epSquare;
+  bool noXRays;
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -121,6 +122,7 @@ public:
   bool advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   Piece captured_piece() const;
+  bool  noXrays() const;
 
   // Piece specific
   bool pawn_passed(Color c, Square s) const;
@@ -369,6 +371,10 @@ inline bool Position::capture(Move m) const {
 
 inline Piece Position::captured_piece() const {
   return st->capturedPiece;
+}
+
+inline bool Position::noXrays() const {
+  return st->noXRays;
 }
 
 inline Thread* Position::this_thread() const {
