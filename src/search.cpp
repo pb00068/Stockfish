@@ -353,6 +353,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  statIndex = rootPos.game_phase() < 50;
 
   if (mainThread)
   {
@@ -386,8 +387,6 @@ void Thread::search() {
           if (row[(rootDepth / ONE_PLY + rootPos.game_ply()) % row.size()])
              continue;
       }
-
-      statIndex = rootDepth > 19;
 
       // Age out PV variability metric
       if (mainThread)
