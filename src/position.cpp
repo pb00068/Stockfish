@@ -57,13 +57,14 @@ const string PieceToChar(" PNBRQK  pnbrqk");
 
 template<int Pt>
 PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
-                       Bitboard& occupied, Bitboard& attackers) {
+                       Bitboard& occupied, Bitboard& attackers, Bitboard& fromB) {
 
   Bitboard b = stmAttackers & bb[Pt];
   if (!b)
-      return min_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers);
+      return min_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers, fromB);
 
-  occupied ^= b & ~(b - 1);
+  fromB = b & ~(b - 1);
+  occupied ^= fromB;
 
   if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
       attackers |= attacks_bb<BISHOP>(to, occupied) & (bb[BISHOP] | bb[QUEEN]);
@@ -76,7 +77,8 @@ PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
 }
 
 template<>
-PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard stmAttackers, Bitboard&, Bitboard&, Bitboard& fromB) {
+  fromB = stmAttackers;
   return KING; // No need to update bitboards: it is the last cycle
 }
 
@@ -296,8 +298,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE], si->dcLine[WHITE]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK], si->dcLine[BLACK]);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -427,10 +429,10 @@ Phase Position::game_phase() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& dcLine) const {
 
   Bitboard result = 0;
-  pinners = 0;
+  pinners = dcLine = 0;
 
   // Snipers are sliders that attack 's' when a piece is removed
   Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pieces(QUEEN, ROOK))
@@ -439,13 +441,15 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
   while (snipers)
   {
     Square sniperSq = pop_lsb(&snipers);
-    Bitboard b = between_bb(s, sniperSq) & pieces();
+    Bitboard bt = between_bb(s, sniperSq);
+    Bitboard b = bt & pieces();
 
-    if (!more_than_one(b))
+    if (b && !more_than_one(b))
     {
         result |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
+        else dcLine = bt; // | sniperSq;
     }
   }
   return result;
@@ -1002,7 +1006,7 @@ bool Position::see_ge(Move m, Value v) const {
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard attackers = attackers_to(to, occupied) & occupied, fromB = Bitboard(0) ^ from;
 
   while (true)
   {
@@ -1013,11 +1017,15 @@ bool Position::see_ge(Move m, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
+      // An almost precise approach to verify discovered checks
+      if ( (st->blockersForKing[stm] & fromB) && !(st->dcLine[stm] & to))
+            stmAttackers &= pieces(stm, KING);
+
       if (!stmAttackers)
           return relativeStm;
 
       // Locate and remove the next least valuable attacker
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, fromB);
 
       if (nextVictim == KING)
           return relativeStm == bool(attackers & pieces(~stm));
