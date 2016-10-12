@@ -1002,8 +1002,7 @@ moves_loop: // When in check search starts from here
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
               int rHist = (val - 26000) / 65000;
-              dbg_mean_of(val);
-              dbg_hit_on(rHist < 0);
+
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
