@@ -62,6 +62,8 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
+  float meanH;
+  float varianceH;
 
   Position rootPos;
   Search::RootMoves rootMoves;
