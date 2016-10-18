@@ -203,7 +203,8 @@ void Search::init() {
   }
 
   for (int d = 0; d < MAX_PLY+2; ++d)
-     Bonus[d] = Value(pow(d, 1.8) + 10 * d - 10);
+     Bonus[d] = Value(pow(d, 1.72) + 12 * d - 12);
+
 }
 
 
@@ -996,12 +997,12 @@ moves_loop: // When in check search starts from here
                   r -= 2 * ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
-//              Value val = thisThread->history[moved_piece][to_sq(move)]
-//                         +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
-//                         +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
-//                         +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-//                         +    thisThread->fromTo.get(~pos.side_to_move(), move);
-              int rHist = 0; //(val - 8000) / 20000;
+              Value val = thisThread->history[moved_piece][to_sq(move)]
+                         +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
+                         +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
+                         +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
+                         +    thisThread->fromTo.get(~pos.side_to_move(), move);
+              int rHist = (val - 12000) / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
