@@ -1003,15 +1003,13 @@ moves_loop: // When in check search starts from here
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
 
               float diff = (float) val - thisThread->meanH;
-              thisThread->meanH     =  ( thisThread->meanH     * 10000 + val           ) / 10001;
-              thisThread->varianceH =  ( thisThread->varianceH * 10000 + (diff * diff) ) / 10001;
+              thisThread->meanH     =  ( thisThread->meanH     * 100 + val           ) / 101;
+              thisThread->varianceH =  ( thisThread->varianceH * 100 + (diff * diff) ) / 101;
 
               int rHist = 0;
-              if ((diff * diff) > thisThread->varianceH) {
-                rHist = diff > 0 ? 1 : -1;
-                if ((diff * diff) > thisThread->varianceH * 4)
-                  rHist = diff > 0 ? 2 : -2;
-              }
+              if ((diff * diff) > thisThread->varianceH  && thisThread->varianceH != 0)
+                rHist = (diff > 0 ? 1 : -1) * (diff * diff) / thisThread->varianceH;
+
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
