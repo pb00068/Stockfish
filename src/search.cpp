@@ -199,6 +199,7 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
+
 }
 
 
@@ -1001,10 +1002,21 @@ moves_loop: // When in check search starts from here
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
 
+              if ((pos.nodes_searched() % 512) == 0) {
               int diff =  val - thisThread->meanH;
-              thisThread->meanH  =  ( (thisThread->meanH  << 10) + diff ) >> 10;
+              thisThread->meanH = ( (thisThread->meanH  * 1024) + diff ) / 1024;
+//              std::cerr << " mean " <<  thisThread->meanH << std::endl;
+              }
+             // thisThread->meanHs = ( (thisThread->meanHs  << 10) + diff ) >> 10;
 
-              int rHist = (diff - 5000) / 20000; // 5000 = offset to compensate an apparently inherent bias?
+//              if ((pos.nodes_searched() % 10000) == 0) {
+//                sync_cout << " mean " <<  thisThread->meanH << sync_endl;
+////                if (abs(thisThread->meanH - thisThread->meanHs) > 1000)
+////                  abort();
+//              }
+
+
+              int rHist = (val - thisThread->meanH - 5000) / 20000; // 5000 = offset to compensate an apparently inherent bias?
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
