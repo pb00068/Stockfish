@@ -1002,11 +1002,9 @@ moves_loop: // When in check search starts from here
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
 
               int diff =  val - thisThread->meanH;
-              thisThread->meanH  =  ( thisThread->meanH  * 255 + val       ) / 256;
-              //thisThread->stdDev =  ( thisThread->stdDev * 255 + abs(diff) ) / 256;
+              thisThread->meanH  =  ( (thisThread->meanH  << 10) + diff ) >> 10;
 
-              int rHist = diff / 20000;
-              //int rHist = (val - 8000) / 20000;
+              int rHist = diff  / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
