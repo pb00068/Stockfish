@@ -1004,7 +1004,7 @@ moves_loop: // When in check search starts from here
               int diff =  val - thisThread->meanH;
               thisThread->meanH  =  ( (thisThread->meanH  << 10) + diff ) >> 10;
 
-              int rHist = diff  / 20000;
+              int rHist = (diff - 5000) / 20000; // 5000 = offset to compensate an apparently inherent bias?
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
