@@ -203,7 +203,6 @@ void Search::init() {
 
   for (int d = 0; d < MAX_PLY+2; ++d)
      Bonus[d] = Value( (0.678 * d * d) + 8 * d - 8);
-
   Bonus[1] = Value(1);
 }
 
