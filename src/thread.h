@@ -70,6 +70,7 @@ public:
   Depth completedDepth;
   std::atomic_bool resetCalls;
   HistoryStats history;
+  LowPlyStats lowPlyStat;
   MoveStats counterMoves;
   FromToStats fromTo;
   CounterMoveHistoryStats counterMoveHistory;
