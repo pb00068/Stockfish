@@ -643,14 +643,14 @@ namespace {
 
             if (!pos.capture_or_promotion(ttMove))
             {
-                Value bonus = Value(d * d + 2 * d - 2);
+                Value bonus = Value(d * d);
                 update_stats(pos, ss, ttMove, nullptr, 0, bonus);
             }
 
             // Extra penalty for a quiet TT move in previous ply when it gets refuted
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             {
-                Value penalty = Value(d * d + 4 * d + 1);
+                Value penalty = Value(d * d + 2 * d + 1);
                 Square prevSq = to_sq((ss-1)->currentMove);
                 update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
             }
@@ -1141,14 +1141,14 @@ moves_loop: // When in check search starts from here
         // Quiet best move: update killers, history and countermoves
         if (!pos.capture_or_promotion(bestMove))
         {
-            Value bonus = Value(d * d + 2 * d - 2);
+            Value bonus = Value(d * d);
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
         {
-            Value penalty = Value(d * d + 4 * d + 1);
+            Value penalty = Value(d * d + 2 * d + 1);
             Square prevSq = to_sq((ss-1)->currentMove);
             update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
         }
@@ -1159,7 +1159,7 @@ moves_loop: // When in check search starts from here
              && is_ok((ss-1)->currentMove))
     {
         int d = depth / ONE_PLY;
-        Value bonus = Value(d * d + 2 * d - 2);
+        Value bonus = Value(d * d);
         Square prevSq = to_sq((ss-1)->currentMove);
         update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, bonus);
     }

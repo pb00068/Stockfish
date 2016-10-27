@@ -47,10 +47,10 @@ struct Stats {
   void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
   void update(Piece pc, Square to, Value v) {
 
-    if (abs(int(v)) >= 324)
+    if (abs(int(v)) >= 325)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
+    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 325);
     table[pc][to] += int(v) * 32;
   }
 
@@ -69,13 +69,13 @@ struct FromToStats {
   void clear() { std::memset(table, 0, sizeof(table)); }
   void update(Color c, Move m, Value v) {
 
-    if (abs(int(v)) >= 324)
+    if (abs(int(v)) >= 325)
         return;
 
     Square from = from_sq(m);
     Square to = to_sq(m);
 
-    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 324;
+    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 325;
     table[c][from][to] += int(v) * 32;
   }
 
