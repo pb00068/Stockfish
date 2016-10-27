@@ -150,15 +150,12 @@ void MovePicker::score<QUIETS>() {
 
   Color c = pos.side_to_move();
 
-  Value v = VALUE_ZERO;
-  if (depth > 17 && ss->ply <= 4) {
+  if (depth > 17 && ss->ply <= 5) {
     for (auto& m : *this) {
          m.value = lowPlies.get(pos.moved_piece(m),to_sq(m));
-         v += m.value;
     }
   }
-
-  if (v == 0)
+  else
     for (auto& m : *this)
       m.value =      history[pos.moved_piece(m)][to_sq(m)]
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
