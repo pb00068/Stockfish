@@ -91,7 +91,7 @@ struct LowPlyStats {
     void update(Piece pc, Square to, int d) {
       if (d <= 17)
         return;
-      d-=17;
+      d-=7;
       Value v = Value(d * d + 2 * d - 2);
 
       if (abs(int(v)) >= 324)
@@ -104,7 +104,7 @@ struct LowPlyStats {
     void decrease(Piece pc, Square to, int d) {
           if (d <= 17)
             return;
-          d-=17;
+          d-=7;
           Value v = Value(d * d + 2 * d - 2);
 
           if (abs(int(v)) >= 324)
