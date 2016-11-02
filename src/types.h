@@ -337,6 +337,11 @@ inline Square operator~(Square s) {
   return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
 }
 
+inline Square operator!(Square s) {
+  return Square(s & SQ_H4); // Projection to first half of the board Rank5 -> Rank1 etc.
+}
+
+
 inline Piece operator~(Piece pc) {
   return Piece(pc ^ 8); // Swap color of piece B_KNIGHT -> W_KNIGHT
 }

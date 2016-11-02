@@ -72,6 +72,7 @@ public:
   HistoryStats history;
   MoveStats counterMoves;
   FromToStats fromTo;
+  MoveSeqStats seqStats;
   CounterMoveHistoryStats counterMoveHistory;
 };
 
