@@ -746,7 +746,7 @@ namespace {
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
-        ss->pawnMove = false;
+        ss->pawnKingMove = false;
         ss->counterMoves = nullptr;
 
         assert(eval - beta >= 0);
@@ -801,7 +801,7 @@ namespace {
             if (pos.legal(move))
             {
                 ss->currentMove = move;
-                ss->pawnMove = type_of(pos.moved_piece(move)) == PAWN;
+                ss->pawnKingMove = type_of(pos.moved_piece(move)) == PAWN || type_of(pos.moved_piece(move)) == KING;
                 ss->counterMoves = &thisThread->counterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
@@ -963,7 +963,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
-      ss->pawnMove = type_of(moved_piece) == PAWN;
+      ss->pawnKingMove = type_of(pos.moved_piece(move)) == PAWN || type_of(pos.moved_piece(move)) == KING;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
@@ -1453,7 +1453,7 @@ moves_loop: // When in check search starts from here
     thisThread->fromTo.update(c, move, bonus);
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
-    if ((ss-2)->pawnMove && (ss-1)->pawnMove)
+    if ((ss-2)->pawnKingMove && (ss-1)->pawnKingMove)
     {
       thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), pos.moved_piece(move), to_sq(move), bonus);
     }
@@ -1470,7 +1470,7 @@ moves_loop: // When in check search starts from here
         thisThread->fromTo.update(c, quiets[i], -bonus);
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-        if ((ss-2)->pawnMove && (ss-1)->pawnMove)
+        if ((ss-2)->pawnKingMove && (ss-1)->pawnKingMove)
            thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
     }
