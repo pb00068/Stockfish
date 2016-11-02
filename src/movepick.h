@@ -85,19 +85,19 @@ private:
 
 struct MoveSeqStats {
 
-  Value get(Square s1, Square s2, Piece pc, Square to) const { return table[!s1][!s2][pc][to]; }
+  Value get(Square s1, Square s2, Square to) const { return table[!s1][!s2][to]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
-  void update(Square s1, Square s2, Piece pc, Square to, Value v) {
+  void update(Square s1, Square s2, Square to, Value v) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[!s1][!s2][pc][to] -= table[!s1][!s2][pc][to] * abs(int(v)) / 324;
-    table[!s1][!s2][pc][to] += int(v) * 32;
+    table[!s1][!s2][to] -= table[!s1][!s2][to] * abs(int(v)) / 324;
+    table[!s1][!s2][to] += int(v) * 32;
   }
 
 private:
-  Value table[SQ_A5][SQ_A5][PIECE_NB][SQUARE_NB];
+  Value table[SQ_A5][SQ_A5][SQUARE_NB];
 };
 
 /// MovePicker class is used to pick one pseudo legal move at a time from the

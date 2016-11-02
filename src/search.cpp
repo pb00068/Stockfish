@@ -199,6 +199,7 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
+
 }
 
 
@@ -746,7 +747,6 @@ namespace {
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
-        ss->pawnKingMove = false;
         ss->counterMoves = nullptr;
 
         assert(eval - beta >= 0);
@@ -801,7 +801,6 @@ namespace {
             if (pos.legal(move))
             {
                 ss->currentMove = move;
-                ss->pawnKingMove = type_of(pos.moved_piece(move)) == PAWN || type_of(pos.moved_piece(move)) == KING;
                 ss->counterMoves = &thisThread->counterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
@@ -963,7 +962,6 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
-      ss->pawnKingMove = type_of(pos.moved_piece(move)) == PAWN || type_of(pos.moved_piece(move)) == KING;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
@@ -1453,9 +1451,9 @@ moves_loop: // When in check search starts from here
     thisThread->fromTo.update(c, move, bonus);
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
-    if ((ss-2)->pawnKingMove && (ss-1)->pawnKingMove)
+    if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
     {
-      thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), pos.moved_piece(move), to_sq(move), bonus);
+      thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), to_sq(move), bonus);
     }
 
     if ((ss-1)->counterMoves)
@@ -1470,8 +1468,8 @@ moves_loop: // When in check search starts from here
         thisThread->fromTo.update(c, quiets[i], -bonus);
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-        if ((ss-2)->pawnKingMove && (ss-1)->pawnKingMove)
-           thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if (is_ok((ss-2)->currentMove) && is_ok((ss-1)->currentMove))
+           thisThread->seqStats.update(to_sq((ss-2)->currentMove),  to_sq((ss-1)->currentMove), to_sq(quiets[i]), -bonus);
 
     }
   }
