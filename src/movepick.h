@@ -50,7 +50,7 @@ struct Stats {
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(decr)) / (CM ? 936 : 356);
+    table[pc][to] -= table[pc][to] * abs(int(decr)) / (CM ? 936 : 324);
     table[pc][to] += int(v) * 32;
   }
 
@@ -75,7 +75,7 @@ struct FromToStats {
     Square from = from_sq(m);
     Square to = to_sq(m);
 
-    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 356 ;
+    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 324 ;
     table[c][from][to] += int(v) * 32;
   }
 
