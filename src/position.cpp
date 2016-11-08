@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -114,6 +115,30 @@ std::ostream& operator<<(std::ostream& os, Position& pos) {
       os << "\nTablebases WDL: " << std::setw(4) << wdl << " (" << s1 << ")"
          << "\nTablebases DTZ: " << std::setw(4) << dtz << " (" << s2 << ")";
   }
+
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Position& pos) {
+
+  os << "\n +---+---+---+---+---+---+---+---+\n";
+
+  for (Rank r = RANK_8; r >= RANK_1; --r)
+  {
+      for (File f = FILE_A; f <= FILE_H; ++f)
+          os << " | " << PieceToChar[pos.piece_on(make_square(f, r))];
+
+      os << " |\n +---+---+---+---+---+---+---+---+\n";
+  }
+
+  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
+     << std::setfill('0') << std::setw(16) << pos.key()
+     << std::setfill(' ') << std::dec << "\nCheckers: ";
+
+  for (Bitboard b = pos.checkers(); b; )
+      os << UCI::square(pop_lsb(&b)) << " ";
+
+
 
   return os;
 }
@@ -993,7 +1018,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value v) const {
+bool Position::see_ge(Move m, Value v, Bitboard* queen_snipers) const {
 
   assert(is_ok(m));
 
@@ -1047,8 +1072,23 @@ bool Position::see_ge(Move m, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers)
+      if (!stmAttackers) {
+        if ((queen_snipers[stm] & occupied) && (occupied & this->pieceList[stm ? W_QUEEN : B_QUEEN][0]))
+        {
+          to = this->pieceList[stm ? W_QUEEN : B_QUEEN][0];
+          attackers = attackers_to(to, occupied) & occupied;
+          stmAttackers = attackers & pieces(stm);
+          if (!stmAttackers)
+            return relativeStm;
+//          else {
+//            sync_cout << "pos: " << *this << " move: " << UCI::move(m,false) << " snipers:\n" << Bitboards::pretty(queen_snipers[stm] & occupied) <<
+//                " attackers to " << to << "  :\n" <<  Bitboards::pretty(attackers) << sync_endl;
+//            abort();
+//          }
+        }
+        else
           return relativeStm;
+      }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
