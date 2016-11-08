@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -117,6 +118,28 @@ std::ostream& operator<<(std::ostream& os, Position& pos) {
 
   return os;
 }
+
+//std::ostream& operator<<(std::ostream& os, const Position& pos) {
+//
+//  os << "\n +---+---+---+---+---+---+---+---+\n";
+//
+//  for (Rank r = RANK_8; r >= RANK_1; --r)
+//  {
+//      for (File f = FILE_A; f <= FILE_H; ++f)
+//          os << " | " << PieceToChar[pos.piece_on(make_square(f, r))];
+//
+//      os << " |\n +---+---+---+---+---+---+---+---+\n";
+//  }
+//
+//  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
+//     << std::setfill('0') << std::setw(16) << pos.key()
+//     << std::setfill(' ') << std::dec << "\nCheckers: ";
+//
+//  for (Bitboard b = pos.checkers(); b; )
+//      os << UCI::square(pop_lsb(&b)) << " ";
+//
+//  return os;
+//}
 
 
 /// Position::init() initializes at startup the various arrays used to compute
@@ -310,6 +333,20 @@ void Position::set_check_info(StateInfo* si) const {
 
   si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
+
+  si->queen_attackers[WHITE] = si->queen_attackers[BLACK] = 0;
+  if (pieceCount[W_QUEEN] > 0) {
+    si->queen_attackers[BLACK] = (  (PseudoAttacks[ROOK  ][square<QUEEN>(WHITE)] & pieces(QUEEN, ROOK))
+                                  | (PseudoAttacks[BISHOP][square<QUEEN>(WHITE)] & pieces(QUEEN, BISHOP))
+                                  |  StepAttacksBB[KNIGHT][square<QUEEN>(WHITE)]
+                            ) & pieces(BLACK);
+  }
+  if (pieceCount[B_QUEEN] > 0) {
+      si->queen_attackers[WHITE] = (  (PseudoAttacks[ROOK  ][square<QUEEN>(BLACK)] & pieces(QUEEN, ROOK))
+                            | (PseudoAttacks[BISHOP][square<QUEEN>(BLACK)] & pieces(QUEEN, BISHOP))
+                            |  StepAttacksBB[KNIGHT][square<QUEEN>(BLACK)]
+                            ) & pieces(WHITE);
+  }
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -1047,8 +1084,23 @@ bool Position::see_ge(Move m, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers)
-          return relativeStm;
+      if (!stmAttackers) {
+              if ((st->queen_attackers[stm] & occupied) && (occupied & pieceList[stm ? W_QUEEN : B_QUEEN][0]))
+              {
+                to = pieceList[stm ? W_QUEEN : B_QUEEN][0];
+                attackers = attackers_to(to, occupied) & occupied;
+                stmAttackers = attackers & pieces(stm);
+                if (!stmAttackers)
+                  return relativeStm;
+//                else {
+//                  sync_cout << "pos: " << *this << " move: " << UCI::move(m,false) << " snipers:\n" << Bitboards::pretty(st->queen_attackers[stm] & occupied) <<
+//                      " attackers to " << to << "  :\n" <<  Bitboards::pretty(attackers) << sync_endl;
+//                  //abort();
+//                }
+              }
+              else
+                return relativeStm;
+            }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);

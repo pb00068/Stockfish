@@ -53,6 +53,7 @@ struct StateInfo {
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
+  Bitboard   queen_attackers[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
 
