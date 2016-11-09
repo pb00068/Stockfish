@@ -52,6 +52,7 @@ struct StateInfo {
   Piece      capturedPiece;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
+  Bitboard   queen_attackers[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
@@ -134,7 +135,7 @@ public:
   void undo_null_move();
 
   // Static Exchange Evaluation
-  Value see(Move m, Bitboard* queen_attackers) const;
+  Value see(Move m) const;
 
   // Accessing hash keys
   Key key() const;

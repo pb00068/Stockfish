@@ -28,7 +28,7 @@ ifeq ($(KERNEL),Linux)
 endif
 
 ### Executable name
-EXE = stockfish
+EXE = stockfish2
 
 ### Installation dir definitions
 PREFIX = /usr/local

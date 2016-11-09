@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th)
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see(ttm, queen_attackers) > threshold ? ttm : MOVE_NONE;
+          && pos.see(ttm) > threshold ? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
 }
@@ -201,7 +201,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see(move, queen_attackers) >= VALUE_ZERO)
+              if (pos.see(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the beginning of the array
@@ -294,7 +294,7 @@ Move MovePicker::next_move() {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see(move, queen_attackers) > threshold)
+              && pos.see(move) > threshold)
               return move;
       }
       break;

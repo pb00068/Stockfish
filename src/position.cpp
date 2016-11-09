@@ -336,6 +336,50 @@ void Position::set_check_info(StateInfo* si) const {
   si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinnersForKing[WHITE]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinnersForKing[BLACK]);
 
+  si->queen_attackers[WHITE] = si->queen_attackers[BLACK] = 0;
+  if (pieceCount[W_QUEEN] > 0) {
+//    si->queen_attackers[BLACK] = (  (PseudoAttacks[ROOK  ][square<QUEEN>(WHITE)] & pieces(QUEEN, ROOK))
+//                                  | (PseudoAttacks[BISHOP][square<QUEEN>(WHITE)] & pieces(QUEEN, BISHOP))
+//                                  | (StepAttacksBB[KNIGHT][square<QUEEN>(WHITE)] & pieces(KNIGHT))
+//                            ) & pieces(BLACK);
+//    Bitboard result = 0;
+
+      Bitboard snipers = (  (PseudoAttacks[ROOK  ][square<QUEEN>(WHITE)] & pieces(QUEEN, ROOK))
+                          | (PseudoAttacks[BISHOP][square<QUEEN>(WHITE)] & pieces(QUEEN, BISHOP))) & pieces(BLACK);
+
+      while (snipers)
+      {
+        Square sniperSq = pop_lsb(&snipers);
+        Bitboard b = between_bb(square<QUEEN>(WHITE), sniperSq) & pieces();
+
+        if (!b)// || !more_than_one(b))
+        {
+            si->queen_attackers[BLACK] |= sniperSq;
+        }
+      }
+      si->queen_attackers[BLACK] |= StepAttacksBB[KNIGHT][square<QUEEN>(WHITE)] & pieces(BLACK, KNIGHT);
+  }
+  if (pieceCount[B_QUEEN] > 0) {
+//      si->queen_attackers[WHITE] = (  (PseudoAttacks[ROOK  ][square<QUEEN>(BLACK)] & pieces(QUEEN, ROOK))
+//                            | (PseudoAttacks[BISHOP][square<QUEEN>(BLACK)] & pieces(QUEEN, BISHOP))
+//                            | (StepAttacksBB[KNIGHT][square<QUEEN>(BLACK)] & pieces(KNIGHT))
+//                            ) & pieces(WHITE);
+    Bitboard snipers = (  (PseudoAttacks[ROOK  ][square<QUEEN>(BLACK)] & pieces(QUEEN, ROOK))
+                            | (PseudoAttacks[BISHOP][square<QUEEN>(BLACK)] & pieces(QUEEN, BISHOP))) & pieces(WHITE);
+
+        while (snipers)
+        {
+          Square sniperSq = pop_lsb(&snipers);
+          Bitboard b = between_bb(square<QUEEN>(BLACK), sniperSq) & pieces();
+
+          if (!b) // || !more_than_one(b))
+          {
+              si->queen_attackers[WHITE] |= sniperSq;
+          }
+        }
+        si->queen_attackers[WHITE] |= StepAttacksBB[KNIGHT][square<QUEEN>(BLACK)] & pieces(WHITE, KNIGHT);
+  }
+
   Square ksq = square<KING>(~sideToMove);
 
   si->checkSquares[PAWN]   = attacks_from<PAWN>(ksq, ~sideToMove);
@@ -1014,7 +1058,7 @@ Key Position::key_after(Move m) const {
 }
 
 
-Value Position::see(Move m, Bitboard* queen_attackers) const {
+Value Position::see(Move m) const {
 
   Square from, to;
   Bitboard occupied, attackers, stmAttackers;
@@ -1065,14 +1109,19 @@ Value Position::see(Move m, Bitboard* queen_attackers) const {
 
       if (!stmAttackers)
       {
-        if ((queen_attackers[stm] & occupied) && (occupied & this->pieceList[stm ? W_QUEEN : B_QUEEN][0]))
+        if ((st->queen_attackers[stm] & occupied) && (occupied & this->pieceList[stm ? W_QUEEN : B_QUEEN][0]))
         {
+                 occupied |= to; // assure that old exchange square is occupied
                  to = this->pieceList[stm ? W_QUEEN : B_QUEEN][0];
                  attackers = attackers_to(to, occupied) & occupied;
                  stmAttackers = attackers & pieces(stm);
-                 if (!stmAttackers)
+                 //dbg_hit_on(stmAttackers);
+                 if (!stmAttackers) {
+                   //sync_cout << *this << " move: " << UCI::move(m,false) << " newtarget: " << UCI::move(make_move(to,to), false) << " queen attackers: \n" << Bitboards::pretty(st->queen_attackers[stm] & occupied) << "  attackers: \n" << Bitboards::pretty(attackers) << "  occupied: \n" << Bitboards::pretty(occupied) << sync_endl;
                    break;
+                 }
                  nextVictim = QUEEN;
+
         }
         else
            break; // If the opponent has no attackers we are finished
