@@ -361,7 +361,7 @@ namespace {
             if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners)) {
                 score -= WeakQueen;
                 queen_snipers[Them] = (  (PseudoAttacks[ROOK  ][s] & pos.pieces(QUEEN, ROOK))
-                  | (PseudoAttacks[BISHOP][s] & pos.pieces(QUEEN, BISHOP))) & pos.pieces(Them, ROOK, BISHOP);
+                  | (PseudoAttacks[BISHOP][s] & pos.pieces(QUEEN, BISHOP))) & pos.pieces(Them);
             }
         }
     }

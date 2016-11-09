@@ -134,7 +134,7 @@ public:
   void undo_null_move();
 
   // Static Exchange Evaluation
-  bool see_ge(Move m, Value value, Bitboard*) const;
+  Value see(Move m, Bitboard* queen_attackers) const;
 
   // Accessing hash keys
   Key key() const;
