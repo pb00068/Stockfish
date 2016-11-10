@@ -54,9 +54,9 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
-  PieceType  enPrise;
-  Square     enPriseSquare;
-  Bitboard   enPriseAttacker;
+//  PieceType  enPrise;
+//  Square     enPriseSquare;
+//  Bitboard   enPriseAttacker;
 };
 
 // In a std::deque references to elements are unaffected upon resizing
@@ -137,7 +137,7 @@ public:
   void undo_null_move();
 
   // Static Exchange Evaluation
-  bool see_ge(Move m, Value value) const;
+  bool see_ge(Move m, Value value, Bitboard queenAttackers) const;
 
   // Accessing hash keys
   Key key() const;

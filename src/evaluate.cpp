@@ -253,7 +253,7 @@ namespace {
 
   template<bool DoTrace, Color Us = WHITE, PieceType Pt = KNIGHT>
   Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score* mobility,
-                        const Bitboard* mobilityArea) {
+                        const Bitboard* mobilityArea, Bitboard queenAttackers[COLOR_NB]) {
     Bitboard b, bb;
     Square s;
     Score score = SCORE_ZERO;
@@ -357,9 +357,31 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard pinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
-                score -= WeakQueen;
+            //Bitboard pinners;
+            //if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
+            //    score -= WeakQueen;
+
+            Bitboard result = 0;
+
+            // Snipers are sliders that attack 's' when a piece is removed
+            Bitboard snipers = (  (PseudoAttacks[ROOK  ][s] & pos.pieces(QUEEN, ROOK))
+                                | (PseudoAttacks[BISHOP][s] & pos.pieces(QUEEN, BISHOP))) & pos.pieces(Them, ROOK, BISHOP);
+
+            while (snipers)
+            {
+              Square sniperSq = pop_lsb(&snipers);
+              Bitboard bbbb = between_bb(s, sniperSq) & pos.pieces();
+              if (!bbbb)
+                queenAttackers[Them] |= sniperSq;
+              else if (!more_than_one(bbbb))
+                  result |= bbbb;
+            }
+
+            if (result)
+              score -= WeakQueen;
+
+            queenAttackers[Them] |= StepAttacksBB[KNIGHT][s] & pos.pieces(Them, KNIGHT);
+            queenAttackers[Them] |= pos.attacks_from<PAWN>(s, Us) & pos.pieces(Them, PAWN);
         }
     }
 
@@ -367,13 +389,13 @@ namespace {
         Trace::add(Pt, Us, score);
 
     // Recursively call evaluate_pieces() of next piece type until KING is excluded
-    return score - evaluate_pieces<DoTrace, Them, NextPt>(pos, ei, mobility, mobilityArea);
+    return score - evaluate_pieces<DoTrace, Them, NextPt>(pos, ei, mobility, mobilityArea, queenAttackers);
   }
 
   template<>
-  Score evaluate_pieces<false, WHITE, KING>(const Position&, EvalInfo&, Score*, const Bitboard*) { return SCORE_ZERO; }
+  Score evaluate_pieces<false, WHITE, KING>(const Position&, EvalInfo&, Score*, const Bitboard*, Bitboard *) { return SCORE_ZERO; }
   template<>
-  Score evaluate_pieces< true, WHITE, KING>(const Position&, EvalInfo&, Score*, const Bitboard*) { return SCORE_ZERO; }
+  Score evaluate_pieces< true, WHITE, KING>(const Position&, EvalInfo&, Score*, const Bitboard*, Bitboard *) { return SCORE_ZERO; }
 
 
   // evaluate_king() assigns bonuses and penalties to a king of a given color
@@ -781,7 +803,7 @@ namespace {
 /// of the position from the point of view of the side to move.
 
 template<bool DoTrace>
-Value Eval::evaluate(const Position& pos) {
+Value Eval::evaluate(const Position& pos, Bitboard queenAttackers[COLOR_NB]) {
 
   assert(!pos.checkers());
 
@@ -826,7 +848,7 @@ Value Eval::evaluate(const Position& pos) {
   };
 
   // Evaluate all pieces but king and pawns
-  score += evaluate_pieces<DoTrace>(pos, ei, mobility, mobilityArea);
+  score += evaluate_pieces<DoTrace>(pos, ei, mobility, mobilityArea, queenAttackers);
   score += mobility[WHITE] - mobility[BLACK];
 
   // Evaluate kings after all other pieces because we need full attack
@@ -886,8 +908,8 @@ Value Eval::evaluate(const Position& pos) {
 }
 
 // Explicit template instantiations
-template Value Eval::evaluate<true >(const Position&);
-template Value Eval::evaluate<false>(const Position&);
+template Value Eval::evaluate<true >(const Position&, Bitboard queenAttackers[COLOR_NB]);
+template Value Eval::evaluate<false>(const Position&, Bitboard queenAttackers[COLOR_NB]);
 
 
 /// trace() is like evaluate(), but instead of returning a value, it returns
@@ -897,8 +919,8 @@ template Value Eval::evaluate<false>(const Position&);
 std::string Eval::trace(const Position& pos) {
 
   std::memset(scores, 0, sizeof(scores));
-
-  Value v = evaluate<true>(pos);
+  Bitboard queenAttackers[COLOR_NB];
+  Value v = evaluate<true>(pos, queenAttackers);
   v = pos.side_to_move() == WHITE ? v : -v; // White's point of view
 
   std::stringstream ss;

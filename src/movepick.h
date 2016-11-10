@@ -97,9 +97,9 @@ public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
 
-  MovePicker(const Position&, Move, Value);
+  MovePicker(const Position&, Move, Value, Bitboard);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, Search::Stack*, Bitboard);
 
   Move next_move();
 
@@ -118,6 +118,7 @@ private:
   int stage;
   ExtMove *cur, *endMoves, *endBadCaptures;
   ExtMove moves[MAX_MOVES];
+  Bitboard queenAttackers;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
