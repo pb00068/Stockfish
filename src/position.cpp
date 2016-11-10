@@ -319,6 +319,24 @@ void Position::set_check_info(StateInfo* si) const {
   si->checkSquares[ROOK]   = attacks_from<ROOK>(ksq);
   si->checkSquares[QUEEN]  = si->checkSquares[BISHOP] | si->checkSquares[ROOK];
   si->checkSquares[KING]   = 0;
+
+  // Now calculate if the side to move has a heavy piece enprise
+  si->enPrise = NO_PIECE_TYPE;
+  Bitboard heavy = pieces(sideToMove, QUEEN, ROOK);
+  while (heavy)
+  {
+      Square enPrise = pop_lsb(&heavy);
+      si->enPriseAttacker = (attacks_from<PAWN>(enPrise, sideToMove)    & pieces(~sideToMove, PAWN))
+            | (attacks_from<KNIGHT>(enPrise)         & pieces(~sideToMove,KNIGHT))
+            | (attacks_from<KING>(enPrise)           & pieces(~sideToMove,KING));
+      if (si->enPriseAttacker)
+      {
+         si->enPrise = type_of(piece_on(enPrise));
+         si->enPriseSquare = enPrise;
+         break;
+      }
+  }
+
 }
 
 
@@ -1026,13 +1044,20 @@ bool Position::see_ge(Move m, Value v) const {
   if (nextVictim == KING)
       return true;
 
+  occupied ^= pieces() ^ from ^ to;
+
+  if (st->enPrise > nextVictim && (st->enPriseAttacker & occupied) && !(st->checkSquares[nextVictim] & to)) {
+    nextVictim = st->enPrise;
+    to = st->enPriseSquare;
+  }
+
   balance -= PieceValue[MG][nextVictim];
 
   if (balance >= v)
       return true;
 
   bool relativeStm = true; // True if the opponent is to move
-  occupied ^= pieces() ^ from ^ to;
+
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
