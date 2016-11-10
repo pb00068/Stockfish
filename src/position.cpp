@@ -118,6 +118,30 @@ std::ostream& operator<<(std::ostream& os, Position& pos) {
   return os;
 }
 
+//std::ostream& operator<<(std::ostream& os, const Position& pos) {
+//
+//  os << "\n +---+---+---+---+---+---+---+---+\n";
+//
+//  for (Rank r = RANK_8; r >= RANK_1; --r)
+//  {
+//      for (File f = FILE_A; f <= FILE_H; ++f)
+//          os << " | " << PieceToChar[pos.piece_on(make_square(f, r))];
+//
+//      os << " |\n +---+---+---+---+---+---+---+---+\n";
+//  }
+//
+//  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
+//     << std::setfill('0') << std::setw(16) << pos.key()
+//     << std::setfill(' ') << std::dec << "\nCheckers: ";
+//
+//  for (Bitboard b = pos.checkers(); b; )
+//      os << UCI::square(pop_lsb(&b)) << " ";
+//
+//
+//
+//  return os;
+//}
+
 
 /// Position::init() initializes at startup the various arrays used to compute
 /// hash keys.
@@ -322,21 +346,22 @@ void Position::set_check_info(StateInfo* si) const {
 
   // Now calculate if the side to move has a heavy piece enprise
   si->enPrise = NO_PIECE_TYPE;
-  Bitboard heavy = pieces(sideToMove, QUEEN, ROOK);
+  Bitboard heavy = pieces(sideToMove, QUEEN); // , ROOK);
   while (heavy)
   {
       Square enPrise = pop_lsb(&heavy);
       si->enPriseAttacker = (attacks_from<PAWN>(enPrise, sideToMove)    & pieces(~sideToMove, PAWN))
             | (attacks_from<KNIGHT>(enPrise)         & pieces(~sideToMove,KNIGHT))
-            | (attacks_from<KING>(enPrise)           & pieces(~sideToMove,KING));
+            | (attacks_bb<BISHOP>(enPrise, pieces()) & pieces(~sideToMove,BISHOP))
+            | (attacks_bb<ROOK  >(enPrise, pieces()) & pieces(~sideToMove,ROOK  ))
+            | (attacks_from<KING>(enPrise)           & pieces(~sideToMove,KING  ));
       if (si->enPriseAttacker)
       {
-         si->enPrise = type_of(piece_on(enPrise));
+         si->enPrise = QUEEN; //type_of(piece_on(enPrise));
          si->enPriseSquare = enPrise;
          break;
       }
   }
-
 }
 
 
@@ -1049,6 +1074,7 @@ bool Position::see_ge(Move m, Value v) const {
   if (st->enPrise > nextVictim && (st->enPriseAttacker & occupied) && !(st->checkSquares[nextVictim] & to)) {
     nextVictim = st->enPrise;
     to = st->enPriseSquare;
+    //sync_cout << *this << " move " << UCI::move(m, false) << " newtarget " <<  UCI::move(make_move(to,to), false) << sync_endl;
   }
 
   balance -= PieceValue[MG][nextVictim];
