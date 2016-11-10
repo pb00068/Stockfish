@@ -52,7 +52,9 @@ struct StateInfo {
   Piece      capturedPiece;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
-  Bitboard   queen_attackers[COLOR_NB];
+  PieceType  enPrise;
+  Square     enPriseSquare;
+  Bitboard   enPriseAttacker;
   Bitboard   pinnersForKing[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
