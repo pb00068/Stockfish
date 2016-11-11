@@ -561,6 +561,7 @@ namespace {
     Piece moved_piece;
     int moveCount, quietCount;
     Value handicap = VALUE_ZERO;
+    Square handicapFrom= SQ_NONE;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -884,7 +885,7 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, handicap))
+          &&  pos.see_ge(move, from_sq(move) != handicapFrom ? handicap : VALUE_ZERO))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -992,6 +993,7 @@ moves_loop: // When in check search starts from here
               {
                   r -= 2 * ONE_PLY;
                   handicap = std::max(handicap, -pos.see(make_move(to_sq(move), from_sq(move))));
+                  handicapFrom = from_sq(move);
               }
 
               ss->history = thisThread->history[moved_piece][to_sq(move)]
