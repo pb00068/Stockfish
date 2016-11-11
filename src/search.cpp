@@ -560,6 +560,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
     int moveCount, quietCount;
+    Value handicap = VALUE_ZERO;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -883,7 +884,7 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, VALUE_ZERO))
+          &&  pos.see_ge(move, handicap))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -989,7 +990,10 @@ moves_loop: // When in check search starts from here
               else if (   type_of(move) == NORMAL
                        && type_of(pos.piece_on(to_sq(move))) != PAWN
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              {
                   r -= 2 * ONE_PLY;
+                  handicap = std::max(handicap, -pos.see(make_move(to_sq(move), from_sq(move))));
+              }
 
               ss->history = thisThread->history[moved_piece][to_sq(move)]
                            +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
