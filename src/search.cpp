@@ -557,7 +557,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, nullValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, allowCheckext = true;
     Piece moved_piece;
     int moveCount, quietCount;
 
@@ -883,6 +883,7 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
+          &&  allowCheckext
           &&  pos.see_ge(move, VALUE_ZERO))
           extension = ONE_PLY;
 
@@ -988,7 +989,10 @@ moves_loop: // When in check search starts from here
               else if (   type_of(move) == NORMAL
                        && type_of(pos.piece_on(to_sq(move))) != PAWN
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              {
                   r -= 2 * ONE_PLY;
+                  allowCheckext = false;
+              }
 
               ss->history = thisThread->history[moved_piece][to_sq(move)]
                            +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
