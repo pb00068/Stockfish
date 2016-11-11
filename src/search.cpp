@@ -557,9 +557,10 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, nullValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, allowCheckext = true;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
     int moveCount, quietCount;
+    Square threatenedSq = SQ_NONE;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -883,7 +884,6 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  allowCheckext
           &&  pos.see_ge(move, VALUE_ZERO))
           extension = ONE_PLY;
 
@@ -942,12 +942,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value((-35 * lmrDepth * lmrDepth) - (threatenedSq != SQ_NONE && threatenedSq != from_sq(move) ? PawnValueMg : VALUE_ZERO))))
                   continue;
           }
           else if (   depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, Value(-35 * depth / ONE_PLY * depth / ONE_PLY)))
+                   && !pos.see_ge(move, Value((-35 * depth / ONE_PLY * depth / ONE_PLY)) - (threatenedSq != SQ_NONE && threatenedSq != from_sq(move) ? PawnValueMg : VALUE_ZERO)))
                   continue;
       }
 
@@ -991,7 +991,7 @@ moves_loop: // When in check search starts from here
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
               {
                   r -= 2 * ONE_PLY;
-                  allowCheckext = false;
+                  threatenedSq = from_sq(move);
               }
 
               ss->history = thisThread->history[moved_piece][to_sq(move)]
