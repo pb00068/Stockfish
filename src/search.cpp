@@ -562,8 +562,9 @@ namespace {
     int moveCount, quietCount;
 
     // Step 1. Initialize node
-    Thread* thisThread = pos.this_thread();
+    Square weakSpot = SQ_A1;
     inCheck = pos.checkers();
+    Thread* thisThread = pos.this_thread();
     moveCount = quietCount =  ss->moveCount = 0;
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
@@ -591,7 +592,7 @@ namespace {
     {
         // Step 2. Check for aborted search and immediate draw
         if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw() || ss->ply >= MAX_PLY)
-            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos)
+            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos, weakSpot)
                                                   : DrawValue[pos.side_to_move()];
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -696,7 +697,7 @@ namespace {
     {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos);
+            eval = ss->staticEval = evaluate(pos, weakSpot);
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -706,7 +707,7 @@ namespace {
     else
     {
         eval = ss->staticEval =
-        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, weakSpot)
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
@@ -828,9 +829,13 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* cmh  = (ss-1)->counterMoves;
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
-    Square weak = SQ_NONE;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+//    if (weak != SQ_NONE) {
+//      sync_cout << pos << " weak" << UCI::move(make_move(weak,weak), false) << sync_endl;
+//
+//    }
+
+    MovePicker mp(pos, ttMove, depth, ss, weakSpot);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
@@ -877,16 +882,17 @@ moves_loop: // When in check search starts from here
       givesCheck =  type_of(move) == NORMAL && !pos.discovered_check_candidates()
                   ? pos.check_squares(type_of(pos.piece_on(from_sq(move)))) & to_sq(move)
                   : pos.gives_check(move);
+      if (givesCheck)
+        weakSpot = SQ_A1;
 
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
-      Square to2 = weak != SQ_NONE ? weak : to_sq(move);
 
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, to2,  VALUE_ZERO))
+          &&  pos.see_ge(move, SQ_A1,  VALUE_ZERO))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -918,6 +924,7 @@ moves_loop: // When in check search starts from here
       if (  !rootNode
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
+          //sync_cout << "Step 13. pruning" << sync_endl;
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))
@@ -944,12 +951,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, to2, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, weakSpot, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, to2, Value(-35 * depth / ONE_PLY * depth / ONE_PLY)))
+                   && !pos.see_ge(move, weakSpot, Value(-35 * depth / ONE_PLY * depth / ONE_PLY)))
                   continue;
       }
 
@@ -981,6 +988,8 @@ moves_loop: // When in check search starts from here
               r -= r ? ONE_PLY : DEPTH_ZERO;
           else
           {
+
+              //sync_cout << "Step 14. lmr" << sync_endl;
               // Increase reduction for cut nodes
               if (cutNode)
                   r += 2 * ONE_PLY;
@@ -990,11 +999,11 @@ moves_loop: // When in check search starts from here
               // hence break make_move().
               else if (   type_of(move) == NORMAL
                        && type_of(pos.piece_on(to_sq(move))) != PAWN
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), from_sq(move),  VALUE_ZERO))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), SQ_A1,  VALUE_ZERO))
               {
                   r -= 2 * ONE_PLY;
-                  if (weak == SQ_NONE || type_of(pos.piece_on(from_sq(move))) > type_of(pos.piece_on(weak)))
-                    weak = from_sq(move);
+//                  if (weak ==  || type_of(pos.piece_on(from_sq(move))) > type_of(pos.piece_on(weak)))
+//                    weak = from_sq(move);
                   //sync_cout << pos << " move: " << UCI::move(move, false) << sync_endl;
               }
 
@@ -1201,6 +1210,7 @@ moves_loop: // When in check search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool ttHit, givesCheck, evasionPrunable;
     Depth ttDepth;
+    Square weakSpot = SQ_A1;
 
     if (PvNode)
     {
@@ -1214,7 +1224,7 @@ moves_loop: // When in check search starts from here
 
     // Check for an instant draw or if the maximum ply has been reached
     if (pos.is_draw() || ss->ply >= MAX_PLY)
-        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos)
+        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos, weakSpot)
                                               : DrawValue[pos.side_to_move()];
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
@@ -1251,7 +1261,7 @@ moves_loop: // When in check search starts from here
         {
             // Never assume anything on values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos);
+                ss->staticEval = bestValue = evaluate(pos, weakSpot);
 
             // Can ttValue be used as a better position evaluation?
             if (ttValue != VALUE_NONE)
@@ -1260,7 +1270,7 @@ moves_loop: // When in check search starts from here
         }
         else
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, weakSpot)
                                              : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1310,7 +1320,8 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, to_sq(move), VALUE_ZERO + 1))
+          //sync_cout << "qs futility" << sync_endl;
+          if (futilityBase <= alpha && !pos.see_ge(move, weakSpot, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1323,9 +1334,10 @@ moves_loop: // When in check search starts from here
                        && !pos.capture(move);
 
       // Don't search moves with negative SEE values
+      //sync_cout << "qs don't search moves with negative SEE values" << sync_endl;
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  !pos.see_ge(move, to_sq(move), VALUE_ZERO))
+          &&  !pos.see_ge(move, givesCheck ? SQ_A1 : weakSpot, VALUE_ZERO))
           continue;
 
       // Speculative prefetch as early as possible

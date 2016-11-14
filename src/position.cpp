@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -118,6 +119,29 @@ std::ostream& operator<<(std::ostream& os, Position& pos) {
 
   return os;
 }
+
+//std::ostream& operator<<(std::ostream& os, const Position& pos) {
+//
+//  os << "\n +---+---+---+---+---+---+---+---+\n";
+//
+//  for (Rank r = RANK_8; r >= RANK_1; --r)
+//  {
+//      for (File f = FILE_A; f <= FILE_H; ++f)
+//          os << " | " << PieceToChar[pos.piece_on(make_square(f, r))];
+//
+//      os << " |\n +---+---+---+---+---+---+---+---+\n";
+//  }
+//
+//  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
+//     << std::setfill('0') << std::setw(16) << pos.key()
+//     << std::setfill(' ') << std::dec << "\nCheckers: ";
+//
+//  for (Bitboard b = pos.checkers(); b; )
+//      os << UCI::square(pop_lsb(&b)) << " ";
+//
+//
+//  return os;
+//}
 
 
 /// Position::init() initializes at startup the various arrays used to compute
@@ -1012,7 +1036,7 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
   PieceType nextVictim = type_of(piece_on(from));
   Color stm = ~color_of(piece_on(from)); // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
-  Bitboard occupied;
+  Bitboard occupied, stmAttackers;
 
   if (type_of(m) == ENPASSANT)
   {
@@ -1031,21 +1055,24 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
   if (nextVictim == KING)
       return true;
 
+  occupied ^= pieces() ^ from ^ to;
+
+  if (to2 && to2 != from && type_of(piece_on(to2)) > nextVictim) {
+       //sync_cout << *this << " move " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(to2,to2),false) << sync_endl;
+       to = to2;
+       nextVictim = type_of(piece_on(to2));
+  }
+
   balance -= PieceValue[MG][nextVictim];
 
   if (balance >= v)
       return true;
 
   bool relativeStm = true; // True if the opponent is to move
-  occupied ^= pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
-  Bitboard attackers, stmAttackers;
-
-  marker:
-
-  attackers = attackers_to(to , occupied) & occupied;
+  Bitboard attackers= attackers_to(to , occupied) & occupied;
 
   while (true)
   {
@@ -1056,13 +1083,13 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers) {
-         if (to != to2 && stm != color_of(piece_on(from))) {
-           to = to2;
-           goto marker;
-         }
+      if (!stmAttackers)
          return relativeStm;
-      }
+
+//      if (to2 == to) {
+//        sync_cout << *this << " orig " <<  UCI::move(m, false) << " weak " << UCI::move(make_move(to2,to2), false) << sync_endl;
+//        //abort();
+//      }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
