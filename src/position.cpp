@@ -81,6 +81,7 @@ PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitbo
   return KING; // No need to update bitboards: it is the last cycle
 }
 
+
 } // namespace
 
 
@@ -995,7 +996,9 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value v) const {
+
+
+bool Position::see_ge(Move m, Square to2, Value v) const {
 
   assert(is_ok(m));
 
@@ -1009,7 +1012,7 @@ bool Position::see_ge(Move m, Value v) const {
   PieceType nextVictim = type_of(piece_on(from));
   Color stm = ~color_of(piece_on(from)); // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
-  Bitboard occupied, stmAttackers;
+  Bitboard occupied;
 
   if (type_of(m) == ENPASSANT)
   {
@@ -1038,7 +1041,11 @@ bool Position::see_ge(Move m, Value v) const {
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard attackers, stmAttackers;
+
+  marker:
+
+  attackers = attackers_to(to , occupied) & occupied;
 
   while (true)
   {
@@ -1049,8 +1056,13 @@ bool Position::see_ge(Move m, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers)
-          return relativeStm;
+      if (!stmAttackers) {
+         if (to != to2 && stm != color_of(piece_on(from))) {
+           to = to2;
+           goto marker;
+         }
+         return relativeStm;
+      }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
@@ -1069,7 +1081,6 @@ bool Position::see_ge(Move m, Value v) const {
       stm = ~stm;
   }
 }
-
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.
