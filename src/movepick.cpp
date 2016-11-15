@@ -19,10 +19,11 @@
 */
 
 #include <cassert>
-#include <iostream>
+//#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
+//#include "uci.h"
 
 namespace {
 
@@ -203,13 +204,17 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (recaptureSquare && recaptureSquare != from_sq(move) && pos.gives_check(move)) {
+
+              if (!recaptureSquare || recaptureSquare == from_sq(move) || pos.gives_check(move)) {
                 if (pos.see_ge(move, SQ_A1, VALUE_ZERO))
                                   return move;
               }
-              //sync_cout << "next_move" << sync_endl;
-              if (pos.see_ge(move, recaptureSquare, VALUE_ZERO))
+              else {
+               // dbg_hit_on(true);
+                //if (recaptureSquare) sync_cout << "next move recaptureSquare " << UCI::move(make_move(recaptureSquare,recaptureSquare), false) << sync_endl;
+                if (pos.see_ge(move, recaptureSquare, VALUE_ZERO))
                   return move;
+              }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
@@ -301,7 +306,7 @@ Move MovePicker::next_move() {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, to_sq(move), threshold + 1))
+              && pos.see_ge(move, SQ_A1, threshold + 1))
               return move;
       }
       break;

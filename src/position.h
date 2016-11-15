@@ -136,6 +136,10 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Square to2, Value value) const;
+  bool see_ge(Move m, Value value) const;
+  Value see(Move m, Square to2) const;
+  Value see(Move m) const;
+  Value seeNullMove(Square to) const;
 
   // Accessing hash keys
   Key key() const;

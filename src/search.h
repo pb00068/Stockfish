@@ -46,6 +46,7 @@ struct Stack {
   Value history;
   bool skipEarlyPruning;
   int moveCount;
+  Square weakSpot;
   CounterMoveStats* counterMoves;
 };
 

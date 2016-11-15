@@ -781,10 +781,9 @@ namespace {
 /// of the position from the point of view of the side to move.
 
 template<bool DoTrace>
-Value Eval::evaluate(const Position& pos, Square& weakSpot) {
+Value Eval::evaluate(const Position& pos) {
 
   assert(!pos.checkers());
-  weakSpot = SQ_A1;
 
   Score mobility[COLOR_NB] = { SCORE_ZERO, SCORE_ZERO };
   EvalInfo ei;
@@ -884,18 +883,21 @@ Value Eval::evaluate(const Position& pos, Square& weakSpot) {
   }
 
 
-  Bitboard hang = pos.pieces(pos.side_to_move())
-            & ~ei.attackedBy[pos.side_to_move()][ALL_PIECES]
-            &  ei.attackedBy[~pos.side_to_move()][ALL_PIECES] & !pos.square<KING>(pos.side_to_move());
-  if (hang)
-    weakSpot = lsb(hang);
+//  Bitboard hang = (pos.pieces(pos.side_to_move(), KNIGHT , BISHOP) |  pos.pieces(pos.side_to_move(), ROOK , QUEEN))
+//             & ~ei.attackedBy[pos.side_to_move()][ALL_PIECES]
+//             &  ei.attackedBy[~pos.side_to_move()][ALL_PIECES];
+//  Bitboard hang = pos.pieces(pos.side_to_move())
+//            & ~ei.attackedBy[pos.side_to_move()][ALL_PIECES]
+//            &  ei.attackedBy[~pos.side_to_move()][ALL_PIECES] & ~pos.square<KING>(pos.side_to_move());
+//  if (hang)
+//    weakSpot = lsb(hang);
 
   return (pos.side_to_move() == WHITE ? v : -v) + Eval::Tempo; // Side to move point of view
 }
 
 // Explicit template instantiations
-template Value Eval::evaluate<true >(const Position&, Square&);
-template Value Eval::evaluate<false>(const Position&, Square&);
+template Value Eval::evaluate<true >(const Position&);
+template Value Eval::evaluate<false>(const Position&);
 
 
 /// trace() is like evaluate(), but instead of returning a value, it returns
@@ -905,8 +907,7 @@ template Value Eval::evaluate<false>(const Position&, Square&);
 std::string Eval::trace(const Position& pos) {
 
   std::memset(scores, 0, sizeof(scores));
-  Square sq;
-  Value v = evaluate<true>(pos, sq);
+  Value v = evaluate<true>(pos);
   v = pos.side_to_move() == WHITE ? v : -v; // White's point of view
 
   std::stringstream ss;
