@@ -1023,7 +1023,19 @@ Key Position::key_after(Move m) const {
 
 
 bool Position::see_ge(Move m, Square to2, Value v) const {
+//  bool val = se_ge(m,to2, v);
+//  Value val2 = see(m,to2);
+//  if ((val2 >= v) != val)
+//  {
+//    sync_cout << *this << " move " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(to2,to2),false) <<
+//        " see: " << val2 << " gelimit:" << v  << " see_ge: " << val  << sync_endl;
+//        //abort();
+//  }
+  //dbg_hit_on(to2 && from_sq(m) != to2);
+  return to2 && from_sq(m) != to2 ? see(m,to2) >= v : see_ge(m,v);
+}
 
+bool Position::see_ge(Move m, Value v) const {
   assert(is_ok(m));
 
   //dbg_hit_on(to2);
@@ -1066,20 +1078,24 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
   if (nextVictim == KING)
       return true;
 
-  occupied ^= pieces() ^ from ^ to;
 
-  if (to2 && to2 != from && type_of(piece_on(to2)) > nextVictim) {
-       //sync_cout << *this << " move " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(to2,to2),false) << sync_endl;
-       to = to2;
-       nextVictim = type_of(piece_on(to2));
-  }
+
+//  if (to2 && to2 != from && type_of(piece_on(to2)) > nextVictim) {
+//       //sync_cout << *this << " move " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(to2,to2),false) << sync_endl;
+//       to = to2;
+//       nextVictim = type_of(piece_on(to2));
+//  }
 
   balance -= PieceValue[MG][nextVictim];
 
   if (balance >= v)
       return true;
 
+
+
   bool relativeStm = true; // True if the opponent is to move
+
+  occupied ^= pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
@@ -1094,8 +1110,16 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers)
+      if (!stmAttackers) {
+//         if (to2 && relativeStm && to2 != from && to2 != to) {
+//           balance += PieceValue[MG][nextVictim]; // undo balance
+//           to = to2;
+//           nextVictim = type_of(piece_on(to2));
+//           balance -= PieceValue[MG][nextVictim];
+//           goto marker;
+//         }
          return relativeStm;
+      }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
@@ -1115,164 +1139,120 @@ bool Position::see_ge(Move m, Square to2, Value v) const {
   }
 }
 
-//bool Position::see_ge(Move m,  Value v) const {
-//
-//  assert(is_ok(m));
-//
-//
-//  // Castling moves are implemented as king capturing the rook so cannot be
-//  // handled correctly. Simply assume the SEE value is VALUE_ZERO that is always
-//  // correct unless in the rare case the rook ends up under attack.
-//  if (type_of(m) == CASTLING)
-//      return VALUE_ZERO >= v;
-//
-//  Square from = from_sq(m), to = to_sq(m);
-//  PieceType nextVictim = type_of(piece_on(from));
-//  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
-//  Value balance; // Values of the pieces taken by us minus opponent's ones
-//  Bitboard occupied, stmAttackers;
-//
-//  if (type_of(m) == ENPASSANT)
-//  {
-//      occupied = SquareBB[to - pawn_push(~stm)]; // Remove the captured pawn
-//      balance = PieceValue[MG][PAWN];
-//  }
-//  else
-//  {
-//      balance = PieceValue[MG][piece_on(to)];
-//      occupied = 0;
-//  }
-//
-//  if (balance < v)
-//      return false;
-//
-//  if (nextVictim == KING)
-//      return true;
-//
-//  balance -= PieceValue[MG][nextVictim];
-//
-//  if (balance >= v)
-//      return true;
-//
-//  bool relativeStm = true; // True if the opponent is to move
-//  occupied ^= pieces() ^ from ^ to;
-//  // Find all attackers to the destination square, with the moving piece removed,
-//  // but possibly an X-ray attacker added behind it.
-//  Bitboard attackers= attackers_to(to , occupied) & occupied;
-//
-//  while (true)
-//  {
-//      stmAttackers = attackers & pieces(stm);
-//
-//      // Don't allow pinned pieces to attack pieces except the king as long all
-//      // pinners are on their original square.
-//      if (!(st->pinnersForKing[stm] & ~occupied))
-//          stmAttackers &= ~st->blockersForKing[stm];
-//
-//      if (!stmAttackers)
-//         return relativeStm;
-//
-//      // Locate and remove the next least valuable attacker
-//      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
-//
-//      if (nextVictim == KING)
-//          return relativeStm == bool(attackers & pieces(~stm));
-//
-//      balance += relativeStm ?  PieceValue[MG][nextVictim]
-//                             : -PieceValue[MG][nextVictim];
-//
-//      relativeStm = !relativeStm;
-//
-//      if (relativeStm == (balance >= v))
-//          return relativeStm;
-//
-//      stm = ~stm;
-//  }
-//}
 
 
 
-//Value Position::see(Move m, Square to2) const {
-//
-//  Square from, to;
-//  Bitboard occupied, attackers, stmAttackers;
-//  Value swapList[32];
-//  int slIndex = 0;
-//  PieceType nextVictim;
-//  Color stm;
-//
-//  assert(is_ok(m));
-//
-//  from = from_sq(m);
-//  to = to_sq(m);
-//  swapList[0] = PieceValue[MG][piece_on(to)];
-//  stm = color_of(piece_on(from));
-//  occupied = pieces() ^ from ^ to; // flip 'to' for the case captured piece is a pinner
-//
-//  // Castling moves are implemented as king capturing the rook so cannot
-//  // be handled correctly. Simply return VALUE_ZERO that is always correct
-//  // unless in the rare case the rook ends up under attack.
-//  if (type_of(m) == CASTLING)
-//      return VALUE_ZERO;
-//
-//  if (type_of(m) == ENPASSANT)
-//  {
-//      occupied ^= to - pawn_push(stm); // Remove the captured pawn
-//      swapList[0] = PieceValue[MG][PAWN];
-//  }
-//
-//
-//
-//  nextVictim = type_of(piece_on(from));
-//
-//  if (to2 && to2 != from && type_of(piece_on(to2)) > nextVictim) {
-//         //sync_cout << *this << " move " << UCI::move(m,false) << " newtarget " << UCI::move(make_move(to2,to2),false) << sync_endl;
-//         to = to2;
-//         nextVictim = type_of(piece_on(to2));
-//    }
-//
-//  // Find all attackers to the destination square, with the moving piece
-//  // removed, but possibly an X-ray attacker added behind it.
-//  attackers = attackers_to(to, occupied) & occupied;
-//
-//  while (true) {
-//      assert(slIndex < 31);
-//
-//      stm = ~stm;
-//      stmAttackers = attackers & pieces(stm);
-//      if (slIndex && stmAttackers && nextVictim == KING)
-//           break; // King went into check by last recapture so ignore it
-//      ++slIndex;
-//
-//      // Don't allow pinned pieces to attack as long all
-//      // pinners are on their original square.
-//      if (!(st->pinnersForKing[stm] & ~occupied))
-//          stmAttackers &= ~st->blockersForKing[stm];
-//
-//      if (!stmAttackers)
-//           break; // If the opponent has no attackers we are finished
-//
-//      // The destination square is defended, which makes things rather more
-//      // difficult to compute. We proceed by building up a "swap list" containing
-//      // the material gain or loss at each stop in a sequence of captures to the
-//      // destination square, where the sides alternately capture, and always
-//      // capture with the least valuable piece. After each capture, we look for
-//      // new X-ray attacks from behind the capturing piece.
-//
-//      // Add the new entry to the swap list
-//      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
-//
-//      // Locate and remove the next least valuable attacker
-//      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
-//  }
-//
-//  // Having built the swap list, we negamax through it to find the best
-//  // achievable score from the point of view of the side to move.
-//  while (--slIndex)
-//      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
-//
-//  return swapList[0];
-//}
+
+Value Position::see(Move m, Square to2) const {
+
+  Square from, to, too;
+  Bitboard occupied, attackers, stmAttackers;
+  Value swapList[32];
+  int slIndex = 0;
+  PieceType nextVictim;
+  Color stm;
+
+  assert(is_ok(m));
+
+  from = from_sq(m);
+  to  = too =  to_sq(m);
+  swapList[0] = PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(from));
+  occupied = pieces() ^ from ^ to; // flip 'to' for the case captured piece is a pinner
+
+  // Castling moves are implemented as king capturing the rook so cannot
+  // be handled correctly. Simply return VALUE_ZERO that is always correct
+  // unless in the rare case the rook ends up under attack.
+  if (type_of(m) == CASTLING)
+      return VALUE_ZERO;
+
+  if (type_of(m) == ENPASSANT)
+  {
+      occupied ^= to - pawn_push(stm); // Remove the captured pawn
+      swapList[0] = PieceValue[MG][PAWN];
+  }
+
+  nextVictim = type_of(piece_on(from));
+      //type_of(m) == PROMOTION ? promotion_type(m) : type_of(piece_on(from));
+
+  // to2 && to2 != from  assumed to be guaranteed
+  if (to2 && (occupied & to2) && type_of(piece_on(to2)) > nextVictim && !gives_check(m)) {
+     //sync_cout <<  " switch to " << UCI::move(make_move(to,to2),false) << sync_endl;
+     occupied |= to;
+     to = to2;
+     occupied ^= to2;
+     nextVictim = type_of(piece_on(to2));
+  }
+
+
+
+  // Find all attackers to the destination square, with the moving piece
+  // removed, but possibly an X-ray attacker added behind it.
+  attackers = attackers_to(to, occupied) & occupied;
+
+  while (true) {
+      assert(slIndex < 31);
+
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+      if (slIndex && stmAttackers && nextVictim == KING)
+           break; // King went into check by last recapture so ignore it
+      ++slIndex;
+
+      // Don't allow pinned pieces to attack as long all
+      // pinners are on their original square.
+      if (!(st->pinnersForKing[stm] & ~occupied))
+          stmAttackers &= ~st->blockersForKing[stm];
+
+      if (!stmAttackers) {
+           if (to != too && slIndex == 1) { // switched take back didn't work
+             //sync_cout <<  " switch back to " << UCI::move(make_move(to,too),false) << sync_endl;
+             to = too;
+             attackers = attackers_to(to, occupied) & occupied;
+             stmAttackers = attackers & pieces(stm);
+             if (!stmAttackers) {
+               //sync_cout <<  "no attackers" << sync_endl;
+               break;
+             }
+             nextVictim = type_of(piece_on(to));
+             //sync_cout <<  "next victim" <<  nextVictim << sync_endl;
+           }
+           else
+             if (to2 && to2 != to && (occupied & to2) && stm != color_of(piece_on(from)) && (slIndex > 1 || !gives_check(m))) {
+             to = to2;
+             attackers = attackers_to(to, occupied) & occupied;
+             stmAttackers = attackers & pieces(stm);
+             if (!stmAttackers)
+               break;
+             nextVictim = type_of(piece_on(to));
+           }
+
+           else
+             break; // If the opponent has no attackers we are finished
+      }
+
+      // The destination square is defended, which makes things rather more
+      // difficult to compute. We proceed by building up a "swap list" containing
+      // the material gain or loss at each stop in a sequence of captures to the
+      // destination square, where the sides alternately capture, and always
+      // capture with the least valuable piece. After each capture, we look for
+      // new X-ray attacks from behind the capturing piece.
+
+      // Add the new entry to the swap list
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
+
+      // Locate and remove the next least valuable attacker
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+  }
+
+  // Having built the swap list, we negamax through it to find the best
+  // achievable score from the point of view of the side to move.
+  while (--slIndex)
+      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+
+  //dbg_hit_on(to2 != to);
+  return swapList[0];
+}
 //
 //Value Position::see(Move m) const {
 //

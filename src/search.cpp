@@ -686,18 +686,6 @@ namespace {
     }
 
 
-    Square weakSpot = (ss-2)->weakSpot;
-    if (weakSpot && (pos.pieces(pos.side_to_move()) & weakSpot) ) {
-      Value val = pos.seeNullMove(weakSpot);
-      if (val < 0) {
-        ss->weakSpot = weakSpot;
-        //sync_cout << pos << " weak " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
-      }
-      else {
-        ss->weakSpot = weakSpot = SQ_A1;
-      }
-    }
-
     // Step 5. Evaluate the position statically
     if (inCheck)
     {
@@ -842,9 +830,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    //if (weakSpot)  sync_cout << pos << " movepicker weak " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
-
-    MovePicker mp(pos, ttMove, depth, ss, weakSpot);
+    MovePicker mp(pos, ttMove, depth, ss);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
@@ -876,6 +862,10 @@ moves_loop: // When in check search starts from here
 
       ss->moveCount = ++moveCount;
 
+      if (moveCount == 2 && ss->weakSpot && pos.seeNullMove(ss->weakSpot) >= VALUE_ZERO)
+           ss->weakSpot = SQ_A1;
+
+
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
@@ -900,7 +890,7 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, SQ_A1,  VALUE_ZERO))
+          &&  pos.see_ge(move,  VALUE_ZERO))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -932,7 +922,7 @@ moves_loop: // When in check search starts from here
       if (  !rootNode
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
-          //if (weakSpot)  sync_cout << "Step 13. pruning. weak " << UCI::move(make_move(weakSpot,weakSpot), false)<< sync_endl;
+
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))
@@ -959,12 +949,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, weakSpot, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, ss->weakSpot, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, givesCheck ? SQ_A1 : weakSpot, Value(-35 * depth / ONE_PLY * depth / ONE_PLY)))
+                   && !pos.see_ge(move, ss->weakSpot, Value(-35 * depth / ONE_PLY * depth / ONE_PLY)))
                   continue;
       }
 
@@ -981,8 +971,15 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
+      //dbg_hit_on(pos.seeNullMove(from_sq(move)) < 0);
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+
+//      if (!pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO) &&
+//          (!ss->weakSpot || type_of(pos.piece_on(to_sq(move))) > type_of(pos.piece_on(ss->weakSpot))))
+//               ss->weakSpot = from_sq(move);
+//      dbg_hit_on(ss->weakSpot);
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -997,7 +994,7 @@ moves_loop: // When in check search starts from here
           else
           {
 
-              //if (weakSpot) sync_cout << "Step 14. lmr weak " << UCI::move(make_move(weakSpot,weakSpot), false)<< sync_endl;
+
               // Increase reduction for cut nodes
               if (cutNode)
                   r += 2 * ONE_PLY;
@@ -1007,11 +1004,14 @@ moves_loop: // When in check search starts from here
               // hence break make_move().
               else if (   type_of(move) == NORMAL
                        && type_of(pos.piece_on(to_sq(move))) != PAWN
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), SQ_A1,  VALUE_ZERO))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
               {
                   r -= 2 * ONE_PLY;
-                  if (!weakSpot || type_of(pos.piece_on(to_sq(move))) > type_of(pos.piece_on(weakSpot)))
-                    ss->weakSpot = weakSpot = from_sq(move);
+//                  if ((!ss->weakSpot || type_of(pos.piece_on(to_sq(move))) > type_of(pos.piece_on(ss->weakSpot))) ){
+//                    ss->weakSpot = from_sq(move);
+//                    //sync_cout << pos << " WeakSpot: " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
+//                    //abort();
+//                  }
                   //sync_cout << pos << " move: " << UCI::move(move, false) << sync_endl;
               }
 
@@ -1218,7 +1218,8 @@ moves_loop: // When in check search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool ttHit, givesCheck, evasionPrunable;
     Depth ttDepth;
-    Square weakSpot = SQ_A1;
+//    Square weakSpot = (ss-2)->weakSpot;
+
 
     if (PvNode)
     {
@@ -1297,6 +1298,18 @@ moves_loop: // When in check search starts from here
         futilityBase = bestValue + 128;
     }
 
+
+//    if (weakSpot && (pos.pieces(pos.side_to_move()) & weakSpot) ) {
+//      Value val = pos.seeNullMove(weakSpot);
+//      if (val < 0) {
+//        ss->weakSpot = weakSpot;
+//        //sync_cout << pos << " weakSpot: " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
+//      }
+//      else {
+//        ss->weakSpot = weakSpot = SQ_A1;
+//      }
+//    };
+
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
@@ -1329,7 +1342,7 @@ moves_loop: // When in check search starts from here
           }
 
           //if (weakSpot) sync_cout << "qs futility weakSpot " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
-          if (futilityBase <= alpha && !pos.see_ge(move, weakSpot, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1345,7 +1358,7 @@ moves_loop: // When in check search starts from here
       //if (weakSpot) sync_cout << "qs don't search moves with negative SEE values. weak " << UCI::move(make_move(weakSpot,weakSpot), false) << sync_endl;
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  !pos.see_ge(move, givesCheck ? SQ_A1 : weakSpot, VALUE_ZERO))
+          &&  !pos.see_ge(move, VALUE_ZERO))
           continue;
 
       // Speculative prefetch as early as possible

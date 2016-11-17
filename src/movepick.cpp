@@ -19,11 +19,11 @@
 */
 
 #include <cassert>
-//#include <iostream>
+#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
-//#include "uci.h"
+#include "uci.h"
 
 namespace {
 
@@ -68,14 +68,13 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, Square weak)
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
            : pos(p), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
 
   Square prevSq = to_sq((ss-1)->currentMove);
   countermove = pos.this_thread()->counterMoves[pos.piece_on(prevSq)][prevSq];
-  recaptureSquare = weak;
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
@@ -118,7 +117,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th)
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, SQ_A1, threshold + 1)? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, threshold + 1)? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
 }
@@ -196,6 +195,10 @@ Move MovePicker::next_move() {
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
+//      if ((ss-2)->weakSpot && (pos.pieces(pos.side_to_move()) & (ss-2)->weakSpot) && pos.seeNullMove((ss-2)->weakSpot) < VALUE_ZERO) {
+//          ss->weakSpot = (ss-2)->weakSpot;
+//        }
+      threshold = VALUE_ZERO;
       ++stage;
 
   case GOOD_CAPTURES:
@@ -205,16 +208,43 @@ Move MovePicker::next_move() {
           if (move != ttMove)
           {
 
-              if (!recaptureSquare || recaptureSquare == from_sq(move) || pos.gives_check(move)) {
-                if (pos.see_ge(move, SQ_A1, VALUE_ZERO))
-                                  return move;
+
+//              if (!recaptureSquare || recaptureSquare == from_sq(move) || pos.gives_check(move)) {
+//                if (pos.see_ge(move, SQ_A1, VALUE_ZERO))
+//                                  return move;
+//              }
+//              else {
+//               // dbg_hit_on(true);
+//                //if (recaptureSquare) sync_cout << "next move recaptureSquare " << UCI::move(make_move(recaptureSquare,recaptureSquare), false) << sync_endl;
+
+//                if (pos.see_ge(move, recaptureSquare, VALUE_ZERO) != pos.se_ge(move, VALUE_ZERO)) {
+//                  sync_cout << pos <<  " move " << UCI::move(move, false) << " next move recaptureSquare " << UCI::move(make_move(recaptureSquare,recaptureSquare), false) <<
+//                      " seenew:" << pos.see(move,recaptureSquare)  << sync_endl;
+//                  abort();
+//
+//                }
+//              if (ss->weakSpot && pos.see_ge(move, ss->weakSpot, VALUE_ZERO) != pos.se_ge(move, VALUE_ZERO)) {
+//                //sync_cout << pos <<  " move " << UCI::move(move, false) << " seenew: " << pos.see(move,ss->weakSpot) << "  recaptureSquare " << UCI::move(make_move(ss->weakSpot,ss->weakSpot), false) << sync_endl;
+//                dbg_hit_on(true);
+//              }
+
+
+              //dbg_hit_on(ss->weakSpot && ss->weakSpot != from_sq(move));
+              //dbg_hit_on(ss->weakSpot);
+              Value val = pos.see(move, ss->weakSpot != from_sq(move) ? ss->weakSpot : SQ_A1);
+              if (val > threshold && to_sq((ss-1)->currentMove) != to_sq(move))
+              {
+//                if ((val >=0) != pos.see_ge(move, VALUE_ZERO)) {
+//                  sync_cout << pos <<  " move " << UCI::move(move, false) << " next move recaptureSquare " << ss->weakSpot << "  " << UCI::move(make_move(SQ_A1,ss->weakSpot != from_sq(move) ? ss->weakSpot : SQ_A1), false) <<
+//                                      " seenew:" << val  << sync_endl;
+//                }
+                threshold = val;
+                (ss-1)->weakSpot = to_sq(move);
+                //(ss+1)->weakSpot = to_sq(move);
               }
-              else {
-               // dbg_hit_on(true);
-                //if (recaptureSquare) sync_cout << "next move recaptureSquare " << UCI::move(make_move(recaptureSquare,recaptureSquare), false) << sync_endl;
-                if (pos.see_ge(move, recaptureSquare, VALUE_ZERO))
-                  return move;
-              }
+              if (val >= VALUE_ZERO)
+                return move;
+
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
@@ -306,7 +336,7 @@ Move MovePicker::next_move() {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, SQ_A1, threshold + 1))
+              && pos.see_ge(move, threshold + 1))
               return move;
       }
       break;

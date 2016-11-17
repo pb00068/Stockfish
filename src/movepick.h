@@ -99,7 +99,7 @@ public:
 
   MovePicker(const Position&, Move, Value);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*, Square);
+  MovePicker(const Position&, Move, Depth, Search::Stack*);
 
   Move next_move();
 
@@ -109,7 +109,7 @@ private:
   ExtMove* end() { return endMoves; }
 
   const Position& pos;
-  const Search::Stack* ss;
+  Search::Stack* ss;
   Move countermove;
   Depth depth;
   Move ttMove;
