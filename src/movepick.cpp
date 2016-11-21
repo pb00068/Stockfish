@@ -19,11 +19,9 @@
 */
 
 #include <cassert>
-#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
-#include "uci.h"
 
 namespace {
 
@@ -196,10 +194,8 @@ Move MovePicker::next_move() {
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       threshold =  VALUE_ZERO;
-      if ((ss-2)->weakSquare && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare) { // && pos.seeNullMove((ss-2)->weakSquare) < VALUE_ZERO) {
-        //dbg_hit_on(pos.seeNullMove((ss-2)->weakSquare) < VALUE_ZERO);
+      if ((ss-2)->weakSquare && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare)
         threshold =  VALUE_ZERO + 1;
-      }
       ++stage;
 
   case GOOD_CAPTURES:
@@ -208,14 +204,8 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (threshold != VALUE_ZERO)
-//                dbg_hit_on(from_sq(move) != (ss-2)->weakSquare);
-                dbg_hit_on(pos.seeNullMove((ss-2)->weakSquare) < VALUE_ZERO && from_sq(move) != (ss-2)->weakSquare);
-              if (pos.see_ge(move, threshold)) {
-//                  if (PieceValue[MG][pos.piece_on(from_sq(move))] < PieceValue[MG][pos.piece_on(to_sq(move))] && to_sq(move) != to_sq((ss-1)->currentMove))
-//                    (ss-1)->weakSquare = to_sq(move);
+              if (pos.see_ge(move, threshold))
                   return move;
-              }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
