@@ -109,7 +109,7 @@ private:
   ExtMove* end() { return endMoves; }
 
   const Position& pos;
-  Search::Stack* ss;
+  const Search::Stack* ss;
   Move countermove;
   Depth depth;
   Move ttMove;

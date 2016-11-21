@@ -194,7 +194,7 @@ Move MovePicker::next_move() {
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       threshold =  VALUE_ZERO;
-      if ((ss-2)->weakSquare && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare)
+      if ((ss-2)->weakSquare != SQ_NONE && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare)
         threshold =  VALUE_ZERO + 1;
       ++stage;
 
@@ -204,7 +204,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, threshold))
+              if (pos.see_ge(move, from_sq(move) != (ss-2)->weakSquare ? threshold : VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array
