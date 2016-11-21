@@ -565,6 +565,7 @@ namespace {
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
     moveCount = quietCount =  ss->moveCount = 0;
+    ss->weakSquare = SQ_A1;
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
@@ -997,7 +998,10 @@ moves_loop: // When in check search starts from here
               else if (   type_of(move) == NORMAL
                        && type_of(pos.piece_on(to_sq(move))) != PAWN
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              {
                   r -= 2 * ONE_PLY;
+                  ss->weakSquare = from_sq(move);
+              }
 
               ss->history = thisThread->history[moved_piece][to_sq(move)]
                            +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)

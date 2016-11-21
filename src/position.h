@@ -136,6 +136,7 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value value) const;
+  Value seeNullMove(Square to) const;
 
   // Accessing hash keys
   Key key() const;
@@ -191,6 +192,7 @@ private:
 };
 
 extern std::ostream& operator<<(std::ostream& os, Position& pos);
+//extern std::ostream& operator<<(std::ostream& os, const Position& pos);
 
 inline Color Position::side_to_move() const {
   return sideToMove;
