@@ -136,7 +136,6 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value value) const;
-  Value seeNullMove(Square sq) const;
 
   // Accessing hash keys
   Key key() const;

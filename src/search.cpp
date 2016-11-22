@@ -888,7 +888,7 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, VALUE_ZERO))
+          &&  pos.see_ge(move, ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare ? VALUE_ZERO + 1 : VALUE_ZERO))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -946,12 +946,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(- (ss->weakSquare != SQ_NONE ? 45 : 35)  * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (depth < 7 * ONE_PLY && !extension)
           {
-              Value v = Value(-35 * depth / ONE_PLY * depth / ONE_PLY);
+              Value v = Value(- (ss->weakSquare != SQ_NONE ? 45 : 35) * depth / ONE_PLY * depth / ONE_PLY);
               if (ss->staticEval != VALUE_NONE)
                   v += ss->staticEval - alpha - 200;
 
