@@ -194,8 +194,12 @@ Move MovePicker::next_move() {
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       threshold =  VALUE_ZERO;
-      if ((ss-2)->weakSquare != SQ_NONE && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare)
-        threshold =  VALUE_ZERO + 1;
+      if ((ss-2)->weakSquare != SQ_NONE && from_sq((ss-2)->currentMove) != (ss-2)->weakSquare && to_sq((ss-1)->currentMove) != (ss-2)->weakSquare) {
+          //dbg_hit_on(pos.seeNullMove((ss-2)->weakSquare) < 0);
+          if (pos.seeNullMove((ss-2)->weakSquare) < 0) {
+            threshold =  VALUE_ZERO + 1;
+          }
+      }
       ++stage;
 
   case GOOD_CAPTURES:
@@ -204,8 +208,11 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, from_sq(move) != (ss-2)->weakSquare ? threshold : VALUE_ZERO))
+              if (pos.see_ge(move, threshold)) {
+                  if ( to_sq(move) != to_sq((ss-1)->currentMove) && ( threshold !=  VALUE_ZERO || pos.see_ge(move, VALUE_ZERO + 1)  )  )
+                    (ss-1)->weakSquare = to_sq(move);
                   return move;
+              }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
