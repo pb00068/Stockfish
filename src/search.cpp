@@ -916,10 +916,13 @@ moves_loop: // When in check search starts from here
       // Update the current move (this must be done after singular extension search)
       newDepth = depth - ONE_PLY + extension;
 
+
       // Step 13. Pruning at shallow depth
       if (  !rootNode
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
+//          if(ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare)
+//            dbg_hit_on(pos.seeNullMove(ss->weakSquare) < 0); Total 1150535 Hits 1073833 hit rate (%) 93
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))
@@ -944,14 +947,18 @@ moves_loop: // When in check search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+//              if (lmrDepth < 8 && ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare)
+//                             dbg_hit_on(pos.seeNullMove(ss->weakSquare) < 0);
+
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value((ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare ? PawnValueMg : VALUE_ZERO) - 35  * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value((ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare ? RookValueMg : VALUE_ZERO) - 35  * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (depth < 7 * ONE_PLY && !extension)
           {
-              Value v = Value((ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare ? PawnValueMg : VALUE_ZERO)   - 35 * depth / ONE_PLY * depth / ONE_PLY);
+
+              Value v = Value((ss->weakSquare != SQ_NONE && from_sq(move) != ss->weakSquare ? RookValueMg : VALUE_ZERO)   - 35 * depth / ONE_PLY * depth / ONE_PLY);
               if (ss->staticEval != VALUE_NONE)
                   v += ss->staticEval - alpha - 200;
 
