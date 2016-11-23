@@ -1070,6 +1070,63 @@ bool Position::see_ge(Move m, Value v) const {
   }
 }
 
+Value Position::seeNullMove(Square to) const {
+
+  Bitboard occupied, attackers, stmAttackers;
+  Value swapList[32];
+  int slIndex = 0;
+  PieceType nextVictim;
+  Color stm;
+
+  assert(is_ok(m));
+
+  swapList[0] = VALUE_ZERO; //PieceValue[MG][piece_on(to)];
+  stm = color_of(piece_on(to));
+  occupied = pieces() ^ to; // flip 'to' for the case captured piece is a pinner
+  nextVictim = type_of(piece_on(to));
+
+  // Find all attackers to the destination square, with the moving piece
+  // removed, but possibly an X-ray attacker added behind it.
+  attackers = attackers_to(to, occupied) & occupied;
+
+  while (true) {
+      assert(slIndex < 31);
+
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
+      if (slIndex && stmAttackers && nextVictim == KING)
+           break; // King went into check by last recapture so ignore it
+      ++slIndex;
+
+      // Don't allow pinned pieces to attack as long all
+      // pinners are on their original square.
+      if (!(st->pinnersForKing[stm] & ~occupied))
+          stmAttackers &= ~st->blockersForKing[stm];
+
+      if (!stmAttackers)
+           break; // If the opponent has no attackers we are finished
+
+      // The destination square is defended, which makes things rather more
+      // difficult to compute. We proceed by building up a "swap list" containing
+      // the material gain or loss at each stop in a sequence of captures to the
+      // destination square, where the sides alternately capture, and always
+      // capture with the least valuable piece. After each capture, we look for
+      // new X-ray attacks from behind the capturing piece.
+
+      // Add the new entry to the swap list
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][nextVictim];
+
+      // Locate and remove the next least valuable attacker
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+  }
+
+  // Having built the swap list, we negamax through it to find the best
+  // achievable score from the point of view of the side to move.
+  while (--slIndex)
+      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
+
+  return swapList[0];
+}
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.

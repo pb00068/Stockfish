@@ -887,8 +887,18 @@ moves_loop: // When in check search starts from here
       // Step 12. Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, VALUE_ZERO))
-          extension = ONE_PLY;
+          && pos.see_ge(move, VALUE_ZERO))
+      {
+          // pure discovered checks
+          if ( (pos.discovered_check_candidates() & from_sq(move)) && ~(pos.check_squares(type_of(pos.piece_on(from_sq(move)))) & to_sq(move)) )
+          {
+            Bitboard b = pos.attackers_to(pos.square<KING>(~pos.side_to_move()), pos.pieces() ^ from_sq(move)) & pos.pieces(pos.side_to_move());
+            if (pos.seeNullMove(lsb(b)) >= 0)
+              extension = ONE_PLY;
+          }
+          else
+            extension = ONE_PLY;
+      }
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
