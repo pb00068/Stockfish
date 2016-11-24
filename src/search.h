@@ -45,6 +45,7 @@ struct Stack {
   Value staticEval;
   Value history;
   bool skipEarlyPruning;
+  bool checkext_discov;
   int moveCount;
   CounterMoveStats* counterMoves;
 };
