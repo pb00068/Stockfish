@@ -1070,6 +1070,40 @@ bool Position::see_ge(Move m, Value v) const {
   }
 }
 
+// returns true if the checker can't be neutralised (= recaptured)
+bool Position::dangerous_check(Move m) const {
+
+  assert(is_ok(m));
+
+  Square from = from_sq(m), to = to_sq(m);
+  Color stm = ~side_to_move(); // First consider opponent's move
+  Bitboard occupied, stmAttackers;
+
+  occupied = pieces() ^ from ^ to;
+
+  // Find all attackers to the destination square, with the moving piece removed,
+  // but possibly an X-ray attacker added behind it.
+  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  stmAttackers = attackers & pieces(stm);
+
+  // Don't allow pinned pieces to attack pieces except the king as long all
+  // pinners are on their original square.
+  if (!(st->pinnersForKing[stm] & ~occupied))
+      stmAttackers &= ~st->blockersForKing[stm];
+
+  if (!stmAttackers)
+    return true;
+
+  // if only the king is able to recapture, verify if it goes into check
+  if (!more_than_one(stmAttackers) && (stmAttackers & byTypeBB[KING])) {
+      stmAttackers = attackers & pieces(~stm);
+      if (stmAttackers)
+        return true; // King can't take back
+  }
+
+  //dbg_hit_on (discovered_check_candidates() & from); todo handle discovered_checks
+  return false;
+}
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.

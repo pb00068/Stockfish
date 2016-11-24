@@ -136,6 +136,7 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value value) const;
+  bool dangerous_check(Move m) const;
 
   // Accessing hash keys
   Key key() const;
