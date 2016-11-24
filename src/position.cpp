@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -117,6 +118,30 @@ std::ostream& operator<<(std::ostream& os, Position& pos) {
 
   return os;
 }
+
+//std::ostream& operator<<(std::ostream& os, const Position& pos) {
+//
+//  os << "\n +---+---+---+---+---+---+---+---+\n";
+//
+//  for (Rank r = RANK_8; r >= RANK_1; --r)
+//  {
+//      for (File f = FILE_A; f <= FILE_H; ++f)
+//          os << " | " << PieceToChar[pos.piece_on(make_square(f, r))];
+//
+//      os << " |\n +---+---+---+---+---+---+---+---+\n";
+//  }
+//
+//  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
+//     << std::setfill('0') << std::setw(16) << pos.key()
+//     << std::setfill(' ') << std::dec << "\nCheckers: ";
+//
+//  for (Bitboard b = pos.checkers(); b; )
+//      os << UCI::square(pop_lsb(&b)) << " ";
+//
+//
+//
+//  return os;
+//}
 
 
 /// Position::init() initializes at startup the various arrays used to compute
@@ -1079,6 +1104,17 @@ bool Position::dangerous_check(Move m) const {
   Color stm = ~side_to_move(); // First consider opponent's move
   Bitboard occupied, stmAttackers;
 
+//  if (type_of(m) == ENPASSANT)
+//  {
+//      occupied = SquareBB[to - pawn_push(~stm)]; // Remove the captured pawn
+//      //balance = PieceValue[MG][PAWN];
+//  }
+//  else
+//  {
+//      //balance = PieceValue[MG][piece_on(to)];
+//      occupied = 0;
+//  }
+
   occupied = pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
@@ -1094,11 +1130,16 @@ bool Position::dangerous_check(Move m) const {
   if (!stmAttackers)
     return true;
 
-  // if only the king is able to recapture, verify if it goes into check
-  if (!more_than_one(stmAttackers) && (stmAttackers & byTypeBB[KING])) {
-      stmAttackers = attackers & pieces(~stm);
-      if (stmAttackers)
-        return true; // King can't take back
+//  // if only the king is able to recapture, verify if it goes into check
+//  if (!more_than_one(stmAttackers) && (stmAttackers & byTypeBB[KING]) && (attackers & pieces(~stm)))
+//    return true; // King can't take back
+
+
+
+  PieceType nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+  if (nextVictim > type_of(piece_on(from)) && (attackers & pieces(~stm))) {
+    //sync_cout << *this << " move " << UCI::move(m, false) << sync_endl;
+    return true;
   }
 
   //dbg_hit_on (discovered_check_candidates() & from); todo handle discovered_checks
