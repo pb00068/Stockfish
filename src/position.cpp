@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1103,18 +1102,6 @@ bool Position::dangerous_check(Move m) const {
   Square from = from_sq(m), to = to_sq(m);
   Color stm = ~side_to_move(); // First consider opponent's move
   Bitboard occupied, stmAttackers;
-
-//  if (type_of(m) == ENPASSANT)
-//  {
-//      occupied = SquareBB[to - pawn_push(~stm)]; // Remove the captured pawn
-//      //balance = PieceValue[MG][PAWN];
-//  }
-//  else
-//  {
-//      //balance = PieceValue[MG][piece_on(to)];
-//      occupied = 0;
-//  }
-
   occupied = pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
@@ -1130,15 +1117,8 @@ bool Position::dangerous_check(Move m) const {
   if (!stmAttackers)
     return true;
 
-//  // if only the king is able to recapture, verify if it goes into check
-//  if (!more_than_one(stmAttackers) && (stmAttackers & byTypeBB[KING]) && (attackers & pieces(~stm)))
-//    return true; // King can't take back
-
-
-
   PieceType nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
   if (nextVictim > type_of(piece_on(from)) && (attackers & pieces(~stm))) {
-    //sync_cout << *this << " move " << UCI::move(m, false) << sync_endl;
     return true;
   }
 
