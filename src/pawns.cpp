@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
@@ -113,6 +114,8 @@ namespace {
     e->pawnsOnSquares[Us][BLACK] = popcount(ourPawns & DarkSquares);
     e->pawnsOnSquares[Us][WHITE] = pos.count<PAWN>(Us) - e->pawnsOnSquares[Us][BLACK];
 
+    bool possibleZugzwang = true;
+    int possiblePushes =0;
     // Loop through all pawns of the current color and score each pawn
     while ((s = *pl++) != SQ_NONE)
     {
@@ -152,8 +155,16 @@ namespace {
 
         // Passed pawns will be properly scored in evaluation because we need
         // full attack info to evaluate them.
-        if (!stoppers && !(ourPawns & forward_bb(Us, s)))
+        if (!stoppers && !(ourPawns & forward_bb(Us, s))) {
+            possibleZugzwang=false;
             e->passedPawns[Us] |= s;
+        }
+        else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
+            possiblePushes++;
+            if (!(theirPawns & pawnAttacksBB[s + Up]))
+              possibleZugzwang=false;
+            //sync_cout << " push possible true on square " << s << " safe " << !(theirPawns & pawnAttacksBB[s + Up]) << sync_endl;
+        }
 
         // Score this pawn
         if (!neighbours)
@@ -171,9 +182,17 @@ namespace {
         if (doubled)
             score -= Doubled;
 
-        if (lever)
+        if (lever) {
+            possibleZugzwang=false;
             score += Lever[relative_rank(Us, s)];
+        }
     }
+
+    e->zugZwang[Us] = possibleZugzwang && possiblePushes;// && !safePushes;
+
+//    if (e->zugZwang[Us]) {
+//      sync_cout << pos << " color " << Us << " possiblePushes: " << possiblePushes << " safePushes: " << safePushes << "nonPawnMaterial: " << pos.nonPawnMaterial() << sync_endl;
+//    }
 
     return score;
   }

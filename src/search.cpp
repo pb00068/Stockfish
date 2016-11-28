@@ -749,39 +749,42 @@ namespace {
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
-        ss->currentMove = MOVE_NULL;
-        ss->counterMoves = nullptr;
+       if (pos.nonPawnMaterial() > 5000 || !Pawns::probe(pos)->zugZwang[pos.side_to_move()])
+       {
+          ss->currentMove = MOVE_NULL;
+          ss->counterMoves = nullptr;
 
-        assert(eval - beta >= 0);
+          assert(eval - beta >= 0);
 
-        // Null move dynamic reduction based on depth and value
-        Depth R = ((823 + 67 * depth / ONE_PLY) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
+          // Null move dynamic reduction based on depth and value
+          Depth R = ((823 + 67 * depth / ONE_PLY) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
-        pos.do_null_move(st);
-        (ss+1)->skipEarlyPruning = true;
-        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
-                                      : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
-        (ss+1)->skipEarlyPruning = false;
-        pos.undo_null_move();
+          pos.do_null_move(st);
+          (ss+1)->skipEarlyPruning = true;
+          nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
+                                        : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
+          (ss+1)->skipEarlyPruning = false;
+          pos.undo_null_move();
 
-        if (nullValue >= beta)
-        {
-            // Do not return unproven mate scores
-            if (nullValue >= VALUE_MATE_IN_MAX_PLY)
-                nullValue = beta;
+          if (nullValue >= beta)
+          {
+              // Do not return unproven mate scores
+              if (nullValue >= VALUE_MATE_IN_MAX_PLY)
+                  nullValue = beta;
 
-            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
-                return nullValue;
+              if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+                  return nullValue;
 
-            // Do verification search at high depths
-            ss->skipEarlyPruning = true;
-            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
-                                        :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
-            ss->skipEarlyPruning = false;
+              // Do verification search at high depths
+              ss->skipEarlyPruning = true;
+              Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
+                                          :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+              ss->skipEarlyPruning = false;
 
-            if (v >= beta)
-                return nullValue;
-        }
+              if (v >= beta)
+                  return nullValue;
+          }
+       }
     }
 
     // Step 9. ProbCut (skipped when in check)
