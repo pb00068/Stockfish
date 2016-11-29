@@ -460,10 +460,6 @@ Phase Position::game_phase() const {
   return Phase(((npm - EndgameLimit) * PHASE_MIDGAME) / (MidgameLimit - EndgameLimit));
 }
 
-Value Position::nonPawnMaterial() const {
-  return st->nonPawnMaterial[WHITE] + st->nonPawnMaterial[BLACK];
-}
-
 
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)
 /// that are blocking attacks on the square 's' from 'sliders'. A piece blocks a
