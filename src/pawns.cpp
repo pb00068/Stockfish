@@ -113,9 +113,8 @@ namespace {
     e->pawnAttacks[Us]   = shift<Right>(ourPawns) | shift<Left>(ourPawns);
     e->pawnsOnSquares[Us][BLACK] = popcount(ourPawns & DarkSquares);
     e->pawnsOnSquares[Us][WHITE] = pos.count<PAWN>(Us) - e->pawnsOnSquares[Us][BLACK];
+    e->zugZwang[Us] = bool(ourPawns);
 
-    bool possibleZugzwang = true;
-    int possiblePushes =0;
     // Loop through all pawns of the current color and score each pawn
     while ((s = *pl++) != SQ_NONE)
     {
@@ -155,14 +154,12 @@ namespace {
 
         // Passed pawns will be properly scored in evaluation because we need
         // full attack info to evaluate them.
-        if (!stoppers && !(ourPawns & forward_bb(Us, s))) {
-            possibleZugzwang=false;
+        if (!stoppers && !(ourPawns & forward_bb(Us, s)))
             e->passedPawns[Us] |= s;
-        }
-        else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
-            possiblePushes++;
+
+        if (e->zugZwang[Us] && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
             if (!(theirPawns & pawnAttacksBB[s + Up]))
-              possibleZugzwang=false;
+              e->zugZwang[Us] = false; // push is save, so no zugzwang
             //sync_cout << " push possible true on square " << s << " safe " << !(theirPawns & pawnAttacksBB[s + Up]) << sync_endl;
         }
 
@@ -183,16 +180,16 @@ namespace {
             score -= Doubled;
 
         if (lever) {
-            possibleZugzwang=false;
+          e->zugZwang[Us]=false;
             score += Lever[relative_rank(Us, s)];
         }
     }
 
-    e->zugZwang[Us] = possibleZugzwang && possiblePushes;// && !safePushes;
+    if (e->zugZwang[Us] && popcount(e->passedPawns[Us]) > 1)
+      e->zugZwang[Us] = false; // max 1 passer
 
-//    if (e->zugZwang[Us]) {
-//      sync_cout << pos << " color " << Us << " possiblePushes: " << possiblePushes << " safePushes: " << safePushes << "nonPawnMaterial: " << pos.nonPawnMaterial() << sync_endl;
-//    }
+//    if (e->zugZwang[Us])
+//    sync_cout << pos << " zugzwang risk for side " << Us << sync_endl;
 
     return score;
   }
