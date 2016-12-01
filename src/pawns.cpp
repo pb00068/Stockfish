@@ -116,6 +116,7 @@ namespace {
 
     bool possibleZugzwang = true;
     int possiblePushes =0;
+    e->frontPasser[Us]=SQ_A1;
     // Loop through all pawns of the current color and score each pawn
     while ((s = *pl++) != SQ_NONE)
     {
@@ -156,8 +157,8 @@ namespace {
         // Passed pawns will be properly scored in evaluation because we need
         // full attack info to evaluate them.
         if (!stoppers && !(ourPawns & forward_bb(Us, s))) {
-            possibleZugzwang=false;
             e->passedPawns[Us] |= s;
+            e->frontPasser[Us] = s + Up;
         }
         else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
             possiblePushes++;
@@ -189,6 +190,8 @@ namespace {
     }
 
     e->zugZwang[Us] = possibleZugzwang && possiblePushes;// && !safePushes;
+    if (e->passedPawns[Us] && more_than_one(e->passedPawns[Us]))
+      e->zugZwang[Us]=false;
 
 //    if (e->zugZwang[Us]) {
 //      sync_cout << pos << " color " << Us << " possiblePushes: " << possiblePushes << " safePushes: " << safePushes << "nonPawnMaterial: " << pos.nonPawnMaterial() << sync_endl;
