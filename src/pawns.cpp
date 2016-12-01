@@ -114,8 +114,8 @@ namespace {
     e->pawnsOnSquares[Us][BLACK] = popcount(ourPawns & DarkSquares);
     e->pawnsOnSquares[Us][WHITE] = pos.count<PAWN>(Us) - e->pawnsOnSquares[Us][BLACK];
 
-    bool possibleZugzwang = true;
-    int possiblePushes =0;
+    bool zugzwangPossible = true;
+    int weakPushes =0;
     // Loop through all pawns of the current color and score each pawn
     while ((s = *pl++) != SQ_NONE)
     {
@@ -156,14 +156,15 @@ namespace {
         // Passed pawns will be properly scored in evaluation because we need
         // full attack info to evaluate them.
         if (!stoppers && !(ourPawns & forward_bb(Us, s))) {
-            possibleZugzwang=false;
+            zugzwangPossible=false;
             e->passedPawns[Us] |= s;
         }
-        else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
-            possiblePushes++;
-            if (!(theirPawns & pawnAttacksBB[s + Up]))
-              possibleZugzwang=false;
-            //sync_cout << " push possible true on square " << s << " safe " << !(theirPawns & pawnAttacksBB[s + Up]) << sync_endl;
+        else if (zugzwangPossible && !((ourPawns | theirPawns) & (s + Up)) ) {
+            // probably no immediate zugzwang if we have
+            // an safe push or if push goes into a defended lever
+            if (!(theirPawns & pawnAttacksBB[s + Up]) || (ourPawns & StepAttacksBB[make_piece(Them, PAWN)][s + Up]))
+              zugzwangPossible=false;
+            else  weakPushes++;
         }
 
         // Score this pawn
@@ -183,16 +184,14 @@ namespace {
             score -= Doubled;
 
         if (lever) {
-            possibleZugzwang=false;
+            zugzwangPossible=false;
             score += Lever[relative_rank(Us, s)];
         }
     }
 
-    e->zugZwang[Us] = possibleZugzwang && possiblePushes;// && !safePushes;
+    e->zugZwang[Us] = zugzwangPossible && weakPushes; // the only pawn pushes are weak
 
-//    if (e->zugZwang[Us]) {
-//      sync_cout << pos << " color " << Us << " possiblePushes: " << possiblePushes << " safePushes: " << safePushes << "nonPawnMaterial: " << pos.nonPawnMaterial() << sync_endl;
-//    }
+    //sync_cout << "color " << Us <<  Bitboards::pretty(pawnAttacksBB[SQ_E4]) << sync_endl;
 
     return score;
   }

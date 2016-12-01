@@ -772,7 +772,7 @@ namespace {
                 nullValue = beta;
             int lim = 12;
             if (depth < lim * ONE_PLY && pos.non_pawn_material(WHITE) +  pos.non_pawn_material(BLACK) <= 5000 && Pawns::probe(pos)->zugZwang[pos.side_to_move()])
-                lim = 8; // anticipate verification search if pawn structure is suspicious to zugzwang
+                lim = 10; // anticipate verification search if pawn structure is prone to zugzwang
             if (depth < lim * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
                 return nullValue;
             }

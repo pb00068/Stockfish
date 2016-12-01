@@ -71,7 +71,7 @@ struct Entry {
   Bitboard pawnAttacksSpan[COLOR_NB];
   Square kingSquares[COLOR_NB];
   Score kingSafety[COLOR_NB];
-  bool zugZwang[COLOR_NB]; // true if the only legal pawn moves (promotions excluded) are pushes into an unsupported lever
+  bool zugZwang[COLOR_NB]; // true if the only legal pawn moves are pushes into an unsupported lever
   int castlingRights[COLOR_NB];
   int semiopenFiles[COLOR_NB];
   int pawnsOnSquares[COLOR_NB][COLOR_NB]; // [color][light/dark squares]
