@@ -770,12 +770,16 @@ namespace {
             // Do not return unproven mate scores
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
-            int lim = 12;
-            if (depth < lim * ONE_PLY && pos.non_pawn_material(WHITE) +  pos.non_pawn_material(BLACK) <= 5000 && Pawns::probe(pos)->zugZwang[pos.side_to_move()])
-                lim = 10; // anticipate verification search if pawn structure is prone to zugzwang
-            if (depth < lim * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
+
+            if (depth < 13 * ONE_PLY && depth >= 10 * ONE_PLY && pos.non_pawn_material(WHITE) + pos.non_pawn_material(BLACK) <= 5000 && Pawns::probe(pos)->zugZwang[pos.side_to_move()]) {
+                // anticipate verification search if pawn structure is prone to zugzwang
+            }
+            else
+              if (depth < 13 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
                 return nullValue;
             }
+
+
 
             // Do verification search at high depths
             ss->skipEarlyPruning = true;
