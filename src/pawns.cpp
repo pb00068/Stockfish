@@ -20,7 +20,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
@@ -160,11 +159,10 @@ namespace {
             e->passedPawns[Us] |= s;
             e->frontPasser[Us] = s + Up;
         }
-        else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) && relative_rank(Us, s) < RANK_6) {
+        else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) ) {
             possiblePushes++;
             if (!(theirPawns & pawnAttacksBB[s + Up]))
               possibleZugzwang=false;
-            //sync_cout << " push possible true on square " << s << " safe " << !(theirPawns & pawnAttacksBB[s + Up]) << sync_endl;
         }
 
         // Score this pawn
@@ -189,13 +187,9 @@ namespace {
         }
     }
 
-    e->zugZwang[Us] = possibleZugzwang && possiblePushes;// && !safePushes;
+    e->zugZwang[Us] = possibleZugzwang && possiblePushes; // pushes available but apparently loosing
     if (e->passedPawns[Us] && more_than_one(e->passedPawns[Us]))
       e->zugZwang[Us]=false;
-
-//    if (e->zugZwang[Us]) {
-//      sync_cout << pos << " color " << Us << " possiblePushes: " << possiblePushes << " safePushes: " << safePushes << "nonPawnMaterial: " << pos.nonPawnMaterial() << sync_endl;
-//    }
 
     return score;
   }

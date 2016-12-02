@@ -771,10 +771,17 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
             int lim = 12;
-            if (depth < lim * ONE_PLY && pos.non_pawn_material(WHITE) +  pos.non_pawn_material(BLACK) <= 5000 && Pawns::probe(pos)->zugZwang[pos.side_to_move()]) {
+            if (depth < lim * ONE_PLY && depth >= 9 * ONE_PLY && pos.non_pawn_material(pos.side_to_move()) <= 2500 && Pawns::probe(pos)->zugZwang[pos.side_to_move()])
+            {
                 Pawns::Entry* e = Pawns::probe(pos);
-                if (!e->frontPasser[pos.side_to_move()] || (pos.pieces(~pos.side_to_move()) & e->frontPasser[pos.side_to_move()]))
-                  lim = 10; // anticipate verification search if pawn structure is suspicious to zugzwang
+                Color stm = pos.side_to_move();
+                if (!e->frontPasser[stm] || (pos.pieces(~stm) & e->frontPasser[stm])) {
+                  // in many zugzwang positions, the king must defend a piece
+                  if (DistanceRingBB[pos.square<KING>(stm)][0] & (pos.pieces(stm) ^ pos.pieces(stm, PAWN))) {
+                    lim = 9;
+                    R = R - ONE_PLY;
+                  }
+                }
             }
             if (depth < lim * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
                 return nullValue;
