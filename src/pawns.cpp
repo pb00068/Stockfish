@@ -161,8 +161,11 @@ namespace {
         }
         else if (possibleZugzwang && !((ourPawns | theirPawns) & (s + Up)) ) {
             possiblePushes++;
-            if (!(theirPawns & pawnAttacksBB[s + Up]))
+            // probably no immediate zugzwang if we have
+            // an safe push or if push goes into a defended lever
+            if (!(theirPawns & pawnAttacksBB[s + Up]) || (ourPawns & StepAttacksBB[make_piece(Them, PAWN)][s + Up]))
               possibleZugzwang=false;
+
         }
 
         // Score this pawn
