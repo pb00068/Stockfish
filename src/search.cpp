@@ -747,7 +747,8 @@ namespace {
     if (   !PvNode
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
-        &&  pos.non_pawn_material(pos.side_to_move()))
+        &&  pos.non_pawn_material(pos.side_to_move())
+        && ss->ply < thisThread->nmp_ply)
     {
         ss->currentMove = MOVE_NULL;
         ss->counterMoves = nullptr;
@@ -770,13 +771,18 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            if (depth < 10 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
             // Do verification search at high depths
             ss->skipEarlyPruning = true;
+            // increase reduction ...
+            R += ONE_PLY + ONE_PLY;
+            // but disable nmp for next plies
+            thisThread->nmp_ply = ss->ply + (depth-R) / 2;
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+            thisThread->nmp_ply = MAX_PLY;
             ss->skipEarlyPruning = false;
 
             if (v >= beta)
