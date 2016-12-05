@@ -777,7 +777,7 @@ namespace {
             // Do verification search at high depths
             ss->skipEarlyPruning = true;
             // increase reduction ...
-            R += ONE_PLY + ONE_PLY;
+            R += ONE_PLY * 3;
             // but disable nmp for next plies
             thisThread->nmp_ply = ss->ply + (depth-R) / 2;
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
