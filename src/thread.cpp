@@ -214,6 +214,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   {
       th->maxPly = 0;
       th->nmp_ply = MAX_PLY;
+      th->pair = -1;
       th->tbHits = 0;
       th->rootDepth = DEPTH_ZERO;
       th->rootMoves = rootMoves;
