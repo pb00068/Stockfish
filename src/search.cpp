@@ -743,7 +743,7 @@ namespace {
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
         &&  pos.non_pawn_material(pos.side_to_move())
-        && (ss->ply < thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
+        && (ss->ply > thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
     {
         ss->currentMove = MOVE_NULL;
         ss->counterMoves = nullptr;
@@ -773,14 +773,15 @@ namespace {
             // increase reduction ...
             R += ONE_PLY * 3;
             // but disable nmp for next plies
+            int nmp_ply = thisThread->nmp_ply, pair = thisThread->pair;
             thisThread->nmp_ply = ss->ply + (depth-R) / 2;
             thisThread->pair = ss->ply % 2 == 0;
             ss->skipEarlyPruning = true;
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
             ss->skipEarlyPruning = false;
-            thisThread->pair = -1;
-            thisThread->nmp_ply = MAX_PLY;
+            thisThread->pair = pair;
+            thisThread->nmp_ply = nmp_ply;
 
             if (v >= beta)
                 return nullValue;
