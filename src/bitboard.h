@@ -197,6 +197,9 @@ inline bool aligned(Square s1, Square s2, Square s3) {
   return LineBB[s1][s2] & s3;
 }
 
+inline bool aligned(Bitboard targets, Square s2, Square s3) {
+  return LineBB[s2][s3] & targets;
+}
 
 /// distance() functions return the distance between x and y, defined as the
 /// number of steps for a king in x to reach y. Works with squares, ranks, files.

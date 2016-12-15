@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -78,6 +79,35 @@ PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
 
 template<>
 PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+  return KING; // No need to update bitboards: it is the last cycle
+}
+
+template<int Pt>
+PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
+                       Bitboard& occupied, Bitboard& attackers, Bitboard& from_bb) {
+
+  Bitboard b = stmAttackers & bb[Pt];
+  if (!b)
+      return min_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers, from_bb);
+
+  from_bb = b & ~(b - 1);
+  occupied ^= from_bb;
+
+  if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
+      attackers |= attacks_bb<BISHOP>(to, occupied) & (bb[BISHOP] | bb[QUEEN]);
+
+  if (Pt == ROOK || Pt == QUEEN)
+      attackers |= attacks_bb<ROOK>(to, occupied) & (bb[ROOK] | bb[QUEEN]);
+
+  attackers &= occupied; // After X-ray that may add already processed pieces
+  return (PieceType)Pt;
+}
+
+template<>
+PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard stmAttackers, Bitboard&, Bitboard&, Bitboard& from_bb) {
+  assert(popcount(stmAttackers) == 1);
+
+  from_bb = stmAttackers;
   return KING; // No need to update bitboards: it is the last cycle
 }
 
@@ -278,6 +308,8 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
   set_state(st);
 
   assert(pos_is_ok());
+
+  see_ge_impl = see_ge;
 
   return *this;
 }
@@ -850,6 +882,11 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
+  if (discovered_check_candidates() || (st->blockersForKing[sideToMove] & pieces(~sideToMove)))
+    see_ge_impl = see_disco_ge;
+  else
+    see_ge_impl = see_ge;
+
   assert(pos_is_ok());
 }
 
@@ -912,6 +949,12 @@ void Position::undo_move(Move m) {
 
   // Finally point our state pointer back to the previous state
   st = st->previous;
+
+  if (discovered_check_candidates() || (st->blockersForKing[sideToMove] & pieces(~sideToMove)))
+      see_ge_impl = see_disco_ge;
+  else
+      see_ge_impl = see_ge;
+
   --gamePly;
 
   assert(pos_is_ok());
@@ -996,6 +1039,8 @@ Key Position::key_after(Move m) const {
 }
 
 
+
+
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
@@ -1059,6 +1104,94 @@ bool Position::see_ge(Move m, Value v) const {
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+
+      if (nextVictim == KING)
+          return relativeStm == bool(attackers & pieces(~stm));
+
+      balance += relativeStm ?  PieceValue[MG][nextVictim]
+                             : -PieceValue[MG][nextVictim];
+
+      relativeStm = !relativeStm;
+
+      if (relativeStm == (balance >= v))
+          return relativeStm;
+
+      stm = ~stm;
+  }
+}
+
+bool Position::see_disco_ge(Move m, Value v) const {
+
+  assert(is_ok(m));
+
+  // Castling moves are implemented as king capturing the rook so cannot be
+  // handled correctly. Simply assume the SEE value is VALUE_ZERO that is always
+  // correct unless in the rare case the rook ends up under attack.
+  if (type_of(m) == CASTLING)
+      return VALUE_ZERO >= v;
+
+  Square from = from_sq(m), to = to_sq(m);
+  PieceType nextVictim = type_of(piece_on(from));
+  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
+  Value balance; // Values of the pieces taken by us minus opponent's ones
+  Bitboard occupied, stmAttackers, from_bb = 0;
+
+  if (type_of(m) == ENPASSANT)
+  {
+      occupied = SquareBB[to - pawn_push(~stm)]; // Remove the captured pawn
+      balance = PieceValue[MG][PAWN];
+  }
+  else
+  {
+      balance = PieceValue[MG][piece_on(to)];
+      occupied = 0;
+  }
+
+  if (balance < v)
+      return false;
+
+  if (nextVictim == KING)
+      return true;
+
+  balance -= PieceValue[MG][nextVictim];
+
+  if (balance >= v)
+      return true;
+
+  bool relativeStm = true; // True if the opponent is to move
+  occupied ^= pieces() ^ from ^ to;
+  from_bb ^= from;
+
+//  if (   (st->blockersForKing[stm] & from) && !aligned(from, to, square<KING>(stm))) {
+//
+//  }
+  Bitboard attackers = attackers_to(to, occupied) & occupied;
+
+  while (true)
+  {
+      stmAttackers = attackers & pieces(stm);
+
+      // Don't allow pinned pieces to attack pieces except the king as long all
+      // pinners are on their original square.
+      if (!(st->pinnersForKing[stm] & ~occupied))
+          stmAttackers &= ~st->blockersForKing[stm];
+
+      if (   stmAttackers
+                 && (st->blockersForKing[stm] & from_bb)
+                 && !aligned(from_bb, to, square<KING>(stm))) {
+//        if (m != make_move(lsb(from_bb), to))
+//             sync_cout << *this << " move " << UCI::move(m, false) << " disco " <<  UCI::move(make_move(lsb(from_bb), to), false) << sync_endl;
+                  stmAttackers &= pieces(stm, KING);
+                 // dbg_hit_on(true);
+      }
+      //else dbg_hit_on(false);
+
+
+      if (!stmAttackers)
+          return relativeStm;
+
+      // Locate and remove the next least valuable attacker
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, from_bb);
 
       if (nextVictim == KING)
           return relativeStm == bool(attackers & pieces(~stm));

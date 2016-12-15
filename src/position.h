@@ -60,6 +60,8 @@ struct StateInfo {
 typedef std::unique_ptr<std::deque<StateInfo>> StateListPtr;
 
 
+
+
 /// Position class stores information regarding the board representation as
 /// pieces, side to move, hash keys, castling info, etc. Important methods are
 /// do_move() and undo_move(), used by the search to update node info when
@@ -67,6 +69,9 @@ typedef std::unique_ptr<std::deque<StateInfo>> StateListPtr;
 class Thread;
 
 class Position {
+
+  typedef bool (Position::*see_impl)(Move m, Value v) const;
+
 public:
   static void init();
 
@@ -136,6 +141,7 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value value) const;
+  bool see_disco_ge(Move m, Value value) const;
 
   // Accessing hash keys
   Key key() const;
@@ -158,6 +164,7 @@ public:
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = nullptr) const;
   void flip();
+  see_impl see_ge_impl;
 
 private:
   // Initialization helpers (used while setting up a position)
@@ -188,7 +195,9 @@ private:
   Thread* thisThread;
   StateInfo* st;
   bool chess960;
+
 };
+
 
 extern std::ostream& operator<<(std::ostream& os, const Position& pos);
 
