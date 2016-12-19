@@ -348,6 +348,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  noProgress = 0;
 
   if (mainThread)
   {
@@ -385,6 +386,12 @@ void Thread::search() {
       // Age out PV variability metric
       if (mainThread)
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
+
+      if (noProgress >= 10) {
+          noProgMove = rootMoves[0].pv[0];
+          multiPV = rootMoves.size();
+//          sync_cout << "Enable Multipv!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+      }
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -462,6 +469,11 @@ void Thread::search() {
 
           if (!mainThread)
               continue;
+
+          if (multiPV > 1 && rootMoves[0].pv[0] != mainThread->noProgMove) {
+//            sync_cout << "Disable multipv!!!!!!!!!!!!!!!!!! multipb is " << multiPV << sync_endl;
+            multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());
+          }
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
@@ -827,6 +839,7 @@ moves_loop: // When in check search starts from here
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
                ||(ss-2)->staticEval == VALUE_NONE;
 
+
     singularExtensionNode =   !rootNode
                            &&  depth >= 8 * ONE_PLY
                            &&  ttMove != MOVE_NONE
@@ -853,10 +866,10 @@ moves_loop: // When in check search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth / ONE_PLY
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
+//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+//          sync_cout << "info depth " << depth / ONE_PLY
+//                    << " currmove " << UCI::move(move, pos.is_chess960())
+//                    << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
 
       if (PvNode)
           (ss+1)->pv = nullptr;
@@ -1044,6 +1057,18 @@ moves_loop: // When in check search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
+          if (moveCount == 1 && depth > 8 * ONE_PLY)
+          {
+           //sync_cout << "progress: " << value << " before: " << rm.score << " nor: " << thisThread->noProgress << " multi " << sync_endl;
+           if (value == rm.score) {
+             thisThread->noProgress++;
+
+           }
+           else
+             thisThread->noProgress=0;
+          }
+
+
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
           {
@@ -1058,8 +1083,9 @@ moves_loop: // When in check search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
+              if (moveCount > 1 && thisThread == Threads.main()) {
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this is
@@ -1067,6 +1093,8 @@ moves_loop: // When in check search starts from here
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
       }
+
+
 
       if (value > bestValue)
       {
