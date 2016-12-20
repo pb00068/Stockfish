@@ -62,8 +62,8 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
-  int noProgress;
-  Move noProgMove;
+  int noProgressCycles;
+  Move noProgressMove;
   uint64_t tbHits;
 
   Position rootPos;
