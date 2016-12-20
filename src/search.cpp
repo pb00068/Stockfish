@@ -387,11 +387,7 @@ void Thread::search() {
       if (mainThread)
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
 
-      if (noProgress >= 10) {
-          noProgMove = rootMoves[0].pv[0];
-          multiPV = rootMoves.size();
-//          sync_cout << "Enable Multipv!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
-      }
+
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -405,8 +401,17 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
+              if (noProgress >= 20 || noProgMove) {
+                  noProgMove = rootMoves[0].pv[0];
+                  //multiPV = rootMoves.size();
+                  delta += PawnValueMg;
+                  sync_cout << "Open window on rootDepth " <<  rootDepth << sync_endl;
+               }
+               else
+                 sync_cout << "Normal window on rootDepth " <<  rootDepth << sync_endl;
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -470,9 +475,11 @@ void Thread::search() {
           if (!mainThread)
               continue;
 
-          if (multiPV > 1 && rootMoves[0].pv[0] != mainThread->noProgMove) {
-//            sync_cout << "Disable multipv!!!!!!!!!!!!!!!!!! multipb is " << multiPV << sync_endl;
-            multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());
+          if (mainThread->noProgMove && rootMoves[0].pv[0] != mainThread->noProgMove) {
+            sync_cout << "Closing Window again!!!!!!!!!!!!!!!!!!"  << sync_endl;
+            noProgress=0;
+            noProgMove=MOVE_NONE;
+            //multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());
           }
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
@@ -1114,8 +1121,10 @@ moves_loop: // When in check search starts from here
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
-              if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              if (PvNode && value < beta) {// Update alpha! Always alpha < beta
+                if (move != thisThread->noProgMove)
                   alpha = value;
+              }
               else
               {
                   assert(value >= beta); // Fail high
