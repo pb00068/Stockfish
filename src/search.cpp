@@ -348,7 +348,8 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
-  noProgressCycles = 0;
+  noProgCounter = 0;
+
 
   if (mainThread)
   {
@@ -399,9 +400,10 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-              if (noProgressCycles >= 20 || noProgressMove) {
+              if (noProgCounter >= 280 || noProgressMove) {
                   noProgressMove = rootMoves[0].pv[0];
-                  delta += Value(noProgressCycles * PawnValueMg / 20);
+                  delta += PawnValueEg;
+                  //sync_cout << "ENABLE  at depth: " << rootDepth << "  progmul: " << noProgCounter << sync_endl;
               }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
@@ -470,8 +472,9 @@ void Thread::search() {
               continue;
 
           if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove) {
-            noProgressCycles=0;
             noProgressMove=MOVE_NONE;
+            noProgCounter = 0;
+            //sync_cout << "DISABLE because move changed" << sync_endl;
           }
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
@@ -1056,18 +1059,25 @@ moves_loop: // When in check search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
-          if (moveCount == 1 && depth > 8 * ONE_PLY)
+          if (moveCount == 1 && depth > 6 * ONE_PLY)
           {
-           if (value == rm.score)
-             thisThread->noProgressCycles++;
+           if (value == rm.score) {
+             thisThread->noProgCounter+=depth;
+           }
            else
-             thisThread->noProgressCycles=0;
+             thisThread->noProgCounter = 0;
           }
 
 
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
           {
+              // safety precaution: should noProgressMove suddenly make progress again
+              if (move == thisThread->noProgressMove && value > rm.score) {
+                alpha = value;
+                thisThread->noProgressMove = MOVE_NONE;
+              }
+
               rm.score = value;
               rm.pv.resize(1);
 
@@ -1076,12 +1086,12 @@ moves_loop: // When in check search starts from here
               for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
                   rm.pv.push_back(*m);
 
+
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main()) {
+              if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
-              }
           }
           else
               // All other moves but the PV are set to the lowest value: this is
@@ -1111,8 +1121,9 @@ moves_loop: // When in check search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) {// Update alpha! Always alpha < beta
-                if (move != thisThread->noProgressMove) // Don't allow noProgressMove raise alpha
+                if (!rootNode || move != thisThread->noProgressMove) // Don't allow noProgressMove raise alpha
                   alpha = value;
+                //else  sync_cout << "DONT RAISE: alpha  from " << alpha << " to " << value << sync_endl;
               }
               else
               {
