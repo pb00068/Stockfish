@@ -348,7 +348,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
-  noProgCounter = 0;
+  noProgressCycles = 0;
 
 
   if (mainThread)
@@ -400,10 +400,10 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-              if (noProgCounter >= 280 || noProgressMove) {
+              if (noProgressCycles >= 15 || noProgressMove) {
                   noProgressMove = rootMoves[0].pv[0];
                   delta += PawnValueEg;
-                  //sync_cout << "ENABLE  at depth: " << rootDepth << "  progmul: " << noProgCounter << sync_endl;
+                  //sync_cout << "ENABLE  at depth: " << rootDepth  << sync_endl;
               }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
@@ -473,7 +473,7 @@ void Thread::search() {
 
           if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove) {
             noProgressMove=MOVE_NONE;
-            noProgCounter = 0;
+            noProgressCycles = 0;
             //sync_cout << "DISABLE because move changed" << sync_endl;
           }
 
@@ -1059,13 +1059,13 @@ moves_loop: // When in check search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
-          if (moveCount == 1 && depth > 6 * ONE_PLY)
+          if (moveCount == 1 && depth > 8 * ONE_PLY)
           {
            if (value == rm.score) {
-             thisThread->noProgCounter+=depth;
+             thisThread->noProgressCycles++;
            }
            else
-             thisThread->noProgCounter = 0;
+             thisThread->noProgressCycles = 0;
           }
 
 

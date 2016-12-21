@@ -37,7 +37,7 @@ Thread::Thread() {
   resetCalls = exit = false;
   maxPly = callsCnt = 0;
   tbHits = 0;
-  noProgCounter = 0;
+  noProgressCycles = 0;
   noProgressMove = MOVE_NONE;
   history.clear();
   counterMoves.clear();

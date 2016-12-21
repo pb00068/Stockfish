@@ -62,7 +62,7 @@ public:
   Endgames endgames;
   size_t idx, PVIdx;
   int maxPly, callsCnt;
-  int noProgCounter;
+  int noProgressCycles;
   Move noProgressMove;
   uint64_t tbHits;
 
