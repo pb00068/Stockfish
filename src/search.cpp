@@ -484,6 +484,14 @@ void Thread::search() {
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+          if (rootMoves[0].pv[0] == 1698) {
+            sync_cout << "info moveseq ";
+            for (Move m : rootMoves[0].pv)
+              sync_cout << m << ", ";
+            sync_cout << sync_endl;
+          }
+          // info moveseq 1698, 2658, 836, 3762, 288, 3258, 1242, 3769, 2153, 3113, 2089, 2907, 2683, 1748, 3807, 1309, 2029, 3696, 1503, 3112, 2023, 1876, 2934, 2397, 1683, 2202, 1244, 1282, 2543, 1877, 1813, 175, 3503, 2593, 1372, 1682, 1811, 2137, 3037, 1634
+
       }
 
       if (!Signals.stop)
