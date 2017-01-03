@@ -43,6 +43,7 @@ Thread::Thread() {
 
   std::unique_lock<Mutex> lk(mutex);
   searching = true;
+  skipSize = 0;
   nativeThread = std::thread(&Thread::idle_loop, this);
   sleepCondition.wait(lk, [&]{ return !searching; });
 }

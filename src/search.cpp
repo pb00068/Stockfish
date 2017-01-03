@@ -153,6 +153,8 @@ namespace {
     {1, 0, 0, 0, 0, 1, 1 ,1},
   };
 
+  const Value skipSizesScoreBonus[] = {Value(16), Value(12), Value(8), Value(4) , VALUE_ZERO};
+
   Value bonus(Depth depth)   { int d = depth / ONE_PLY ; return  Value(d * d + 2 * d - 2); }
   Value penalty(Depth depth) { int d = depth / ONE_PLY ; return -Value(d * d + 4 * d + 1); }
 
@@ -314,7 +316,7 @@ void MainThread::search() {
       for (Thread* th : Threads)
       {
           Depth depthDiff = th->completedDepth - bestThread->completedDepth;
-          Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
+          Value scoreDiff = th->rootMoves[0].score + skipSizesScoreBonus[th->skipSize] - (bestThread->rootMoves[0].score + skipSizesScoreBonus[bestThread->skipSize]);
 
           if (   (depthDiff > 0 && scoreDiff >= 0)
               || (scoreDiff > 0 && depthDiff >= 0))
@@ -383,6 +385,7 @@ void Thread::search() {
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+          this->skipSize = row.size() / 2;
           if (row[(rootDepth / ONE_PLY + rootPos.game_ply()) % row.size()])
              continue;
       }
