@@ -165,7 +165,7 @@ namespace {
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, bool skipEarlyPruning);
 
   template <NodeType NT, bool InCheck>
-  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
+  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
@@ -312,9 +312,14 @@ void MainThread::search() {
       &&  rootMoves[0].pv[0] != MOVE_NONE)
   {
       for (Thread* th : Threads)
-          if (   th->completedDepth > bestThread->completedDepth
-              && th->rootMoves[0].score > bestThread->rootMoves[0].score)
+      {
+          Depth depthDiff = th->completedDepth - bestThread->completedDepth;
+          Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
+
+          if (   (depthDiff > 0 && scoreDiff >= 0)
+              || (scoreDiff > 0 && depthDiff >= 0))
               bestThread = th;
+      }
   }
 
   previousScore = bestThread->rootMoves[0].score;
@@ -611,7 +616,7 @@ namespace {
     if (!rootNode)
     {
         // Step 2. Check for aborted search and immediate draw
-        if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw() || ss->ply >= MAX_PLY)
+        if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
             return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos)
                                                   : DrawValue[pos.side_to_move()];
 
@@ -668,10 +673,10 @@ namespace {
     // Step 4a. Tablebase probe
     if (!rootNode && TB::Cardinality)
     {
-        int piecesCnt = pos.count<ALL_PIECES>(WHITE) + pos.count<ALL_PIECES>(BLACK);
+        int piecesCount = pos.count<ALL_PIECES>(WHITE) + pos.count<ALL_PIECES>(BLACK);
 
-        if (    piecesCnt <= TB::Cardinality
-            && (piecesCnt <  TB::Cardinality || depth >= TB::ProbeDepth)
+        if (    piecesCount <= TB::Cardinality
+            && (piecesCount <  TB::Cardinality || depth >= TB::ProbeDepth)
             &&  pos.rule50_count() == 0
             && !pos.can_castle(ANY_CASTLING))
         {
@@ -735,10 +740,10 @@ namespace {
         &&  eval + razor_margin[depth / ONE_PLY] <= alpha)
     {
         if (depth <= ONE_PLY)
-            return qsearch<NonPV, false>(pos, ss, alpha, beta, DEPTH_ZERO);
+            return qsearch<NonPV, false>(pos, ss, alpha, alpha+1);
 
         Value ralpha = alpha - razor_margin[depth / ONE_PLY];
-        Value v = qsearch<NonPV, false>(pos, ss, ralpha, ralpha+1, DEPTH_ZERO);
+        Value v = qsearch<NonPV, false>(pos, ss, ralpha, ralpha+1);
         if (v <= ralpha)
             return v;
     }
@@ -766,7 +771,7 @@ namespace {
         Depth R = ((823 + 67 * depth / ONE_PLY) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
         pos.do_null_move(st);
-        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
+        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1)
                                       : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode, true);
         pos.undo_null_move();
 
@@ -780,7 +785,7 @@ namespace {
                 return nullValue;
 
             // Do verification search at high depths
-            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
 
             if (v >= beta)
@@ -1024,8 +1029,8 @@ moves_loop: // When in check search starts from here
       // Step 16. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
           value = newDepth <   ONE_PLY ?
-                            givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
-                                       : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+                            givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha)
+                                       : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha)
                                        : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode, false);
 
       // For PV nodes only, do a full PV search on the first move or after a fail
@@ -1037,8 +1042,8 @@ moves_loop: // When in check search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = newDepth <   ONE_PLY ?
-                            givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
-                                       : -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+                            givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha)
+                                       : -qsearch<PV, false>(pos, ss+1, -beta, -alpha)
                                        : - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, false);
       }
 
@@ -1108,13 +1113,6 @@ moves_loop: // When in check search starts from here
 
           if (value > alpha)
           {
-              // If there is an easy move for this position, clear it if unstable
-              if (    PvNode
-                  &&  thisThread == Threads.main()
-                  &&  EasyMove.get(pos.key())
-                  && (move != EasyMove.get(pos.key()) || moveCount > 1))
-                  EasyMove.clear();
-
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
@@ -1184,8 +1182,7 @@ moves_loop: // When in check search starts from here
 
 
   // qsearch() is the quiescence search function, which is called by the main
-  // search function when the remaining depth is zero (or, to be more precise,
-  // less than ONE_PLY).
+  // search function with depth zero, or recursively with depth less than ONE_PLY.
 
   template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
@@ -1218,7 +1215,7 @@ moves_loop: // When in check search starts from here
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or if the maximum ply has been reached
-    if (pos.is_draw() || ss->ply >= MAX_PLY)
+    if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
         return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos)
                                               : DrawValue[pos.side_to_move()];
 
