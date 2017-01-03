@@ -958,6 +958,8 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
+      Piece capt = pos.captured_piece();
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -969,7 +971,7 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-          if (captureOrPromotion)
+          if (captureOrPromotion || capt)
               r -= r ? ONE_PLY : DEPTH_ZERO;
           else
           {
