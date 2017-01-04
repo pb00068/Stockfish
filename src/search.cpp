@@ -350,6 +350,7 @@ void Thread::search() {
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
 
+  noProgressCycles = 0;
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
@@ -403,6 +404,10 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
+              if (noProgressCycles >= 20 || noProgressMove) {
+                noProgressMove = rootMoves[0].pv[0];
+                delta += Value(noProgressCycles * PawnValueMg / 20);
+              }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -467,6 +472,12 @@ void Thread::search() {
 
           if (!mainThread)
               continue;
+
+          if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove)
+          {
+              noProgressCycles=0;
+              noProgressMove=MOVE_NONE;
+          }
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
@@ -1049,6 +1060,14 @@ moves_loop: // When in check search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
+          if (moveCount == 1 && depth > 8 * ONE_PLY)
+          {
+              if (value == rm.score)
+                thisThread->noProgressCycles++;
+              else
+                thisThread->noProgressCycles=0;
+          }
+
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
           {
@@ -1085,7 +1104,11 @@ moves_loop: // When in check search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              {
+                 if (move != thisThread->noProgressMove) // noProgressMove is not allowed to raise alpha
+                 // (N.B.: bestValue get increased anyway, so the effect is that other moves with lesser equal score as noProgressMove can't raise alpha too)
                   alpha = value;
+              }
               else
               {
                   assert(value >= beta); // Fail high
