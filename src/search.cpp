@@ -126,6 +126,11 @@ namespace {
     Move pv[3];
   };
 
+
+  const int moves[] = {1698, 2658, 836, 3762, 288, 3258, 1242, 3769, 2153, 3113, 2089, 2907, 2683, 1748, 3807, 1309, 2029, 3696, 1503, 3112, 2023, 1876, 2934, 2397, 1683, 2202, 1244, 1282, 2543, 1877, 1813, 175, 3503, 2593, 1372, 1682, 1811, 2137, 3037, 1634};
+  // pv c4c5 b6c5 f2e1 c8c7 e1a5 c7c8 d3c4 c8b8 b5b6 a7b6 a5b6 f6d4 b6d8 d4e3 d8h4 e3f4 h4f6 b8a7 h3h4 a7a6 h4h5 f4e3 f6g7 f5f4 c4d3 c5c4 d3e4 e3c1 h5h6 f4f3 e4f3 c1h6 g7h6 a6b5 f3e4 c4c3 e4d3 b5b4 h6f4 b4c5
+
+
   // Set of rows with half bits set to 1 and half to 0. It is used to allocate
   // the search depths across the threads.
   typedef std::vector<int> Row;
@@ -1027,9 +1032,26 @@ moves_loop: // When in check search starts from here
 
           Depth d = std::max(newDepth - r, ONE_PLY);
 
+
+
+
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, false);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
+
+          if (thisThread->rootDepth >= 40) {
+
+          bool match = true;
+          for (int t = ss->ply; t > 0; t--) {
+            if (moves[t - 1] != (ss - ss->ply + t)->currentMove) {
+              match = false;
+              break;
+            }
+          }
+          if (match && ss->ply > 5)
+            sync_cout << "match until ply " << ss->ply << " d: " << d << " rootDepth:" << thisThread->rootDepth << " fulldepth: " << doFullDepthSearch << sync_endl;
+          }
+
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
