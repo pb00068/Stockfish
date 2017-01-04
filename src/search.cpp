@@ -153,7 +153,7 @@ namespace {
     {1, 0, 0, 0, 0, 1, 1 ,1},
   };
 
-  const Value skipSizesScoreBonus[] = {Value(16), Value(12), Value(8), Value(4) , VALUE_ZERO};
+  const Value skipSizesScoreBonus[] = {Value(64), Value(32), Value(16), Value(8) , VALUE_ZERO};
 
   Value bonus(Depth depth)   { int d = depth / ONE_PLY ; return  Value(d * d + 2 * d - 2); }
   Value penalty(Depth depth) { int d = depth / ONE_PLY ; return -Value(d * d + 4 * d + 1); }
