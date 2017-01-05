@@ -24,6 +24,7 @@
 #include <cstring>   // For std::memset
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -410,11 +411,11 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-              if (noProgressCycles >= 15 || noProgressMove) {
-                  noProgressMove = rootMoves[0].pv[0];
-                  delta += PawnValueEg;
-                  //sync_cout << "ENABLE  at depth: " << rootDepth  << sync_endl;
-              }
+//              if (noProgressCycles >= 15 || noProgressMove) {
+//                  noProgressMove = rootMoves[0].pv[0];
+//                  delta += PawnValueEg;
+//                  sync_cout << "ENABLE  at depth: " << rootDepth  << sync_endl;
+//              }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
 
@@ -484,7 +485,7 @@ void Thread::search() {
           if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove) {
             noProgressMove=MOVE_NONE;
             noProgressCycles = 0;
-            //sync_cout << "DISABLE because move changed" << sync_endl;
+            sync_cout << "DISABLE because move changed" << sync_endl;
           }
 
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
@@ -1039,7 +1040,7 @@ moves_loop: // When in check search starts from here
 
           doFullDepthSearch = (value > alpha && d != newDepth);
 
-          if (thisThread->rootDepth >= 40) {
+          if (thisThread->rootDepth >= 10) {
 
           bool match = true;
           for (int t = ss->ply; t > 0; t--) {
@@ -1048,8 +1049,8 @@ moves_loop: // When in check search starts from here
               break;
             }
           }
-          if (match && ss->ply > 5)
-            sync_cout << "match until ply " << ss->ply << " d: " << d << " rootDepth:" << thisThread->rootDepth << " fulldepth: " << doFullDepthSearch << sync_endl;
+          if (match )
+            sync_cout << "match until ply " << ss->ply << " move-nr: " << std::setw(2) << moveCount << " raw-reduction: " << reduction<PvNode>(improving, depth, moveCount) << " lmr-depth: " << std::setw(2) << d << " depth: " << std::setw(2) << depth << "  rootDepth:" << std::setw(2) << thisThread->rootDepth << " fulldepthsearch: " << (doFullDepthSearch ? "true" : "false") << sync_endl;
           }
 
       }
