@@ -349,7 +349,7 @@ void Thread::search() {
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
-
+  noProgressCycles = 0;
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
@@ -403,6 +403,10 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
+              if (noProgressCycles >= 10 || noProgressMove) {
+                  noProgressMove = rootMoves[0].pv[0];
+                  delta += Value(noProgressCycles * PawnValueMg / 10);
+              }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -467,7 +471,11 @@ void Thread::search() {
 
           if (!mainThread)
               continue;
-
+          if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove)
+          {
+             noProgressCycles=8;
+             noProgressMove=MOVE_NONE;
+          }
           if (Signals.stop || PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
@@ -599,7 +607,9 @@ namespace {
     if (PvNode && thisThread->maxPly < ss->ply)
         thisThread->maxPly = ss->ply;
 
-    if (!rootNode)
+    if (rootNode)
+      thisThread->oldAlpha= VALUE_ZERO;
+    else
     {
         // Step 2. Check for aborted search and immediate draw
         if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
@@ -852,16 +862,22 @@ moves_loop: // When in check search starts from here
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
       // mode we also skip PV moves which have been already searched.
-      if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
-                                  thisThread->rootMoves.end(), move))
+      if (rootNode) {
+        if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx, thisThread->rootMoves.end(), move))
           continue;
+        if (thisThread == Threads.main() && Time.elapsed() > 3000)
+                  sync_cout << "info depth " << depth / ONE_PLY
+                            << " currmove " << UCI::move(move, pos.is_chess960())
+                            << " currmovenumber " << moveCount + 1 + thisThread->PVIdx << sync_endl;
+        if (thisThread->noProgressMove && !pos.see_ge(move, VALUE_ZERO)) {
+            alpha = thisThread->oldAlpha;
+            //std::cerr << pos << " move " << UCI::move(move, false) << " val: " << val << sync_endl;
+        }
+      }
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth / ONE_PLY
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
+
 
       if (PvNode)
           (ss+1)->pv = nullptr;
@@ -1003,10 +1019,11 @@ moves_loop: // When in check search starts from here
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
+          Value lmrAlpha = alpha;
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, false);
+          value = -search<NonPV>(pos, ss+1, -(lmrAlpha+1), -lmrAlpha, d, true, false);
 
-          doFullDepthSearch = (value > alpha && d != newDepth);
+          doFullDepthSearch = (value > lmrAlpha && d != newDepth);
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
@@ -1048,6 +1065,12 @@ moves_loop: // When in check search starts from here
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
+          if (moveCount == 1 && depth > 8 * ONE_PLY)
+          {
+            if (value == rm.score)
+               thisThread->noProgressCycles++;
+
+          }
 
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
@@ -1085,7 +1108,12 @@ moves_loop: // When in check search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
-                  alpha = value;
+              {
+                if (move == thisThread->noProgressMove) // memorise old alpha before updating it
+                   thisThread->oldAlpha = alpha;
+                alpha = value;
+              }
+
               else
               {
                   assert(value >= beta); // Fail high
