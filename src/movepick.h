@@ -28,6 +28,7 @@
 #include "position.h"
 #include "types.h"
 
+static const Value StatsMax = Value(1 << 28);
 
 /// The Stats struct stores moves statistics. According to the template parameter
 /// the class can store History and Countermoves. History records how often
@@ -38,8 +39,6 @@
 /// different origin but same destination and piece will be considered identical.
 template<typename T, bool CM = false>
 struct Stats {
-
-  static const Value Max = Value(1 << 28);
 
   const T* operator[](Piece pc) const { return table[pc]; }
   T* operator[](Piece pc) { return table[pc]; }
@@ -59,8 +58,7 @@ private:
 };
 
 typedef Stats<Move> MoveStats;
-typedef Stats<Value, false> HistoryStats;
-typedef Stats<Value,  true> CounterMoveStats;
+typedef Stats<Value, true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 struct FromToStats {
