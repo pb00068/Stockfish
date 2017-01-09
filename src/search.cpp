@@ -212,7 +212,7 @@ void Search::clear() {
   for (Thread* th : Threads)
   {
       th->counterMoves.clear();
-      th->fromTo.clear();
+      th->fromPTTo.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
   }
@@ -986,7 +986,7 @@ moves_loop: // When in check search starts from here
               ss->history =     (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                           +    thisThread->fromTo.get(~pos.side_to_move(), move)
+                           +    thisThread->fromPTTo.get(moved_piece, move)
                            -    8000; // Correction factor
 
               // Decrease/increase reduction by comparing opponent's stat score
@@ -1415,9 +1415,8 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->fromTo.update(c, move, bonus);
+    thisThread->fromPTTo.update(pos.moved_piece(move), move, bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
@@ -1429,7 +1428,7 @@ moves_loop: // When in check search starts from here
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->fromTo.update(c, quiets[i], -bonus);
+        thisThread->fromPTTo.update(pos.moved_piece(quiets[i]), quiets[i], -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }

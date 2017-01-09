@@ -140,33 +140,31 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  const FromToStats& fromTo = pos.this_thread()->fromTo;
+  const FromToStats& fromTo = pos.this_thread()->fromPTTo;
 
   const CounterMoveStats* cmh = (ss-1)->counterMoves;
   const CounterMoveStats* fmh = (ss-2)->counterMoves;
   const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-  Color c = pos.side_to_move();
 
   for (auto& m : *this)
       m.value =  (cmh  ?  (*cmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh  ?  (*fmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh2 ? (*fmh2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + fromTo.get(c, m);
+               + fromTo.get(pos.moved_piece(m), m);
 }
 
 template<>
 void MovePicker::score<EVASIONS>() {
   // Try captures ordered by MVV/LVA, then non-captures ordered by history value
-  const FromToStats& fromTo = pos.this_thread()->fromTo;
-  Color c = pos.side_to_move();
+  const FromToStats& fromTo = pos.this_thread()->fromPTTo;
 
   for (auto& m : *this)
       if (pos.capture(m))
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    - Value(type_of(pos.moved_piece(m))) + StatsMax;
       else
-          m.value = fromTo.get(c, m);
+          m.value = fromTo.get(pos.moved_piece(m), m);
 }
 
 
