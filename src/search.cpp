@@ -128,8 +128,11 @@ namespace {
   };
 
 
-  const int moves[] = {1698, 2658, 836, 3762, 288, 3258, 1242, 3769, 2153, 3113, 2089, 2907, 2683, 1748, 3807, 1309, 2029, 3696, 1503, 3112, 2023, 1876, 2934, 2397, 1683, 2202, 1244, 1282, 2543, 1877, 1813, 175, 3503, 2593, 1372, 1682, 1811, 2137, 3037, 1634};
+  const int moves [] = {1698, 2658, 836, 3762, 288, 3258, 1242, 3769, 2153, 3113, 2089, 2907, 2683, 1748, 3807, 1309, 2029, 3696, 1503, 3112, 2023, 1876, 2934, 2397, 1683, 2202, 1244, 1282, 2543, 1877, 1813, 175, 3503, 2593, 1372, 1682, 1811, 2137, 3037, 1634};
   // pv c4c5 b6c5 f2e1 c8c7 e1a5 c7c8 d3c4 c8b8 b5b6 a7b6 a5b6 f6d4 b6d8 d4e3 d8h4 e3f4 h4f6 b8a7 h3h4 a7a6 h4h5 f4e3 f6g7 f5f4 c4d3 c5c4 d3e4 e3c1 h5h6 f4f3 e4f3 c1h6 g7h6 a6b5 f3e4 c4c3 e4d3 b5b4 h6f4 b4c5
+  const int moves2[] = {1698, 2658, 836, 3769, 288, 2932, 1242, 3373, 2153, 3113, 2089, 2907, 2683, 1748, 3807, 1309, 2029, 1878, 1683, 2397, 1244, 2202, 1503, 1682, 2898, 1439, 1821, 3696, 1177, 3112, 1643, 2609, 1893, 3194, 2412, 3771, 2777, 3826, 1632, 3249, 2066, 2006, 1197, 3177, 2916, 1439, 2333, 2043, 1878, 2657, 1451, 2138, 2813, 3826, 3958, 1698};
+  // pv c4c5 b6c5 f2e1 c8b8 e1a5 f6e7 d3c4 e7f6 b5b6 a7b6 a5b6 f6d4 b6d8 d4e3 d8h4 e3f4 h4f6 f4g3 c4d3 f5f4 d3e4 c5c4 h3h4 c4c3 f6c3 g3h4 e4f4 b8a7 c3b4 a7a6 b4d6 a6b7 f4f5 b7c8 f5e6 c8d8 d6b4 d8c7 b4a5 c7b7 a5c3 h4g3 c3f6 b7b6 f6e5 g3h4 e5f4 h4d8 f4g3 b6b5 g3d6 b5c4 d6f8 d8c7 f8g7 c4c5
+
 
 
   // Set of rows with half bits set to 1 and half to 0. It is used to allocate
@@ -217,7 +220,6 @@ void Search::clear() {
 
   for (Thread* th : Threads)
   {
-      th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
       th->counterMoveHistory.clear();
@@ -411,11 +413,11 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-//              if (noProgressCycles >= 15 || noProgressMove) {
-//                  noProgressMove = rootMoves[0].pv[0];
-//                  delta += PawnValueEg;
-//                  sync_cout << "ENABLE  at depth: " << rootDepth  << sync_endl;
-//              }
+              if (noProgressCycles >= 10 || noProgressMove) {
+                  //noProgressMove = rootMoves[0].pv[0];
+                  //delta += noProgressCycles * PawnValueEg / 10;
+                  //sync_cout << "ENABLE  at depth: " << rootDepth  << sync_endl;
+              }
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
 
@@ -484,7 +486,7 @@ void Thread::search() {
 
           if (mainThread->noProgressMove && rootMoves[0].pv[0] != mainThread->noProgressMove) {
             noProgressMove=MOVE_NONE;
-            noProgressCycles = 0;
+            noProgressCycles = 8;
             sync_cout << "DISABLE because move changed" << sync_endl;
           }
 
@@ -1013,8 +1015,7 @@ moves_loop: // When in check search starts from here
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
                   r -= 2 * ONE_PLY;
 
-              ss->history = thisThread->history[moved_piece][to_sq(move)]
-                           +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
+              ss->history =     (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    thisThread->fromTo.get(~pos.side_to_move(), move)
@@ -1044,7 +1045,7 @@ moves_loop: // When in check search starts from here
 
           bool match = true;
           for (int t = ss->ply; t > 0; t--) {
-            if (moves[t - 1] != (ss - ss->ply + t)->currentMove) {
+            if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
               match = false;
               break;
             }
@@ -1109,10 +1110,10 @@ moves_loop: // When in check search starts from here
           if (moveCount == 1 || value > alpha)
           {
               // safety precaution: should noProgressMove suddenly make progress again
-              if (move == thisThread->noProgressMove && value > rm.score) {
-                alpha = value;
-                thisThread->noProgressMove = MOVE_NONE;
-              }
+//              if (move == thisThread->noProgressMove && value > rm.score) {
+//                alpha = value;
+//                thisThread->noProgressMove = MOVE_NONE;
+//              }
 
               rm.score = value;
               rm.pv.resize(1);
@@ -1150,7 +1151,7 @@ moves_loop: // When in check search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) {// Update alpha! Always alpha < beta
-                if (!rootNode || move != thisThread->noProgressMove) // Don't allow noProgressMove raise alpha
+                //if (!rootNode || move != thisThread->noProgressMove) // Don't allow noProgressMove raise alpha
                   alpha = value;
                 //else  sync_cout << "DONT RAISE: alpha  from " << alpha << " to " << value << sync_endl;
               }
@@ -1488,7 +1489,6 @@ moves_loop: // When in check search starts from here
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->fromTo.update(c, move, bonus);
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
@@ -1501,7 +1501,6 @@ moves_loop: // When in check search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->fromTo.update(c, quiets[i], -bonus);
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }

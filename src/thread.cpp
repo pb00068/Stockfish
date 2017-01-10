@@ -39,7 +39,6 @@ Thread::Thread() {
   tbHits = 0;
   noProgressCycles = 0;
   noProgressMove = MOVE_NONE;
-  history.clear();
   counterMoves.clear();
   idx = Threads.size(); // Start from 0
 
