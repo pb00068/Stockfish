@@ -607,6 +607,7 @@ namespace {
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
 
+
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
     {
@@ -683,6 +684,17 @@ namespace {
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
                 update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, penalty(depth));
         }
+        if (thisThread->rootDepth >= 10) {
+                  bool match = true;
+                  for (int t = 1; t <= ss->ply; t++) {
+                    if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                      match = false;
+                      break;
+                    }
+                  }
+                  if (match )
+                    sync_cout << "early TT cutoff at ply : " << ss->ply << " rootdepth " << thisThread->rootDepth << sync_endl;
+         }
         return ttValue;
     }
 
@@ -769,8 +781,20 @@ namespace {
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth) >= beta
         &&  eval < VALUE_KNOWN_WIN  // Do not return unproven wins
-        &&  pos.non_pawn_material(pos.side_to_move()))
+        &&  pos.non_pawn_material(pos.side_to_move())) {
+                        if (thisThread->rootDepth >= 10) {
+                                  bool match = true;
+                                  for (int t = 1; t <= ss->ply; t++) {
+                                    if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                                      match = false;
+                                      break;
+                                    }
+                                  }
+                                  if (match )
+                                    sync_cout << "Futility pruning pv on ply " << ss->ply << sync_endl;
+                         }
         return eval;
+    }
 
     // Step 8. Null move search with verification search (is omitted in PV nodes)
     if (   !PvNode
@@ -797,15 +821,39 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN) {
+              if (thisThread->rootDepth >= 10) {
+                                      bool match = true;
+                                      for (int t = 1; t <= ss->ply; t++) {
+                                        if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                                          match = false;
+                                          break;
+                                        }
+                                      }
+                                      if (match )
+                                        sync_cout << "nullmove pv cut at ply : " << ss->ply << " rootdepth " << thisThread->rootDepth << sync_endl;
+                             }
                 return nullValue;
+            }
 
             // Do verification search at high depths
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
 
-            if (v >= beta)
+            if (v >= beta) {
+              if (thisThread->rootDepth >= 10) {
+                        bool match = true;
+                        for (int t = 1; t <= ss->ply; t++) {
+                          if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                            match = false;
+                            break;
+                          }
+                        }
+                        if (match )
+                          sync_cout << "nullmove pv cut at ply : " << ss->ply << " rootdepth " << thisThread->rootDepth << sync_endl;
+               }
                 return nullValue;
+            }
         }
     }
 
@@ -833,8 +881,22 @@ namespace {
                 pos.do_move(move, st);
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode, false);
                 pos.undo_move(move);
-                if (value >= rbeta)
+                if (value >= rbeta) {
+                  if (thisThread->rootDepth >= 10) {
+
+
+                            bool match = true;
+                            for (int t = 1; t <= ss->ply; t++) {
+                              if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                                match = false;
+                                break;
+                              }
+                            }
+                            if (match )
+                              sync_cout << "probcut move-nr: " << std::setw(2) << moveCount << " move " << UCI::move(move, false) << sync_endl;
+                   }
                     return value;
+                }
             }
     }
 
@@ -992,6 +1054,18 @@ moves_loop: // When in check search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
+      if (thisThread->rootDepth >= 10) {
+        bool match = true;
+        for (int t = 1; t <= ss->ply; t++) {
+          if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+            match = false;
+            break;
+          }
+        }
+        if (match )
+          sync_cout << "move match until ply " << ss->ply << " move-nr: " << std::setw(2) << moveCount << "  rootDepth:" << std::setw(2) << thisThread->rootDepth  << sync_endl;
+      }
+
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
@@ -1043,8 +1117,9 @@ moves_loop: // When in check search starts from here
 
           if (thisThread->rootDepth >= 10) {
 
+
           bool match = true;
-          for (int t = ss->ply; t > 0; t--) {
+          for (int t = 1; t <= ss->ply; t++) {
             if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
               match = false;
               break;
@@ -1053,6 +1128,7 @@ moves_loop: // When in check search starts from here
           if (match )
             sync_cout << "match until ply " << ss->ply << " move-nr: " << std::setw(2) << moveCount << " raw-reduction: " << reduction<PvNode>(improving, depth, moveCount) << " lmr-depth: " << std::setw(2) << d << " depth: " << std::setw(2) << depth << "  rootDepth:" << std::setw(2) << thisThread->rootDepth << " fulldepthsearch: " << (doFullDepthSearch ? "true" : "false") << sync_endl;
           }
+
 
       }
       else
@@ -1064,6 +1140,19 @@ moves_loop: // When in check search starts from here
                             givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha)
                                        : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha)
                                        : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode, false);
+      if (thisThread->rootDepth >= 10 && newDepth <   ONE_PLY) {
+
+
+                bool match = true;
+                for (int t = 1; t <= ss->ply; t++) {
+                  if (moves[t - 1] != (ss - ss->ply + t)->currentMove && moves2[t - 1] != (ss - ss->ply + t)->currentMove) {
+                    match = false;
+                    break;
+                  }
+                }
+                if (match )
+                  sync_cout << "search ends on ply " << ss->ply << " move-nr: " << std::setw(2) << moveCount <<  " depth: " << std::setw(2) << depth << "  rootDepth:" << std::setw(2) << thisThread->rootDepth << " fulldepthsearch: " << (doFullDepthSearch ? "true" : "false") << sync_endl;
+       }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
