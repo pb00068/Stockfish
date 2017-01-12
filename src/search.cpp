@@ -621,6 +621,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->counterMoves = nullptr;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss-2)->clearanceBonus  = VALUE_ZERO;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
@@ -651,7 +652,6 @@ namespace {
             if ((ss-1)->moveCount == 1 && !pos.captured_piece())
                 update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, penalty(depth));
 
-            (ss-2)->clearanceBonus  = VALUE_ZERO;
             if (ss->ply > 2 &&  ((between_bb(from_sq(bestMove), to_sq(bestMove)) | to_sq(bestMove)) & from_sq((ss-2)->currentMove)) && to_sq(bestMove) != to_sq((ss-2)->currentMove)) {
               (ss-2)->clearanceSquare = from_sq((ss-2)->currentMove);
               (ss-2)->clearanceBonus = bonus(depth + 4 * ONE_PLY);
@@ -1115,7 +1115,6 @@ moves_loop: // When in check search starts from here
     // return a fail low score.
 
     assert(moveCount || !inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
-    (ss-2)->clearanceBonus  = VALUE_ZERO;
 
     if (!moveCount)
         bestValue = excludedMove ? alpha
