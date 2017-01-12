@@ -19,9 +19,10 @@
 */
 
 #include <cassert>
-
+#include <iostream>
 #include "movepick.h"
 #include "thread.h"
+#include "uci.h"
 
 namespace {
 
@@ -148,11 +149,17 @@ void MovePicker::score<QUIETS>() {
 
   Color c = pos.side_to_move();
 
-  for (auto& m : *this)
+  for (auto& m : *this) {
       m.value =  (cmh  ?  (*cmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh  ?  (*fmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh2 ? (*fmh2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
+               + (ss->clearanceBonus && ss->clearanceSquare == from_sq(m) ? ss->clearanceBonus : VALUE_ZERO)
                + history.get(c, m);
+//      if (ss->clearanceSquare == from_sq(m) && ss->clearanceBonus) {
+//        sync_cout << pos << " bonus of " << ss->clearanceBonus << " for move " << UCI::move(m, false) << sync_endl;
+//        abort();
+//      }
+  }
 }
 
 template<>
