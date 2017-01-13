@@ -654,7 +654,7 @@ namespace {
 
             if (ss->ply > 2 &&  ((between_bb(from_sq(bestMove), to_sq(bestMove)) | to_sq(bestMove)) & from_sq((ss-2)->currentMove)) && to_sq(bestMove) != to_sq((ss-2)->currentMove)) {
               (ss-2)->clearanceSquare = from_sq((ss-2)->currentMove);
-              (ss-2)->clearanceBonus = bonus(depth + 10 * ONE_PLY);
+              (ss-2)->clearanceBonus = bonus(depth) * 32;
             }
         }
         return ttValue;
@@ -1135,7 +1135,7 @@ moves_loop: // When in check search starts from here
 //          sync_cout << pos << " move: " << UCI::move(bestMove, false) << " my previous move: " <<  UCI::move((ss-2)->currentMove, false) << " val: " << (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-2)->currentMove)) <<
 //               "\n" << Bitboards::pretty( between_bb(from_sq(bestMove), to_sq(bestMove))) <<sync_endl;
           (ss-2)->clearanceSquare = from_sq((ss-2)->currentMove);
-          (ss-2)->clearanceBonus = bonus(depth + 10 * ONE_PLY);
+          (ss-2)->clearanceBonus = bonus(depth) * 32;
         }
     }
     // Bonus for prior countermove that caused the fail low
