@@ -53,7 +53,7 @@ struct StateInfo {
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
-  Bitboard   dcsnipersForKing[COLOR_NB];
+  Bitboard   snipers[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
 
@@ -104,7 +104,7 @@ public:
   Bitboard checkers() const;
   Bitboard discovered_check_candidates() const;
   Bitboard pinned_pieces(Color c) const;
-  Bitboard dcsnipersForKing(Color c) const;
+  Bitboard snipersForKing(Color c) const;
   Bitboard check_squares(PieceType pt) const;
 
   // Attacks to/from a given square
@@ -299,8 +299,8 @@ inline Bitboard Position::pinned_pieces(Color c) const {
   return st->blockersForKing[c] & pieces(c);
 }
 
-inline Bitboard Position::dcsnipersForKing(Color c) const {
-  return st->dcsnipersForKing[c];
+inline Bitboard Position::snipersForKing(Color c) const {
+  return st->snipers[c];
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {

@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -203,7 +203,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score HinderPassedPawn    = S( 7,  0);
-  const Score UnattackedDCSniper  = S( 8,  8); // bonus for having a slider not under attack, causing a discovered check candidate
+  const Score UnattackedSniper  = S( 8,  8); // bonus for having a slider not under attack, x-raying enemy king with more than one piece between
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -361,8 +361,8 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard pinners, dcsnipers;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners, dcsnipers))
+            Bitboard pinners, snipers;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners, snipers))
                 score -= WeakQueen;
         }
     }
@@ -596,10 +596,9 @@ namespace {
 
     score += ThreatByPawnPush * popcount(b);
 
-    if (pos.dcsnipersForKing(Them)) {
-      score += UnattackedDCSniper;
-      //sync_cout << pos << Bitboards::pretty(pos.dcsnipersForKing(Them)) << sync_endl;
-
+    if (pos.snipersForKing(Them) & ~ei.attackedBy[Them][ALL_PIECES]) {
+      score += UnattackedSniper;
+      //sync_cout << pos << Bitboards::pretty(pos.snipersForKing(Them)) << sync_endl;
     }
 
     if (DoTrace)
