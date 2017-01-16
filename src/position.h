@@ -53,6 +53,7 @@ struct StateInfo {
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinnersForKing[COLOR_NB];
+  Bitboard   dcsnipersForKing[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
 };
 
@@ -103,7 +104,7 @@ public:
   Bitboard checkers() const;
   Bitboard discovered_check_candidates() const;
   Bitboard pinned_pieces(Color c) const;
-  Bitboard pinners(Color c) const;
+  Bitboard dcsnipersForKing(Color c) const;
   Bitboard check_squares(PieceType pt) const;
 
   // Attacks to/from a given square
@@ -112,7 +113,7 @@ public:
   Bitboard attacks_from(Piece pc, Square s) const;
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& dcsnipers) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -298,8 +299,8 @@ inline Bitboard Position::pinned_pieces(Color c) const {
   return st->blockersForKing[c] & pieces(c);
 }
 
-inline Bitboard Position::pinners(Color c) const {
-  return st->pinnersForKing[~c];
+inline Bitboard Position::dcsnipersForKing(Color c) const {
+  return st->dcsnipersForKing[c];
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {
