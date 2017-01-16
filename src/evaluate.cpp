@@ -596,10 +596,9 @@ namespace {
 
     score += ThreatByPawnPush * popcount(b);
 
-    if (pos.dcsnipersForKing(Them)) {
+    if (pos.dcsnipersForKing(Them) & ~ei.attackedBy[Them][ALL_PIECES]) {
       score += UnattackedDCSniper;
-      //sync_cout << pos << Bitboards::pretty(pos.dcsnipersForKing(Them)) << sync_endl;
-
+//      sync_cout << pos << Bitboards::pretty(pos.dcsnipersForKing(Them)) << sync_endl;
     }
 
     if (DoTrace)
