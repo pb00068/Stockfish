@@ -203,7 +203,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score HinderPassedPawn    = S( 7,  0);
-  const Score UnattackedDCSniper  = S( 8,  8); // bonus for having a slider not under attack, causing a discovered check candidate
+  const Score UnattackedDCSniper  = S(16, 16); // bonus for having a slider not under attack, causing a discovered check candidate
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
