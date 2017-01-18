@@ -70,6 +70,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
+  Value Bonus[MAX_PLY + 2];
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -155,8 +156,8 @@ namespace {
 
   const size_t HalfDensitySize = std::extent<decltype(HalfDensity)>::value;
 
-  Value bonus(Depth depth)   { int d = depth / ONE_PLY ; return  Value(d * d + 2 * d - 2); }
-  Value penalty(Depth depth) { int d = depth / ONE_PLY ; return -Value(d * d + 4 * d + 1); }
+  Value bonus(Depth depth)   { int d = depth / ONE_PLY ; return  Bonus[d]; }
+  Value penalty(Depth depth) { int d = depth / ONE_PLY ; return -Bonus[d+1]; }
 
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
@@ -200,6 +201,9 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
+
+  for (int d = 0; d < MAX_PLY+2; ++d)
+      Bonus[d] = Value(pow(d, 1.8) + 10 * d - 10);
 }
 
 
