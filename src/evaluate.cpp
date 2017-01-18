@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-//#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -203,7 +202,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score HinderPassedPawn    = S( 7,  0);
-  const Score UnattackedDCSniper  = S(16, 16); // bonus for having a slider not under attack, causing a discovered check candidate
+  const Score UnattackedDCSniper  = S(12, 12); // bonus for having a dc-candidate with it's sniper behind, both not under attack
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -597,8 +596,17 @@ namespace {
     score += ThreatByPawnPush * popcount(b);
 
     if (pos.dcsnipersForKing(Them) & ~ei.attackedBy[Them][ALL_PIECES]) {
-      score += UnattackedDCSniper;
-//      sync_cout << pos << Bitboards::pretty(pos.dcsnipersForKing(Them)) << sync_endl;
+          b = pos.blockersForKing(Them) & pos.pieces(Us) & ~ei.attackedBy[Them][ALL_PIECES];
+          const Square ksq = pos.square<KING>(Them);
+          while (b)
+          {
+            Square dcsquare = pop_lsb(&b); // square of discovering check candidate
+            // Don't give bonus if the dc-candidate is unlikely to threaten anything:
+            // typically with sniper, pawn & enemy king on the same file and pawn cannot capture
+            if (type_of(pos.piece_on(dcsquare)) != PAWN || file_of(ksq) != file_of(dcsquare) ||
+                (pos.pieces(Them) & (dcsquare + Right)) || (pos.pieces(Them) & (dcsquare + Left)) )
+              score += UnattackedDCSniper;
+          }
     }
 
     if (DoTrace)
