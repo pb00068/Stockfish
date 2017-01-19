@@ -987,7 +987,7 @@ moves_loop: // When in check search starts from here
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            + (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            + (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                           + thisThread->history.get(~pos.side_to_move(), move)
+                           + thisThread->history.get(~pos.side_to_move(), move, pos.game_ply())
                            - 8000; // Correction factor
 
               // Decrease/increase reduction by comparing opponent's stat score
@@ -1417,7 +1417,7 @@ moves_loop: // When in check search starts from here
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->history.update(c, move, bonus);
+    thisThread->history.update(c, move, bonus, pos.game_ply());
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
@@ -1429,7 +1429,7 @@ moves_loop: // When in check search starts from here
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(c, quiets[i], -bonus);
+        thisThread->history.update(c, quiets[i], -bonus, pos.game_ply());
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }

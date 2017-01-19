@@ -35,9 +35,15 @@ struct HistoryStats {
 
   static const Value Max = Value(1 << 28);
 
-  Value get(Color c, Move m) const { return table[c][from_sq(m)][to_sq(m)]; }
+  Value get(Color c, Move m, int gameply) const {
+    ValPly valply = table[c][from_sq(m)][to_sq(m)];
+    if (abs(valply.gameply - gameply))
+      return 8 * valply.value / (abs(valply.gameply - gameply) * abs(valply.gameply - gameply));
+    return 8 * valply.value;
+  }
+
   void clear() { std::memset(table, 0, sizeof(table)); }
-  void update(Color c, Move m, Value v) {
+  void update(Color c, Move m, Value v, int gameply) {
 
     if (abs(int(v)) >= 324)
         return;
@@ -45,12 +51,15 @@ struct HistoryStats {
     Square from = from_sq(m);
     Square to = to_sq(m);
 
-    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 324;
-    table[c][from][to] += int(v) * 32;
+    ValPly* valply = &table[c][from][to];
+    valply->value -= valply->value * abs(int(v)) / 324;
+    valply->value += int(v) * 32;
+
+    valply->gameply = (valply->gameply + gameply) / 2;
   }
 
 private:
-  Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
+  ValPly table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
 
 
