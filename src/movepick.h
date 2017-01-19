@@ -37,9 +37,10 @@ struct HistoryStats {
 
   Value get(Color c, Move m, int gameply) const {
     ValPly valply = table[c][from_sq(m)][to_sq(m)];
-    if (abs(valply.gameply - gameply))
-      return 8 * valply.value / (abs(valply.gameply - gameply) * abs(valply.gameply - gameply));
-    return 8 * valply.value;
+    if (valply.value > 0 && valply.gameply == gameply) {
+         return 8 * valply.value;
+    }
+    return valply.value;
   }
 
   void clear() { std::memset(table, 0, sizeof(table)); }
@@ -55,7 +56,7 @@ struct HistoryStats {
     valply->value -= valply->value * abs(int(v)) / 324;
     valply->value += int(v) * 32;
 
-    valply->gameply = (valply->gameply + gameply) / 2;
+    valply->gameply = gameply;
   }
 
 private:
