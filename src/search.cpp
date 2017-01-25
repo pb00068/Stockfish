@@ -215,6 +215,8 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
+      th->nmp_ply = MAX_PLY;
+      th->pair = -1;
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -744,7 +746,8 @@ namespace {
     if (   !PvNode
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
-        &&  pos.non_pawn_material(pos.side_to_move()))
+        &&  pos.non_pawn_material(pos.side_to_move())
+        && (ss->ply < thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
     {
         ss->currentMove = MOVE_NULL;
         ss->counterMoves = nullptr;
@@ -765,12 +768,19 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            if (depth < 6 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
-            // Do verification search at high depths
-            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
+            // Do verification search at higher depths
+            // increase reduction ...
+            R += ONE_PLY * 2;
+            // but disable nmp for second half of plies
+            thisThread->nmp_ply = ss->ply + (depth-R) / 2;
+            thisThread->pair = ss->ply % 2 == 0;
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
+            thisThread->pair = -1;
+            thisThread->nmp_ply = MAX_PLY;
 
             if (v >= beta)
                 return nullValue;
