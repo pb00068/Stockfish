@@ -773,7 +773,7 @@ namespace {
 
             // Do verification search at higher depths
             // increase reduction ...
-            R += ONE_PLY * 2;
+            R += ONE_PLY * 3;
             // but disable nmp for second half of plies
             thisThread->nmp_ply = ss->ply + (depth-R) / 2;
             thisThread->pair = ss->ply % 2 == 0;
