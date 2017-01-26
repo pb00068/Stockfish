@@ -213,6 +213,7 @@ void Search::clear() {
   {
       th->counterMoves.clear();
       th->history.clear();
+      th->sequence.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
   }
@@ -1424,6 +1425,9 @@ moves_loop: // When in check search starts from here
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+
+        if ((ss-2)->currentMove != MOVE_NULL)
+           thisThread->sequence.update(to_sq((ss-2)->currentMove), prevSq, to_sq(move), bonus);
     }
 
     // Decrease all the other played quiet moves
@@ -1431,6 +1435,8 @@ moves_loop: // When in check search starts from here
     {
         thisThread->history.update(c, quiets[i], -bonus);
         update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        if ((ss-2)->currentMove != MOVE_NULL && (ss-1)->currentMove != MOVE_NULL)
+          thisThread->sequence.update(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(move), -bonus);
     }
   }
 

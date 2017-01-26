@@ -53,6 +53,25 @@ private:
   Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
 
+struct SequenceStats {
+
+  static const Value Max = Value(1 << 28);
+
+  Value get(Square s1, Square s2, Square s3) const { return table[s1][s2][s3]; }
+  void clear() { std::memset(table, 0, sizeof(table)); }
+  void update(Square s1, Square s2, Square s3, Value v) {
+
+    if (abs(int(v)) >= 324 || s1 == s2 || s2 == s3)
+        return;
+
+    table[s1][s2][s3] -= table[s1][s2][s3] * abs(int(v)) / 324;
+    table[s1][s2][s3] += int(v) * 32;
+  }
+
+private:
+  Value table[SQUARE_NB][SQUARE_NB][SQUARE_NB];
+};
+
 
 /// A template struct, used to generate MoveStats and CounterMoveHistoryStats:
 /// MoveStats store the move that refute a previous one.

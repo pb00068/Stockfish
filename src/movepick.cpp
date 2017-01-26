@@ -141,6 +141,7 @@ template<>
 void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
+  const SequenceStats& sequence = pos.this_thread()->sequence;
 
   const CounterMoveStats* cmh = (ss-1)->counterMoves;
   const CounterMoveStats* fmh = (ss-2)->counterMoves;
@@ -152,6 +153,7 @@ void MovePicker::score<QUIETS>() {
       m.value =  (cmh  ?  (*cmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh  ?  (*fmh)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fmh2 ? (*fmh2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
+               + (((ss-2)->currentMove != MOVE_NULL && (ss-1)->currentMove != MOVE_NULL) ? sequence.get(to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove), to_sq(m)) : VALUE_ZERO)
                + history.get(c, m);
 }
 
