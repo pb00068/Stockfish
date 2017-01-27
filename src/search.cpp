@@ -215,8 +215,6 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
-      th->nmp_ply = MAX_PLY;
-      th->pair = -1;
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -576,6 +574,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->disableNmp = (ss-2)->disableNmp;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -746,7 +745,8 @@ namespace {
     if (   !PvNode
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
-        && (ss->ply < thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
+        //&& pos.non_pawn_material(pos.side_to_move())
+        && !ss->disableNmp)
     {
         ss->currentMove = MOVE_NULL;
         ss->counterMoves = nullptr;
@@ -756,17 +756,15 @@ namespace {
         // Null move dynamic reduction based on depth and value
         Depth R = ((823 + 67 * depth / ONE_PLY) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
+        if (!pos.non_pawn_material(pos.side_to_move()))
+          ss->disableNmp = true;
+
         pos.do_null_move(st);
-        if (!pos.non_pawn_material(pos.side_to_move())) {
-          thisThread->nmp_ply = ss->ply + (depth-R) / 2;
-          thisThread->pair = ss->ply % 2 == 0;
-        }
 
         nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1)
                                       : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode, true);
 
-        thisThread->pair = -1;
-        thisThread->nmp_ply = MAX_PLY;
+        ss->disableNmp = false;
         pos.undo_null_move();
 
         if (nullValue >= beta)
