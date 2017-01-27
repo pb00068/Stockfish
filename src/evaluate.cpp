@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -228,6 +229,8 @@ namespace {
     const Color  Them = (Us == WHITE ? BLACK : WHITE);
     const Square Up   = (Us == WHITE ? NORTH : SOUTH);
     const Square Down = (Us == WHITE ? SOUTH : NORTH);
+    const Square Right = (Us == WHITE ? NORTH_EAST : SOUTH_WEST);
+    const Square Left  = (Us == WHITE ? NORTH_WEST : SOUTH_EAST);
     const Bitboard LowRanks = (Us == WHITE ? Rank2BB | Rank3BB: Rank7BB | Rank6BB);
 
     ei.pinnedPieces[Us] = pos.pinned_pieces(Us);
@@ -239,9 +242,20 @@ namespace {
     // are excluded from the mobility area.
     ei.mobilityArea[Us] = ~(b | pos.square<KING>(Us) | ei.pe->pawn_attacks(Them));
 
+    ei.attackedBy[Us][PAWN] = ei.pe->pawn_attacks(Us);
+
+    if ((ei.pinnedPieces[Us] & pos.pieces(Us  , PAWN)) && !(pos.pinners(Them) & ei.attackedBy[Us][PAWN]) ) {
+         Bitboard ourFreePawns   = pos.pieces(Us  , PAWN) & ~ei.pinnedPieces[Us];
+         ei.attackedBy[Us][PAWN] = (shift<Right>(ourFreePawns) | shift<Left>(ourFreePawns));
+         //sync_cout << pos << "\n" << Bitboards::pretty(ei.attackedBy[Us][PAWN]) << " before \n" <<  Bitboards::pretty(ei.pe->pawn_attacks(Us)) << sync_endl;
+    }
+
+
     // Initialise the attack bitboards with the king and pawn information
     b = ei.attackedBy[Us][KING] = pos.attacks_from<KING>(pos.square<KING>(Us));
-    ei.attackedBy[Us][PAWN] = ei.pe->pawn_attacks(Us);
+
+
+
 
     ei.attackedBy2[Us]            = b & ei.attackedBy[Us][PAWN];
     ei.attackedBy[Us][ALL_PIECES] = b | ei.attackedBy[Us][PAWN];
