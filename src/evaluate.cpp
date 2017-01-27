@@ -589,7 +589,7 @@ namespace {
     }
 
     // Bonus if some pawns can safely push and attack an enemy piece
-    b = pos.pieces(Us, PAWN) & ~TRank7BB;
+    b = pos.pieces(Us, PAWN) & ~TRank7BB & ~ei.pinnedPieces[Us];
     b = shift<Up>(b | (shift<Up>(b & TRank2BB) & ~pos.pieces()));
 
     b &=  ~pos.pieces()
