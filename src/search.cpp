@@ -574,7 +574,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
-    ss->disableNmp = (ss-2)->disableNmp;
+    (ss+4)->disableNmp = (ss+2)->disableNmp;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -745,7 +745,6 @@ namespace {
     if (   !PvNode
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
-        //&& pos.non_pawn_material(pos.side_to_move())
         && !ss->disableNmp)
     {
         ss->currentMove = MOVE_NULL;
@@ -757,14 +756,14 @@ namespace {
         Depth R = ((823 + 67 * depth / ONE_PLY) / 256 + std::min((eval - beta) / PawnValueMg, 3)) * ONE_PLY;
 
         if (!pos.non_pawn_material(pos.side_to_move()))
-          ss->disableNmp = true;
+          (ss+4)->disableNmp = true;
 
         pos.do_null_move(st);
 
         nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1)
                                       : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode, true);
 
-        ss->disableNmp = false;
+        (ss+4)->disableNmp = false;
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -776,8 +775,8 @@ namespace {
             if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
-            // Do verification search at higher depths
-            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
+            // Do verification search at high depths
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
 
 
