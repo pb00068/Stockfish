@@ -244,10 +244,14 @@ namespace {
 
     ei.attackedBy[Us][PAWN] = ei.pe->pawn_attacks(Us);
 
-    if ((ei.pinnedPieces[Us] & pos.pieces(Us  , PAWN)) && !(pos.pinners(Them) & ei.attackedBy[Us][PAWN]) ) {
-         Bitboard ourFreePawns   = pos.pieces(Us  , PAWN) & ~ei.pinnedPieces[Us];
+    if ((ei.pinnedPieces[Us] & pos.pieces(Us, PAWN)) && !(pos.pinners(Them) & ei.attackedBy[Us][PAWN]) ) {
+         Bitboard ourFreePawns   = pos.pieces(Us, PAWN) & ~ei.pinnedPieces[Us];
          ei.attackedBy[Us][PAWN] = (shift<Right>(ourFreePawns) | shift<Left>(ourFreePawns));
-         //sync_cout << pos << "\n" << Bitboards::pretty(ei.attackedBy[Us][PAWN]) << " before \n" <<  Bitboards::pretty(ei.pe->pawn_attacks(Us)) << sync_endl;
+         Bitboard pinners = pos.pinners(Them);
+         while (pinners) {
+           Square s = pop_lsb(&pinners);
+           ei.attackedBy[Us][PAWN] |= (LineBB[pos.square<KING>(Us)][s] & ei.pe->pawn_attacks(Us));
+         }
     }
 
 
