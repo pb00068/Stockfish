@@ -1012,7 +1012,7 @@ bool Position::see_ge(Move m, Value v) const {
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));
-  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
+  Color stm = ~sideToMove; // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
