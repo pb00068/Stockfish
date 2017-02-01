@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1012,7 +1013,7 @@ bool Position::see_ge(Move m, Value v) const {
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));
-  Color stm = ~sideToMove; // First consider opponent's move
+  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
@@ -1076,7 +1077,7 @@ bool Position::see_ge(Move m, Value v) const {
 }
 
 
-bool Position::see_escapes(Square from) const {
+bool Position::see_escapes(Square from, bool debug) const {
 
   assert(is_ok(m));
 
@@ -1103,8 +1104,10 @@ bool Position::see_escapes(Square from) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers)
+      if (!stmAttackers) {
+          if (debug) sync_cout << "return " << !relativeStm << " because no more attackers " << sync_endl;
           return !relativeStm;
+      }
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
@@ -1117,8 +1120,12 @@ bool Position::see_escapes(Square from) const {
 
       relativeStm = !relativeStm;
 
-      if (relativeStm == (balance >= VALUE_ZERO))
+      if (relativeStm == (balance >= VALUE_ZERO)) {
+        if (debug) {
+          sync_cout << "return because balance is " << balance << " relative stm " << relativeStm << sync_endl;
+        }
           return !relativeStm;
+      }
 
       stm = ~stm;
   }

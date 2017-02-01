@@ -218,7 +218,6 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
-      std::memset(th->capture_escapes, 0, sizeof(th->capture_escapes));
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -979,11 +978,16 @@ moves_loop: // When in check search starts from here
       if (doLmr && !captureOrPromotion && !cutNode) {
         if (!lmrcapt)
         {
-          std::memset(thisThread->capture_escapes, 0, sizeof(thisThread->capture_escapes));
+          std::memset(ss->capture_escapes, 0, sizeof(ss->capture_escapes));
+          sync_cout << "resetting cache" << sync_endl;
           lmrcapt = moveCount;
         }
-        if (!thisThread->capture_escapes[from_sq(move)])
-          thisThread->capture_escapes[from_sq(move)] = pos.see_escapes(from_sq(move)) + 1;
+
+        if (!ss->capture_escapes[from_sq(move)]) {
+          ss->capture_escapes[from_sq(move)] = pos.see_escapes(from_sq(move), false) + 1;
+          if (from_sq(move) == SQ_D5 && ss->capture_escapes[from_sq(move)] == 2 )
+            sync_cout << " storing value 2 for move " << UCI::move(move, false) << " on pos \n" << pos << sync_endl;
+        }
       }
 
       // Step 14. Make the move
@@ -1004,8 +1008,16 @@ moves_loop: // When in check search starts from here
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture.
-              else if (thisThread->capture_escapes[from_sq(move)] == 2)
+              else if (ss->capture_escapes[from_sq(move)] == 2) {
                   r -= 2 * ONE_PLY;
+                  if (type_of(pos.piece_on(to_sq(move))) != KING && type_of(move) == NORMAL && pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO)) {
+                    sync_cout << pos << "problem for move " << UCI::move(move, false) << sync_endl;
+                    pos.undo_move(move);
+                    pos.see_escapes(from_sq(move), true);
+                    sync_cout << " but stored value is " << ss->capture_escapes[from_sq(move)] << sync_endl;
+                    abort();
+                  }
+              }
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            + (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)

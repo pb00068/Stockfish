@@ -72,7 +72,6 @@ public:
   MoveStats counterMoves;
   HistoryStats history;
   CounterMoveHistoryStats counterMoveHistory;
-  int capture_escapes[SQUARE_NB];
 };
 
 
