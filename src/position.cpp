@@ -1012,7 +1012,7 @@ bool Position::see_ge(Move m, Value v) const {
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));
-  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
+  Color stm = ~sideToMove; // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
@@ -1074,6 +1074,56 @@ bool Position::see_ge(Move m, Value v) const {
       stm = ~stm;
   }
 }
+
+
+bool Position::see_escapes(Square from) const {
+
+  assert(is_ok(m));
+
+
+  Square to = from;
+  PieceType nextVictim = type_of(piece_on(from));
+  Color stm = ~sideToMove;
+  Value balance = -PieceValue[MG][nextVictim];
+  Bitboard occupied, stmAttackers;
+
+  bool relativeStm = true;
+  occupied = pieces() ^ from;
+
+  // Find all attackers to the destination square, with the moving piece removed,
+  // but possibly an X-ray attacker added behind it.
+  Bitboard attackers = attackers_to(to, occupied) & occupied;
+
+  while (true)
+  {
+      stmAttackers = attackers & pieces(stm);
+
+      // Don't allow pinned pieces to attack pieces except the king as long all
+      // pinners are on their original square.
+      if (!(st->pinnersForKing[stm] & ~occupied))
+          stmAttackers &= ~st->blockersForKing[stm];
+
+      if (!stmAttackers)
+          return !relativeStm;
+
+      // Locate and remove the next least valuable attacker
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+
+      if (nextVictim == KING)
+          return relativeStm != bool(attackers & pieces(~stm));
+
+      balance += relativeStm ?  PieceValue[MG][nextVictim]
+                             : -PieceValue[MG][nextVictim];
+
+      relativeStm = !relativeStm;
+
+      if (relativeStm == (balance >= VALUE_ZERO))
+          return !relativeStm;
+
+      stm = ~stm;
+  }
+}
+
 
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule

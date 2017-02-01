@@ -218,6 +218,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
+      std::memset(th->capture_escapes, 0, sizeof(th->capture_escapes));
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -568,7 +569,7 @@ namespace {
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
-    int moveCount, quietCount;
+    int moveCount, quietCount, lmrcapt = 0;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -971,14 +972,26 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
+      bool doLmr =  (    depth >= 3 * ONE_PLY
+             &&  moveCount > 1
+             && (!captureOrPromotion || moveCountPruning));
+
+      if (doLmr && !captureOrPromotion && !cutNode) {
+        if (!lmrcapt)
+        {
+          std::memset(thisThread->capture_escapes, 0, sizeof(thisThread->capture_escapes));
+          lmrcapt = moveCount;
+        }
+        if (!thisThread->capture_escapes[from_sq(move)])
+          thisThread->capture_escapes[from_sq(move)] = pos.see_escapes(from_sq(move)) + 1;
+      }
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
-      if (    depth >= 3 * ONE_PLY
-          &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning))
+      if (doLmr)
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
@@ -990,11 +1003,8 @@ moves_loop: // When in check search starts from here
               if (cutNode)
                   r += 2 * ONE_PLY;
 
-              // Decrease reduction for moves that escape a capture. Filter out
-              // castling moves, because they are coded as "king captures rook" and
-              // hence break make_move().
-              else if (   type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              // Decrease reduction for moves that escape a capture.
+              else if (thisThread->capture_escapes[from_sq(move)] == 2)
                   r -= 2 * ONE_PLY;
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
