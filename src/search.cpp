@@ -990,10 +990,10 @@ moves_loop: // When in check search starts from here
               if (cutNode)
                   r += 2 * ONE_PLY;
 
-              // Decrease reduction for moves that escape a capture or king is moved:
-              //
+              // Decrease reduction for king moves or moves that escape a capture:
+              // King moves are problematic because of 2 reasons:
               // castling: coded as "king captures rook" and hence break make_move().
-              // evasions: are not recognized as capture-escapes by see and so reduced to much
+              // evasions: are not recognized as capture-escapes by see_ge and so reduced to much
 
               else if (   type_of(pos.piece_on(to_sq(move))) == KING
                        || !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
