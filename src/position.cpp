@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1077,7 +1076,7 @@ bool Position::see_ge(Move m, Value v) const {
 }
 
 
-bool Position::see_escapes(Square from, bool debug) const {
+bool Position::see_escapes(Square from) const {
 
   assert(is_ok(m));
 
@@ -1104,10 +1103,9 @@ bool Position::see_escapes(Square from, bool debug) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      if (!stmAttackers) {
-          if (debug) sync_cout << "return " << !relativeStm << " because no more attackers " << sync_endl;
+      if (!stmAttackers)
           return !relativeStm;
-      }
+
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
@@ -1120,12 +1118,9 @@ bool Position::see_escapes(Square from, bool debug) const {
 
       relativeStm = !relativeStm;
 
-      if (relativeStm == (balance >= VALUE_ZERO)) {
-        if (debug) {
-          sync_cout << "return because balance is " << balance << " relative stm " << relativeStm << sync_endl;
-        }
+      if (relativeStm == (balance >= VALUE_ZERO))
           return !relativeStm;
-      }
+
 
       stm = ~stm;
   }
