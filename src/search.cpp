@@ -983,7 +983,7 @@ moves_loop: // When in check search starts from here
         }
 
         if (!ss->capture_escapes[from_sq(move)])
-          ss->capture_escapes[from_sq(move)] = pos.see_escapes(from_sq(move)) + 1;
+          ss->capture_escapes[from_sq(move)] = givesCheck ? 1 : (pos.see_escapes(from_sq(move)) + 1);
       }
 
       // Step 14. Make the move
