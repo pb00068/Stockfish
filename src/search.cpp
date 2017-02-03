@@ -568,7 +568,7 @@ namespace {
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
-    int moveCount, quietCount, lmrcapt = 0;
+    int moveCount, quietCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -976,14 +976,8 @@ moves_loop: // When in check search starts from here
              && (!captureOrPromotion || moveCountPruning));
 
       if (doLmr && !captureOrPromotion && !cutNode) {
-        if (!lmrcapt)
-        {
-          std::memset(ss->capture_escapes, 0, sizeof(ss->capture_escapes));
-          lmrcapt = moveCount;
-        }
 
-        if (!ss->capture_escapes[from_sq(move)])
-          ss->capture_escapes[from_sq(move)] = givesCheck ? 1 : (pos.see_escapes(from_sq(move)) + 1);
+          ss->capture_escapes[from_sq(move)] = inCheck && type_of(moved_piece) == KING ? 1 : (pos.see_escapes(from_sq(move)) + 1);
       }
 
       // Step 14. Make the move
