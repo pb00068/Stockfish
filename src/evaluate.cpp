@@ -293,6 +293,12 @@ namespace {
         }
 
         int mob = popcount(b & ei.mobilityArea[Us]);
+        if (Pt == QUEEN && mob < 9) {
+                b &= ~(  ei.attackedBy[Them][KNIGHT]
+                       | ei.attackedBy[Them][BISHOP]
+                       | ei.attackedBy[Them][ROOK]);
+                mob = popcount(b & ei.mobilityArea[Us]);
+        }
 
         mobility[Us] += MobilityBonus[Pt][mob];
 
