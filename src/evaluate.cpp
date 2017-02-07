@@ -293,7 +293,7 @@ namespace {
         }
 
         int mob = popcount(b & ei.mobilityArea[Us]);
-        if (Pt == QUEEN && mob < 9) {
+        if (Pt == QUEEN && mob < 4) {
                 b &= ~(  ei.attackedBy[Them][KNIGHT]
                        | ei.attackedBy[Them][BISHOP]
                        | ei.attackedBy[Them][ROOK]);
