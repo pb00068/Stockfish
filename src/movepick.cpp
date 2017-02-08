@@ -19,6 +19,8 @@
 */
 
 #include <cassert>
+#include <iostream>
+#include "uci.h"
 
 #include "movepick.h"
 #include "thread.h"
@@ -66,8 +68,8 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
-           : pos(p), ss(s), depth(d) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, EvalInfo* evalInfo)
+           : pos(p), ss(s), depth(d), ei(evalInfo) {
 
   assert(d > DEPTH_ZERO);
 
@@ -198,7 +200,14 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO))
+
+//              if (ei->complete && !(ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & to_sq(move))) {
+//                if (!pos.see_ge(move, VALUE_ZERO))
+//                  sync_cout << pos << " move " << UCI::move(move,false) << Bitboards::pretty(ei->attackedBy[~pos.side_to_move()][ALL_PIECES]) << Bitboards::pretty((ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & to_sq(move))) << sync_endl;
+//                  return move;
+//              }
+
+              if ((ei->complete && !(ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & to_sq(move))) || pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array

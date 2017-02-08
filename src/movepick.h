@@ -27,6 +27,7 @@
 #include "movegen.h"
 #include "position.h"
 #include "types.h"
+#include "evaluate.h"
 
 
 /// HistoryStats records how often quiet moves have been successful or unsuccessful
@@ -99,7 +100,7 @@ public:
 
   MovePicker(const Position&, Move, Value);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, Search::Stack*, EvalInfo* evalInfo);
 
   Move next_move();
 
@@ -118,6 +119,7 @@ private:
   int stage;
   ExtMove *cur, *endMoves, *endBadCaptures;
   ExtMove moves[MAX_MOVES];
+  EvalInfo *ei;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
