@@ -993,17 +993,8 @@ moves_loop: // When in check search starts from here
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture.
-              else if (ei.complete)
-              {
-                if ((ei.attackedBy[pos.side_to_move()][ALL_PIECES] & ~ei.attackedBy[~pos.side_to_move()][ALL_PIECES] & from_sq(move)) &&
-                   ~(ei.attackedBy[pos.side_to_move()][ALL_PIECES] & to_sq(move)))
-                    r -= 2 * ONE_PLY;
-              }
-              // Filter out castling moves, because they are coded as "king captures rook" and
-              // hence break make_move().
               else if (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
                   r -= 2 * ONE_PLY;
-
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            + (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
