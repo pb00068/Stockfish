@@ -200,18 +200,8 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-            //dbg_hit_on(ei->complete);
-//            if (((ei->complete
-//                   && !(ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & from_sq(move))
-//                   && !(ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & to_sq(move)))
-//            ) && !pos.see_ge(move, VALUE_ZERO)) {
-//                sync_cout << pos << UCI::move(move,false) <<  sync_endl;
-//                abort();
-//            }
               if ((ei->complete && !(ei->attackedBy[~pos.side_to_move()][ALL_PIECES] & to_sq(move)))
-
                   || pos.see_ge(move, VALUE_ZERO))
-//            if (pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array
