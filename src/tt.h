@@ -64,10 +64,17 @@ struct TTEntry {
     }
   }
 
+  void savePadding(Key key) {
+    key16 = key;
+  }
+
+
+  uint16_t key16;
+
 private:
   friend class TranspositionTable;
 
-  uint16_t key16;
+
   uint16_t move16;
   int16_t  value16;
   int16_t  eval16;
@@ -99,7 +106,7 @@ public:
  ~TranspositionTable() { free(mem); }
   void new_search() { generation8 += 4; } // Lower 2 bits are used by Bound
   uint8_t generation() const { return generation8; }
-  TTEntry* probe(const Key key, bool& found) const;
+  TTEntry* probe(const Key key, bool& found, int& i) const;
   int hashfull() const;
   void resize(size_t mbSize);
   void clear();

@@ -1000,7 +1000,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value v) const {
+bool Position::see_ge(Move m, Value v, Square* weaks) const {
 
   assert(is_ok(m));
 

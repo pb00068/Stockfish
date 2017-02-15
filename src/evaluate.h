@@ -31,10 +31,12 @@ namespace Eval {
 
 const Value Tempo = Value(20); // Must be visible to search
 
+const Value Hanging = RookValueMg; // Heavy piece hanging
+
 std::string trace(const Position& pos);
 
 template<bool DoTrace = false>
-Value evaluate(const Position& pos);
+Value evaluate(const Position& pos, Square* weaks);
 }
 
 #endif // #ifndef EVALUATE_H_INCLUDED

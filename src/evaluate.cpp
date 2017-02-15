@@ -502,7 +502,7 @@ namespace {
   // and the attacked pieces.
 
   template<Color Us, bool DoTrace>
-  Score evaluate_threats(const Position& pos, const EvalInfo& ei) {
+  Score evaluate_threats(const Position& pos, const EvalInfo& ei, Square* weaks) {
 
     const Color Them        = (Us == WHITE ? BLACK      : WHITE);
     const Square Up         = (Us == WHITE ? NORTH      : SOUTH);
@@ -560,7 +560,16 @@ namespace {
                 score += ThreatByRank * (int)relative_rank(Them, s);
         }
 
-        score += Hanging * popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
+        Bitboard hang = weak & ~ei.attackedBy[Them][ALL_PIECES];
+        score += Hanging * popcount(hang);
+        b = hang & pos.pieces(Them, QUEEN, ROOK);
+        while (b)
+        {
+             Square s = pop_lsb(&b);
+             weaks[Them] = s;
+             if (type_of(pos.piece_on(s)) == QUEEN)
+               break;
+        }
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
@@ -777,7 +786,7 @@ namespace {
 /// of the position from the point of view of the side to move.
 
 template<bool DoTrace>
-Value Eval::evaluate(const Position& pos) {
+Value Eval::evaluate(const Position& pos, Square* weaks) {
 
   assert(!pos.checkers());
 
@@ -821,8 +830,8 @@ Value Eval::evaluate(const Position& pos) {
           - evaluate_king<BLACK, DoTrace>(pos, ei);
 
   // Evaluate tactical threats, we need full attack information including king
-  score +=  evaluate_threats<WHITE, DoTrace>(pos, ei)
-          - evaluate_threats<BLACK, DoTrace>(pos, ei);
+  score +=  evaluate_threats<WHITE, DoTrace>(pos, ei, weaks)
+          - evaluate_threats<BLACK, DoTrace>(pos, ei, weaks);
 
   // Evaluate passed pawns, we need full attack information including king
   score +=  evaluate_passer_pawns<WHITE, DoTrace>(pos, ei)
@@ -862,8 +871,8 @@ Value Eval::evaluate(const Position& pos) {
 }
 
 // Explicit template instantiations
-template Value Eval::evaluate<true >(const Position&);
-template Value Eval::evaluate<false>(const Position&);
+template Value Eval::evaluate<true >(const Position&, Square*);
+template Value Eval::evaluate<false>(const Position&, Square*);
 
 
 /// trace() is like evaluate(), but instead of returning a value, it returns
@@ -873,8 +882,8 @@ template Value Eval::evaluate<false>(const Position&);
 std::string Eval::trace(const Position& pos) {
 
   std::memset(scores, 0, sizeof(scores));
-
-  Value v = evaluate<true>(pos);
+  Square weak[2];
+  Value v = evaluate<true>(pos, weak);
   v = pos.side_to_move() == WHITE ? v : -v; // White's point of view
 
   std::stringstream ss;
