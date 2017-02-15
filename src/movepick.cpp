@@ -66,7 +66,7 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s,  Square recapt)
            : pos(p), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
@@ -77,6 +77,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  recaptureSquare = recapt;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
@@ -138,6 +139,14 @@ void MovePicker::score<CAPTURES>() {
 }
 
 template<>
+void MovePicker::score<RECAPTURES>() {
+  for (auto& m : *this)
+    if (to_sq(m) == recaptureSquare)
+      m.value += 200;
+}
+
+
+template<>
 void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
@@ -190,6 +199,8 @@ Move MovePicker::next_move() {
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
+      if (recaptureSquare != SQ_NONE)
+        score<RECAPTURES>();
       ++stage;
 
   case GOOD_CAPTURES:
