@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1032,6 +1033,16 @@ bool Position::see_ge(Move m, Value v, Square* weaks) const {
 
   if (nextVictim == KING)
       return true;
+
+  if (weaks[~stm] && weaks[~stm] != to &&  weaks[~stm] != from && nextVictim < ROOK && !((st->checkSquares[nextVictim]) & to))
+  {
+     nextVictim = type_of(piece_on(weaks[~stm]));
+     to = weaks[~stm];
+//     if (nextVictim < ROOK) {
+//     sync_cout << *this << " on move " << UCI::move(m, false) << " opponent will strike back on " <<  UCI::move(make_move(to,to), false) << sync_endl;
+//     abort();
+//     }
+  }
 
   balance -= PieceValue[MG][nextVictim];
 

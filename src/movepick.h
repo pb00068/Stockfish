@@ -97,9 +97,9 @@ public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
 
-  MovePicker(const Position&, Move, Value);
+  MovePicker(const Position&, Move, Value, Square*);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, Search::Stack*, Square*);
 
   Move next_move();
 
@@ -114,6 +114,7 @@ private:
   Depth depth;
   Move ttMove;
   Square recaptureSquare;
+  Square *weak;
   Value threshold;
   int stage;
   ExtMove *cur, *endMoves, *endBadCaptures;
