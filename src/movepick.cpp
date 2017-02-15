@@ -142,7 +142,7 @@ template<>
 void MovePicker::score<RECAPTURES>() {
   for (auto& m : *this)
     if (to_sq(m) == recaptureSquare)
-      m.value += 200;
+      m.value += 600;
 }
 
 
