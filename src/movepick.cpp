@@ -135,16 +135,8 @@ void MovePicker::score<CAPTURES>() {
   // has been picked up, saving some SEE calls in case we get a cutoff.
   for (auto& m : *this)
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m))) + (to_sq(m) == recaptureSquare) ? Value(600) : VALUE_ZERO;
 }
-
-template<>
-void MovePicker::score<RECAPTURES>() {
-  for (auto& m : *this)
-    if (to_sq(m) == recaptureSquare)
-      m.value += 600;
-}
-
 
 template<>
 void MovePicker::score<QUIETS>() {
@@ -199,8 +191,6 @@ Move MovePicker::next_move() {
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
-      if (recaptureSquare != SQ_NONE)
-        score<RECAPTURES>();
       ++stage;
 
   case GOOD_CAPTURES:

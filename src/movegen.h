@@ -27,7 +27,6 @@ class Position;
 
 enum GenType {
   CAPTURES,
-  RECAPTURES,
   QUIETS,
   QUIET_CHECKS,
   EVASIONS,
