@@ -643,19 +643,11 @@ namespace {
     base = TT.first_entry(posKey);
     base+=3;
     weaks[WHITE] = weaks[BLACK] = SQ_A1;
-    if (ttHit && base->key16 != 0)
+    if (ttHit && base->key16 != 0 && (base->key16 & 3) == slot)
     {
-      int sslot = (base->key16 & 3);
-      if (sslot == slot) {
         weaks[BLACK] = (Square) ((base->key16 >> 2 ) & 127);
         weaks[WHITE] = (Square) (base->key16 >> 10);
-        //sync_cout << pos << UCI::move(make_move(weaks[WHITE],weaks[BLACK]), false) << sync_endl;
-        //abort();
-      }
     }
-
-
-
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -1171,10 +1163,8 @@ moves_loop: // When in check search starts from here
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
               depth, bestMove, ss->staticEval, TT.generation());
 
-    if ((weaks[WHITE] || weaks[BLACK])) {
-      //sync_cout << "storing" << UCI::move(make_move(weaks[WHITE],weaks[BLACK]), false) << sync_endl;
+    if ((weaks[WHITE] || weaks[BLACK]))
       base->savePadding((uint16_t) ((weaks[WHITE] << 10)  + (weaks[BLACK] << 2) + slot));
-    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1240,15 +1230,11 @@ moves_loop: // When in check search starts from here
     base = TT.first_entry(posKey);
     base+=3;
     weaks[WHITE] = weaks[BLACK] = SQ_A1;
-    if (ttHit && base->key16 != 0)
+
+    if (ttHit && base->key16 != 0 && (base->key16 & 3) == slot)
     {
-      int sslot = (base->key16 & 3);
-      if (sslot == slot) {
         weaks[BLACK] = (Square) ((base->key16 >> 2 ) & 127);
         weaks[WHITE] = (Square) (base->key16 >> 10);
-        //sync_cout << pos << UCI::move(make_move(weaks[WHITE],weaks[BLACK]), false) << sync_endl;
-        //abort();
-      }
     }
 
     if (  !PvNode
