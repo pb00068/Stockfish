@@ -1049,7 +1049,7 @@ bool Position::see_ge(Move m, Value v, Square weak) const {
         nextVictim = type_of(piece_on(weak));
         to = weak;
       }
-      else  attackers = attackers_to(to, occupied) & occupied;
+      else  attackers = attackers_to(to, occupied) & occupied; // 14 % or cases
   }
   else
   // Find all attackers to the destination square, with the moving piece removed,
