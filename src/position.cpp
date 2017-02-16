@@ -1050,10 +1050,8 @@ bool Position::see_ge(Move m, Value v, Square weak) const {
         // so probably the opponent does better striking back a this
         nextVictim = type_of(piece_on(weak));
         to = weak;
-        dbg_hit_on(1);
       }
       else  {
-        dbg_hit_on(0);
         attackers = attackers_to(to, occupied) & occupied; // 14 % or cases
       }
   }
