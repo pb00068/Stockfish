@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1000,7 +1001,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value v) const {
+bool Position::see_ge(Move m, Value v, Square weak) const {
 
   assert(is_ok(m));
 
@@ -1040,6 +1041,16 @@ bool Position::see_ge(Move m, Value v) const {
 
   bool relativeStm = true; // True if the opponent is to move
   occupied ^= pieces() ^ from ^ to;
+
+  if (weak && weak != to &&  weak != from && nextVictim < type_of(piece_on(weak)) && !((st->checkSquares[nextVictim]) & to))
+  {
+      nextVictim = type_of(piece_on(weak));
+      to = weak;
+//      if (to < SQ_A1 || to > SQ_H8) {
+//        sync_cout << " to is outbounds " << to << sync_endl;
+//        abort();
+//      }
+  }
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.

@@ -68,7 +68,7 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, Square weak)
            : pos(p), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
@@ -79,6 +79,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  weakSq = weak;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
@@ -106,18 +107,19 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
   stage += (ttMove == MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Value th)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, Square weak)
            : pos(p), threshold(th) {
 
   assert(!pos.checkers());
 
   stage = PROBCUT;
+  weakSq = weak;
 
   // In ProbCut we generate captures with SEE higher than or equal to the given threshold
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, threshold)? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, threshold, weak)? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
 }
@@ -202,7 +204,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO))
+              if (pos.see_ge(move, VALUE_ZERO, weakSq))
                   return move;
 
               // Losing capture, move it to the beginning of the array
@@ -295,7 +297,7 @@ Move MovePicker::next_move() {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, threshold))
+              && pos.see_ge(move, threshold, weakSq))
               return move;
       }
       break;
