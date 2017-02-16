@@ -579,7 +579,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
-    (ss+2)->escapeMove = MOVE_NONE;
+    (ss+2)->weakSquare = SQ_NONE;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -807,7 +807,7 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NONE);
         assert((ss-1)->currentMove != MOVE_NULL);
 
-        MovePicker mp(pos, ttMove, rbeta - ss->staticEval, from_sq(ss->escapeMove));
+        MovePicker mp(pos, ttMove, rbeta - ss->staticEval, ss->weakSquare);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
@@ -840,7 +840,7 @@ moves_loop: // When in check search starts from here
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
-    MovePicker mp(pos, ttMove, depth, ss, from_sq(ss->escapeMove));
+    MovePicker mp(pos, ttMove, depth, ss, ss->weakSquare);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
@@ -902,7 +902,7 @@ moves_loop: // When in check search starts from here
       // Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, VALUE_ZERO, SQ_A1))
+          &&  pos.see_ge(move, VALUE_ZERO, SQ_NONE))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -958,12 +958,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth), from_sq(ss->escapeMove)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth), ss->weakSquare))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY), from_sq(ss->escapeMove)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY), ss->weakSquare))
                   continue;
       }
 
@@ -1004,10 +1004,10 @@ moves_loop: // When in check search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
               else if (   type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), VALUE_ZERO, SQ_A1)) {
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), VALUE_ZERO, SQ_NONE)) {
                   r -= 2 * ONE_PLY;
-                  if (type_of(pos.piece_on(to_sq(move))) >= ROOK)
-                    (ss+2)->escapeMove = move;
+                  if (type_of(pos.piece_on(to_sq(move))) >= KNIGHT)
+                    (ss+2)->weakSquare = from_sq(move);
               }
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
@@ -1300,7 +1300,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, from_sq(ss->escapeMove)))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, ss->weakSquare))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1315,7 +1315,7 @@ moves_loop: // When in check search starts from here
       // Don't search moves with negative SEE values
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  !pos.see_ge(move, VALUE_ZERO, from_sq(ss->escapeMove)))
+          &&  !pos.see_ge(move, VALUE_ZERO, ss->weakSquare))
           continue;
 
       // Speculative prefetch as early as possible
