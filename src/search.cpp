@@ -577,6 +577,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    (ss+2)->escapeMove = MOVE_NONE;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -867,6 +868,13 @@ moves_loop: // When in check search starts from here
                                   thisThread->rootMoves.end(), move))
           continue;
 
+//      if (move == ss->escapeMove && pos.legal(move) && type_of(move) == NORMAL)
+//      {
+//        pos.do_move(move, st);
+//        dbg_hit_on(!pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO)); //Total 1700 Hits 1480 hit rate (%) 87
+//        pos.undo_move(move);
+//      }
+
       ss->moveCount = ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
@@ -994,8 +1002,11 @@ moves_loop: // When in check search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
               else if (   type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO)) {
                   r -= 2 * ONE_PLY;
+                  if (type_of(pos.piece_on(to_sq(move))) >= ROOK)
+                    (ss+2)->escapeMove = move;
+              }
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            + (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)

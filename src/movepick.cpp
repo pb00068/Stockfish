@@ -19,9 +19,11 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
+#include "uci.h"
 
 namespace {
 
@@ -185,6 +187,8 @@ Move MovePicker::next_move() {
   case QSEARCH_NO_CHECKS: case PROBCUT:
       ++stage;
       return ttMove;
+
+
 
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
