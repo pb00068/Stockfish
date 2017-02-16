@@ -1041,20 +1041,26 @@ bool Position::see_ge(Move m, Value v, Square weak) const {
 
   bool relativeStm = true; // True if the opponent is to move
   occupied ^= pieces() ^ from ^ to;
-
-  if (weak && weak != to &&  weak != from && nextVictim < type_of(piece_on(weak)) && !((st->checkSquares[nextVictim]) & to))
+  Bitboard attackers;
+  if (weak && weak != to &&  weak != from && nextVictim < type_of(piece_on(weak)) && color_of(piece_on(weak)) == ~stm && !((st->checkSquares[nextVictim]) & to))
   {
-      nextVictim = type_of(piece_on(weak));
-      to = weak;
-//      if (to < SQ_A1 || to > SQ_H8) {
-//        sync_cout << " to is outbounds " << to << sync_endl;
-//        abort();
-//      }
+      attackers = attackers_to(weak, occupied) & occupied;
+      if (attackers & pieces(stm)) {
+        nextVictim = type_of(piece_on(weak));
+        to = weak;
+      }
+      else  attackers = attackers_to(to, occupied) & occupied;
   }
-
+  else
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  attackers = attackers_to(to, occupied) & occupied;
+
+//  if (switched && !attackers)
+//  {
+//    sync_cout << *this << " no strike back on " << UCI::move(make_move(to,to),false) << " orig move: " << UCI::move(m,false) << sync_endl;
+//    abort();
+//  }
 
   while (true)
   {
