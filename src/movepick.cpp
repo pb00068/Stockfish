@@ -77,7 +77,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s,  
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  recaptureSquare = recapt;
+  recaptureSq = recapt;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
@@ -135,7 +135,7 @@ void MovePicker::score<CAPTURES>() {
   // has been picked up, saving some SEE calls in case we get a cutoff.
   for (auto& m : *this)
       m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m))) + (to_sq(m) == recaptureSquare) ? Value(600) : VALUE_ZERO;
+               - Value(200 * relative_rank(pos.side_to_move(), to_sq(m))) + Value(600 * (to_sq(m) == recaptureSq));
 }
 
 template<>
@@ -284,6 +284,7 @@ Move MovePicker::next_move() {
   case PROBCUT_INIT:
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
+      recaptureSq = SQ_NONE;
       score<CAPTURES>();
       ++stage;
 
@@ -300,6 +301,7 @@ Move MovePicker::next_move() {
   case QCAPTURES_1_INIT: case QCAPTURES_2_INIT:
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
+      recaptureSq = SQ_NONE;
       score<CAPTURES>();
       ++stage;
 
@@ -328,6 +330,7 @@ Move MovePicker::next_move() {
   case QSEARCH_RECAPTURES:
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
+      recaptureSq = SQ_NONE;
       score<CAPTURES>();
       ++stage;
 

@@ -114,6 +114,7 @@ private:
   Depth depth;
   Move ttMove;
   Square recaptureSquare;
+  Square recaptureSq;
   Value threshold;
   int stage;
   ExtMove *cur, *endMoves, *endBadCaptures;
