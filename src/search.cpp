@@ -1006,7 +1006,7 @@ moves_loop: // When in check search starts from here
               else if (   type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)), VALUE_ZERO, SQ_NONE)) {
                   r -= 2 * ONE_PLY;
-                  if (type_of(pos.piece_on(to_sq(move))) >= KNIGHT)
+                  if (type_of(pos.piece_on(to_sq(move))) >= ROOK)
                     (ss+2)->weakSquare = from_sq(move);
               }
 

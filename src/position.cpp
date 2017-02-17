@@ -1042,8 +1042,10 @@ bool Position::see_ge(Move m, Value v, Square weak) const {
   bool relativeStm = true; // True if the opponent is to move
   occupied ^= pieces() ^ from ^ to;
   Bitboard attackers;
-  if (weak != SQ_NONE && weak != to &&  weak != from && nextVictim + 1 < type_of(piece_on(weak)) && color_of(piece_on(weak)) == ~stm && !((st->checkSquares[nextVictim]) & to))
+  if (weak != SQ_NONE && weak != to &&  weak != from && nextVictim < type_of(piece_on(weak)) && color_of(piece_on(weak)) == ~stm && !((st->checkSquares[nextVictim]) & to))
   {
+      if (piece_on(to)) // on capture we must re-toggle 'to' in occupied
+        occupied ^= to;
       attackers = attackers_to(weak, occupied) & occupied;
       if (attackers & pieces(stm)) {
         // piece on our weak square is still attacked,
