@@ -141,8 +141,9 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<RECAPTURES>() {
   for (auto& m : *this)
-    if (to_sq(m) == recaptureSquare)
-      m.value += 600;
+        m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
+                 - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)))
+                 + Value(800 * (to_sq(m) == recaptureSquare));
 }
 
 
@@ -198,9 +199,10 @@ Move MovePicker::next_move() {
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
-      score<CAPTURES>();
       if (recaptureSquare != SQ_NONE)
         score<RECAPTURES>();
+      else
+        score<CAPTURES>();
       ++stage;
 
   case GOOD_CAPTURES:
