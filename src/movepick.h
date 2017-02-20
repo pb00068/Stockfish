@@ -54,6 +54,26 @@ private:
 };
 
 
+struct CaptureStats {
+
+
+
+  Value get(Color c, int matDif, Square to) const { return table[c][matDif][to]; }
+  void clear() { std::memset(table, 0, sizeof(table)); }
+  void update(Color c, int matDif, Square to, Value v) {
+
+    if (abs(int(v)) >= 324)
+        return;
+
+    table[c][matDif][to] -= table[c][matDif][to] * abs(int(v)) / 324;
+    table[c][matDif][to] += int(v) * 32;
+  }
+
+private:
+  Value table[COLOR_NB][10][SQUARE_NB];
+};
+
+
 /// A template struct, used to generate MoveStats and CounterMoveHistoryStats:
 /// MoveStats store the move that refute a previous one.
 /// CounterMoveHistoryStats is like HistoryStats, but with two consecutive moves.

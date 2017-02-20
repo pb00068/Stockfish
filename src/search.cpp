@@ -218,6 +218,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
+      th->capturestat.clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -1094,9 +1095,14 @@ moves_loop: // When in check search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
+              if (captureOrPromotion)
+                thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              {
                   alpha = value;
+
+              }
               else
               {
                   assert(value >= beta); // Fail high
@@ -1107,6 +1113,8 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
+      if (captureOrPromotion && move != bestMove)
+        thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth));
     }
 
     // The following condition would detect a stop only after move loop has been
