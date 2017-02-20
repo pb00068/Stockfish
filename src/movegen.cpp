@@ -36,8 +36,9 @@ namespace {
     // After castling, the rook and king final positions are the same in Chess960
     // as they would be in standard chess.
     Square kfrom = pos.square<KING>(us);
-    Square rfrom = pos.castling_rook_square(Cr);
+
     Square kto = relative_square(us, KingSide ? SQ_G1 : SQ_C1);
+    Square rfrom = pos.castling_rook_square(kto);
     Bitboard enemies = pos.pieces(~us);
 
     assert(!pos.checkers());
@@ -55,7 +56,7 @@ namespace {
     if (Chess960 && (attacks_bb<ROOK>(kto, pos.pieces() ^ rfrom) & pos.pieces(~us, ROOK, QUEEN)))
         return moveList;
 
-    Move m = make<CASTLING>(kfrom, rfrom);
+    Move m = make<CASTLING>(kfrom, kto);
 
     if (Checks && !pos.gives_check(m))
         return moveList;

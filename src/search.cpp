@@ -245,7 +245,7 @@ uint64_t Search::perft(Position& pos, Depth depth) {
           pos.undo_move(m);
       }
       if (Root)
-          sync_cout << UCI::move(m, pos.is_chess960()) << ": " << cnt << sync_endl;
+        sync_cout << UCI::move(m, pos) << ": " << cnt << sync_endl;
   }
   return nodes;
 }
@@ -329,10 +329,10 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+  sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos);
 
   if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
-      std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+      std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos);
 
   std::cout << sync_endl;
 }
@@ -870,7 +870,7 @@ moves_loop: // When in check search starts from here
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
-                    << " currmove " << UCI::move(move, pos.is_chess960())
+                    << " currmove " << UCI::move(move, pos)
                     << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
 
       if (PvNode)
@@ -990,10 +990,8 @@ moves_loop: // When in check search starts from here
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
-              // castling moves, because they are coded as "king captures rook" and
-              // hence break make_move().
-              else if (   type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              // N.B.: In chess960 depending on the start position, some castling is encoded as "king captures rook": to rare so we simply don't care
+              else if (!pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
                   r -= 2 * ONE_PLY;
 
               ss->history =  (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
@@ -1559,7 +1557,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
          << " pv";
 
       for (Move m : rootMoves[i].pv)
-          ss << " " << UCI::move(m, pos.is_chess960());
+          ss << " " << UCI::move(m, pos);
   }
 
   return ss.str();

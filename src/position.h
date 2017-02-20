@@ -97,7 +97,7 @@ public:
   int can_castle(Color c) const;
   int can_castle(CastlingRight cr) const;
   bool castling_impeded(CastlingRight cr) const;
-  Square castling_rook_square(CastlingRight cr) const;
+  Square castling_rook_square(Square kto) const;
 
   // Checking
   Bitboard checkers() const;
@@ -170,7 +170,7 @@ private:
   void remove_piece(Piece pc, Square s);
   void move_piece(Piece pc, Square from, Square to);
   template<bool Do>
-  void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
+  void do_castling(Color us, Square from, Square to, Square& rfrom, Square& rto);
 
   // Data members
   Piece board[SQUARE_NB];
@@ -180,7 +180,7 @@ private:
   Square pieceList[PIECE_NB][16];
   int index[SQUARE_NB];
   int castlingRightsMask[SQUARE_NB];
-  Square castlingRookSquare[CASTLING_RIGHT_NB];
+  Square castlingRookSquare[SQUARE_NB];
   Bitboard castlingPath[CASTLING_RIGHT_NB];
   uint64_t nodes;
   int gamePly;
@@ -261,8 +261,8 @@ inline bool Position::castling_impeded(CastlingRight cr) const {
   return byTypeBB[ALL_PIECES] & castlingPath[cr];
 }
 
-inline Square Position::castling_rook_square(CastlingRight cr) const {
-  return castlingRookSquare[cr];
+inline Square Position::castling_rook_square(Square kto) const {
+  return castlingRookSquare[kto];
 }
 
 template<PieceType Pt>
@@ -359,7 +359,7 @@ inline bool Position::capture_or_promotion(Move m) const {
 
 inline bool Position::capture(Move m) const {
   assert(is_ok(m));
-  // Castling is encoded as "king captures rook"
+  // In chess960 depending on the start position, some castling is encoded as "king captures rook"
   return (!empty(to_sq(m)) && type_of(m) != CASTLING) || type_of(m) == ENPASSANT;
 }
 
