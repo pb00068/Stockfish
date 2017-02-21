@@ -128,8 +128,12 @@ void MovePicker::score<CAPTURES>() {
 
   const CaptureStats& capt = pos.this_thread()->capturestat;
 
-  for (auto& m : *this)
-      m.value = capt.get(pos.side_to_move(), (int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
+  if (depth <= 9)
+    for (auto& m : *this)
+       m.value = capt.get(pos.side_to_move(), (int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
+  else
+    for (auto& m : *this)
+       m.value = PieceValue[MG][pos.piece_on(to_sq(m))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
 }
 
 template<>

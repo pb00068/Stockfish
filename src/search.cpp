@@ -24,6 +24,7 @@
 #include <cstring>   // For std::memset
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -1095,8 +1096,42 @@ moves_loop: // When in check search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
-              if (captureOrPromotion)
+              if (captureOrPromotion) {
+                if (depth <= 9  && !pos.checkers()) {
+                Value bestv = thisThread->capturestat.get(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move));
+                //sync_cout << "capture bestmove " << UCI::move(bestMove,false) <<  " fail high " << (value >= beta) << " val " << std::setw(6) << bestv
+                    ;
+                Value bestv2 = PieceValue[MG][pos.piece_on(to_sq(move))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(move)));
+                if (!pos.checkers()) {
+                  MovePicker mp2(pos, ttMove, VALUE_ZERO);
+                  Move m;
+                  bool hit = true;
+                  int others = 0;
+                  while ((m = mp2.next_move()) != MOVE_NONE)
+                  {
+                    if (m != bestMove) {
+//                      if (!others)
+//                        sync_cout << " other captures: ";
+                      others++;
+                      Value v = thisThread->capturestat.get(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
+                      Value v2 = PieceValue[MG][pos.piece_on(to_sq(m))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
+                      //sync_cout <<  UCI::move(m,false) << " val: " << std::setw(6) << v << "  ";
+                      if (v >= bestv)
+                      //if (v2 >= bestv2)
+                        hit = false;
+                    }
+                  }
+                  if (others >= 1) {
+                    //sync_cout << " hit: " << hit << sync_endl;
+                    dbg_hit_on(hit);
+                  }
+                  //else  sync_cout << sync_endl;
+                }
+                }
+
+
                 thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
+              }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
@@ -1113,7 +1148,7 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
-      if (captureOrPromotion && move != bestMove)
+      else if (captureOrPromotion && move != bestMove)
         thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth));
     }
 
