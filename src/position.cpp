@@ -1005,7 +1005,7 @@ bool Position::see_ge(Move m, Value v) const {
   assert(is_ok(m));
 
   // Note: Castling moves are implemented as king capturing the rook so they would require extra-handling
-  // However since qsearch-futility pruning is the only affected part in current SF, we handle castling there
+  // However current SF implementation never calls see_ge(castling, v) with v > 0, so outcome does'nt change actually
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));

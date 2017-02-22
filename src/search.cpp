@@ -1274,12 +1274,10 @@ moves_loop: // When in check search starts from here
       if (   !InCheck
           && !givesCheck
           &&  futilityBase > -VALUE_KNOWN_WIN
+          && type_of(move) < ENPASSANT // don't prune en-passant and castling moves
           && !pos.advanced_pawn_push(move))
       {
-          assert(type_of(move) != ENPASSANT); // Due to !pos.advanced_pawn_push
-
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
-
 
           if (futilityValue <= alpha)
           {
@@ -1287,7 +1285,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && (type_of(move) == CASTLING || !pos.see_ge(move, VALUE_ZERO + 1)))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
