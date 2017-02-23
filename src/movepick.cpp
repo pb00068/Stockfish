@@ -80,7 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) {
+           : pos(p) , depth(d) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -104,8 +104,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
   stage += (ttMove == MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Value th)
-           : pos(p), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Value th)
+           : pos(p), depth(d), threshold(th) {
 
   assert(!pos.checkers());
 
