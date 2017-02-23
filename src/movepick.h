@@ -62,9 +62,6 @@ struct CaptureStats {
   void clear() { std::memset(table, 0, sizeof(table)); }
   void update(Color c, int matDif, Square to, Value v) {
 
-    if (abs(int(v)) >= 324)
-        return;
-
     table[c][matDif][to] -= table[c][matDif][to] * abs(int(v)) / 324;
     table[c][matDif][to] += int(v) * 32;
   }

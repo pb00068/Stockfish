@@ -1096,8 +1096,8 @@ moves_loop: // When in check search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
-              if (captureOrPromotion && depth <= 9)
-                   thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
+              if (captureOrPromotion && depth <=9)
+                thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
@@ -1114,8 +1114,9 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
-      else if (captureOrPromotion && depth <= 9 && move != bestMove)
+      else if (captureOrPromotion && depth <= 9 && move != bestMove) {
         thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth));
+      }
     }
 
     // The following condition would detect a stop only after move loop has been
