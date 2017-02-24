@@ -197,8 +197,13 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-        	  if ((depth <=9 && move.value > 0) || pos.see_ge(move, VALUE_ZERO))
-                  return move;
+        	  if (depth <= 9)
+        	  {
+        		if (move.value >= 0)
+        	       return move;
+        	  }
+        	  else if (pos.see_ge(move, VALUE_ZERO))
+				return move;
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
