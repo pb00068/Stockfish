@@ -51,7 +51,7 @@ namespace {
   // pick_best() finds the best move in the range (begin, end) and moves it to
   // the front. It's faster than sorting all the moves in advance when there
   // are few moves, e.g., the possible captures.
-  Move pick_best(ExtMove* begin, ExtMove* end)
+  ExtMove pick_best(ExtMove* begin, ExtMove* end)
   {
       std::swap(*begin, *std::max_element(begin, end));
       return *begin;
@@ -176,7 +176,7 @@ void MovePicker::score<EVASIONS>() {
 
 Move MovePicker::next_move() {
 
-  Move move;
+  ExtMove move;
 
   switch (stage) {
 
@@ -197,7 +197,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO))
+        	  if ((depth <=9 && move.value > 0) || pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array

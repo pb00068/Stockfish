@@ -77,6 +77,19 @@ PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
 }
 
 template<>
+PieceType min_attacker<KNIGHT>(const Bitboard* bb, Square to, Bitboard stmAttackers,
+                       Bitboard& occupied, Bitboard& attackers) {
+
+  Bitboard b = stmAttackers & bb[KNIGHT];
+  if (!b)
+      return min_attacker<BISHOP>(bb, to, stmAttackers, occupied, attackers);
+
+  attackers ^= b & ~(b - 1);
+
+  return KNIGHT;
+}
+
+template<>
 PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
   return KING; // No need to update bitboards: it is the last cycle
 }
