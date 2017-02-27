@@ -538,7 +538,7 @@ namespace {
     assert(!(PvNode && cutNode));
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1], quietsSearched[64];
+    Move pv[MAX_PLY+1], quietsSearched[64], captSearched[10];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -548,12 +548,12 @@ namespace {
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
     Piece moved_piece;
-    int moveCount, quietCount;
+    int moveCount, quietCount, captCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    moveCount = quietCount =  ss->moveCount = 0;
+    moveCount = quietCount = captCount = ss->moveCount = 0;
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
@@ -783,7 +783,7 @@ namespace {
         assert((ss-1)->currentMove != MOVE_NONE);
         assert((ss-1)->currentMove != MOVE_NULL);
 
-        MovePicker mp(pos, ttMove, rdepth, rbeta - ss->staticEval);
+        MovePicker mp(pos, ttMove, rbeta - ss->staticEval);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
@@ -1074,7 +1074,8 @@ moves_loop: // When in check search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
-              if (captureOrPromotion && depth <= 9)
+
+              if (captureOrPromotion)
                 thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
@@ -1087,10 +1088,12 @@ moves_loop: // When in check search starts from here
           }
       }
 
-      if (!captureOrPromotion && move != bestMove && quietCount < 64)
+      if (move != bestMove)
+      {
+        if (!captureOrPromotion && quietCount < 64)
           quietsSearched[quietCount++] = move;
-      else if (captureOrPromotion && depth <= 9 && move != bestMove) {
-        thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth));
+        else if (captureOrPromotion && captCount < 10)
+          captSearched[captCount++] = move;
       }
     }
 
@@ -1118,6 +1121,11 @@ moves_loop: // When in check search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+        else
+          for (int i = 0; i < captCount; ++i)
+             thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(captSearched[i]))) - type_of(pos.piece_on(from_sq(captSearched[i])))) + 5, to_sq(captSearched[i]), -stat_bonus(depth));
+
+
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())

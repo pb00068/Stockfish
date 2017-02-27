@@ -80,7 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) , depth(d) {
+           : pos(p) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -104,8 +104,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
   stage += (ttMove == MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Value th)
-           : pos(p), depth(d), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Value th)
+           : pos(p), threshold(th) {
 
   assert(!pos.checkers());
 
@@ -127,13 +127,8 @@ template<>
 void MovePicker::score<CAPTURES>() {
 
   const CaptureStats& capt = pos.this_thread()->capturestat;
-
-  if (depth <= 9)
-    for (auto& m : *this)
+  for (auto& m : *this)
        m.value = capt.get(pos.side_to_move(), (int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
-  else
-    for (auto& m : *this)
-       m.value = PieceValue[MG][pos.piece_on(to_sq(m))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
 }
 
 template<>
@@ -197,7 +192,7 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-            if ((depth <= 9 && move.value != 0 && move.value > -1280) || pos.see_ge(move, VALUE_ZERO))
+            if (pos.see_ge(move, VALUE_ZERO))
               return move;
 
               // Losing capture, move it to the beginning of the array
