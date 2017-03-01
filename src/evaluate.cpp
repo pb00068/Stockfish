@@ -23,11 +23,13 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "uci.h"
 
 namespace {
 
@@ -205,7 +207,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score HinderPassedPawn    = S( 7,  0);
-  const Score PinnedDoubleAttacked= S(-15,-15);
+  const Score PinnedXRayAttacked= S(-25,-25);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -289,8 +291,15 @@ namespace {
           : Pt ==   ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))
                          : pos.attacks_from<Pt>(s);
 
-        if (pos.pinned_pieces(Us) & s)
-            b &= LineBB[pos.square<KING>(Us)][s];
+        if (pos.pinned_pieces(Us) & s) {
+        	Square k = pos.square<KING>(Us);
+            b &= LineBB[k][s];
+            if (file_of(k) != file_of(s) && rank_of(k) != rank_of(s))
+            {
+            	if (more_than_one(LineBB[k][s] & pos.pieces(Them, QUEEN, BISHOP)))
+            		score += PinnedXRayAttacked;
+            }
+        }
 
         ei.attackedBy2[Us] |= ei.attackedBy[Us][ALL_PIECES] & b;
         ei.attackedBy[Us][ALL_PIECES] |= ei.attackedBy[Us][Pt] |= b;
@@ -414,11 +423,6 @@ namespace {
     // King shelter and enemy pawns storm
     Score score = ei.pe->king_safety<Us>(pos, ksq);
 
-    b = pos.pinned_pieces(Us);
-    while(b) {
-    	if (ei.attackedBy2[Them] & ~ei.attackedBy2[Us] & pop_lsb(&b))
-    		score += PinnedDoubleAttacked;
-    }
 
     // Main king safety evaluation
     if (ei.kingAttackersCount[Them])
