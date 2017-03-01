@@ -208,9 +208,9 @@ Move MovePicker::next_move() {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && move != captureKiller)
           {
-              if (pos.see_ge(move, VALUE_ZERO) && move != captureKiller)
+              if (pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array
