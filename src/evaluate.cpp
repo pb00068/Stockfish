@@ -205,6 +205,7 @@ namespace {
   const Score Hanging             = S(48, 27);
   const Score ThreatByPawnPush    = S(38, 22);
   const Score HinderPassedPawn    = S( 7,  0);
+  const Score PinnedDoubleAttacked= S(-15,-15);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -412,6 +413,12 @@ namespace {
 
     // King shelter and enemy pawns storm
     Score score = ei.pe->king_safety<Us>(pos, ksq);
+
+    b = pos.pinned_pieces(Us);
+    while(b) {
+    	if (ei.attackedBy2[Them] & ~ei.attackedBy2[Us] & pop_lsb(&b))
+    		score += PinnedDoubleAttacked;
+    }
 
     // Main king safety evaluation
     if (ei.kingAttackersCount[Them])
