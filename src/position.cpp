@@ -1024,6 +1024,8 @@ bool Position::see_ge(Move m, Value v) const {
   else
   {
       balance = PieceValue[MG][piece_on(to)];
+      if (type_of(piece_on(to)) == PAWN && relative_rank(stm, to) > RANK_6)
+    	  balance = KnightValueMg;
       occupied = 0;
   }
 
@@ -1065,6 +1067,10 @@ bool Position::see_ge(Move m, Value v) const {
 
       balance += relativeStm ?  PieceValue[MG][nextVictim]
                              : -PieceValue[MG][nextVictim];
+      if (nextVictim == PAWN && relative_rank(stm, to) > RANK_6) {
+    	  balance += relativeStm ?  KnightValueMg - PieceValue[MG][nextVictim]
+    	                               : PieceValue[MG][nextVictim] - KnightValueMg;
+      }
 
       relativeStm = !relativeStm;
 
