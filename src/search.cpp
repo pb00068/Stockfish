@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstring>   // For std::memset
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #include "evaluate.h"
@@ -151,6 +152,23 @@ namespace {
 } // namespace
 
 
+// skip half of the plies in blocks depending on the helper thread idx.
+  bool skip_ply(int idx, int ply) {
+
+    idx = (idx - 1) % 20 + 1; // cycle after 20 threads.
+
+    // number of successive plies to skip, depending on idx.
+    int ones = 1;
+    while (ones * (ones + 1) < idx)
+        ones++;
+
+    return ((ply + idx - 1) / ones - ones) % 2 == 0;
+}
+
+// Sizes and phases of the skip-blocks, used for distributing search depths across the threads.
+static int skipsize[20] = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4};
+static int phase   [20] = {0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 7};
+
 /// Search::init() is called during startup to initialize various lookup tables
 
 void Search::init() {
@@ -174,6 +192,25 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
+
+  sync_cout << " thread idx      master                       patch " << sync_endl;
+  for (int idx = 1; idx < 25; ++idx) {
+    int h = (idx - 1) % 20; // helper index, cycle after 20 threads
+    sync_cout << std::setw(2) << idx << "     ";
+    int ply;
+    for (ply = 1; ply < 25; ++ply)
+      sync_cout << skip_ply(idx, ply) << " ";
+    sync_cout << "    ";
+    for (ply = 1; ply < 25; ++ply)
+      sync_cout << ((ply + phase[h]) / skipsize[h]) % 2 << " ";
+    for (ply = 1; ply < 25; ++ply)
+      if (((ply + phase[h]) / skipsize[h]) % 2 != skip_ply(idx, ply)) {
+        sync_cout << "detected difference at idx " << idx << " ply " << ply << sync_endl;
+        abort();
+      }
+    sync_cout << sync_endl;
+  }
+
 }
 
 
@@ -308,9 +345,7 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-// Sizes and phases of the skip-blocks, used for distributing search depths across the threads.
-static int skipsize[20] = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4};
-static int phase   [20] = {0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 7};
+
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -355,6 +390,14 @@ void Thread::search() {
          && !Signals.stop
          && (!Limits.depth || Threads.main()->rootDepth / ONE_PLY <= Limits.depth))
   {
+    if (idx)
+    {
+      //   current master logic                                        new logic
+      if ( skip_ply(idx, rootDepth / ONE_PLY + rootPos.game_ply()) !=  ((rootDepth / ONE_PLY + rootPos.game_ply() + phase[h]) / skipsize[h]) % 2)
+        abort();
+    }
+
+
       // skip half of the plies in blocks depending on game ply and helper index.
       if (idx && ((rootDepth / ONE_PLY + rootPos.game_ply() + phase[h]) / skipsize[h]) % 2)
           continue;
