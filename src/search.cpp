@@ -922,7 +922,7 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 7
                   && !inCheck
                   && (ss->staticEval + 256 + 200 * lmrDepth <= alpha
-                  || (ss->staticEval + 256 + 100 * lmrDepth <= alpha && !pos.see_ge(move,VALUE_ZERO))
+                  || (ss->staticEval + 256 + 160 * lmrDepth <= alpha && !pos.see_ge(move,VALUE_ZERO))
                      ) )
                   continue;
 
