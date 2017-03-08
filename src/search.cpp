@@ -322,6 +322,7 @@ void MainThread::search() {
 }
 
 
+
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
 // consumed, the user stops the search, or the maximum search depth is reached.
@@ -556,6 +557,8 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->hanging[0] = ss->hanging[1] = SQ_NONE;
+
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -583,7 +586,7 @@ namespace {
     {
         // Step 2. Check for aborted search and immediate draw
         if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos)
+            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos, ss->hanging)
                                                   : DrawValue[pos.side_to_move()];
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -671,7 +674,7 @@ namespace {
 
                 tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
                           std::min(DEPTH_MAX - ONE_PLY, depth + 6 * ONE_PLY),
-                          MOVE_NONE, VALUE_NONE, TT.generation(), 4);
+                          MOVE_NONE, VALUE_NONE, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
 
                 return value;
             }
@@ -689,7 +692,7 @@ namespace {
     {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos);
+            eval = ss->staticEval = evaluate(pos, ss->hanging);
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
@@ -698,13 +701,20 @@ namespace {
     }
     else
     {
-        eval = ss->staticEval =
-        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
-                                         : -(ss-1)->staticEval + 2 * Eval::Tempo;
+    	if ((ss-1)->currentMove == MOVE_NULL) {
+    		eval = ss->staticEval = -(ss-1)->staticEval + 2 * Eval::Tempo;
+    		ss->hanging[0] = (ss-1)->hanging[0];
+    		ss->hanging[1] = (ss-1)->hanging[1];
+    	}
+    	else
+    		eval = ss->staticEval = evaluate(pos, ss->hanging);
+
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  ss->staticEval, TT.generation(), 4);
+                  ss->staticEval, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
     }
+
+
 
     if (skipEarlyPruning)
         goto moves_loop;
@@ -1126,7 +1136,7 @@ moves_loop: // When in check search starts from here
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-              depth, bestMove, ss->staticEval, TT.generation(), 4);
+              depth, bestMove, ss->staticEval, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1166,10 +1176,11 @@ moves_loop: // When in check search starts from here
 
     ss->currentMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
+    ss->hanging[0] = ss->hanging[1] = SQ_NONE;
 
     // Check for an instant draw or if the maximum ply has been reached
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos)
+        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos, ss->hanging)
                                               : DrawValue[pos.side_to_move()];
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
@@ -1206,24 +1217,28 @@ moves_loop: // When in check search starts from here
         {
             // Never assume anything on values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos);
+                ss->staticEval = bestValue = evaluate(pos, ss->hanging);
 
             // Can ttValue be used as a better position evaluation?
             if (ttValue != VALUE_NONE)
                 if (tte->bound() & (ttValue > bestValue ? BOUND_LOWER : BOUND_UPPER))
                     bestValue = ttValue;
         }
-        else
-            ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
-                                             : -(ss-1)->staticEval + 2 * Eval::Tempo;
+        else if ((ss-1)->currentMove == MOVE_NULL) {
+			bestValue = ss->staticEval = -(ss-1)->staticEval + 2 * Eval::Tempo;
+			ss->hanging[0] = (ss-1)->hanging[0];
+			ss->hanging[1] = (ss-1)->hanging[1];
+		}
+		else
+			bestValue = ss->staticEval = evaluate(pos, ss->hanging);
+
 
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
             if (!ttHit)
                 tte->save(pos.key(), value_to_tt(bestValue, ss->ply), BOUND_LOWER,
-                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), 4);
+                          DEPTH_NONE, MOVE_NONE, ss->staticEval, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
 
             return bestValue;
         }
@@ -1318,7 +1333,7 @@ moves_loop: // When in check search starts from here
               else // Fail high
               {
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
-                            ttDepth, move, ss->staticEval, TT.generation(), 0);
+                            ttDepth, move, ss->staticEval, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
 
                   return value;
               }
@@ -1333,7 +1348,7 @@ moves_loop: // When in check search starts from here
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
-              ttDepth, bestMove, ss->staticEval, TT.generation(), 0);
+              ttDepth, bestMove, ss->staticEval, TT.generation(), (ss->hanging[0] != SQ_NONE || ss->hanging[1] != SQ_NONE) ? 4 : 0);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 

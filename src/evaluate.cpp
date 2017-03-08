@@ -110,6 +110,7 @@ namespace {
     // a white knight on g5 and black's king is on g8, this white knight adds 2
     // to kingAdjacentZoneAttacksCount[WHITE].
     int kingAdjacentZoneAttacksCount[COLOR_NB];
+
   };
 
   #define V(v) Value(v)
@@ -514,7 +515,7 @@ namespace {
   // and the attacked pieces.
 
   template<Color Us, bool DoTrace>
-  Score evaluate_threats(const Position& pos, const EvalInfo& ei) {
+  Score evaluate_threats(const Position& pos, const EvalInfo& ei, Square *hanging) {
 
     const Color Them        = (Us == WHITE ? BLACK      : WHITE);
     const Square Up         = (Us == WHITE ? NORTH      : SOUTH);
@@ -539,8 +540,11 @@ namespace {
         if (weak ^ safeThreats)
             score += ThreatByHangingPawn;
 
-        while (safeThreats)
-            score += ThreatBySafePawn[type_of(pos.piece_on(pop_lsb(&safeThreats)))];
+        while (safeThreats) {
+        	Square s = pop_lsb(&safeThreats);
+            score += ThreatBySafePawn[type_of(pos.piece_on(s))];
+            hanging[Them] = s;
+        }
     }
 
     // Squares strongly protected by the opponent, either because they attack the
@@ -566,7 +570,11 @@ namespace {
             Square s = pop_lsb(&b);
             score += ThreatByMinor[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
+            {
                 score += ThreatByRank * (int)relative_rank(Them, s);
+                if ( !(ei.attackedBy[Them][ALL_PIECES] & s))
+                     hanging[Them] = s;
+            }
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & ei.attackedBy[Us][ROOK];
@@ -574,11 +582,15 @@ namespace {
         {
             Square s = pop_lsb(&b);
             score += ThreatByRook[type_of(pos.piece_on(s))];
-            if (type_of(pos.piece_on(s)) != PAWN)
+            if (type_of(pos.piece_on(s)) != PAWN) {
                 score += ThreatByRank * (int)relative_rank(Them, s);
+                if ( !(ei.attackedBy[Them][ALL_PIECES] & s))
+                	hanging[Them] = s;
+            }
         }
 
         score += Hanging * popcount(weak & ~ei.attackedBy[Them][ALL_PIECES]);
+
 
         b = weak & ei.attackedBy[Us][KING];
         if (b)
@@ -795,7 +807,7 @@ namespace {
 /// of the position from the point of view of the side to move.
 
 template<bool DoTrace>
-Value Eval::evaluate(const Position& pos) {
+Value Eval::evaluate(const Position& pos, Square* hanging) {
 
   assert(!pos.checkers());
 
@@ -805,6 +817,7 @@ Value Eval::evaluate(const Position& pos) {
 
   // Probe the material hash table
   ei.me = Material::probe(pos);
+  hanging[0] = hanging[1] = SQ_NONE;
 
   // If we have a specialized evaluation function for the current material
   // configuration, call it and return.
@@ -839,8 +852,8 @@ Value Eval::evaluate(const Position& pos) {
           - evaluate_king<BLACK, DoTrace>(pos, ei);
 
   // Evaluate tactical threats, we need full attack information including king
-  score +=  evaluate_threats<WHITE, DoTrace>(pos, ei)
-          - evaluate_threats<BLACK, DoTrace>(pos, ei);
+  score +=  evaluate_threats<WHITE, DoTrace>(pos, ei, hanging)
+          - evaluate_threats<BLACK, DoTrace>(pos, ei, hanging);
 
   // Evaluate passed pawns, we need full attack information including king
   score +=  evaluate_passer_pawns<WHITE, DoTrace>(pos, ei)
@@ -880,8 +893,8 @@ Value Eval::evaluate(const Position& pos) {
 }
 
 // Explicit template instantiations
-template Value Eval::evaluate<true >(const Position&);
-template Value Eval::evaluate<false>(const Position&);
+template Value Eval::evaluate<true >(const Position&, Square*);
+template Value Eval::evaluate<false>(const Position&, Square*);
 
 
 /// trace() is like evaluate(), but instead of returning a value, it returns
@@ -891,8 +904,9 @@ template Value Eval::evaluate<false>(const Position&);
 std::string Eval::trace(const Position& pos) {
 
   std::memset(scores, 0, sizeof(scores));
+  Square hanging[2];
 
-  Value v = evaluate<true>(pos);
+  Value v = evaluate<true>(pos, hanging);
   v = pos.side_to_move() == WHITE ? v : -v; // White's point of view
 
   std::stringstream ss;
