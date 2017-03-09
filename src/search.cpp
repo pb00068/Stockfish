@@ -923,9 +923,7 @@ moves_loop: // When in check search starts from here
                   && !inCheck
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
               {
-            	  if (lmrDepth <= 2 && moveCount >= 3 * FutilityMoveCounts[improving][depth / ONE_PLY] / 4)
-                     skipQuiets = true;
-
+                  skipQuiets = true;
             	  continue;
               }
 
