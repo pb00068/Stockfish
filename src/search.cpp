@@ -919,13 +919,14 @@ moves_loop: // When in check search starts from here
                   continue;
 
               // Futility pruning: parent node
-              if (   lmrDepth < 10
+              if (   lmrDepth < 7
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha) {
-            	  if (lmrDepth < 7)
-            		  continue;
-            	  else
-					skipQuiets = true;
+                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
+              {
+            	  if (moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY] / 2)
+                     skipQuiets = true;
+
+            	  continue;
               }
 
               // Prune moves with negative SEE
@@ -937,10 +938,7 @@ moves_loop: // When in check search starts from here
                    && !extension
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
-
-
       }
-
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
