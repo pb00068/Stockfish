@@ -919,15 +919,14 @@ moves_loop: // When in check search starts from here
                   continue;
 
               // Futility pruning: parent node
-              if (   lmrDepth < 7
+              if (   lmrDepth < 10
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
-                  continue;
-
-              if (   lmrDepth < 7
-                  && !inCheck
-                  && ss->staticEval + 300 + 100 * lmrDepth <= alpha)
+                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha) {
+            	  if (lmrDepth < 7)
+            		  continue;
+            	  else
 					skipQuiets = true;
+              }
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
