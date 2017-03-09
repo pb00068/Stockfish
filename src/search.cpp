@@ -924,6 +924,11 @@ moves_loop: // When in check search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+              if (   lmrDepth < 7
+                  && !inCheck
+                  && ss->staticEval + 300 + 100 * lmrDepth <= alpha)
+					skipQuiets = true;
+
               // Prune moves with negative SEE
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
@@ -933,7 +938,10 @@ moves_loop: // When in check search starts from here
                    && !extension
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
+
+
       }
+
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
