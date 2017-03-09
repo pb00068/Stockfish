@@ -903,13 +903,15 @@ moves_loop: // When in check search starts from here
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= 5000))
           {
-			  skipQuiets = moveCountPruning;
+        	  // Reduced depth of the next LMR search
+        	  int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
+
+			  skipQuiets = moveCountPruning || lmrDepth <= 2;
               // Move count based pruning
               if (moveCountPruning)
                   continue;
 
-              // Reduced depth of the next LMR search
-              int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
+
 
               // Countermoves based pruning
               if (   lmrDepth < 3
@@ -922,12 +924,7 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 7
                   && !inCheck
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
-              {
-            	  if (lmrDepth <= 2 && moveCount >= 3 * FutilityMoveCounts[improving][depth / ONE_PLY] / 4)
-                     skipQuiets = true;
-
             	  continue;
-              }
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
