@@ -73,6 +73,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 
   Square prevSq = to_sq((ss-1)->currentMove);
   countermove = pos.this_thread()->counterMoves[pos.piece_on(prevSq)][prevSq];
+  skipQuiets = false;
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
@@ -175,7 +176,7 @@ void MovePicker::score<EVASIONS>() {
 /// left. It picks the move with the biggest value from a list of generated moves
 /// taking care not to return the ttMove if it has already been searched.
 
-Move MovePicker::next_move(bool skipQuiets) {
+Move MovePicker::next_move() {
 
   Move move;
 
@@ -250,14 +251,10 @@ Move MovePicker::next_move(bool skipQuiets) {
   case QUIET:
       while (cur < endMoves)
       {
-          
-		  if (skipQuiets && cur->value < VALUE_ZERO)
-		  {
-			  cur = endMoves;
-			  break;
-		  }
-
 		  move = *cur++;
+
+		  if (skipQuiets && cur->value < VALUE_ZERO && !pos.gives_check(move))
+			  continue;
 
           if (   move != ttMove
               && move != ss->killers[0]
