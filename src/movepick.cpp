@@ -251,10 +251,13 @@ Move MovePicker::next_move() {
   case QUIET:
       while (cur < endMoves)
       {
-		  move = *cur++;
 
-		  if (skipQuiets && cur->value < VALUE_ZERO && !pos.gives_check(move))
+		  if (skipQuiets && cur->value < VALUE_ZERO && !pos.gives_check(*cur)) {
+			  cur++;
 			  continue;
+		  }
+
+    	  move = *cur++;
 
           if (   move != ttMove
               && move != ss->killers[0]
