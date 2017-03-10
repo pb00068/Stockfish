@@ -826,6 +826,10 @@ moves_loop: // When in check search starts from here
                            && !excludedMove // Recursive singular search is not allowed
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
+
+
+
+    bool  futPruningParentNode = false;
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -919,8 +923,11 @@ moves_loop: // When in check search starts from here
               // Futility pruning: parent node
               if (   lmrDepth < 7
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
+                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha) {
+            	  futPruningParentNode = true;
+            	  sync_cout <<" fut-base: " << ss->staticEval + 256 + 200 * lmrDepth << " <= alpha  " << alpha << "  mc: " << moveCount << " lmrdepth " << lmrDepth << " move " << UCI::move(move,false) << sync_endl;
             	  continue;
+              }
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
@@ -946,6 +953,13 @@ moves_loop: // When in check search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
+
+
+      if (futPruningParentNode && !givesCheck && !captureOrPromotion) {
+    	  int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
+    	  sync_cout << pos << " fut-base: " << ss->staticEval + 256 + 200 * lmrDepth << " <= alpha ? " << alpha <<  " mc: " << moveCount << " lmrdepth " << lmrDepth << " move " << UCI::move(move,false) << sync_endl;
+    	  abort();
+      }
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
