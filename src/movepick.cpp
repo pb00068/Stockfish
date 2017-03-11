@@ -251,8 +251,9 @@ Move MovePicker::next_move() {
   case QUIET:
       while (cur < endMoves)
       {
-
-		  if (skipQuiets && cur->value < VALUE_ZERO && !pos.gives_check(*cur)) {
+		  if (skipQuiets && cur->value < VALUE_ZERO
+            && !(pos.check_squares(type_of(pos.piece_on(from_sq(*cur)))) & to_sq(*cur))
+            && !pos.advanced_pawn_push(*cur)) {
 			  cur++;
 			  continue;
 		  }
