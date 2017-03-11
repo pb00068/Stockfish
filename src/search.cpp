@@ -826,7 +826,7 @@ moves_loop: // When in check search starts from here
                            && !excludedMove // Recursive singular search is not allowed
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
-    skipQuiets = false;
+    skipQuiets = moveCountPruning = false;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -862,7 +862,7 @@ moves_loop: // When in check search starts from here
                   ? pos.check_squares(type_of(pos.piece_on(from_sq(move)))) & to_sq(move)
                   : pos.gives_check(move);
 
-      moveCountPruning =   depth < 16 * ONE_PLY
+      moveCountPruning |=   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 12. Extensions
@@ -922,7 +922,11 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 7
                   && !inCheck
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
-                  continue;
+              {
+                 if (!moveCountPruning)
+                      moveCountPruning = moveCount + 3 >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                 continue;
+              }
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
