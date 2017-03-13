@@ -57,11 +57,9 @@ private:
 struct CaptureStats {
   Value get(Color c, int matDif, Square to) const { return table[c][matDif][to]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
-  void update(Color c, int matDif, Square to, Value v, bool badGod) {
+  void update(Color c, int matDif, Square to, Value v) {
     table[c][matDif][to] -= table[c][matDif][to] * abs(int(v)) / 324;
     table[c][matDif][to] += int(v) * 32;
-    if (badGod)
-    	table[c][matDif][to] = (Value)(table[c][matDif][to] | 0x1F);
   }
 
 private:
