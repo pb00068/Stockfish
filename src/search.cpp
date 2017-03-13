@@ -596,7 +596,7 @@ namespace {
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->counterMoves = &thisThread->counterMoveHistory[NO_PIECE][0];
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->bestCapture = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
@@ -622,7 +622,12 @@ namespace {
         {
             if (ttValue >= beta)
             {
-                if (!pos.capture_or_promotion(ttMove))
+                if (pos.capture_or_promotion(ttMove))
+                {
+                    if (type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT)
+                       ss->bestCapture = bestMove;
+                }
+                else
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -812,8 +817,9 @@ moves_loop: // When in check search starts from here
     const bool cm_ok = is_ok((ss-1)->currentMove);
     const bool fm_ok = is_ok((ss-2)->currentMove);
     const bool fm2_ok = is_ok((ss-4)->currentMove);
+    Square strikeBack = SQ_A1;
 
-    MovePicker mp(pos, ttMove, depth, ss);
+    MovePicker mp(pos, ttMove, depth, strikeBack, ss);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
             /* || ss->staticEval == VALUE_NONE Already implicit in the previous condition */
@@ -868,7 +874,7 @@ moves_loop: // When in check search starts from here
       // Extend checks
       if (    givesCheck
           && !moveCountPruning
-          &&  pos.see_ge(move, VALUE_ZERO))
+          &&  pos.see_ge(move, VALUE_ZERO, SQ_A1))
           extension = ONE_PLY;
 
       // Singular extension search. If all moves but one fail low on a search of
@@ -924,12 +930,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth), strikeBack))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY), strikeBack))
                   continue;
       }
 
@@ -941,6 +947,16 @@ moves_loop: // When in check search starts from here
       {
           ss->moveCount = --moveCount;
           continue;
+      }
+
+      if (moveCount == 2 && (ss+1)->bestCapture != MOVE_NONE
+    	 && ((pos.pieces(pos.side_to_move(), QUEEN, ROOK) | pos.pieces(pos.side_to_move(), KNIGHT, BISHOP)) & to_sq((ss+1)->bestCapture))
+		 && (pos.pieces(~pos.side_to_move()) & from_sq((ss+1)->bestCapture))
+		 && (type_of(pos.piece_on(from_sq((ss+1)->bestCapture))) == KNIGHT || !(BetweenBB[from_sq((ss+1)->bestCapture)][to_sq((ss+1)->bestCapture)] & pos.pieces()))
+		 )
+      {
+    	   strikeBack = to_sq((ss+1)->bestCapture);
+    	   //sync_cout << pos << " strike back set to " << UCI::move(make_move(strikeBack,strikeBack),false) << " future capturing move " << UCI::move((ss+1)->bestCapture,false) << sync_endl;
       }
 
       // Update the current move (this must be done after singular extension search)
@@ -970,8 +986,12 @@ moves_loop: // When in check search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
               else if (   type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO, SQ_A1))
+              {
                   r -= 2 * ONE_PLY;
+//                  if (type_of(pos.piece_on(to_sq(move))) > PAWN)
+//                	  strikeBack = from_sq(move);
+              }
 
               ss->history =  (*cmh )[moved_piece][to_sq(move)]
                            + (*fmh )[moved_piece][to_sq(move)]
@@ -1108,7 +1128,12 @@ moves_loop: // When in check search starts from here
     {
 
         // Quiet best move: update move sorting heuristics
-        if (!pos.capture_or_promotion(bestMove))
+        if (pos.capture_or_promotion(bestMove))
+        {
+        	if (type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT)
+        		ss->bestCapture = bestMove;
+        }
+        else
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1263,7 +1288,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, SQ_A1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1278,7 +1303,7 @@ moves_loop: // When in check search starts from here
       // Don't search moves with negative SEE values
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  !pos.see_ge(move, VALUE_ZERO))
+          &&  !pos.see_ge(move, VALUE_ZERO, SQ_A1))
           continue;
 
       // Speculative prefetch as early as possible

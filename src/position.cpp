@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1000,7 +1001,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given value. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value v) const {
+bool Position::see_ge(Move m, Value v, Square strikeBack) const {
 
   assert(is_ok(m));
 
@@ -1032,6 +1033,13 @@ bool Position::see_ge(Move m, Value v) const {
 
   if (nextVictim == KING)
       return true;
+
+  if (strikeBack && type_of(piece_on(strikeBack)) > nextVictim && attackers_to(strikeBack, pieces() ^ from ^ to) != 0)
+  {
+	  //sync_cout << *this << " we will strike back to " << UCI::move(make_move(strikeBack,strikeBack),false) << " orig move " << UCI::move(m,false) << sync_endl;
+	  nextVictim = type_of(piece_on(strikeBack));
+	  to = strikeBack;
+  }
 
   balance -= PieceValue[MG][nextVictim];
 
