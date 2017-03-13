@@ -51,7 +51,7 @@ namespace {
   // pick_best() finds the best move in the range (begin, end) and moves it to
   // the front. It's faster than sorting all the moves in advance when there
   // are few moves, e.g., the possible captures.
-  Move pick_best(ExtMove* begin, ExtMove* end)
+  ExtMove pick_best(ExtMove* begin, ExtMove* end)
   {
       std::swap(*begin, *std::max_element(begin, end));
       return *begin;
@@ -80,7 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) {
+           : pos(p), depth(d) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -104,8 +104,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
   stage += (ttMove == MOVE_NONE);
 }
 
-MovePicker::MovePicker(const Position& p, Move ttm, Value th)
-           : pos(p), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Value th)
+           : pos(p), depth(d), threshold(th) {
 
   assert(!pos.checkers());
 
@@ -127,9 +127,12 @@ template<>
 void MovePicker::score<CAPTURES>() {
 
   const CaptureStats& capt = pos.this_thread()->capturestat;
-  for (auto& m : *this)
-        m.value = PieceValue[MG][pos.piece_on(to_sq(m))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(m))) +
-        capt.get(pos.side_to_move(), (int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
+  if (depth <= 9)
+    for (auto& m : *this)
+       m.value = capt.get(pos.side_to_move(), (int) (type_of(pos.piece_on(to_sq(m))) - type_of(pos.piece_on(from_sq(m)))) + 5, to_sq(m));
+  else
+    for (auto& m : *this)
+       m.value = PieceValue[MG][pos.piece_on(to_sq(m))] - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
 }
 
 template<>
@@ -172,7 +175,7 @@ void MovePicker::score<EVASIONS>() {
 
 Move MovePicker::next_move() {
 
-  Move move;
+  ExtMove move;
 
   switch (stage) {
 
@@ -193,7 +196,8 @@ Move MovePicker::next_move() {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO))
+        	  // return high-scored captures and those marked as bad-good directly without calling see
+              if ((depth <= 9 && (move.value > depth * depth || (move.value & 0x1F) == 0x1F)) || pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array

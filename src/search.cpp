@@ -777,7 +777,7 @@ namespace {
         assert(rdepth >= ONE_PLY);
         assert(is_ok((ss-1)->currentMove));
 
-        MovePicker mp(pos, ttMove, rbeta - ss->staticEval);
+        MovePicker mp(pos, ttMove, rdepth, rbeta - ss->staticEval);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
@@ -1073,8 +1073,10 @@ moves_loop: // When in check search starts from here
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
-              if (captureOrPromotion)
-                thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth));
+              if (captureOrPromotion && depth <= 9)
+                thisThread->capturestat.update(pos.side_to_move(),
+                		(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), stat_bonus(depth),
+						quietCount > 4 );
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
@@ -1090,8 +1092,9 @@ moves_loop: // When in check search starts from here
       {
         if (!captureOrPromotion && quietCount < 64)
           quietsSearched[quietCount++] = move;
-        else if (captureOrPromotion)
-          thisThread->capturestat.update(pos.side_to_move(),(int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth));
+        else if (captureOrPromotion && depth <= 9)
+          thisThread->capturestat.update(pos.side_to_move(),
+        		  (int) (type_of(pos.piece_on(to_sq(move))) - type_of(pos.piece_on(from_sq(move)))) + 5, to_sq(move), -stat_bonus(depth), false);
       }
     }
 

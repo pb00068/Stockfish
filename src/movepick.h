@@ -55,17 +55,13 @@ private:
 
 
 struct CaptureStats {
-
-
-
   Value get(Color c, int matDif, Square to) const { return table[c][matDif][to]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
-  void update(Color c, int matDif, Square to, Value v) {
-    if (abs(int(v)) >= 324)
-            return;
-
+  void update(Color c, int matDif, Square to, Value v, bool badGod) {
     table[c][matDif][to] -= table[c][matDif][to] * abs(int(v)) / 324;
     table[c][matDif][to] += int(v) * 32;
+    if (badGod)
+    	table[c][matDif][to] = (Value)(table[c][matDif][to] | 0x1F);
   }
 
 private:
@@ -116,7 +112,7 @@ public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
 
-  MovePicker(const Position&, Move, Value);
+  MovePicker(const Position&, Move, Depth, Value);
   MovePicker(const Position&, Move, Depth, Square);
   MovePicker(const Position&, Move, Depth, Search::Stack*);
 
