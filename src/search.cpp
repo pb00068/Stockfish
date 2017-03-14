@@ -1285,8 +1285,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          bool positive = false;
-          if (futilityBase <= alpha && !(positive = pos.see_ge(move, VALUE_ZERO + 1, SQ_A1)))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, SQ_A1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
