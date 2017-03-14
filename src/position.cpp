@@ -1039,12 +1039,16 @@ bool Position::see_ge(Move m, Value v, Square strikeBack) const {
   //Total 110422 Hits 108802 hit rate (%) 98 with detection by both ss+1 and capture escape
 
 
-  if (strikeBack && type_of(piece_on(strikeBack)) > nextVictim && (attackers_to(strikeBack, (pieces() ^ from) | to) & pieces(stm)))
+  if (strikeBack && type_of(piece_on(strikeBack)) > nextVictim)
   {
+	  Bitboard att = attackers_to(strikeBack, (pieces() ^ from) | to) & pieces(stm);
+	  if (att && (att ^ to))
+	  {
 	  //dbg_hit_on(check_squares(nextVictim) & to); Total 90229 Hits 3204 hit rate (%) 3 direct checks
 	  //sync_cout << *this << " we will strike back to " << UCI::move(make_move(strikeBack,strikeBack),false) << " orig move " << UCI::move(m,false) << sync_endl;
-	  nextVictim = type_of(piece_on(strikeBack));
-	  to = strikeBack;
+		  nextVictim = type_of(piece_on(strikeBack));
+		  to = strikeBack;
+	  }
   }
 
   balance -= PieceValue[MG][nextVictim];
