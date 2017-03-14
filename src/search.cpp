@@ -949,21 +949,12 @@ moves_loop: // When in check search starts from here
           continue;
       }
 
-//      dbg_hit_on(moveCount == 2 && (ss+1)->bestCapture != MOVE_NONE, ((pos.pieces(pos.side_to_move(), QUEEN, ROOK) | pos.pieces(pos.side_to_move(), KNIGHT, BISHOP)) & to_sq((ss+1)->bestCapture))
-//    			 && (pos.pieces(~pos.side_to_move()) & from_sq((ss+1)->bestCapture))
-//    			 && (type_of(pos.piece_on(from_sq((ss+1)->bestCapture))) == KNIGHT || !(BetweenBB[from_sq((ss+1)->bestCapture)][to_sq((ss+1)->bestCapture)] & pos.pieces())));
-      // Total 107245 Hits 31274 hit rate (%) 29 with reset at ss+2
-      // Total 203283 Hits 33679 hit rate (%) 16 with reset at ss+3
-
       if (moveCount == 2 && (ss+1)->bestCapture != MOVE_NONE
     	 && ((pos.pieces(pos.side_to_move(), QUEEN, ROOK) | pos.pieces(pos.side_to_move(), KNIGHT, BISHOP)) & to_sq((ss+1)->bestCapture))
 		 && (pos.pieces(~pos.side_to_move()) & from_sq((ss+1)->bestCapture))
 		 && (type_of(pos.piece_on(from_sq((ss+1)->bestCapture))) == KNIGHT || !(BetweenBB[from_sq((ss+1)->bestCapture)][to_sq((ss+1)->bestCapture)] & pos.pieces()))
-		 )
-      {
+		 && pos.see_ge((ss+1)->bestCapture, VALUE_ZERO + 1, SQ_A1))
     	   strikeBack = to_sq((ss+1)->bestCapture);
-    	   //sync_cout << pos << " strike back set to " << UCI::move(make_move(strikeBack,strikeBack),false) << " future capturing move " << UCI::move((ss+1)->bestCapture,false) << sync_endl;
-      }
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;

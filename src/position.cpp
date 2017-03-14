@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1034,34 +1033,40 @@ bool Position::see_ge(Move m, Value v, Square strikeBack) const {
   if (nextVictim == KING)
       return true;
 
-  //dbg_hit_on (strikeBack && type_of(piece_on(strikeBack)) > nextVictim, (attackers_to(strikeBack, (pieces() ^ from) | to) & pieces(stm)));
-  //Total  45001 Hits  43737 hit rate (%) 97 with detection by ss+1->bestCapture
-  //Total 110422 Hits 108802 hit rate (%) 98 with detection by both ss+1 and capture escape
-
-
+  Bitboard attackers = 0;
+  bool relativeStm = true; // True if the opponent is to move
   if (strikeBack && type_of(piece_on(strikeBack)) > nextVictim)
   {
-	  Bitboard att = attackers_to(strikeBack, (pieces() ^ from) | to) & pieces(stm);
-	  if (att && (att ^ to))
+	  attackers = attackers_to(strikeBack, (pieces() ^ from) | to) & pieces(stm);
+	  if (attackers && (attackers ^ to))
 	  {
-	  //dbg_hit_on(check_squares(nextVictim) & to); Total 90229 Hits 3204 hit rate (%) 3 direct checks
-	  //sync_cout << *this << " we will strike back to " << UCI::move(make_move(strikeBack,strikeBack),false) << " orig move " << UCI::move(m,false) << sync_endl;
 		  nextVictim = type_of(piece_on(strikeBack));
+		  balance -= PieceValue[MG][nextVictim];
+
+		  if (balance >= v)
+			  return true;
+
+		  occupied ^= pieces() ^ from;
+		  occupied |= to;
+		  if (attackers & to)
+			  attackers ^= to;
 		  to = strikeBack;
 	  }
   }
+  if (!attackers)
+  {
+	  balance -= PieceValue[MG][nextVictim];
 
-  balance -= PieceValue[MG][nextVictim];
+	  if (balance >= v)
+		  return true;
 
-  if (balance >= v)
-      return true;
 
-  bool relativeStm = true; // True if the opponent is to move
-  occupied ^= pieces() ^ from ^ to;
+	  occupied ^= pieces() ^ from ^ to;
 
-  // Find all attackers to the destination square, with the moving piece removed,
-  // but possibly an X-ray attacker added behind it.
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+	  // Find all attackers to the destination square, with the moving piece removed,
+	  // but possibly an X-ray attacker added behind it.
+	  attackers = attackers_to(to, occupied) & occupied;
+  }
 
   while (true)
   {
