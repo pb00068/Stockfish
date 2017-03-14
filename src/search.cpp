@@ -949,6 +949,12 @@ moves_loop: // When in check search starts from here
           continue;
       }
 
+//      dbg_hit_on(moveCount == 2 && (ss+1)->bestCapture != MOVE_NONE, ((pos.pieces(pos.side_to_move(), QUEEN, ROOK) | pos.pieces(pos.side_to_move(), KNIGHT, BISHOP)) & to_sq((ss+1)->bestCapture))
+//    			 && (pos.pieces(~pos.side_to_move()) & from_sq((ss+1)->bestCapture))
+//    			 && (type_of(pos.piece_on(from_sq((ss+1)->bestCapture))) == KNIGHT || !(BetweenBB[from_sq((ss+1)->bestCapture)][to_sq((ss+1)->bestCapture)] & pos.pieces())));
+      // Total 107245 Hits 31274 hit rate (%) 29 with reset at ss+2
+      // Total 203283 Hits 33679 hit rate (%) 16 with reset at ss+3
+
       if (moveCount == 2 && (ss+1)->bestCapture != MOVE_NONE
     	 && ((pos.pieces(pos.side_to_move(), QUEEN, ROOK) | pos.pieces(pos.side_to_move(), KNIGHT, BISHOP)) & to_sq((ss+1)->bestCapture))
 		 && (pos.pieces(~pos.side_to_move()) & from_sq((ss+1)->bestCapture))
@@ -989,8 +995,8 @@ moves_loop: // When in check search starts from here
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO, SQ_A1))
               {
                   r -= 2 * ONE_PLY;
-//                  if (type_of(pos.piece_on(to_sq(move))) > PAWN)
-//                	  strikeBack = from_sq(move);
+                  if (!strikeBack && type_of(pos.piece_on(to_sq(move))) >= KNIGHT)
+                	  strikeBack = from_sq(move);
               }
 
               ss->history =  (*cmh )[moved_piece][to_sq(move)]
@@ -1288,7 +1294,8 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, SQ_A1))
+          bool positive = false;
+          if (futilityBase <= alpha && !(positive = pos.see_ge(move, VALUE_ZERO + 1, SQ_A1)))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
