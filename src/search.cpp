@@ -759,6 +759,8 @@ namespace {
             if (depth < 10 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
+            R += ONE_PLY;
+
             // Do verification search at high depths
             // by disabling nmp for the side to move in next plies
             int nmp_ply = thisThread->nmp_ply;
