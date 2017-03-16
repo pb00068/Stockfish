@@ -756,16 +756,14 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            if (depth < 10 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
             // Do verification search at high depths
-            // increase reduction ...
-            R += ONE_PLY;
-            // but disable nmp for the side to move for first part of the search tree
+            // by disabling nmp for the side to move in next plies
             int nmp_ply = thisThread->nmp_ply;
             int pair = thisThread->pair;
-            thisThread->nmp_ply = ss->ply + 3 * (depth-R) / 4;
+            thisThread->nmp_ply = ss->ply + (depth-R) / 2;
             thisThread->pair = (ss->ply % 2) == 0;
 
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
