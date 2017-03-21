@@ -599,7 +599,7 @@ namespace {
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->counterMoves = &thisThread->counterMoveHistory[NO_PIECE][0];
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killercapt = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killerCapture = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
@@ -627,6 +627,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else
+                	ss->killerCapture = ttMove;
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1112,13 +1114,16 @@ moves_loop: // When in check search starts from here
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
     else if (bestMove)
     {
-
         // Quiet best move: update move sorting heuristics
-        if (!pos.capture_or_promotion(bestMove))
+        if (!pos.capture_or_promotion(bestMove)) {
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+            if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove))
+               ss->killerCapture = ttMove; // update capture killer to old-best capture
+        }
 
-        if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove))
-        	ss->killercapt = ttMove;
+        // update capture killer
+        else  ss->killerCapture = bestMove;
+
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())

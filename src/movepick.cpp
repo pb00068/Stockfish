@@ -192,16 +192,19 @@ Move MovePicker::next_move(bool skipQuiets) {
       score<CAPTURES>();
       ++stage;
 
-      if (ss->killercapt && ss->killercapt != ttMove
-        && pos.pseudo_legal(ss->killercapt)
-        && pos.capture(ss->killercapt))
-    	  return ss->killercapt;
+      move = ss->killerCapture;
+      // dbg_hit_on(move,  move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)); Total 646093 Hits 265628 hit rate (%) 41
+      if (move
+		   && move != ttMove
+		   && pos.pseudo_legal(move)
+		   && pos.capture_or_promotion(move))
+      return move;
 
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && move != ss->killercapt)
+          if (move != ttMove && move != ss->killerCapture)
           {
               if (pos.see_ge(move, VALUE_ZERO))
                   return move;
