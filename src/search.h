@@ -41,11 +41,12 @@ struct Stack {
   CounterMoveStats* counterMoves;
   int ply;
   Move currentMove;
-  Move excludedMove, killerCapture;
+  Move excludedMove, killerCapture[6];
   Move killers[2];
   Value staticEval;
   Value history;
   int moveCount;
+  bool badGood[6];
 };
 
 

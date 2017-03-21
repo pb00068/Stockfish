@@ -599,7 +599,8 @@ namespace {
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->counterMoves = &thisThread->counterMoveHistory[NO_PIECE][0];
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killerCapture = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killerCapture[0] =
+    (ss+2)->killerCapture[1] = (ss+2)->killerCapture[2] = (ss+2)->killerCapture[3] = (ss+2)->killerCapture[4] = (ss+2)->killerCapture[5] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Step 4. Transposition table lookup. We don't want the score of a partial
@@ -627,8 +628,10 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else
-                	ss->killerCapture = ttMove;
+                else {
+                	ss->killerCapture[type_of(pos.captured_piece())] = ttMove;
+                	ss->badGood[type_of(pos.captured_piece())] = !pos.see_ge(ttMove, VALUE_ZERO);
+                }
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1117,12 +1120,17 @@ moves_loop: // When in check search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove)) {
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-            if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove))
-               ss->killerCapture = ttMove; // update capture killer to old-best capture
+            if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove)) {
+               ss->killerCapture[type_of(pos.captured_piece())] = ttMove; // update capture killer to old-best capture
+               ss->badGood[type_of(pos.captured_piece())] = !pos.see_ge(ttMove, VALUE_ZERO);
+            }
         }
 
         // update capture killer
-        else  ss->killerCapture = bestMove;
+        else {
+        	ss->killerCapture[type_of(pos.captured_piece())] = bestMove;
+        	ss->badGood[type_of(pos.captured_piece())] = quietCount > 4;
+        }
 
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
