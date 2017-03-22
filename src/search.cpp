@@ -1118,7 +1118,8 @@ moves_loop: // When in check search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove)) {
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-            if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove) && !pos.see_ge(ttMove, VALUE_ZERO))
+            if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove)
+               && (type_of(ttMove) == PROMOTION || !pos.see_ge(ttMove, VALUE_ZERO)))
                 ss->killerCapture[type_of(pos.captured_piece())] = ttMove; // update capture killer to old-best capture
         }
 
