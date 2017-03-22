@@ -628,7 +628,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if (type_of(ttMove) == PROMOTION || !pos.see_ge(ttMove, VALUE_ZERO))
+                else if (!pos.see_ge(ttMove, VALUE_ZERO))
                 	ss->killerCapture[type_of(pos.captured_piece())] = ttMove;
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1119,12 +1119,12 @@ moves_loop: // When in check search starts from here
         if (!pos.capture_or_promotion(bestMove)) {
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
             if (ttMove && ttMove != bestMove && pos.capture_or_promotion(ttMove)
-               && (type_of(ttMove) == PROMOTION || !pos.see_ge(ttMove, VALUE_ZERO)))
+               && (!pos.see_ge(ttMove, VALUE_ZERO)))
                 ss->killerCapture[type_of(pos.captured_piece())] = ttMove; // update capture killer to old-best capture
         }
 
         // update capture killer
-        else if (quietCount > 4 || type_of(bestMove) == PROMOTION)
+        else if (quietCount > 4)
            ss->killerCapture[type_of(pos.captured_piece())] = bestMove;
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
