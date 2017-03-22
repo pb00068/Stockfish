@@ -1124,7 +1124,7 @@ moves_loop: // When in check search starts from here
         }
 
         // update capture killer
-        else if (quietCount > 4 || type_of(bestMove) == PROMOTION)
+        else if (type_of(bestMove) == PROMOTION || !pos.see_ge(bestMove, VALUE_ZERO))
            ss->killerCapture[type_of(pos.captured_piece())] = bestMove;
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted

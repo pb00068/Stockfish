@@ -193,11 +193,10 @@ Move MovePicker::next_move(bool skipQuiets) {
       ++stage;
 
       move = ss->killerCapture[type_of(pos.captured_piece())];
-      // dbg_hit_on(move,  move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)); Total 646093 Hits 265628 hit rate (%) 41
       if (move
-		   && move != ttMove
-		   && pos.pseudo_legal(move)
-		   && pos.capture_or_promotion(move))
+           && move != ttMove
+           && pos.pseudo_legal(move)
+           && pos.capture_or_promotion(move))
 			   return move;
 
 
