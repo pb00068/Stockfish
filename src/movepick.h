@@ -93,7 +93,7 @@ public:
 
   MovePicker(const Position&, Move, Value);
   MovePicker(const Position&, Move, Depth, Square);
-  MovePicker(const Position&, Move, Depth, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, Search::Stack*, bool badGood);
 
   Move next_move(bool skipQuiets = false);
 
@@ -110,6 +110,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   int stage;
+  bool badGood;
   ExtMove *cur, *endMoves, *endBadCaptures;
   ExtMove moves[MAX_MOVES];
 };

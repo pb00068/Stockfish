@@ -41,8 +41,9 @@ struct TTEntry {
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)(depth8 * int(ONE_PLY)); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
+  uint8_t badGood() const { return (genBound8 & 0x4); }
 
-  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g) {
+  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g, uint8_t badGood) {
 
     assert(d / ONE_PLY * ONE_PLY == d);
 
@@ -59,7 +60,7 @@ struct TTEntry {
         key16     = (uint16_t)(k >> 48);
         value16   = (int16_t)v;
         eval16    = (int16_t)ev;
-        genBound8 = (uint8_t)(g | b);
+        genBound8 = (uint8_t)(g | badGood | b);
         depth8    = (int8_t)(d / ONE_PLY);
     }
   }
@@ -97,7 +98,7 @@ class TranspositionTable {
 
 public:
  ~TranspositionTable() { free(mem); }
-  void new_search() { generation8 += 4; } // Lower 2 bits are used by Bound
+  void new_search() { generation8 += 8; } // Lower 3 bits are used by Bound
   uint8_t generation() const { return generation8; }
   TTEntry* probe(const Key key, bool& found) const;
   int hashfull() const;

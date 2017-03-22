@@ -66,7 +66,7 @@ namespace {
 /// search captures, promotions, and some checks) and how important good move
 /// ordering is at the current node.
 
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s, bool badgood)
            : pos(p), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
@@ -77,6 +77,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  badGood = badgood;
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
@@ -190,6 +191,10 @@ Move MovePicker::next_move(bool skipQuiets) {
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
+
+      if (badGood && ttMove && pos.capture_or_promotion(ttMove) && !pos.see_ge(ttMove, VALUE_ZERO))
+    	  badGood = false;
+
       ++stage;
 
   case GOOD_CAPTURES:
@@ -198,7 +203,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO))
+              if (badGood || pos.see_ge(move, VALUE_ZERO))
                   return move;
 
               // Losing capture, move it to the beginning of the array

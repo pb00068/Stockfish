@@ -150,7 +150,7 @@ void dbg_print() {
 
   if (hits[0])
       cerr << "Total " << hits[0] << " Hits " << hits[1]
-           << " hit rate (%) " << 100 * hits[1] / hits[0] << endl;
+           << " hit rate (%) " << 100 * hits[1] / (float)hits[0] << endl;
 
   if (means[0])
       cerr << "Total " << means[0] << " Mean "
