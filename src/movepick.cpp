@@ -76,7 +76,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
-  killerCapture = ss->killerCapture[type_of(pos.captured_piece())];
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -193,24 +192,20 @@ Move MovePicker::next_move(bool skipQuiets) {
       score<CAPTURES>();
       ++stage;
 
-      move = killerCapture;
+      move = ss->killerCapture[type_of(pos.captured_piece())];
       // dbg_hit_on(move,  move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)); Total 646093 Hits 265628 hit rate (%) 41
       if (move
 		   && move != ttMove
 		   && pos.pseudo_legal(move)
-		   && pos.capture_or_promotion(move)) {
-		   if (ss->badGood[type_of(pos.captured_piece())] || pos.see_ge(move, VALUE_ZERO))
+		   && pos.capture_or_promotion(move))
 			   return move;
-		   else
-			   killerCapture = MOVE_NONE;
-      }
 
 
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && move != killerCapture)
+          if (move != ttMove && move != ss->killerCapture[type_of(pos.captured_piece())])
           {
               if (pos.see_ge(move, VALUE_ZERO))
                   return move;

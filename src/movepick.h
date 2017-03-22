@@ -106,7 +106,7 @@ private:
   const Search::Stack* ss;
   Move countermove;
   Depth depth;
-  Move ttMove, killerCapture;
+  Move ttMove;
   Square recaptureSquare;
   Value threshold;
   int stage;

@@ -46,7 +46,7 @@ struct Stack {
   Value staticEval;
   Value history;
   int moveCount;
-  bool badGood[6];
+  //bool badGood[6];
 };
 
 
