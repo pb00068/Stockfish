@@ -98,8 +98,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
       os << " |\n +---+---+---+---+---+---+---+---+\n";
   }
 
-  os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
-     << std::setfill('0') << std::setw(16) << pos.key()
+  os << "\nFen: " << pos.fen() << "\nKey: " <<  pos.key()
      << std::setfill(' ') << std::dec << "\nCheckers: ";
 
   for (Bitboard b = pos.checkers(); b; )

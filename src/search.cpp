@@ -1122,11 +1122,9 @@ moves_loop: // When in check search starts from here
         if (!pos.capture_or_promotion(bestMove))
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
-        	badGood = quietCount > 4 ? 4 : 0;
-        	if (badGood) {
-        	    	sync_cout << pos << UCI::move(bestMove, false) << " new qc:" << quietCount << sync_endl;
-        	    	abort();
-        	    }
+        	badGood = !pos.see_ge(bestMove, VALUE_ZERO) ? 4 : 0;
+//        	if (badGood && pos.key() == 3886037919213333110)
+//        		sync_cout << pos << " " << UCI::move(bestMove, false) << sync_endl;
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1143,11 +1141,6 @@ moves_loop: // When in check search starts from here
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
               depth, bestMove, ss->staticEval, TT.generation(), badGood);
-
-    if (badGood) {
-    	sync_cout << pos << UCI::move(bestMove, false) << "  qc:" << quietCount << sync_endl;
-    	abort();
-    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
