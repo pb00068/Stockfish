@@ -900,7 +900,7 @@ moves_loop: // When in check search starts from here
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
 
-      if (inCheck && (ss-1)->checkExt && moveCount >= 3 && (ss-1)->moveCount >= 2 * FutilityMoveCounts[improving][depth / (3 * ONE_PLY)])
+      if (inCheck && (ss-1)->checkExt && moveCount >= 3 && (ss-1)->moveCount >= 2 * FutilityMoveCounts[improving][depth / ONE_PLY] / 3)
     	  newDepth-= ONE_PLY;
 
       // Step 13. Pruning at shallow depth
