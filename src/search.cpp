@@ -857,7 +857,7 @@ moves_loop: // When in check search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      extension = DEPTH_ZERO;
+      extension = ss->checkExt = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       moved_piece = pos.moved_piece(move);
 
@@ -868,7 +868,9 @@ moves_loop: // When in check search starts from here
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
+
       // Step 12. Singular and Gives Check Extensions
+
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
@@ -888,13 +890,17 @@ moves_loop: // When in check search starts from here
           if (value < rBeta)
               extension = ONE_PLY;
       }
-      else if (   givesCheck
-               && !moveCountPruning
-               &&  pos.see_ge(move, VALUE_ZERO))
-          extension = ONE_PLY;
+      else if (    givesCheck
+                && !moveCountPruning
+                &&  pos.see_ge(move, VALUE_ZERO))
+       	  extension = ss->checkExt = ONE_PLY;
+
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
+
+      if (inCheck && (ss-1)->checkExt && moveCount >= 3)
+    	  newDepth-= ONE_PLY;
 
       // Step 13. Pruning at shallow depth
       if (  !rootNode
