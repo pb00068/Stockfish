@@ -539,7 +539,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets;
@@ -857,7 +857,7 @@ moves_loop: // When in check search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      extension = ss->checkExt = DEPTH_ZERO;
+      ss->extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       moved_piece = pos.moved_piece(move);
 
@@ -886,17 +886,17 @@ moves_loop: // When in check search starts from here
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
-              extension = ONE_PLY;
+        	  ss->extension = ONE_PLY;
       }
       else if (   givesCheck
                && !moveCountPruning
                &&  pos.see_ge(move, VALUE_ZERO))
-          extension = ss->checkExt = ONE_PLY;
+          ss->extension = ONE_PLY;
 
       // Calculate new depth for this move
-      newDepth = depth - ONE_PLY + extension;
+      newDepth = depth - ONE_PLY + ss->extension;
 
-      if (inCheck && (ss-1)->checkExt && moveCount >= 3)
+      if (inCheck && (ss-1)->extension && moveCount >= 3)
      	  newDepth-= ONE_PLY;
 
       // Step 13. Pruning at shallow depth
@@ -935,7 +935,7 @@ moves_loop: // When in check search starts from here
                   continue;
           }
           else if (    depth < 7 * ONE_PLY
-                   && !extension
+                   && !ss->extension
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }

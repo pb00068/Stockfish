@@ -45,7 +45,7 @@ struct Stack {
   Move killers[2];
   Value staticEval;
   Value history;
-  Depth checkExt;
+  Depth extension;
   int moveCount;
 };
 
