@@ -32,9 +32,9 @@ TranspositionTable TTe;
 /// measured in megabytes. Transposition table consists of a power of 2 number
 /// of clusters and each cluster consists of ClusterSize number of TTEntry.
 
-void TranspositionTable::resize(size_t mbSize) {
+void TranspositionTable::resize(size_t bSize) {
 
-  size_t newClusterCount = size_t(1) << msb((mbSize * 1024 * 1024) / sizeof(Cluster));
+  size_t newClusterCount = size_t(1) << msb((bSize) / sizeof(Cluster));
 
   if (newClusterCount == clusterCount)
       return;
@@ -46,8 +46,8 @@ void TranspositionTable::resize(size_t mbSize) {
 
   if (!mem)
   {
-      std::cerr << "Failed to allocate " << mbSize
-                << "MB for transposition table." << std::endl;
+      std::cerr << "Failed to allocate " << bSize
+                << " Bytes for transposition table." << std::endl;
       exit(EXIT_FAILURE);
   }
 

@@ -45,8 +45,10 @@ int main(int argc, char* argv[]) {
   Pawns::init();
   Threads.init();
   Tablebases::init(Options["SyzygyPath"]);
-  TT.resize(Options["Hash"] * 99 / 100);
-  TTe.resize(Options["Hash"] / 100);
+  TT.resize((Options["Hash"] * 99  * 1024 / 100) * 1024);
+  sync_cout << "main hash: " << (Options["Hash"] * 99  * 1024 / 100) * 1024 << " bytes" << sync_endl;
+  TTe.resize((Options["Hash"] * 1024 / 100) * 1024);
+  sync_cout << "excl hash: " << (Options["Hash"] * 1024 / 100) * 1024 << " bytes" << sync_endl;
 
   UCI::loop(argc, argv);
 

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
+#include <iostream>
 
 #include "misc.h"
 #include "search.h"
@@ -38,8 +39,11 @@ namespace UCI {
 /// 'On change' actions, triggered by an option's value change
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) {
- TT.resize(o * 99 / 100);
- TTe.resize(o / 100);
+ sync_cout << "r-main hash: " << ((o * 99  * 1024 / 100) * 1024) << " bytes" << "  o is " << o << sync_endl;
+ TT.resize((o * 99  * 1024 / 100) * 1024);
+ sync_cout << "r-excl hash: " << ((o * 1024 / 100) * 1024) << " bytes" << sync_endl;
+ TTe.resize((o * 1024 / 100) * 1024);
+
 }
 
 void on_logger(const Option& o) { start_logger(o); }
