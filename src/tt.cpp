@@ -25,6 +25,7 @@
 #include "tt.h"
 
 TranspositionTable TT; // Our global transposition table
+TranspositionTable TTe;
 
 
 /// TranspositionTable::resize() sets the size of the transposition table,

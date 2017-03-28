@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
   Pawns::init();
   Threads.init();
   Tablebases::init(Options["SyzygyPath"]);
-  TT.resize(Options["Hash"]);
+  TT.resize(Options["Hash"] * 99 / 100);
+  TTe.resize(Options["Hash"] / 100);
 
   UCI::loop(argc, argv);
 

@@ -607,7 +607,7 @@ namespace {
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
     posKey = pos.key() ^ Key(excludedMove);
-    tte = TT.probe(posKey, ttHit);
+    tte = excludedMove ? TTe.probe(posKey, ttHit) : TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
@@ -803,7 +803,7 @@ namespace {
         Depth d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
         search<NT>(pos, ss, alpha, beta, d, cutNode, true);
 
-        tte = TT.probe(posKey, ttHit);
+        tte = excludedMove ? TTe.probe(posKey, ttHit) : TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
@@ -1124,6 +1124,7 @@ moves_loop: // When in check search starts from here
              && !pos.captured_piece()
              && cm_ok)
         update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
