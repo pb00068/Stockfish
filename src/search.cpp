@@ -74,6 +74,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
+  Key excludedMoveTT[1 << 16];
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -178,6 +179,12 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
+
+  PRNG rng(94353012);
+  for (int m = 1; m < (1 << 16); ++m)
+  	 excludedMoveTT[Move(m)] = rng.rand<Key>();
+  excludedMoveTT[MOVE_NONE] = 0;
+
 }
 
 
@@ -186,6 +193,7 @@ void Search::init() {
 void Search::clear() {
 
   TT.clear();
+  TTe.clear();
 
   for (Thread* th : Threads)
   {
@@ -607,7 +615,13 @@ namespace {
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
     posKey = pos.key();
-    tte = excludedMove ? TTe.probe(posKey, ttHit) : TT.probe(posKey, ttHit);
+    if (excludedMove) {
+    	posKey ^= excludedMoveTT[int(excludedMove)];
+    	tte = TTe.probe(posKey, ttHit);
+    }
+    else
+    	tte = TT.probe(posKey, ttHit);
+
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;

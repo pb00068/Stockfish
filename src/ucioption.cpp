@@ -39,10 +39,10 @@ namespace UCI {
 /// 'On change' actions, triggered by an option's value change
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) {
- sync_cout << "r-main hash: " << ((o * 99  * 1024 / 100) * 1024) << " bytes" << "  o is " << o << sync_endl;
- TT.resize((o * 99  * 1024 / 100) * 1024);
- sync_cout << "r-excl hash: " << ((o * 1024 / 100) * 1024) << " bytes" << sync_endl;
- TTe.resize((o * 1024 / 100) * 1024);
+ sync_cout << "r-main hash: " << ((o * 995  * 1024 / 1000) * 1024) << " bytes" << "  o is " << o << sync_endl;
+ TT.resize((o * 995  * 1024 / 1000) * 1024);
+ sync_cout << "r-excl hash: " << ((o * 5 * 1024 / 1000) * 1024) << " bytes" << sync_endl;
+ TTe.resize((o * 5 * 1024 / 1000) * 1024);
 
 }
 
