@@ -46,7 +46,7 @@ struct Stack {
   Value staticEval;
   Value history;
   int moveCount;
-  bool PVisDrawByRule;
+  bool PV_isDrawByRule;
 };
 
 
