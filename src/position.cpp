@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -1079,10 +1080,13 @@ bool Position::see_ge(Move m, Value v) const {
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.
 
-bool Position::is_draw(int ply) const {
+bool Position::is_draw(int ply, bool debug) const {
 
-  if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
+  if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size())) {
+	  if (debug)
+		  sync_cout << " 50 moves role" << sync_endl;
       return true;
+  }
 
   int end = std::min(st->rule50, st->pliesFromNull);
 
@@ -1100,8 +1104,11 @@ bool Position::is_draw(int ply) const {
       // repeats once earlier but after or at the root, or repeats twice
       // strictly before the root.
       if (   stp->key == st->key
-          && ++cnt + (ply - i > 0) == 2)
+          && ++cnt + (ply - i > 0) == 2) {
+    	  if (debug)
+    	  		  sync_cout << " 3fold repetition" << sync_endl;
           return true;
+      }
   }
 
   return false;

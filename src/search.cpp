@@ -553,6 +553,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->PVisDrawByRule = false;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -579,9 +580,14 @@ namespace {
     if (!rootNode)
     {
         // Step 2. Check for aborted search and immediate draw
-        if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
+        if (Signals.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply,false) || ss->ply >= MAX_PLY) {
+        	if (PvNode && pos.is_draw(ss->ply, false)) {
+        	    ss->PVisDrawByRule = true;
+        	    //sync_cout << pos << sync_endl;
+        	}
             return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos)
                                                   : DrawValue[pos.side_to_move()];
+        }
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
         // would be at best mate_in(ss->ply+1), but if alpha is already bigger because
@@ -1049,8 +1055,31 @@ moves_loop: // When in check search starts from here
 
               assert((ss+1)->pv);
 
+              int s = 0;
               for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
+              {
                   rm.pv.push_back(*m);
+                  s++;
+              }
+              s--;
+              if ((ss+s)->PVisDrawByRule)
+              {
+            	  sync_cout << pos << "draw in PV moves:" << UCI::move(move, false) << " , ";
+            	  for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
+				  {
+					   sync_cout << UCI::move(*m, false) << ", ";
+				  }
+            	  sync_cout << sync_endl;
+            	  StateInfo st2;
+            	  pos.do_move(move,st2);
+            	  for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m) {
+            		  StateInfo st1;
+            		  pos.do_move(*m, st1);
+            	  }
+            	  sync_cout << pos << " draw: " << pos.is_draw(ss->ply + s, true) << sync_endl;
+            	  abort();
+
+              }
 
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
@@ -1168,11 +1197,17 @@ moves_loop: // When in check search starts from here
 
     ss->currentMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
+    ss->PVisDrawByRule=false;
 
     // Check for an instant draw or if the maximum ply has been reached
-    if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
+    if (pos.is_draw(ss->ply, false) || ss->ply >= MAX_PLY) {
+    	if (PvNode && pos.is_draw(ss->ply, true)) {
+    		ss->PVisDrawByRule = true;
+    		//sync_cout << pos << sync_endl;
+    	}
         return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos)
                                               : DrawValue[pos.side_to_move()];
+    }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
