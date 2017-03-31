@@ -82,7 +82,7 @@ struct MainThread : public Thread {
 
   bool easyMovePlayed, failedLow, PV_isDrawByRule;
   double bestMoveChanges;
-  int timeExtends;
+  int drawTimeExtends;
   Value previousScore;
 };
 

@@ -196,7 +196,7 @@ void Search::clear() {
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
-  Threads.main()->timeExtends = 0;
+  Threads.main()->drawTimeExtends = 0;
 }
 
 
@@ -485,12 +485,13 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 44;
 
-              if (mainThread->PV_isDrawByRule && Time.elapsed() <= Time.optimum() * unstablePvFactor * improvingFactor / 628)
-            	  mainThread->timeExtends++;
+              if (mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8) {
+				  mainThread->drawTimeExtends++;
+				  mainThread->PV_isDrawByRule=false;
+			  }
 
               if (   rootMoves.size() == 1
-                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
-                	 && !(mainThread->PV_isDrawByRule && mainThread->timeExtends > 5))
+                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628 && !mainThread->PV_isDrawByRule)
                   || (mainThread->easyMovePlayed = doEasyMove, doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
@@ -500,6 +501,7 @@ void Thread::search() {
                   else
                       Signals.stop = true;
               }
+
           }
 
           if (rootMoves[0].pv.size() >= 3)
