@@ -196,6 +196,7 @@ void Search::clear() {
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
+  Threads.main()->timeExtends = 0;
 }
 
 
@@ -338,6 +339,7 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->PV_isDrawByRule = false;
       TT.new_search();
   }
 
@@ -483,8 +485,12 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 44;
 
+              if (mainThread->PV_isDrawByRule && Time.elapsed() <= Time.optimum() * unstablePvFactor * improvingFactor / 628)
+            	  mainThread->timeExtends++;
+
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                	 && !(mainThread->PV_isDrawByRule && mainThread->timeExtends > 5))
                   || (mainThread->easyMovePlayed = doEasyMove, doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
@@ -1058,11 +1064,18 @@ moves_loop: // When in check search starts from here
                   s++;
               }
 
-              // We record how often the best move has been changed in each
-              // iteration. This information is used for time management: When
-              // the best move changes frequently or the PV leads into a draw by rule then we allocate some more time.
-              if ((moveCount > 1 || (ss+s-1)->PV_isDrawByRule) && thisThread == Threads.main())
-                  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              if (thisThread == Threads.main()) {
+            	  MainThread* mt = static_cast<MainThread*>(thisThread);
+                  mt->PV_isDrawByRule = (ss+s-1)->PV_isDrawByRule;
+
+            	  // We record how often the best move has been changed in each
+            	  // iteration. This information is used for time management: When
+            	  // the best move changes frequently or the PV leads into a draw by rule then we allocate some more time.
+            	  if (moveCount > 1 || mt->PV_isDrawByRule)
+                      ++mt->bestMoveChanges;
+              }
+
+
           }
           else
               // All other moves but the PV are set to the lowest value: this is
