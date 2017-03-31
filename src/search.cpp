@@ -487,11 +487,10 @@ void Thread::search() {
 
               if (mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8 && Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628) {
 				  mainThread->drawTimeExtends++;
-				  mainThread->PV_isDrawByRule=false;
 			  }
 
               if (   rootMoves.size() == 1
-                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628 && !mainThread->PV_isDrawByRule)
+                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628 && !(mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8))
                   || (mainThread->easyMovePlayed = doEasyMove, doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
