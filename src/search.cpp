@@ -485,7 +485,7 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 44;
 
-              if (mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8) {
+              if (mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8 && Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628) {
 				  mainThread->drawTimeExtends++;
 				  mainThread->PV_isDrawByRule=false;
 			  }
