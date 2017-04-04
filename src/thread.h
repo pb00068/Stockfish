@@ -80,7 +80,7 @@ public:
 struct MainThread : public Thread {
   virtual void search();
 
-  bool easyMovePlayed, failedLow, PV_isDrawByRule;
+  bool easyMovePlayed, failedLow;
   double bestMoveChanges;
   int drawTimeExtends;
   Value previousScore;

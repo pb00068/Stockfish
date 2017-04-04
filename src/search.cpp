@@ -328,6 +328,9 @@ void Thread::search() {
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for(int i = 4; i > 0; i--)
      (ss-i)->counterMoves = &this->counterMoveHistory[NO_PIECE][0]; // Use as sentinel
+  for(int i = 2; i < MAX_PLY+2; i++) {
+	  (ss+i)->PV_isDrawByRule = false;
+  }
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -339,7 +342,6 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
-      mainThread->PV_isDrawByRule = false;
       TT.new_search();
   }
 
@@ -485,12 +487,8 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 44;
 
-              if (mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8 && Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628) {
-				  mainThread->drawTimeExtends++;
-			  }
-
               if (   rootMoves.size() == 1
-                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628 && !(mainThread->PV_isDrawByRule && mainThread->drawTimeExtends < 8))
+                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
                   || (mainThread->easyMovePlayed = doEasyMove, doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
@@ -1068,15 +1066,13 @@ moves_loop: // When in check search starts from here
 
               if (thisThread == Threads.main()) {
             	  MainThread* mt = static_cast<MainThread*>(thisThread);
-                  mt->PV_isDrawByRule = (ss+s-1)->PV_isDrawByRule;
 
             	  // We record how often the best move has been changed in each
             	  // iteration. This information is used for time management: When
             	  // the best move changes frequently or the PV leads into a draw by rule then we allocate some more time.
-            	  if (moveCount > 1 || mt->PV_isDrawByRule)
+            	  if (moveCount > 1 || (ss+s-1)->PV_isDrawByRule)
                       ++mt->bestMoveChanges;
               }
-
 
           }
           else
