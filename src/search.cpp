@@ -889,7 +889,7 @@ moves_loop: // When in check search starts from here
               extension = ONE_PLY;
       }
       else if (   givesCheck
-               && !moveCountPruning
+               && (depth >= 16 * ONE_PLY || moveCount + 2 < FutilityMoveCounts[improving][depth / ONE_PLY])
                &&  pos.see_ge(move, VALUE_ZERO))
           extension = ONE_PLY;
 
