@@ -1012,13 +1012,12 @@ bool Position::see_ge(Move m, Value v) const {
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));
-  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
   if (type_of(m) == ENPASSANT)
   {
-      occupied = SquareBB[to - pawn_push(~stm)]; // Remove the captured pawn
+      occupied = SquareBB[to - pawn_push(sideToMove)]; // Remove the captured pawn
       balance = PieceValue[MG][PAWN];
   }
   else
@@ -1038,13 +1037,12 @@ bool Position::see_ge(Move m, Value v) const {
   if (balance >= v)
       return true;
 
-  bool relativeStm = true; // True if the opponent is to move
   occupied ^= pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
   Bitboard attackers = attackers_to(to, occupied) & occupied;
-
+  Color stm = ~sideToMove;
   while (true)
   {
       stmAttackers = attackers & pieces(stm);
@@ -1055,21 +1053,19 @@ bool Position::see_ge(Move m, Value v) const {
           stmAttackers &= ~st->blockersForKing[stm];
 
       if (!stmAttackers)
-          return relativeStm;
+          return (stm != sideToMove);
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
       if (nextVictim == KING)
-          return relativeStm == bool(attackers & pieces(~stm));
+          return (stm != sideToMove) == bool(attackers & pieces(~stm));
 
-      balance += relativeStm ?  PieceValue[MG][nextVictim]
-                             : -PieceValue[MG][nextVictim];
+      balance += (stm != sideToMove) ?  PieceValue[MG][nextVictim]
+                                     : -PieceValue[MG][nextVictim];
 
-      relativeStm = !relativeStm;
-
-      if (relativeStm == (balance >= v))
-          return relativeStm;
+      if ((stm != sideToMove) != (balance >= v))
+          return (stm == sideToMove);
 
       stm = ~stm;
   }
