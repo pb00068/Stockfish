@@ -180,8 +180,9 @@ void Search::init() {
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
 
-  for (int d = 0; d < 18; ++d)
-       Bonus[d] = Value(pow(d, 1.8) + 10 * d - 10);
+  for (int d = 0; d < 18; ++d) {
+       Bonus[d] = Value(pow(d, 2.02) + d - 1);
+  }
 }
 
 
