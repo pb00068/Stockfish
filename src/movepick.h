@@ -50,6 +50,13 @@ struct HistoryStats {
     table[c][from][to] += int(v) * 32;
   }
 
+  void bisect() {
+	for (int c = 0; c < COLOR_NB; c++)
+	 for (int s1 = 0; s1 < SQUARE_NB; s1++)
+	  for (int s2 = 0; s2 < SQUARE_NB; s2++)
+	 	  table[c][s1][s2] /= 2;
+  }
+
 private:
   Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
