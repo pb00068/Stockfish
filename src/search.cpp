@@ -180,9 +180,14 @@ void Search::init() {
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
   }
 
-  for (int d = 0; d < 18; ++d) {
-	  Bonus[d] = Value(pow(d, 1.8) + 10 * d - 10);
+  for (int d = 0; d < 18; ++d)
+	  Bonus[d] = Value(d * d + 2 * d - 2);
+
+  Bonus[2] += 3; // 9 instead to 6
+  for (int d = 3; d <= 6; ++d) {
+	  Bonus[d] +=2;
   }
+  Bonus[7] += 1;
 }
 
 
@@ -198,7 +203,6 @@ void Search::clear() {
       th->history.clear();
       th->counterMoveHistory.clear();
       th->resetCalls = true;
-      th->nodesTrig = 0;
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -286,9 +290,6 @@ void MainThread::search() {
       if (th != this)
           th->wait_for_search_finished();
 
-  for (Thread* th : Threads)
-	  th->nodesTrig += th->rootPos.nodes_searched();
-
   // Check if there are threads with a better score than main thread
   Thread* bestThread = this;
   if (   !this->easyMovePlayed
@@ -312,8 +313,6 @@ void MainThread::search() {
   // Send new PV when needed
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
-
-  //sync_cout << "info nodesTrig: " << bestThread->nodesTrig << sync_endl;
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -350,11 +349,6 @@ void Thread::search() {
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
-  }
-
-  if (nodesTrig > 10000000) {
-	  nodesTrig = 0;
-	  history.bisect();
   }
 
   size_t multiPV = Options["MultiPV"];

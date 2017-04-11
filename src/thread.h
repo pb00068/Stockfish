@@ -63,7 +63,6 @@ public:
   size_t idx, PVIdx;
   int maxPly, callsCnt;
   uint64_t tbHits;
-  uint64_t nodesTrig;
 
   Position rootPos;
   Search::RootMoves rootMoves;
