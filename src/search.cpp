@@ -337,7 +337,7 @@ void Thread::search() {
       easyMove = EasyMove.get(rootPos.key());
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
-      mainThread->bestMoveChanges = 0;
+      mainThread->bestMoveChanges = mainThread->skipMoves = 0;
       TT.new_search();
   }
 
@@ -360,6 +360,7 @@ void Thread::search() {
       if (idx)
       {
           int i = (idx - 1) % 20;
+          skipMoves = 2 * skipSize[i];
           if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
               continue;
       }
@@ -906,7 +907,8 @@ moves_loop: // When in check search starts from here
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= 5000))
           {
               // Move count based pruning
-              if (moveCountPruning) {
+              if (moveCountPruning ||
+               (thisThread->skipMoves && depth < 16 * ONE_PLY && moveCount + thisThread->skipMoves >= FutilityMoveCounts[improving][depth / ONE_PLY])) {
                   skipQuiets = true;
                   continue;
               }
