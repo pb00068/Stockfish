@@ -724,8 +724,7 @@ namespace {
     if (   !rootNode
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth) >= beta
-        &&  eval < VALUE_KNOWN_WIN  // Do not return unproven wins
-        &&  pos.non_pawn_material(pos.side_to_move()))
+        &&  eval < VALUE_KNOWN_WIN)  // Do not return unproven wins
         return eval;
 
     // Step 8. Null move search with verification search
@@ -733,7 +732,6 @@ namespace {
     if (   !rootNode
         &&  eval >= beta
         && (ss->staticEval >= beta - 35 * (depth / ONE_PLY - 6) || depth >= 13 * ONE_PLY)
-		&& pos.non_pawn_material(pos.side_to_move())
 		&& (ss->ply >= thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
     {
 
@@ -756,7 +754,7 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (depth < 10 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            if (depth < 8 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
                 return nullValue;
 
             R += ONE_PLY;
@@ -911,7 +909,6 @@ moves_loop: // When in check search starts from here
 
       // Step 13. Pruning at shallow depth
       if (  !rootNode
-          && pos.non_pawn_material(pos.side_to_move())
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           if (   !captureOrPromotion
