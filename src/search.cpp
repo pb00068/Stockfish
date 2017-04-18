@@ -367,6 +367,12 @@ void Thread::search() {
       // Age out PV variability metric
       if (mainThread)
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
+      else
+      {
+    	  searchedRootMoves.resize(0);
+    	  parkedRootMoves.resize(0);
+    	  sync_cout << "reset parked " <<  parkedRootMoves.empty() << sync_endl;
+      }
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -846,16 +852,37 @@ moves_loop: // When in check search starts from here
       // At high depths we preserve rootMoves order as we can't trust history stats
       if (rootNode)
       {
-    	  if (depth < 20 * ONE_PLY) {
+    	  if (thisThread == Threads.main())
+    	  {
+    		  Threads.main()->currentSearched = move;
     		  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
-    	                                    thisThread->rootMoves.end(), move))
+										thisThread->rootMoves.end(), move))
     			  continue;
     	  }
     	  else {
-			  if (moveCount >= pos.this_thread()->rootMoves.size())
-				  break;
+    		  sync_cout << "mp move: " << UCI::move(move, false)  << sync_endl;
+			  Move m = Threads.main()->currentSearched;
+			  if (m && m != move && !std::count(thisThread->searchedRootMoves.begin(), thisThread->searchedRootMoves.end(), m))
+			  {
+				  sync_cout << "parking move " << UCI::move(move, false) << " processing move " <<  UCI::move(m, false) << sync_endl;
+				  thisThread->parkedRootMoves.push_back(move);
+				  move = m;
+			  }
+			  else if (std::count(thisThread->searchedRootMoves.begin(), thisThread->searchedRootMoves.end(), move))
+			  {
+				  if (thisThread->parkedRootMoves.empty()) {
+					  sync_cout << "wie denn? move ist " << UCI::move(move, false) << " gesucht wurden " << sync_endl;
+					  for (unsigned i=0; i < thisThread->searchedRootMoves.size(); i++)
+						  sync_cout << "move:  " << UCI::move(thisThread->searchedRootMoves[i], false) << sync_endl;
+					  abort();
+				  }
+				  move = thisThread->parkedRootMoves.back();
+				  thisThread->parkedRootMoves.pop_back();
+				  sync_cout << "entparkt: " << UCI::move(move, false) << " nun leer " << thisThread->parkedRootMoves.empty() << sync_endl;
 
-			  move = thisThread->rootMoves[thisThread->PVIdx + moveCount].pv[0];
+			  }
+			  thisThread->searchedRootMoves.push_back(move);
+			  sync_cout << "processing  move: " << UCI::move(move, false)  << sync_endl;
     	  }
       }
 

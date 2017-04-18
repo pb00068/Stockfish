@@ -66,6 +66,8 @@ public:
 
   Position rootPos;
   Search::RootMoves rootMoves;
+  std::vector<Move> searchedRootMoves;
+  std::vector<Move> parkedRootMoves;
   Depth rootDepth;
   Depth completedDepth;
   std::atomic_bool resetCalls;
@@ -83,6 +85,7 @@ struct MainThread : public Thread {
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
   Value previousScore;
+  Move currentSearched;
 };
 
 
