@@ -840,15 +840,23 @@ moves_loop: // When in check search starts from here
       if (move == excludedMove)
           continue;
 
-      // At root we ignore the move-order returned by movepicker and process them
-      // as they are in rootMoves vector (obey the "searchmoves" option)
-      // In MultiPV mode we also skip PV moves which have been already searched.
+      // At root obey the "searchmoves" option and skip moves not listed in Root
+      // Move List. As a consequence any illegal move is also skipped. In MultiPV
+      // mode we also skip PV moves which have been already searched.
+      // At high depths we preserve rootMoves order as we can't trust history stats
       if (rootNode)
       {
-    	  if (moveCount >= pos.this_thread()->rootMoves.size())
-    		  break;
+    	  if (depth < 20 * ONE_PLY) {
+    		  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+    	                                    thisThread->rootMoves.end(), move))
+    			  continue;
+    	  }
+    	  else {
+			  if (moveCount >= pos.this_thread()->rootMoves.size())
+				  break;
 
-    	  move = thisThread->rootMoves[thisThread->PVIdx + moveCount].pv[0];
+			  move = thisThread->rootMoves[thisThread->PVIdx + moveCount].pv[0];
+    	  }
       }
 
       ss->moveCount = ++moveCount;
