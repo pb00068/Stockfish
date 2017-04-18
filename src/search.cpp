@@ -862,39 +862,27 @@ moves_loop: // When in check search starts from here
     		  Threads.main()->currentSearched = move;
     	  else if (depth > 5 * ONE_PLY)
           {
-    		  //sync_cout << "mp move nr: " << (moveCount + 1) << " is " << UCI::move(move, false)  << sync_endl;
 			  Move m = Threads.main()->currentSearched;
-			  if (m && m != move && !std::count(thisThread->searchedRootMoves.begin(), thisThread->searchedRootMoves.end(), m))
+			  if (moveCount && m && m != move && !std::count(thisThread->searchedRootMoves.begin(), thisThread->searchedRootMoves.end(), m))
 			  {
-//				  sync_cout << "parking move " << UCI::move(move, false) << " processing move " <<  UCI::move(m, false) << sync_endl;
 				  thisThread->parkedRootMoves.push_back(move);
 				  move = m;
 			  }
 			  else if (std::count(thisThread->searchedRootMoves.begin(), thisThread->searchedRootMoves.end(), move))
 			  {
-//				  if (thisThread->parkedRootMoves.empty()) {
-//					  sync_cout << "wie denn? move ist " << UCI::move(move, false) << " gesucht wurden " << sync_endl;
-//					  for (unsigned i=0; i < thisThread->searchedRootMoves.size(); i++)
-//						  sync_cout << "move:  " << UCI::move(thisThread->searchedRootMoves[i], false) << sync_endl;
-//					  sync_cout << pos << sync_endl;
-//					  abort();
-//				  }
 				  move = thisThread->parkedRootMoves.back();
 				  thisThread->parkedRootMoves.pop_back();
-				  //sync_cout << "entparkt: " << UCI::move(move, false) << " nun leer " << thisThread->parkedRootMoves.empty() << sync_endl;
-
 			  }
 			  thisThread->searchedRootMoves.push_back(move);
-			  //sync_cout << "processing  move: " << UCI::move(move, false)  << sync_endl;
     	  }
       }
 
       ss->moveCount = ++moveCount;
 
-//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-//          sync_cout << "info depth " << depth / ONE_PLY
-//                    << " currmove " << UCI::move(move, pos.is_chess960())
-//                    << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
+      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+          sync_cout << "info depth " << depth / ONE_PLY
+                    << " currmove " << UCI::move(move, pos.is_chess960())
+                    << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
 
       if (PvNode)
           (ss+1)->pv = nullptr;
