@@ -830,6 +830,7 @@ moves_loop: // When in check search starts from here
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
+    Square escape = SQ_NONE;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -976,7 +977,12 @@ moves_loop: // When in check search starts from here
               // hence break make_move().
               else if (   type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
+              {
                   r -= 2 * ONE_PLY;
+                  escape = from_sq(move);
+              }
+              else if (escape != SQ_NONE && from_sq(move) != escape)
+            	  r += ONE_PLY; // There's a escape to do, increase reduction for other moves since they seam weak
 
               ss->history =  cmh[moved_piece][to_sq(move)]
                            + fmh[moved_piece][to_sq(move)]
