@@ -19,9 +19,12 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
 #include "thread.h"
+#include "uci.h"
+
 
 namespace {
 
@@ -207,16 +210,25 @@ Move MovePicker::next_move(bool skipQuiets) {
       }
 
       ++stage;
-      move = ss->killers[0];  // First killer move
+      if (depth >= 8 && (!ss->killers[0] || ss->killers[0] == ttMove) && pos.key() == pos.this_thread()->rootPos.key() && pos.this_thread()->rootMoves.size() > 1)
+    	 move = killer1 = pos.this_thread()->rootMoves[1].pv[0];
+      else
+    	 move = killer1 = ss->killers[0];  // First killer move
+
       if (    move != MOVE_NONE
           &&  move != ttMove
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
           return move;
 
+
   case KILLERS:
       ++stage;
-      move = ss->killers[1]; // Second killer move
+      if (depth >= 8 && (!ss->killers[1] || ss->killers[1] == ttMove) && !killer1 && pos.key() == pos.this_thread()->rootPos.key() && pos.this_thread()->rootMoves.size() > 1)
+		 move = killer2 = pos.this_thread()->rootMoves[1].pv[0];
+	   else
+		 move = killer2 = ss->killers[1]; // Second killer move
+
       if (    move != MOVE_NONE
           &&  move != ttMove
           &&  pos.pseudo_legal(move)
@@ -228,8 +240,8 @@ Move MovePicker::next_move(bool skipQuiets) {
       move = countermove;
       if (    move != MOVE_NONE
           &&  move != ttMove
-          &&  move != ss->killers[0]
-          &&  move != ss->killers[1]
+          &&  move != killer1
+          &&  move != killer2
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
           return move;
@@ -254,8 +266,8 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = *cur++;
 
           if (   move != ttMove
-              && move != ss->killers[0]
-              && move != ss->killers[1]
+              && move != killer1
+              && move != killer2
               && move != countermove)
               return move;
       }
