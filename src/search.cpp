@@ -542,7 +542,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, tMove, move, excludedMove, bestMove;
+    Move ttMove, ttMove2, move, excludedMove, bestMove, skippedMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -557,6 +557,7 @@ namespace {
     ss->history = VALUE_ZERO;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    //ttMove2 = skippedMove = MOVE_NONE; don't understand why this line is necessary to avoid compile warnings, stupid compiler?
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -614,14 +615,10 @@ namespace {
     tte = TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  ttHit ? tte->move() : MOVE_NONE;
-    tMove = MOVE_NONE;
     if (rootNode)
     {
+    	ttMove2 = skippedMove = (ttMove && thisThread->rootMoves[thisThread->PVIdx].pv[0] != ttMove) ? ttMove : MOVE_NONE;
     	ttMove = thisThread->rootMoves[thisThread->PVIdx].pv[0];
-    	if (ttHit && tte->move() && tte->move() != ttMove) // && !pos.capture_or_promotion(tte->move()))
-    		tMove = tte->move();
-    		//use tte->move() as killer-move
-    	//	update_stats(pos, ss, tte->move(), nullptr, 0, stat_bonus(depth));
     }
 
     // At non-PV nodes we check for an early TT cutoff
@@ -851,27 +848,29 @@ moves_loop: // When in check search starts from here
 
       if (rootNode)
       {
-          	  if (!tMove) {
-          		  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
-          	                                    thisThread->rootMoves.end(), move))
-          			  continue;
-          	  }
-          	  else {
-      			  if (moveCount >= pos.this_thread()->rootMoves.size())
-      				  break;
+    	  // At root obey the "searchmoves" option and skip moves not listed in Root
+    	  // Move List. As a consequence any illegal move is also skipped. In MultiPV
+    	  // mode we also skip PV moves which have been already searched.
+    	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+    	       thisThread->rootMoves.end(), move))
+    	     continue;
+          if (moveCount && ttMove2)
+          {
+        	 if (move == ttMove2)
+        	     ttMove2 = MOVE_NONE; // stop shifting
 
-      			  move = thisThread->rootMoves[thisThread->PVIdx + moveCount - (tMove == MOVE_NULL)].pv[0];
-      			  if (moveCount == 1) {
-      				 move = tMove;
-      				 tMove = MOVE_NULL;
-      			  }
-          	  }
+        	 Move m = move;
+        	 if (ttMove != MOVE_NONE) {
+        		 move = skippedMove;
+        	 }
+			 skippedMove = m;
+          }
+
+//          if (thisThread == Threads.main() && skippedMove) {
+//        	  sync_cout << "Processing move " << (moveCount + 1) << " " << UCI::move(move, false) << " on pos " << pos.fen() << " ttMove2 is " <<
+//        			  (ttMove2 ? UCI::move(ttMove2, false) : " ")  << " skipped " << UCI::move(skippedMove, false) << sync_endl;
+//          }
       }
-
-//      // At root obey the "searchmoves" option and skip moves not listed in Root
-//      // Move List. As a consequence any illegal move is also skipped. In MultiPV
-//      // mode we also skip PV moves which have been already searched.
-//      if (rootNode &&
 
       ss->moveCount = ++moveCount;
 
