@@ -542,7 +542,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, tMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -614,12 +614,14 @@ namespace {
     tte = TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  ttHit ? tte->move() : MOVE_NONE;
+    tMove = MOVE_NONE;
     if (rootNode)
     {
     	ttMove = thisThread->rootMoves[thisThread->PVIdx].pv[0];
-    	if (ttHit && tte->move() && tte->move() != ttMove && !pos.capture_or_promotion(tte->move()))
+    	if (ttHit && tte->move() && tte->move() != ttMove) // && !pos.capture_or_promotion(tte->move()))
+    		tMove = tte->move();
     		//use tte->move() as killer-move
-    		update_stats(pos, ss, tte->move(), nullptr, 0, stat_bonus(depth));
+    	//	update_stats(pos, ss, tte->move(), nullptr, 0, stat_bonus(depth));
     }
 
     // At non-PV nodes we check for an early TT cutoff
@@ -847,12 +849,29 @@ moves_loop: // When in check search starts from here
       if (move == excludedMove)
           continue;
 
-      // At root obey the "searchmoves" option and skip moves not listed in Root
-      // Move List. As a consequence any illegal move is also skipped. In MultiPV
-      // mode we also skip PV moves which have been already searched.
-      if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
-                                  thisThread->rootMoves.end(), move))
-          continue;
+      if (rootNode)
+      {
+          	  if (!tMove) {
+          		  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+          	                                    thisThread->rootMoves.end(), move))
+          			  continue;
+          	  }
+          	  else {
+      			  if (moveCount >= pos.this_thread()->rootMoves.size())
+      				  break;
+
+      			  move = thisThread->rootMoves[thisThread->PVIdx + moveCount - (tMove == MOVE_NULL)].pv[0];
+      			  if (moveCount == 1) {
+      				 move = tMove;
+      				 tMove = MOVE_NULL;
+      			  }
+          	  }
+      }
+
+//      // At root obey the "searchmoves" option and skip moves not listed in Root
+//      // Move List. As a consequence any illegal move is also skipped. In MultiPV
+//      // mode we also skip PV moves which have been already searched.
+//      if (rootNode &&
 
       ss->moveCount = ++moveCount;
 
