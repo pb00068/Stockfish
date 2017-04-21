@@ -613,8 +613,14 @@ namespace {
     posKey = pos.key() ^ Key(excludedMove);
     tte = TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
-            : ttHit    ? tte->move() : MOVE_NONE;
+    ttMove =  ttHit ? tte->move() : MOVE_NONE;
+    if (rootNode)
+    {
+    	ttMove = thisThread->rootMoves[thisThread->PVIdx].pv[0];
+    	if (ttHit && tte->move() && tte->move() != ttMove)
+    		//use tte->move() as killer-move
+    		update_stats(pos, ss, tte->move(), nullptr, 0, stat_bonus(depth));
+    }
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
