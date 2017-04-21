@@ -617,7 +617,7 @@ namespace {
     if (rootNode)
     {
     	ttMove = thisThread->rootMoves[thisThread->PVIdx].pv[0];
-    	if (ttHit && tte->move() && tte->move() != ttMove)
+    	if (ttHit && tte->move() && tte->move() != ttMove && !pos.capture_or_promotion(tte->move()))
     		//use tte->move() as killer-move
     		update_stats(pos, ss, tte->move(), nullptr, 0, stat_bonus(depth));
     }
