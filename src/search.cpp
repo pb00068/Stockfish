@@ -393,8 +393,8 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
-        	  bestMove = MOVE_NONE;
-        	  bestScore = -VALUE_INFINITE;
+              bestMove = MOVE_NONE;
+              bestScore = -VALUE_INFINITE;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -851,7 +851,7 @@ moves_loop: // When in check search starts from here
                                   thisThread->rootMoves.end(), move))
              continue;
 
-    	  if (thisThread != Threads.main() && bestValue > -VALUE_INFINITE && depth > 7)
+          if (thisThread != Threads.main() && bestValue > -VALUE_INFINITE && depth > 7)
           {
               bool skipMove = false;
               for (Thread* th : Threads)
@@ -1153,7 +1153,7 @@ moves_loop: // When in check search starts from here
                       PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                       depth, bestMove, ss->staticEval, TT.generation());
 
-    assert(bestScore > -VALUE_INFINITE && bestScore < VALUE_INFINITE);
+    assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
     return bestValue;
   }
@@ -1360,7 +1360,7 @@ moves_loop: // When in check search starts from here
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval, TT.generation());
 
-    assert(bestScore > -VALUE_INFINITE && bestScore < VALUE_INFINITE);
+    assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
     return bestValue;
   }
