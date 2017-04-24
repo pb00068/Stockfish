@@ -393,6 +393,8 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
+        	  bestMove = MOVE_NONE;
+        	  bestScore = -VALUE_INFINITE;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -841,12 +843,29 @@ moves_loop: // When in check search starts from here
       if (move == excludedMove)
           continue;
 
-      // At root obey the "searchmoves" option and skip moves not listed in Root
-      // Move List. As a consequence any illegal move is also skipped. In MultiPV
-      // mode we also skip PV moves which have been already searched.
-      if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+      if (rootNode) {
+          // At root obey the "searchmoves" option and skip moves not listed in Root
+          // Move List. As a consequence any illegal move is also skipped. In MultiPV
+          // mode we also skip PV moves which have been already searched.
+    	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
-          continue;
+             continue;
+
+    	  if (thisThread != Threads.main() && bestValue > -VALUE_INFINITE && depth > 7)
+          {
+              bool skipMove = false;
+              for (Thread* th : Threads)
+                  if (th->completedDepth > thisThread->rootDepth && th->bestMove == move
+                         && th->bestScore <= bestValue && th->bestScore != -VALUE_INFINITE)
+                  {
+                      skipMove = true;
+                      ss->moveCount = ++moveCount;
+                      break;
+                  }
+              if (skipMove)
+                 continue;
+          }
+      }
 
       ss->moveCount = ++moveCount;
 
@@ -1047,6 +1066,8 @@ moves_loop: // When in check search starts from here
           {
               rm.score = value;
               rm.pv.resize(1);
+              thisThread->bestMove = move;
+              thisThread->bestScore = value;
 
               assert((ss+1)->pv);
 
@@ -1132,7 +1153,7 @@ moves_loop: // When in check search starts from here
                       PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                       depth, bestMove, ss->staticEval, TT.generation());
 
-    assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
+    assert(bestScore > -VALUE_INFINITE && bestScore < VALUE_INFINITE);
 
     return bestValue;
   }
@@ -1339,7 +1360,7 @@ moves_loop: // When in check search starts from here
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval, TT.generation());
 
-    assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
+    assert(bestScore > -VALUE_INFINITE && bestScore < VALUE_INFINITE);
 
     return bestValue;
   }

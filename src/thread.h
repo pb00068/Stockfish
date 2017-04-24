@@ -66,6 +66,8 @@ public:
 
   Position rootPos;
   Search::RootMoves rootMoves;
+  Move bestMove;
+  Value bestScore;
   Depth rootDepth;
   Depth completedDepth;
   std::atomic_bool resetCalls;
