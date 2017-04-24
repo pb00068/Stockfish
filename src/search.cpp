@@ -354,6 +354,8 @@ void Thread::search() {
       multiPV = std::max(multiPV, (size_t)4);
 
   multiPV = std::min(multiPV, rootMoves.size());
+  bestMove = MOVE_NONE;
+  bestScore = -VALUE_INFINITE;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
@@ -393,8 +395,6 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
-              bestMove = MOVE_NONE;
-              bestScore = -VALUE_INFINITE;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -851,12 +851,12 @@ moves_loop: // When in check search starts from here
                                   thisThread->rootMoves.end(), move))
              continue;
 
-          if (thisThread != Threads.main() && bestValue > -VALUE_INFINITE && depth > 7)
+          if (moveCount < 10 && bestValue > -VALUE_INFINITE && depth > 5)
           {
               bool skipMove = false;
               for (Thread* th : Threads)
-                  if (th->completedDepth > thisThread->rootDepth && th->bestMove == move
-                         && th->bestScore <= bestValue && th->bestScore != -VALUE_INFINITE)
+                  if (th->completedDepth > thisThread->rootDepth + ONE_PLY && th->bestMove == move
+                         && th->bestScore < bestValue && th->bestScore != -VALUE_INFINITE)
                   {
                       skipMove = true;
                       ss->moveCount = ++moveCount;
