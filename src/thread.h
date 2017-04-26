@@ -82,6 +82,7 @@ struct MainThread : public Thread {
 
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
+  Value avgBestScore; // avg best of all threads
   Value previousScore;
 };
 

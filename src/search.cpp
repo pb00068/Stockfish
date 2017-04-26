@@ -345,6 +345,7 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->avgBestScore = mainThread->previousScore;
       TT.new_search();
   }
 
@@ -387,8 +388,12 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-              alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+              Value basis = (PVIdx || Threads.size() == 1) ? rootMoves[PVIdx].previousScore : Threads.main()->avgBestScore;
+//              if (basis != rootMoves[PVIdx].previousScore) {
+//            	  sync_cout << "info thread " << idx << " basis " << basis << " != previousScore " << rootMoves[PVIdx].previousScore << sync_endl;
+//              }
+              alpha = std::max(basis - delta,-VALUE_INFINITE);
+              beta  = std::min(basis + delta, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -1063,6 +1068,9 @@ moves_loop: // When in check search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+
+              if (moveCount > 1)
+            	  Threads.main()->avgBestScore = (Threads.main()->avgBestScore + value) / 2;
           }
           else
               // All other moves but the PV are set to the lowest value: this is
