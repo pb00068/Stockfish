@@ -1207,7 +1207,8 @@ moves_loop: // When in check search starts from here
     if (InCheck)
     {
         ss->staticEval = VALUE_NONE;
-        bestValue = futilityBase = -VALUE_INFINITE;
+        // Starting from the worst case which is checkmate
+        bestValue = futilityBase = mated_in(ss->ply);
     }
     else
     {
@@ -1334,11 +1335,6 @@ moves_loop: // When in check search starts from here
           }
        }
     }
-
-    // All legal moves have been searched. A special case: If we're in check
-    // and no legal moves were found, it is checkmate.
-    if (InCheck && bestValue == -VALUE_INFINITE)
-        return mated_in(ss->ply); // Plies to mate from the root
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               PvNode && bestValue > oldAlpha ? BOUND_EXACT : BOUND_UPPER,
