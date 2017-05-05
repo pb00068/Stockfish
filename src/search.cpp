@@ -185,7 +185,7 @@ void Search::init() {
   }
 
   for (int d = 0; d <= 17; ++d)
-       Bonus[d] = pow(d, 1.97) + 3 * d - 3;
+       Bonus[d] = pow(d, 1.95) + 4 * d - 4;
 
   Bonus[2] = 7;
 
@@ -193,23 +193,23 @@ void Search::init() {
 //  for (int d = 1; d <= 17; ++d)
 // 	  sync_cout << d << " bonus: " << Bonus[d] << " old: " << d * d + 2 * d - 2 << sync_endl;
 
-//   1 bonus:   1 old:   1
-//   2 bonus:   7 old:   6
-//   3 bonus:  14 old:  13
-//   4 bonus:  24 old:  22
-//   5 bonus:  35 old:  33
-//   6 bonus:  49 old:  46
-//   7 bonus:  64 old:  61
-//   8 bonus:  81 old:  78
-//   9 bonus:  99 old:  97
-//  10 bonus: 120 old: 118
-//  11 bonus: 142 old: 141
-//  12 bonus: 166 old: 166
-//  13 bonus: 192 old: 193
-//  14 bonus: 220 old: 222
-//  15 bonus: 249 old: 253
-//  16 bonus: 280 old: 286
-//  17 bonus: 313 old: 321
+//  1 bonus: 1 old: 1
+//  2 bonus: 7 old: 6
+//  3 bonus: 16 old: 13
+//  4 bonus: 26 old: 22
+//  5 bonus: 39 old: 33
+//  6 bonus: 52 old: 46
+//  7 bonus: 68 old: 61
+//  8 bonus: 85 old: 78
+//  9 bonus: 104 old: 97
+//  10 bonus: 125 old: 118
+//  11 bonus: 147 old: 141
+//  12 bonus: 171 old: 166
+//  13 bonus: 196 old: 193
+//  14 bonus: 223 old: 222
+//  15 bonus: 252 old: 253
+//  16 bonus: 282 old: 286
+//  17 bonus: 314 old: 321
 }
 
 
