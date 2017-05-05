@@ -71,6 +71,7 @@ namespace {
   // razor_margin[0] is unused as long as depth >= ONE_PLY in search
   const int razor_margin[] = { 0, 570, 603, 554 };
   Value futility_margin(Depth d) { return Value(150 * d / ONE_PLY); }
+  int Bonus[18];
 
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
@@ -86,7 +87,7 @@ namespace {
   // History and stats update bonus, based on depth
   int stat_bonus(Depth depth) {
     int d = depth / ONE_PLY ;
-    return d > 17 ? 0 : d * d + 2 * d - 2;
+    return d > 17 ? 0 : Bonus[d]; // d * d + 3 * d - 3;
   }
 
   // Skill structure is used to implement strength limit
@@ -182,6 +183,33 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
   }
+
+  for (int d = 0; d <= 17; ++d)
+       Bonus[d] = pow(d, 1.97) + 3 * d - 3;
+
+  Bonus[2] = 7;
+
+
+//  for (int d = 1; d <= 17; ++d)
+// 	  sync_cout << d << " bonus: " << Bonus[d] << " old: " << d * d + 2 * d - 2 << sync_endl;
+
+//   1 bonus:   1 old:   1
+//   2 bonus:   7 old:   6
+//   3 bonus:  14 old:  13
+//   4 bonus:  24 old:  22
+//   5 bonus:  35 old:  33
+//   6 bonus:  49 old:  46
+//   7 bonus:  64 old:  61
+//   8 bonus:  81 old:  78
+//   9 bonus:  99 old:  97
+//  10 bonus: 120 old: 118
+//  11 bonus: 142 old: 141
+//  12 bonus: 166 old: 166
+//  13 bonus: 192 old: 193
+//  14 bonus: 220 old: 222
+//  15 bonus: 249 old: 253
+//  16 bonus: 280 old: 286
+//  17 bonus: 313 old: 321
 }
 
 
