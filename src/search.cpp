@@ -87,7 +87,7 @@ namespace {
   // History and stats update bonus, based on depth
   int stat_bonus(Depth depth) {
     int d = depth / ONE_PLY ;
-    return d > 17 ? 0 : Bonus[d]; // d * d + 3 * d - 3;
+    return d > 17 ? 0 : Bonus[d];
   }
 
   // Skill structure is used to implement strength limit
@@ -188,10 +188,6 @@ void Search::init() {
        Bonus[d] = pow(d, 1.95) + 4 * d - 4;
 
   Bonus[2] = 7;
-
-
-//  for (int d = 1; d <= 17; ++d)
-// 	  sync_cout << d << " bonus: " << Bonus[d] << " old: " << d * d + 2 * d - 2 << sync_endl;
 
 //  1 bonus: 1 old: 1
 //  2 bonus: 7 old: 6
