@@ -156,6 +156,15 @@ void MovePicker::score<QUIETS>() {
                + fmh[pos.moved_piece(m)][to_sq(m)]
                + fm2[pos.moved_piece(m)][to_sq(m)]
                + history.get(c, m);
+
+  if (depth > 8) {
+	  for (auto& m : *this)
+		  if (pos.gives_check(m)) {
+			  if (m.value < 0)
+				  m.value = 0;
+			  m.value += 2000;
+		  }
+  }
 }
 
 template<>
