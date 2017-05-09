@@ -1407,6 +1407,9 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
+    if (bonus > 80 && pos.gives_check(move))
+    	return;
+
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->history.update(c, move, bonus);
