@@ -1407,8 +1407,11 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    if (bonus > 80 && pos.gives_check(move))
-    	return;
+    if (bonus > 30 && quiets != nullptr && pos.gives_check(move))
+    {
+    	if ((ss+1)->moveCount > 4)
+    		return; // check is volatile: king has plenty freedom to move
+    }
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
