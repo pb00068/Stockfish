@@ -1407,7 +1407,7 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    if (bonus > 80 && pos.gives_check(move))
+    if (bonus > 30 && pos.gives_check(move))
     	return;
 
     Color c = pos.side_to_move();
