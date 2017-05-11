@@ -153,7 +153,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_cm_stats(Stack* ss, Piece pc, Square s, int bonus);
-  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
+  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, Depth d);
   void check_time();
 
 } // namespace
@@ -632,14 +632,7 @@ namespace {
         if (ttMove)
         {
             if (ttValue >= beta)
-            {
-                if (!pos.capture_or_promotion(ttMove))
-                    update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-
-                // Extra penalty for a quiet TT move in previous ply when it gets refuted
-                if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-                    update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
-            }
+                update_stats(pos, ss, ttMove, nullptr, 0, depth);
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
             {
@@ -1115,15 +1108,8 @@ moves_loop: // When in check search starts from here
         bestValue = excludedMove ? alpha
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
     else if (bestMove)
-    {
-        // Quiet best move: update move sorting heuristics
-        if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+        update_stats(pos, ss, bestMove, quietsSearched, quietCount, depth);
 
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
-    }
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
              && !pos.captured_piece()
@@ -1398,30 +1384,40 @@ moves_loop: // When in check search starts from here
   // update_stats() updates move sorting heuristics when a new quiet best move is found
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Move* quiets, int quietsCnt, int bonus) {
+                    Move* quiets, int quietsCnt, Depth depth) {
 
-    if (ss->killers[0] != move)
+	if (!pos.capture_or_promotion(move)) {
+		if (ss->killers[0] != move)
+		{
+			ss->killers[1] = ss->killers[0];
+			ss->killers[0] = move;
+		}
+
+		int bonus = stat_bonus(depth);
+		Color c = pos.side_to_move();
+		Thread* thisThread = pos.this_thread();
+		thisThread->history.update(c, move, bonus);
+		update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
+
+		if (is_ok((ss-1)->currentMove))
+		{
+			Square prevSq = to_sq((ss-1)->currentMove);
+			thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+		}
+
+		// Decrease all the other played quiet moves
+		for (int i = 0; i < quietsCnt; ++i)
+		{
+			thisThread->history.update(c, quiets[i], -bonus);
+			update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+		}
+	}
+
+	// Extra penalty for a quiet TT move in previous ply when it gets refuted
+    if ((ss-1)->moveCount == 1 && !pos.captured_piece())
     {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
-    }
-
-    Color c = pos.side_to_move();
-    Thread* thisThread = pos.this_thread();
-    thisThread->history.update(c, move, bonus);
-    update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
-
-    if (is_ok((ss-1)->currentMove))
-    {
-        Square prevSq = to_sq((ss-1)->currentMove);
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-    }
-
-    // Decrease all the other played quiet moves
-    for (int i = 0; i < quietsCnt; ++i)
-    {
-        thisThread->history.update(c, quiets[i], -bonus);
-        update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+       Square prevSq = to_sq((ss-1)->currentMove);
+       update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
     }
   }
 
