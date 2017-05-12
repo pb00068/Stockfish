@@ -371,17 +371,11 @@ void Thread::search() {
       if (idx)
       {
           int i = (idx - 1) % 20;
-          if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
+          if ((((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
+        	 || (rootDepth < DEPTH_MAX - ONE_PLY && StartedDepthCnt[rootDepth + ONE_PLY] * 2 >= (int)Threads.size()))
           {
               ++StartedDepthCnt[rootDepth];
               continue;
-          }
-
-          while (   rootDepth < DEPTH_MAX - ONE_PLY
-                 && StartedDepthCnt[rootDepth + ONE_PLY] * 2 >= (int)Threads.size())
-          {
-              ++StartedDepthCnt[rootDepth];
-              rootDepth += ONE_PLY;
           }
       }
 
