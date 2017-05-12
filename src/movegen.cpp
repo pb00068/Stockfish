@@ -19,9 +19,13 @@
 */
 
 #include <cassert>
+#include <iostream>
+
 
 #include "movegen.h"
 #include "position.h"
+#include "uci.h"
+#include "misc.h"
 
 namespace {
 
@@ -327,6 +331,25 @@ template ExtMove* generate<CAPTURES>(const Position&, ExtMove*);
 template ExtMove* generate<QUIETS>(const Position&, ExtMove*);
 template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
 
+
+ExtMove* generateRecaptures (const Position& pos, ExtMove* moveList, Square recapt) {
+
+	 Bitboard attackers = pos.attackers_to(recapt, pos.pieces());
+	 Bitboard stmAttackers = attackers & pos.pieces(pos.side_to_move()) & ~pos.pinned_pieces(pos.side_to_move());
+	 while (stmAttackers)
+	 {
+		Square from = pop_lsb(&stmAttackers);
+		if (type_of(pos.piece_on(from)) == KING && (attackers & pos.pieces(~pos.side_to_move())))
+			continue;
+//		dbg_hit_on(pos.legal(make_move(from, recapt)));
+//		if (!pos.legal(make_move(from, recapt))) {
+//		sync_cout << pos << " recapture " << UCI::move( make_move(from, recapt), false) << sync_endl;
+//		abort();
+//		}
+		 *moveList++ = make_move(from, recapt);
+	 }
+	 return moveList;
+}
 
 /// generate<QUIET_CHECKS> generates all pseudo-legal non-captures and knight
 /// underpromotions that give check. Returns a pointer to the end of the move list.
