@@ -367,6 +367,9 @@ void Thread::search() {
       if (idx)
       {
           int i = (idx - 1) % 20;
+          // at higher depths avoid to skip more than 3 plies at once
+          if (idx > 6 && rootDepth > 14 * ONE_PLY)
+        	  i = (idx - 1) % 2;
           if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
               continue;
       }
