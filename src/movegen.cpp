@@ -333,22 +333,32 @@ template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
 
 
 ExtMove* generateRecaptures (const Position& pos, ExtMove* moveList, Square recapt) {
-
-	 Bitboard attackers = pos.attackers_to(recapt, pos.pieces());
-	 Bitboard stmAttackers = attackers & pos.pieces(pos.side_to_move()) & ~pos.pinned_pieces(pos.side_to_move());
-	 while (stmAttackers)
+	 Color stm = pos.side_to_move();
+	 if (pos.ep_square() != SQ_NONE)
 	 {
-		Square from = pop_lsb(&stmAttackers);
-		if (type_of(pos.piece_on(from)) == KING && (attackers & pos.pieces(~pos.side_to_move())))
-			continue;
-//		dbg_hit_on(pos.legal(make_move(from, recapt)));
-//		if (!pos.legal(make_move(from, recapt))) {
-//		sync_cout << pos << " recapture " << UCI::move( make_move(from, recapt), false) << sync_endl;
-//		abort();
-//		}
-		 *moveList++ = make_move(from, recapt);
+        assert(rank_of(pos.ep_square()) == relative_rank(stm, RANK_6));
+
+        Bitboard TRank7BB = (stm == WHITE ? Rank7BB    : Rank2BB);
+        Bitboard b1 = pos.pieces(stm, PAWN) & ~TRank7BB & pos.attacks_from<PAWN>(pos.ep_square(), ~stm);
+        assert(b1);
+        while (b1)
+          *moveList++ = make<ENPASSANT>(pop_lsb(&b1), pos.ep_square());
 	 }
-	 return moveList;
+
+     Bitboard attackers = pos.attackers_to(recapt, pos.pieces());
+     Bitboard stmAttackers = attackers & pos.pieces(stm) & ~pos.pinned_pieces(stm);
+     while (stmAttackers)
+     {
+        Square from = pop_lsb(&stmAttackers);
+        if (type_of(pos.piece_on(from)) == KING && (attackers & pos.pieces(~stm)))
+           continue;
+        if (type_of(pos.piece_on(from)) == PAWN && rank_of(recapt) == relative_rank(stm, RANK_8))
+          *moveList++ = make<PROMOTION>(from, recapt, QUEEN);
+        else
+		  *moveList++ = make_move(from, recapt);
+     }
+
+     return moveList;
 }
 
 /// generate<QUIET_CHECKS> generates all pseudo-legal non-captures and knight
