@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -61,26 +62,28 @@ const Piece Pieces[] = { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
 
 template<int Pt>
 PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
-                       Bitboard& occupied, Bitboard& attackers) {
+                       Bitboard& occupied, Bitboard& attackers, bool phase1) {
 
   Bitboard b = stmAttackers & bb[Pt];
   if (!b)
-      return min_attacker<Pt + 1>(bb, to, stmAttackers, occupied, attackers);
+      return min_attacker<Pt + 1>(bb, to, stmAttackers, occupied, attackers, phase1);
 
   occupied ^= b & ~(b - 1);
 
-  if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
+  if (!phase1) {
+    if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
       attackers |= attacks_bb<BISHOP>(to, occupied) & (bb[BISHOP] | bb[QUEEN]);
 
-  if (Pt == ROOK || Pt == QUEEN)
+    if (Pt == ROOK || Pt == QUEEN)
       attackers |= attacks_bb<ROOK>(to, occupied) & (bb[ROOK] | bb[QUEEN]);
+  }
 
   attackers &= occupied; // After X-ray that may add already processed pieces
   return (PieceType)Pt;
 }
 
 template<>
-PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&, bool) {
   return KING; // No need to update bitboards: it is the last cycle
 }
 
@@ -509,6 +512,19 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_from<KING>(s)           & pieces(KING));
 }
 
+Bitboard Position::attackers_to1(Square s) const {
+
+  return  (attacks_from<PAWN>(s, BLACK)    & pieces(WHITE, PAWN))
+        | (attacks_from<PAWN>(s, WHITE)    & pieces(BLACK, PAWN))
+        | (attacks_from<KNIGHT>(s)         & pieces(KNIGHT));
+}
+
+Bitboard Position::attackers_to2(Square s, Bitboard occupied) const {
+
+  return  (attacks_bb<ROOK  >(s, occupied) & pieces(ROOK,   QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_from<KING>(s)           & pieces(KING));
+}
 
 /// Position::legal() tests whether a pseudo-legal move is legal
 
@@ -1046,8 +1062,8 @@ bool Position::see_ge(Move m, Value v) const {
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
-
+  Bitboard attackers = attackers_to1(to) & occupied;
+  bool stage1 = true;
   while (true)
   {
       stmAttackers = attackers & pieces(stm);
@@ -1055,13 +1071,23 @@ bool Position::see_ge(Move m, Value v) const {
       // Don't allow pinned pieces to attack pieces except the king as long all
       // pinners are on their original square.
       if (!(st->pinnersForKing[stm] & ~occupied))
-          stmAttackers &= ~st->blockersForKing[stm];
+         stmAttackers &= ~st->blockersForKing[stm];
+
+      if (stage1 && !stmAttackers)
+      {
+    	  attackers |=  attackers_to2(to, occupied) & occupied;
+    	  stmAttackers = attackers & pieces(stm);
+          if (!(st->pinnersForKing[stm] & ~occupied))
+    	     stmAttackers &= ~st->blockersForKing[stm];
+    	  stage1= false;
+      }
+
 
       if (!stmAttackers)
           return relativeStm;
 
       // Locate and remove the next least valuable attacker
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, stage1);
 
       if (nextVictim == KING)
           return relativeStm == bool(attackers & pieces(~stm));
@@ -1074,10 +1100,10 @@ bool Position::see_ge(Move m, Value v) const {
       if (relativeStm == (balance >= v))
           return relativeStm;
 
+
       stm = ~stm;
   }
 }
-
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.
