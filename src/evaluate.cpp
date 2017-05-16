@@ -88,7 +88,7 @@ namespace {
 
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
-    // adjacent to the king, and the three (or two, for a king on an edge file)
+    // adjacent to the king, and (only for a king on its first rank) the
     // squares two ranks in front of the king. For instance, if black's king
     // is on g8, kingRing[BLACK] is a bitboard containing the squares f8, h8,
     // f7, g7, h7, f6, g6 and h6.
@@ -174,8 +174,8 @@ namespace {
     S(-20,-12), S( 1, -8), S( 2, 10), S(  9, 10)
   };
 
-  // KingProtector[PieceType-2] * "distance to own king" determines a bonus for each piece.
-  const Score KingProtector[] = {S(-3, -5), S(-4, -3), S(-3, 0), S(-1, 1) };
+  // KingProtector[PieceType-2] contains a bonus according to distance from king
+  const Score KingProtector[] = { S(-3, -5), S(-4, -3), S(-3, 0), S(-1, 1) };
 
   // Assorted bonuses and penalties used by evaluation
   const Score MinorBehindPawn     = S( 16,  0);
@@ -242,7 +242,10 @@ namespace {
     // Init our king safety tables only if we are going to use them
     if (pos.non_pawn_material(Them) >= QueenValueMg)
     {
-        ei.kingRing[Us] = b | shift<Up>(b);
+        ei.kingRing[Us] = b;
+        if (relative_rank(Us, pos.square<KING>(Us)) == RANK_1)
+            ei.kingRing[Us] |= shift<Up>(b);
+
         ei.kingAttackersCount[Them] = popcount(b & ei.pe->pawn_attacks(Them));
         ei.kingAdjacentZoneAttacksCount[Them] = ei.kingAttackersWeight[Them] = 0;
     }
@@ -291,9 +294,10 @@ namespace {
 
         int mob = popcount(b & ei.mobilityArea[Us]);
 
-        mobility[Us] += MobilityBonus[Pt-2][mob];
+        mobility[Us] += MobilityBonus[Pt - 2][mob];
 
-        score += KingProtector[Pt-2] * distance(s, pos.square<KING>(Us));
+        // Bonus for this piece as a king protector
+        score += KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
