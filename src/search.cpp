@@ -153,7 +153,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_cm_stats(Stack* ss, Piece pc, Square s, int bonus);
-  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
+  void update_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, Depth d);
   void check_time();
 
 } // namespace
@@ -634,7 +634,7 @@ namespace {
             if (ttValue >= beta)
             {
                 if (!pos.capture_or_promotion(ttMove))
-                    update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                    update_stats(pos, ss, ttMove, nullptr, 0, depth);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1118,7 +1118,7 @@ moves_loop: // When in check search starts from here
     {
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, depth);
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1398,7 +1398,7 @@ moves_loop: // When in check search starts from here
   // update_stats() updates move sorting heuristics when a new quiet best move is found
 
   void update_stats(const Position& pos, Stack* ss, Move move,
-                    Move* quiets, int quietsCnt, int bonus) {
+                    Move* quiets, int quietsCnt, Depth d) {
 
     if (ss->killers[0] != move)
     {
@@ -1408,14 +1408,26 @@ moves_loop: // When in check search starts from here
 
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->history.update(c, move, bonus);
+    int bonus = stat_bonus(d);
+
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if (is_ok((ss-1)->currentMove))
     {
-        Square prevSq = to_sq((ss-1)->currentMove);
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+       Square prevSq = to_sq((ss-1)->currentMove);
+       thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
+
+    if (d < 18)
+    {
+		if (thisThread->updates[d] == move) {
+			thisThread->updates[d] = MOVE_NONE;
+			return;
+		}
+		thisThread->updates[d] = move;
+    }
+
+    thisThread->history.update(c, move, bonus);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
