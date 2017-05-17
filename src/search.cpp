@@ -1400,12 +1400,6 @@ moves_loop: // When in check search starts from here
   void update_stats(const Position& pos, Stack* ss, Move move,
                     Move* quiets, int quietsCnt, int bonus) {
 
-    if (ss->killers[0] != move)
-    {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
-    }
-
     Color c = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->history.update(c, move, bonus);
@@ -1417,11 +1411,16 @@ moves_loop: // When in check search starts from here
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
     }
 
-    // Decrease all the other played quiet moves
-    for (int i = 0; i < quietsCnt; ++i)
+    if (ss->killers[0] != move)
     {
-        thisThread->history.update(c, quiets[i], -bonus);
-        update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        ss->killers[1] = ss->killers[0];
+        ss->killers[0] = move;
+        // Decrease all the other played quiet moves
+        for (int i = 0; i < quietsCnt; ++i)
+        {
+            thisThread->history.update(c, quiets[i], -bonus);
+            update_cm_stats(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        }
     }
   }
 
