@@ -344,7 +344,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (to_sq(move) == recaptureSquare)
+          if (to_sq(move) == recaptureSquare && pos.see_ge(move))
               return move;
       }
       break;
