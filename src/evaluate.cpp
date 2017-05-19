@@ -22,12 +22,14 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "uci.h"
 
 namespace {
 
@@ -181,6 +183,7 @@ namespace {
   const Score MinorBehindPawn     = S( 16,  0);
   const Score BishopPawns         = S(  8, 12);
   const Score RookOnPawn          = S(  8, 24);
+  const Score RookSupportsKing   = S(  4, 10);
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
@@ -342,6 +345,7 @@ namespace {
             if (relative_rank(Us, s) >= RANK_5)
                 score += RookOnPawn * popcount(pos.pieces(Them, PAWN) & PseudoAttacks[ROOK][s]);
 
+
             // Bonus when on an open or semi-open file
             if (ei.pe->semiopen_file(Us, file_of(s)))
                 score += RookOnFile[!!ei.pe->semiopen_file(Them, file_of(s))];
@@ -349,11 +353,20 @@ namespace {
             // Penalty when trapped by the king, even more if the king cannot castle
             else if (mob <= 3)
             {
-                Square ksq = pos.square<KING>(Us);
-
+            	Square ksq = pos.square<KING>(Us);
                 if (   ((file_of(ksq) < FILE_E) == (file_of(s) < file_of(ksq)))
                     && !ei.pe->semiopen_side(Us, file_of(ksq), file_of(s) < file_of(ksq)))
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
+            }
+
+            // Bonus for rook that either stands on same rank as our king or can move (or is) in front of it
+            if (rank_of(s) == rank_of(pos.square<KING>(Us)))
+            	score += RookSupportsKing;
+            else if (relative_rank(Us, s) > RANK_1 && relative_rank(Us, s) > relative_rank(Us, pos.square<KING>(Us)))
+            {
+            	Square fsq = make_square(file_of(pos.square<KING>(Us)), rank_of(s));
+            	if (fsq == s || (!(pos.pieces() & between_bb(s, fsq)) && (!pos.piece_on(fsq) || color_of(pos.piece_on(fsq)) == Them)))
+					score += RookSupportsKing;
             }
         }
 
