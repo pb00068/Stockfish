@@ -902,6 +902,11 @@ moves_loop: // When in check search starts from here
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
 
+      if (rootNode && thisThread->idx && !moveCount && newDepth && ttMove == Threads.main()->rootMoves[thisThread->PVIdx].pv[0])
+    	  newDepth -= ONE_PLY;
+
+
+
       // Step 13. Pruning at shallow depth
       if (  !rootNode
           && pos.non_pawn_material(pos.side_to_move())
