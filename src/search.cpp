@@ -1082,14 +1082,14 @@ moves_loop: // When in check search starts from here
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
               if (thisThread == Threads.main() && Threads.main()->bestHelperMove && Threads.main()->bestHelperScore > alpha)
-			  {
-            	  if (!captureOrPromotion && move != bestMove && quietCount < 64)
-            	            quietsSearched[quietCount++] = move;
-				  move = Threads.main()->bestHelperMove;
-				  Threads.main()->bestHelperMove = MOVE_NONE;
-				  moveCount--;
-				  goto research_move;
-			  }
+              {
+                  if (!captureOrPromotion && move != bestMove && quietCount < 64)
+                     quietsSearched[quietCount++] = move;
+                  move = Threads.main()->bestHelperMove;
+                  Threads.main()->bestHelperMove = MOVE_NONE;
+                  moveCount--;
+                  goto research_move;
+              }
           }
       }
 
@@ -1116,8 +1116,7 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
-
-    } // End moves loop
+    }
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
