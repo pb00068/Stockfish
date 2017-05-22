@@ -82,6 +82,7 @@ struct MainThread : public Thread {
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
   Move bestHelperMove;
+  Move inserted;
   Value bestHelperScore;
   Value previousScore;
 };

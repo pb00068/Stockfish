@@ -346,7 +346,6 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
-      mainThread->bestHelperMove = MOVE_NONE;
       TT.new_search();
   }
 
@@ -375,7 +374,10 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
+      {
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
+          mainThread->bestHelperMove = mainThread->inserted = MOVE_NONE;
+      }
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -842,8 +844,6 @@ moves_loop: // When in check search starts from here
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move(skipQuiets)) != MOVE_NONE)
     {
-      research_move:
-
       assert(is_ok(move));
 
       if (move == excludedMove)
@@ -858,10 +858,20 @@ moves_loop: // When in check search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+      if (rootNode && thisThread == Threads.main())
+      {
+    	  if (Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
+    	  if (Threads.main()->inserted == move)
+    	  {
+    		  moveCount--;
+    		  continue;
+    	  }
+      }
+
+      research_move:
 
       if (PvNode)
           (ss+1)->pv = nullptr;
@@ -1069,7 +1079,7 @@ moves_loop: // When in check search starts from here
               {
             	  if (thisThread == Threads.main())
             		  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
-            	  else {
+            	  else if (depth > 5 * ONE_PLY) {
             		  Threads.main()->bestHelperMove = move;
             		  Threads.main()->bestHelperScore = value;
             	  }
@@ -1081,13 +1091,11 @@ moves_loop: // When in check search starts from here
               // not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
-              if (thisThread == Threads.main() && Threads.main()->bestHelperMove && Threads.main()->bestHelperScore > alpha)
+              if (thisThread == Threads.main() && Threads.main()->bestHelperMove && !Threads.main()->inserted && Threads.main()->bestHelperScore > alpha)
               {
                   if (!captureOrPromotion && move != bestMove && quietCount < 64)
                      quietsSearched[quietCount++] = move;
-                  move = Threads.main()->bestHelperMove;
-                  Threads.main()->bestHelperMove = MOVE_NONE;
-                  moveCount--;
+                  move = Threads.main()->inserted = Threads.main()->bestHelperMove;
                   goto research_move;
               }
           }
