@@ -346,6 +346,7 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->bestHelperMove = MOVE_NONE;
       TT.new_search();
   }
 
@@ -841,6 +842,8 @@ moves_loop: // When in check search starts from here
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move(skipQuiets)) != MOVE_NONE)
     {
+      research_move:
+
       assert(is_ok(move));
 
       if (move == excludedMove)
@@ -1062,14 +1065,32 @@ moves_loop: // When in check search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
-                  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              if (moveCount > 1)
+              {
+            	  if (thisThread == Threads.main())
+            		  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+            	  else {
+            		  Threads.main()->bestHelperMove = move;
+            		  Threads.main()->bestHelperScore = value;
+            	  }
+              }
           }
           else
+          {
               // All other moves but the PV are set to the lowest value: this is
               // not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              if (thisThread == Threads.main() && Threads.main()->bestHelperMove && Threads.main()->bestHelperScore > alpha)
+			  {
+            	  if (!captureOrPromotion && move != bestMove && quietCount < 64)
+            	            quietsSearched[quietCount++] = move;
+				  move = Threads.main()->bestHelperMove;
+				  Threads.main()->bestHelperMove = MOVE_NONE;
+				  moveCount--;
+				  goto research_move;
+			  }
+          }
       }
 
       if (value > bestValue)
@@ -1095,7 +1116,8 @@ moves_loop: // When in check search starts from here
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
-    }
+
+    } // End moves loop
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
