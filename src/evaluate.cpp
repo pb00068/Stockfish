@@ -359,15 +359,12 @@ namespace {
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
             }
 
-            // Bonus for rook that either stands on same rank as our king or can move (or is) in front of it
-            if (rank_of(s) == rank_of(pos.square<KING>(Us)))
-            	score += RookSupportsKing;
-            else if (relative_rank(Us, s) > RANK_1 && relative_rank(Us, s) > relative_rank(Us, pos.square<KING>(Us)))
-            {
-            	Square fsq = make_square(file_of(pos.square<KING>(Us)), rank_of(s));
-            	if (fsq == s || (!(pos.pieces() & between_bb(s, fsq)) && (!pos.piece_on(fsq) || color_of(pos.piece_on(fsq)) == Them)))
-					score += RookSupportsKing;
-            }
+            // Bonus for rook that can interpose against checks
+            b |= s;
+            b &= PseudoAttacks[ROOK][pos.square<KING>(Us)] & ~ei.attackedBy[Them][PAWN];
+            b &= (ei.attackedBy2[Us] & ~ei.attackedBy2[Them]);
+            score += RookSupportsKing * !!b;
+
         }
 
         if (Pt == QUEEN)
