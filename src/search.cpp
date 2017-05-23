@@ -298,7 +298,7 @@ void MainThread::search() {
   {
       for (Thread* th : Threads)
       {
-          Depth depthDiff = th->completedDepth - bestThread->completedDepth;
+          Depth depthDiff = th->gainedDepth - bestThread->gainedDepth;
           Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
 
           if (scoreDiff > 0 && depthDiff >= 0)
@@ -338,7 +338,7 @@ void Thread::search() {
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
-  completedDepth = DEPTH_ZERO;
+  completedDepth = gainedDepth = DEPTH_ZERO;
 
   if (mainThread)
   {
@@ -458,7 +458,7 @@ void Thread::search() {
       }
 
       if (!Signals.stop)
-          completedDepth = rootDepth;
+          completedDepth = gainedDepth = rootDepth;
 
       if (!mainThread)
           continue;
@@ -1064,6 +1064,8 @@ moves_loop: // When in check search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              if (moveCount > 1 && value < beta)
+            	  thisThread->gainedDepth = thisThread->rootDepth;
           }
           else
               // All other moves but the PV are set to the lowest value: this is
