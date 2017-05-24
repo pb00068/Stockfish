@@ -546,7 +546,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, ttMove2, move, excludedMove, bestMove, skippedMove;
+    Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -561,7 +561,6 @@ namespace {
     ss->history = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
-    //ttMove2 = skippedMove = MOVE_NONE; don't understand why this line is necessary to avoid compile warnings, stupid compiler?
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -622,7 +621,7 @@ namespace {
     ttMove =  ttHit ? tte->move() : MOVE_NONE;
     if (rootNode)
     {
-    	ttMove2 = skippedMove = (ttMove && thisThread->rootMoves[thisThread->PVIdx].pv[0] != ttMove) ? ttMove : MOVE_NONE;
+    	thisThread->deferredMove = (ttMove && thisThread->rootMoves[thisThread->PVIdx].pv[0] != ttMove) ? ttMove : MOVE_NONE;
     	ttMove = thisThread->rootMoves[thisThread->PVIdx].pv[0];
     }
 
@@ -856,25 +855,18 @@ moves_loop: // When in check search starts from here
     	  // At root obey the "searchmoves" option and skip moves not listed in Root
     	  // Move List. As a consequence any illegal move is also skipped. In MultiPV
     	  // mode we also skip PV moves which have been already searched.
-    	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
-    	       thisThread->rootMoves.end(), move))
+    	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx, thisThread->rootMoves.end(), move))
     	     continue;
-          if (moveCount && ttMove2)
+
+          if (moveCount && thisThread->deferredMove)
           {
-        	 if (move == ttMove2)
-        	     ttMove2 = MOVE_NONE; // stop shifting
-
-        	 Move m = move;
-        	 if (ttMove != MOVE_NONE) {
-        		 move = skippedMove;
-        	 }
-			 skippedMove = m;
+        	  // Defer the current move, process the deferred one
+              Move current = move;
+              move = thisThread->deferredMove; // the first time it is preset with the actual ttMove
+              thisThread->deferredMove = current;
+              if (move == thisThread->deferredMove) // stop deferring when both are equal
+                 thisThread->deferredMove = MOVE_NONE;
           }
-
-//          if (thisThread == Threads.main() && skippedMove) {
-//        	  sync_cout << "Processing move " << (moveCount + 1) << " " << UCI::move(move, false) << " on pos " << pos.fen() << " ttMove2 is " <<
-//        			  (ttMove2 ? UCI::move(ttMove2, false) : " ")  << " skipped " << UCI::move(skippedMove, false) << sync_endl;
-//          }
       }
 
       ss->moveCount = ++moveCount;

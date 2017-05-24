@@ -71,6 +71,7 @@ public:
   MoveStats counterMoves;
   HistoryStats history;
   CounterMoveHistoryStats counterMoveHistory;
+  Move deferredMove;
 };
 
 
