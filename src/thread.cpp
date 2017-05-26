@@ -21,12 +21,10 @@
 #include <algorithm> // For std::count
 #include <cassert>
 
-
 #include "movegen.h"
 #include "search.h"
 #include "thread.h"
 #include "uci.h"
-#include "tt.h"
 #include "syzygy/tbprobe.h"
 
 ThreadPool Threads; // Global object
@@ -212,13 +210,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
   Depth resumeDepth = DEPTH_ZERO;
   if (main()->ponder && main()->ponder == main()->lastOpponent)
-  {
 	  resumeDepth = std::max(DEPTH_ZERO, (main()->completedDepth - 2 * ONE_PLY) / 2);
-	  bool ttHit = false;
-	  TTEntry*  tte = TT.probe(pos.key(), ttHit);
-	  if (ttHit)
-
-  }
 
   for (Thread* th : Threads)
   {
