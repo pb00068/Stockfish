@@ -249,6 +249,7 @@ void MainThread::search() {
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
 
+
   if (rootMoves.empty())
   {
       rootMoves.push_back(RootMove(MOVE_NONE));
@@ -311,12 +312,21 @@ void MainThread::search() {
 
   // Send new PV when needed
   if (bestThread != this)
+  {
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+      completedDepth = bestThread->completedDepth; // to use after opponent has played and it's our turn again
+  }
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
   if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
+  {
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+      ponder = bestThread->rootMoves[0].pv[1];
+  }
+  else ponder = MOVE_NONE;
+
+
 
   std::cout << sync_endl;
 }
