@@ -322,9 +322,9 @@ void MainThread::search() {
   if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
   {
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
-      ponder = bestThread->rootMoves[0].pv[1];
+      //ponder = bestThread->rootMoves[0].pv[1];
   }
-  else ponder = MOVE_NONE;
+  //else ponder = MOVE_NONE;
 
 
 
@@ -645,12 +645,15 @@ namespace {
         {
             if (ttValue >= beta)
             {
+            	Depth d = depth;
+            	if (Threads.main()->resumeDepth > d)
+            		d += ONE_PLY;
                 if (!pos.capture_or_promotion(ttMove))
-                    update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                    update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(d));
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-                    update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+                    update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(d + ONE_PLY));
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))

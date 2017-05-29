@@ -208,15 +208,13 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
   StateInfo tmp = setupStates->back();
 
-  Depth resumeDepth = DEPTH_ZERO;
-  if (main()->ponder && main()->ponder == main()->lastOpponent)
-	  resumeDepth = std::max(DEPTH_ZERO, (main()->completedDepth - 2 * ONE_PLY) / 2);
+  main()->resumeDepth = std::max(DEPTH_ZERO, (main()->completedDepth - 2 * ONE_PLY));
 
   for (Thread* th : Threads)
   {
       th->maxPly = 0;
       th->tbHits = 0;
-      th->rootDepth = resumeDepth;
+      th->rootDepth = DEPTH_ZERO;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
   }

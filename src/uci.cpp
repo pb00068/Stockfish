@@ -53,9 +53,9 @@ namespace {
   // or the starting position ("startpos") and then makes the moves given in the
   // following move list ("moves").
 
-  Move position(Position& pos, istringstream& is) {
+  void position(Position& pos, istringstream& is) {
 
-    Move m = MOVE_NONE;
+    Move m;
     string token, fen;
 
     is >> token;
@@ -69,7 +69,7 @@ namespace {
         while (is >> token && token != "moves")
             fen += token + " ";
     else
-        return MOVE_NONE;
+        return;
 
     States = StateListPtr(new std::deque<StateInfo>(1));
     pos.set(fen, Options["UCI_Chess960"], &States->back(), Threads.main());
@@ -80,7 +80,6 @@ namespace {
         States->push_back(StateInfo());
         pos.do_move(m, States->back());
     }
-    return m;
   }
 
 
@@ -201,7 +200,7 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "ucinewgame") newgame();
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
       else if (token == "go")         go(pos, is);
-      else if (token == "position")   Threads.main()->lastOpponent = position(pos, is);
+      else if (token == "position")   position(pos, is);
       else if (token == "setoption")  setoption(is);
 
       // Additional custom non-UCI commands, useful for debugging
