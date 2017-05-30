@@ -58,6 +58,7 @@ const Bitboard Rank5BB = Rank1BB << (8 * 4);
 const Bitboard Rank6BB = Rank1BB << (8 * 5);
 const Bitboard Rank7BB = Rank1BB << (8 * 6);
 const Bitboard Rank8BB = Rank1BB << (8 * 7);
+const Bitboard Center = 103481868288;
 
 extern int SquareDistance[SQUARE_NB][SQUARE_NB];
 
