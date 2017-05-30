@@ -641,8 +641,8 @@ namespace {
             if (ttValue >= beta)
             {
             	Depth d = depth;
-            	if (Threads.main()->resumeDepth > d)
-            		d += ONE_PLY;
+            	if (Threads.main()->resumeDepth > d + ss->ply)
+            		d += 2 * ONE_PLY;
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(d));
 
@@ -653,7 +653,7 @@ namespace {
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
             {
-                int penalty = -stat_bonus(depth);
+                int penalty = -stat_bonus(Threads.main()->resumeDepth > depth + ss->ply ? depth + 2 * ONE_PLY : depth);
                 thisThread->history.update(pos.side_to_move(), ttMove, penalty);
                 update_cm_stats(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }

@@ -208,7 +208,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
   StateInfo tmp = setupStates->back();
 
-  main()->resumeDepth = std::max(DEPTH_ZERO, (main()->completedDepth - 2 * ONE_PLY));
+  main()->resumeDepth = std::max(DEPTH_ZERO, (main()->completedDepth - 3 * ONE_PLY));
 
   for (Thread* th : Threads)
   {
