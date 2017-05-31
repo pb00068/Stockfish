@@ -616,11 +616,21 @@ namespace {
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
-    posKey = pos.key() ^ Key(excludedMove);
-    tte = TT.probe(posKey, ttHit);
-    ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
-            : ttHit    ? tte->move() : MOVE_NONE;
+    posKey = pos.key();
+    if (excludedMove)
+    {
+    	ttHit = false;
+    	ttMove = MOVE_NONE;
+    	ttValue = VALUE_NONE;
+    	tte = nullptr;
+    }
+    else
+    {
+		tte = TT.probe(posKey, ttHit);
+		ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
+		ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
+				: ttHit    ? tte->move() : MOVE_NONE;
+    }
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -676,7 +686,8 @@ namespace {
                        : v >  drawScore ?  VALUE_MATE - MAX_PLY - ss->ply
                                         :  VALUE_DRAW + 2 * v * drawScore;
 
-                tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
+                if (!excludedMove)
+                  tte->save(posKey, value_to_tt(value, ss->ply), BOUND_EXACT,
                           std::min(DEPTH_MAX - ONE_PLY, depth + 6 * ONE_PLY),
                           MOVE_NONE, VALUE_NONE, TT.generation());
 
@@ -709,7 +720,8 @@ namespace {
         (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
-        tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
+        if (!excludedMove)
+          tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
                   ss->staticEval, TT.generation());
     }
 
@@ -808,6 +820,7 @@ namespace {
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= 6 * ONE_PLY
         && !ttMove
+		&& !excludedMove
         && (PvNode || ss->staticEval + 256 >= beta))
     {
         Depth d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
