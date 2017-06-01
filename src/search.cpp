@@ -562,6 +562,7 @@ namespace {
     ss->statScore = 0;
     bestValue = -VALUE_INFINITE;
     ss->ply = (ss-1)->ply + 1;
+    ss->enPrise = SQUARE_NB;
 
     // Check for the available remaining time
     if (thisThread->resetCalls.load(std::memory_order_relaxed))
@@ -847,6 +848,12 @@ moves_loop: // When in check search starts from here
       if (move == excludedMove)
           continue;
 
+
+//      {
+//    	  sync_cout << pos << UCI::move(make_move(ss->enPrise,ss->enPrise),false) << sync_endl;
+//    	  abort();
+//      }
+
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
       // mode we also skip PV moves which have been already searched.
@@ -899,6 +906,9 @@ moves_loop: // When in check search starts from here
                && !moveCountPruning
                &&  pos.see_ge(move))
           extension = ONE_PLY;
+      // extend on capture escape (detected in qsearch)
+      else if (from_sq(move) == ss->enPrise && type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+    	  extension = ONE_PLY;
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
@@ -1279,10 +1289,21 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha)
           {
-              bestValue = std::max(bestValue, futilityBase);
-              continue;
+        	  if (pos.see_ge(move, VALUE_ZERO + 1))
+        	  {
+			     if (!pos.captured_piece())
+			     {
+			    	 (ss-1)->enPrise = to_sq(move);
+			         //sync_cout << "setting " <<  UCI::move(move,false) << pos << UCI::move(make_move(ss->enPrise,ss->enPrise),false) << sync_endl;
+			     }
+        	  }
+		      else
+		      {
+                bestValue = std::max(bestValue, futilityBase);
+                continue;
+		      }
           }
       }
 
