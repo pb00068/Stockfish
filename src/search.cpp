@@ -1187,6 +1187,7 @@ moves_loop: // When in check search starts from here
 
     ss->currentMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
+    ss->enPrise = SQUARE_NB;
     moveCount = 0;
 
     // Check for an instant draw or if the maximum ply has been reached
@@ -1333,8 +1334,13 @@ moves_loop: // When in check search starts from here
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
-      value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
-                         : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
+
+      Depth newdepth = depth - ONE_PLY;
+      if (!givesCheck && depth > DEPTH_QS_NO_CHECKS && from_sq(move) == ss->enPrise && type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+    	  newdepth += ONE_PLY;
+
+      value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, newdepth)
+                         : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, newdepth);
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
