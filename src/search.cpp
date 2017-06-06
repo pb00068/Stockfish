@@ -847,6 +847,8 @@ moves_loop: // When in check search starts from here
       if (move == excludedMove)
           continue;
 
+
+
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
       // mode we also skip PV moves which have been already searched.
@@ -945,6 +947,7 @@ moves_loop: // When in check search starts from here
                   continue;
       }
 
+
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
 
@@ -958,6 +961,8 @@ moves_loop: // When in check search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->history = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
+
+      bool increaseReduct = (!cutNode && !captureOrPromotion && depth >= 3 * ONE_PLY && moveCount > 1 && !pos.see_ge(move));
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -975,15 +980,18 @@ moves_loop: // When in check search starts from here
           else
           {
               // Increase reduction for cut nodes
-              if (cutNode)
+              if (cutNode || increaseReduct)
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (    type_of(move) == NORMAL
+              else if (type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
+
+
+
 
               ss->statScore =  cmh[moved_piece][to_sq(move)]
                              + fmh[moved_piece][to_sq(move)]
