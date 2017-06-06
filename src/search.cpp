@@ -962,7 +962,7 @@ moves_loop: // When in check search starts from here
       ss->currentMove = move;
       ss->history = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
-      bool increaseReduct = (!cutNode && !captureOrPromotion && depth >= 3 * ONE_PLY && moveCount > 1 && !pos.see_ge(move));
+      bool increaseReduct = (!cutNode && !captureOrPromotion && !givesCheck && depth >= 3 * ONE_PLY && depth <= 6 * ONE_PLY && moveCount > 1 && !pos.see_ge(move));
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -979,8 +979,10 @@ moves_loop: // When in check search starts from here
               r -= r ? ONE_PLY : DEPTH_ZERO;
           else
           {
+        	  if (increaseReduct)
+        		  r += ONE_PLY;
               // Increase reduction for cut nodes
-              if (cutNode || increaseReduct)
+        	  if (cutNode)
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
