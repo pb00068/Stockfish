@@ -157,6 +157,10 @@ namespace {
     S(0, 0), S(0, 25), S(40, 62), S(40, 59), S( 0, 34), S(35, 48)
   };
 
+  const Score PinnedPieceMalus[PIECE_TYPE_NB] = {
+	  S(0, 0), S(-2, -1), S(-6, -4), S(-8, -4), S(-10, -5), S(-12, -6)
+    };
+
   // ThreatByKing[on one/on many] contains bonuses for king attacks on
   // pawns or pieces which are not pawn-defended.
   const Score ThreatByKing[] = { S(3, 62), S(9, 138) };
@@ -591,6 +595,13 @@ namespace {
        & ~ei.attackedBy[Us][PAWN];
 
     score += ThreatByPawnPush * popcount(b);
+
+    b = pos.pinned_pieces(Us);
+    while (b)
+    {
+	   Square s = pop_lsb(&b);
+	   score += PinnedPieceMalus[type_of(pos.piece_on(s))];
+    }
 
     if (DoTrace)
         Trace::add(THREAT, Us, score);
