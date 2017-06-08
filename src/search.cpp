@@ -900,8 +900,13 @@ moves_loop: // When in check search starts from here
                &&  pos.see_ge(move))
           extension = ONE_PLY;
 
+
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
+
+      if ( newDepth < ONE_PLY && !givesCheck && pos.capture(move) && type_of(pos.piece_on(to_sq(move))) > PAWN && pos.see_ge(move, PawnValueMg + 1))
+    	  newDepth = ONE_PLY;
+
 
       // Step 13. Pruning at shallow depth
       if (  !rootNode
