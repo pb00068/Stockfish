@@ -360,7 +360,8 @@ void Thread::search() {
 
   multiPV = std::min(multiPV, rootMoves.size());
 
-  int researches = 0; // counts the number of aspiration researches per rootDepth
+  bool failedLow = false;
+  bool failedHigh = false;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
@@ -384,8 +385,8 @@ void Thread::search() {
       for (RootMove& rm : rootMoves)
           rm.previousScore = rm.score;
 
-      int researchesLastRootDepth = researches;
-      researches = 0;
+      bool instable = failedLow && failedHigh;
+      failedLow = failedHigh = false;
 
       // MultiPV loop. We perform a full root search for each PV line
       for (PVIdx = 0; PVIdx < multiPV && !Signals.stop; ++PVIdx)
@@ -393,7 +394,7 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18  + 2 * researchesLastRootDepth);
+              delta = Value(18 + instable * 4 );
 
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
@@ -434,7 +435,7 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-
+                  failedLow = true;
                   if (mainThread)
                   {
                       mainThread->failedLow = true;
@@ -445,13 +446,13 @@ void Thread::search() {
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  failedHigh = true;
               }
               else
                   break;
 
               delta += delta / 4 + 5;
-              if (PVIdx == 0)
-            	  researches++;
+
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
