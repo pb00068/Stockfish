@@ -194,7 +194,6 @@ Move MovePicker::next_move(bool skipQuiets) {
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       ++stage;
-      bishopKnightExchange = MOVE_NONE;
       /* fallthrough */
 
   case GOOD_CAPTURES:
@@ -206,9 +205,9 @@ Move MovePicker::next_move(bool skipQuiets) {
               if (pos.see_ge(move))
                   return move;
 
-              if (type_of(pos.moved_piece(move)) == BISHOP && type_of(pos.piece_on(to_sq(move))) == KNIGHT && !bishopKnightExchange)
-            	  bishopKnightExchange = move;
-              else
+              if (pos.captured_piece() && type_of(pos.moved_piece(move)) == BISHOP && type_of(pos.piece_on(to_sq(move))) == KNIGHT)
+            	  return move;
+
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
           }
@@ -249,12 +248,6 @@ Move MovePicker::next_move(bool skipQuiets) {
       cur = endBadCaptures;
       endMoves = generate<QUIETS>(pos, cur);
       score<QUIETS>();
-      if (bishopKnightExchange)
-      {
-    	  endMoves->move = bishopKnightExchange;
-    	  endMoves->value = 0;
-    	  endMoves++;
-      }
       partial_insertion_sort(cur, endMoves, -4000 * depth / ONE_PLY);
       ++stage;
       /* fallthrough */
