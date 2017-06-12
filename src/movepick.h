@@ -117,6 +117,7 @@ private:
   Move countermove;
   Depth depth;
   Move ttMove;
+  Move bishopKnightExchange;
   Square recaptureSquare;
   Value threshold;
   int stage;
