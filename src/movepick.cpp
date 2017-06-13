@@ -206,7 +206,7 @@ Move MovePicker::next_move(bool skipQuiets) {
                   return move;
 
               // On recapture trade our bishop with knight, but not sacrifice our last when leaving the opponent with the bishop pair
-              if (pos.captured_piece() && type_of(pos.moved_piece(move)) == BISHOP && type_of(pos.piece_on(to_sq(move))) == KNIGHT)
+              if (pos.captured_piece() && to_sq((ss-1)->currentMove) == to_sq(move) && type_of(pos.moved_piece(move)) == BISHOP && type_of(pos.piece_on(to_sq(move))) == KNIGHT)
             	  if (more_than_one(pos.pieces(pos.side_to_move(), BISHOP)) || !more_than_one(pos.pieces(~pos.side_to_move(), BISHOP)))
             		 return move;
 
