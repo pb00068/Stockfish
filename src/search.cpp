@@ -605,6 +605,7 @@ namespace {
             return alpha;
     }
 
+
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
@@ -850,9 +851,19 @@ moves_loop: // When in check search starts from here
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
       // mode we also skip PV moves which have been already searched.
-      if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+      if (rootNode)
+      {
+    	  if(!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
-          continue;
+              continue;
+    	  if (thisThread != Threads.main())
+    	  {
+    	     	if (moveCount > 9 && move % (Threads.size() - 1) == (thisThread->idx-1))
+    	     		depth = std::min(5 * ONE_PLY, thisThread->rootDepth);
+    	     	else
+    	     		depth = thisThread->rootDepth;
+    	  }
+      }
 
       ss->moveCount = ++moveCount;
 
