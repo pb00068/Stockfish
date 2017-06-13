@@ -1065,8 +1065,8 @@ moves_loop: // When in check search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
-              if (value <= alpha && beta - alpha <  Value(40)) // fail-low on first move on a small aspiration window
-                 return value;
+              if (depth > 5 * ONE_PLY && value <= alpha && beta - alpha <  Value(38)) // fail-low on first move on a small aspiration window
+                  return value;
           }
           else
 
