@@ -331,6 +331,7 @@ void Thread::search() {
   Stack stack[MAX_PLY+7], *ss = stack+4; // To allow referencing (ss-4) and (ss+2)
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
+  //int skips = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
@@ -339,6 +340,7 @@ void Thread::search() {
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
+  //analyzedGround = std::max(DEPTH_ZERO, completedDepth - 2 * ONE_PLY);
   completedDepth = DEPTH_ZERO;
 
   if (mainThread)
@@ -370,7 +372,10 @@ void Thread::search() {
       {
           int i = (idx - 1) % 20;
           if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
+          {
+        	  //skips++;
               continue;
+          }
       }
 
       // Age out PV variability metric
@@ -388,7 +393,7 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
+              delta = Threads.size() == 1 ? Value(18) : Value(20);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -451,6 +456,7 @@ void Thread::search() {
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin(), rootMoves.begin() + PVIdx + 1);
 
+          //skips = 0;
           if (!mainThread)
               continue;
 
