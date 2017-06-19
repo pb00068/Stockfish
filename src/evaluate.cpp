@@ -157,6 +157,10 @@ namespace {
     S(0, 0), S(0, 25), S(40, 62), S(40, 59), S(0, 34), S(35, 48)
   };
 
+  const Score PinnerByType[3] = {
+    S(10, 8), S(8, 6), S(6, 6) // Bishop, Rook, Queen
+  };
+
   // ThreatByKing[on one/on many] contains bonuses for king attacks on
   // pawns or pieces which are not pawn-defended.
   const Score ThreatByKing[] = { S(3, 62), S(9, 138) };
@@ -364,6 +368,9 @@ namespace {
             if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
                 score -= WeakQueen;
         }
+
+        if (Pt != KNIGHT && (pos.pinnersForKing(Them) & s))
+        	score += PinnerByType[Pt - 3];
     }
 
     if (DoTrace)
