@@ -985,15 +985,18 @@ moves_loop: // When in check search starts from here
               // Increase reduction for cut nodes
               if (cutNode)
                   r += 2 * ONE_PLY;
-              if (singExtended && !ttCapture)
-            	  r += ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (    type_of(move) == NORMAL
+              else
+              {
+            	  if (singExtended && !ttCapture)
+            	     r += ONE_PLY;
+            	  if (    type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
+              }
 
               ss->statScore =  cmh[moved_piece][to_sq(move)]
                              + fmh[moved_piece][to_sq(move)]
