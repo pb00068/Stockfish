@@ -837,6 +837,7 @@ moves_loop: // When in check search starts from here
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
     singExtended = false;
+    ttCapture = false;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -979,7 +980,7 @@ moves_loop: // When in check search starts from here
               r -= r ? ONE_PLY : DEPTH_ZERO;
           else
           {
-        	  if (ttCapture || singExtended)
+        	  if (ttCapture && singExtended)
         		  r += ONE_PLY;
               // Increase reduction for cut nodes
               if (cutNode)
