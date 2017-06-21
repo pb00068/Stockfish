@@ -551,7 +551,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, singExtended;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, singExtended, ttCapture;
     Piece moved_piece;
     int moveCount, quietCount;
 
@@ -957,6 +957,8 @@ moves_loop: // When in check search starts from here
           ss->moveCount = --moveCount;
           continue;
       }
+      if (moveCount == 1 && captureOrPromotion && ttMove)
+       	  ttCapture = true;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -977,7 +979,7 @@ moves_loop: // When in check search starts from here
               r -= r ? ONE_PLY : DEPTH_ZERO;
           else
           {
-        	  if (singExtended)
+        	  if (ttCapture || singExtended)
         		  r += ONE_PLY;
               // Increase reduction for cut nodes
               if (cutNode)
