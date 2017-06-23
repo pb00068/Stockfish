@@ -989,12 +989,12 @@ moves_loop: // When in check search starts from here
           {
           
               // Increase reduction if ttMove is a capture
-              if (ttCapture)
+              if (ttCapture || singularExtended)
             	  r += ONE_PLY;
           
               // Increase reduction for cut nodes
               if (cutNode)
-                  r += ONE_PLY + (singularExtended && !ttCapture) * 2 * ONE_PLY;
+                  r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
