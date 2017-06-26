@@ -946,8 +946,8 @@ moves_loop: // When in check search starts from here
                   continue;
           }
           else if (    depth < 7 * ONE_PLY
-                   && !extension
-                   && !pos.see_ge(move, ttCapture ? VALUE_ZERO : -PawnValueEg * (depth / ONE_PLY)))
+                   && (!extension || ttCapture)
+				   && !pos.see_ge(move, (ttCapture ? Value(-124) : -PawnValueEg) * (depth / ONE_PLY)))
                   continue;
       }
 
