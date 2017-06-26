@@ -656,6 +656,7 @@ namespace {
                 update_cm_stats(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
+        tte->refreshGen(TT.generation());
         return ttValue;
     }
 
@@ -1218,7 +1219,10 @@ moves_loop: // When in check search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() &  BOUND_LOWER)
                             : (tte->bound() &  BOUND_UPPER)))
+    {
+    	tte->refreshGen(TT.generation());
         return ttValue;
+    }
 
     // Evaluate the position statically
     if (InCheck)

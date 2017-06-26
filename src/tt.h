@@ -64,6 +64,11 @@ struct TTEntry {
     }
   }
 
+  void refreshGen(uint8_t g) {
+	  genBound8 &= 0x3;
+	  genBound8 |= g;
+  }
+
 private:
   friend class TranspositionTable;
 
