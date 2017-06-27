@@ -989,7 +989,7 @@ moves_loop: // When in check search starts from here
           
               // Increase reduction if ttMove is a capture
               if (ttCapture)
-                  r += ONE_PLY;
+                  r += ONE_PLY + (moveCount > 10) * ONE_PLY;
           
               // Increase reduction for cut nodes
               if (cutNode)
