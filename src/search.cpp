@@ -978,7 +978,7 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning))
+          && (!captureOrPromotion || moveCountPruning || (ttCapture && moveCount > 8)))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
@@ -986,7 +986,7 @@ moves_loop: // When in check search starts from here
           {
               r -= r ? ONE_PLY : DEPTH_ZERO;
               if (ttCapture && moveCount > 8)
-            	  r += 2 * ONE_PLY;
+            	  r += ONE_PLY;
           }
           else
           {
