@@ -106,6 +106,8 @@ public:
 
   Move next_move(bool skipQuiets = false);
 
+  void setThreshold(Value t);
+
 private:
   template<GenType> void score();
   ExtMove* begin() { return cur; }

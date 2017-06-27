@@ -962,7 +962,10 @@ moves_loop: // When in check search starts from here
       }
       
       if (move == ttMove && captureOrPromotion)
+      {
           ttCapture = true;
+          mp.setThreshold(pos.see(move));
+      }
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;

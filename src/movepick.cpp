@@ -79,6 +79,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
+  threshold = VALUE_ZERO;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -172,6 +173,10 @@ void MovePicker::score<EVASIONS>() {
           m.value = history[c][from_to(m)];
 }
 
+void MovePicker::setThreshold(Value t)
+{
+	threshold = t;
+}
 
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves
@@ -202,7 +207,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move))
+              if (pos.see_ge(move, threshold))
                   return move;
 
               // Losing capture, move it to the beginning of the array
