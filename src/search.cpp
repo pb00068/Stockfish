@@ -555,6 +555,7 @@ namespace {
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture;
+    Value ttCaptureVal;
     Piece moved_piece;
     int moveCount, quietCount;
 
@@ -843,6 +844,7 @@ moves_loop: // When in check search starts from here
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
     ttCapture = false;
+    ttCaptureVal = VALUE_ZERO;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -962,7 +964,14 @@ moves_loop: // When in check search starts from here
       }
       
       if (move == ttMove && captureOrPromotion)
+      {
           ttCapture = true;
+          Value t = KnightValueMg - BishopValueMg;
+          while (pos.see_ge(move, t)) {
+        	  ttCaptureVal = t;
+        	  t += PawnValueMg;
+          }
+      }
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -975,12 +984,15 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning))
+          && (!captureOrPromotion || moveCountPruning || (ttCapture && !pos.see_ge(move, ttCaptureVal))))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-          if (captureOrPromotion)
+          if (captureOrPromotion) {
               r -= r ? ONE_PLY : DEPTH_ZERO;
+              if (!moveCountPruning)
+            	  r -= r ? ONE_PLY : DEPTH_ZERO;
+          }
           else
           {
           
