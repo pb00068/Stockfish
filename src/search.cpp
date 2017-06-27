@@ -983,13 +983,17 @@ moves_loop: // When in check search starts from here
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
           if (captureOrPromotion)
+          {
               r -= r ? ONE_PLY : DEPTH_ZERO;
+              if (ttCapture && moveCount > 8)
+            	  r += 2 * ONE_PLY;
+          }
           else
           {
           
               // Increase reduction if ttMove is a capture
               if (ttCapture)
-                  r += ONE_PLY + (moveCount > 10) * ONE_PLY;
+                  r += ONE_PLY;
           
               // Increase reduction for cut nodes
               if (cutNode)
