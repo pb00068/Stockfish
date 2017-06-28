@@ -986,12 +986,12 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning || (ttCapture && !pos.see_ge(move, ttCaptureVal))))
+          && (!captureOrPromotion || moveCountPruning || (ttCaptureVal && !pos.see_ge(move, ttCaptureVal))))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           if (captureOrPromotion) {
               if (!moveCountPruning) // capture with inferior see-value than ttMove-capture
-            	  r = ONE_PLY + (ttCaptureVal > PawnValueMg) * ONE_PLY;
+            	  r = 2 * ONE_PLY + (ttCaptureVal / PawnValueMg) * ONE_PLY;
               else
             	  r -= r ? ONE_PLY : DEPTH_ZERO;
           }
