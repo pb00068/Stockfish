@@ -173,6 +173,7 @@ enum Bound {
 };
 
 enum Value : int {
+  VALUE_UNSET    = -1,
   VALUE_ZERO      = 0,
   VALUE_DRAW      = 0,
   VALUE_KNOWN_WIN = 10000,

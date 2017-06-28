@@ -844,7 +844,7 @@ moves_loop: // When in check search starts from here
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
     ttCapture = false;
-    ttCaptureVal = VALUE_ZERO;
+    ttCaptureVal = VALUE_UNSET;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -911,6 +911,18 @@ moves_loop: // When in check search starts from here
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
 
+      if (ttCapture && captureOrPromotion && ttCaptureVal == VALUE_UNSET && !givesCheck && depth >= 3 * ONE_PLY)
+      {
+          //ttCapture failed to produce a cut-off
+          ttCaptureVal = VALUE_ZERO;
+          Value t = PawnValueMg;
+          while (pos.see_ge(ttMove, t)) {
+             ttCaptureVal = t;
+             t += PawnValueMg;
+          }
+      }
+
+
       // Step 13. Pruning at shallow depth
       if (  !rootNode
           && pos.non_pawn_material(pos.side_to_move())
@@ -949,7 +961,7 @@ moves_loop: // When in check search starts from here
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, ttCaptureVal -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 
@@ -965,15 +977,6 @@ moves_loop: // When in check search starts from here
       
       if (move == ttMove && captureOrPromotion)
           ttCapture = true;
-      else if (ttCapture && depth >= 3 * ONE_PLY)
-      {
-    	  //ttCapture failed to produce a cut-off
-    	  Value t = PawnValueMg;
-		  while (pos.see_ge(ttMove, t)) {
-			  ttCaptureVal = t;
-			  t += PawnValueMg;
-		  }
-      }
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -986,14 +989,14 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning || (ttCaptureVal && !pos.see_ge(move, ttCaptureVal))))
+          && (!captureOrPromotion || moveCountPruning || (ttCaptureVal > VALUE_ZERO && !givesCheck && !pos.see_ge(move, ttCaptureVal))))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           if (captureOrPromotion) {
               if (!moveCountPruning) // capture with inferior see-value than ttMove-capture
-            	  r = 2 * ONE_PLY + (ttCaptureVal / PawnValueMg) * ONE_PLY;
+                  r = (ttCaptureVal / PawnValueMg) * ONE_PLY;
               else
-            	  r -= r ? ONE_PLY : DEPTH_ZERO;
+                  r -= r ? ONE_PLY : DEPTH_ZERO;
           }
           else
           {
