@@ -965,12 +965,14 @@ moves_loop: // When in check search starts from here
       
       if (move == ttMove && captureOrPromotion)
       {
+
           ttCapture = true;
-          Value t = KnightValueMg - BishopValueMg;
+          Value t = PawnValueMg;
           while (pos.see_ge(move, t)) {
         	  ttCaptureVal = t;
         	  t += PawnValueMg;
           }
+          //dbg_hit_on(ttCaptureVal > PawnValueMg);
       }
 
       // Update the current move (this must be done after singular extension search)
@@ -987,10 +989,10 @@ moves_loop: // When in check search starts from here
           && (!captureOrPromotion || moveCountPruning || (ttCapture && !pos.see_ge(move, ttCaptureVal))))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
-
           if (captureOrPromotion) {
-              r -= r ? ONE_PLY : DEPTH_ZERO;
-              if (!moveCountPruning)
+              if (!moveCountPruning) // capture with inferior see-val than ttMove-capture
+            	  r = ONE_PLY + (ttCaptureVal > PawnValueMg) * ONE_PLY;
+              else
             	  r -= r ? ONE_PLY : DEPTH_ZERO;
           }
           else
