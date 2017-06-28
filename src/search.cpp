@@ -969,7 +969,7 @@ moves_loop: // When in check search starts from here
       {
     	  //ttCapture failed to produce a cut-off
     	  Value t = PawnValueMg;
-		  while (pos.see_ge(move, t)) {
+		  while (pos.see_ge(ttMove, t)) {
 			  ttCaptureVal = t;
 			  t += PawnValueMg;
 		  }
