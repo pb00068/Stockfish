@@ -894,7 +894,7 @@ moves_loop: // When in check search starts from here
       {
     	  if (ttCaptureVal == VALUE_UNSET)
     	  {
-            //ttCapture failed to produce a cut-off
+            //ttCapture failed to produce a cut-off, so we are on a pvNode or a former cut-node
             ttCaptureVal = VALUE_ZERO;
             Value t = PawnValueMg;
             while (pos.see_ge(ttMove, t)) {
@@ -908,7 +908,6 @@ moves_loop: // When in check search starts from here
 			  while (!pos.see_ge(move, t)) {
 				  weakCapture = t;
 				  t -= PawnValueMg;
-				  //sync_cout << " hohoh: " << weakCapture << sync_endl;
 			  }
     	  }
     	  //dbg_hit_on(weakCapture < ttCaptureVal); // Total 38152 Hits 18073 hit rate (%) 47
@@ -986,9 +985,8 @@ moves_loop: // When in check search starts from here
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           if (captureOrPromotion) {
               if (!moveCountPruning) // capture with inferior see-value than ttMove-capture
-              {
-                  r =  ONE_PLY * ((ttCaptureVal - weakCapture) / PawnValueMg);
-              }
+                  r = ONE_PLY * ((ttCaptureVal - weakCapture) / PawnValueMg);
+                  //TODO limit ? std::min(ONE_PLY * ((ttCaptureVal - weakCapture) / PawnValueMg), 4 * ONE_PLY);
               else
                   r -= r ? ONE_PLY : DEPTH_ZERO;
           }
