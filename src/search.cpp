@@ -550,7 +550,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, ttSingular;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture;
     Piece moved_piece;
     int moveCount, quietCount;
 
@@ -820,7 +820,7 @@ moves_loop: // When in check search starts from here
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
-    ttCapture = ttSingular = false;
+    ttCapture = false;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -878,7 +878,6 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta) {
               extension = ONE_PLY;
-              ttSingular = true;
           }
       }
       else if (    givesCheck
@@ -926,15 +925,11 @@ moves_loop: // When in check search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
           }
-          else {
-        	  //dbg_hit_on(ttSingular && depth < (7 + 5 * ttSingular) * ONE_PLY  && !extension && !pos.see_ge(move, 7 * ttSingular * PawnValueEg - PawnValueEg * (depth / ONE_PLY)));
-        	  // Total 1051806 Hits 2579
-        	  // At depths 8,9,10,11 also prune moves with negative SEE when ttMove was singular extended
-        	  if (    depth < (7 + 5 * ttSingular) * ONE_PLY
+          else if (    depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, 7 * ttSingular * PawnValueEg - PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
-          }
+
       }
 
       // Speculative prefetch as early as possible
@@ -948,16 +943,13 @@ moves_loop: // When in check search starts from here
       }
 
       if (move == ttMove && captureOrPromotion)
-      {
           ttCapture = true;
-
-          //dbg_hit_on(ttCaptSingular);
-      }
-
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->history = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
+
+      bool reduct = depth >= 5 * ONE_PLY && moveCount > 1 && (!captureOrPromotion || moveCountPruning) && !pos.see_ge(move, -BishopValueMg);
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -968,7 +960,7 @@ moves_loop: // When in check search starts from here
           &&  moveCount > 1
           && (!captureOrPromotion || moveCountPruning))
       {
-          Depth r = reduction<PvNode>(improving, depth, moveCount);
+          Depth r = reduction<PvNode>(improving, depth, moveCount) + reduct * ONE_PLY;
 
           if (captureOrPromotion)
               r -= r ? ONE_PLY : DEPTH_ZERO;
@@ -977,6 +969,8 @@ moves_loop: // When in check search starts from here
               // Increase reduction if ttMove is a capture
               if (ttCapture)
                   r += ONE_PLY;
+
+
 
               // Increase reduction for cut nodes
               if (cutNode)
