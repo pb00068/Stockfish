@@ -922,15 +922,17 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
+              else if (   depth > 4 * ONE_PLY && depth < (9 + type_of(moved_piece)) * ONE_PLY
+					  && !extension && type_of(moved_piece) >= BISHOP && type_of(moved_piece) < KING
+					  && !pos.see_ge(move, Value(1) - PieceValue[MG][type_of(moved_piece)] ))
+					  continue;
+
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
-          else if (   depth >= 7 * ONE_PLY && depth < 13 * ONE_PLY
-        		  && !extension && !givesCheck && type_of(moved_piece) >= BISHOP
-                  && !pos.see_ge(move, KnightValueEg * (6 - depth / ONE_PLY)))
-        	      continue;
+
       }
 
       // Speculative prefetch as early as possible
