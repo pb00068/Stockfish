@@ -919,14 +919,16 @@ moves_loop: // When in check search starts from here
                   continue;
 
               // Prune moves with negative SEE
+
+              // a) lmr-based
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
-              else if (   depth > 4 * ONE_PLY && depth < (9 + type_of(moved_piece)) * ONE_PLY
-					  && !extension && type_of(moved_piece) >= BISHOP && type_of(moved_piece) < KING
-					  && !pos.see_ge(move, Value(1) - PieceValue[MG][type_of(moved_piece)] ))
-					  continue;
-
+              // b) those giving the moved piece away
+              else if (   depth >= 3 * ONE_PLY && depth < (6 + type_of(moved_piece)) * ONE_PLY
+                  && !extension && type_of(moved_piece) >= BISHOP && type_of(moved_piece) < KING
+                  && !pos.see_ge(move, Value(1) - PieceValue[MG][type_of(moved_piece)] ))
+                  continue;
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
