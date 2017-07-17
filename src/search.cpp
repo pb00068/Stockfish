@@ -300,8 +300,9 @@ void MainThread::search() {
       {
           Depth depthDiff = th->completedDepth - bestThread->completedDepth;
           Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
+          int selDepthDiff = th->rootMoves[0].selDepth - bestThread->rootMoves[0].selDepth;
 
-          if (scoreDiff > 0 && depthDiff >= -2)
+          if (scoreDiff > 0 && (depthDiff >= 0 || depthDiff + selDepthDiff >= -1))
               bestThread = th;
       }
   }
