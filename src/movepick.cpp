@@ -114,8 +114,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th)
 
   stage = PROBCUT;
 
-  if (threshold <= VALUE_ZERO)
-	  threshold = VALUE_ZERO + 1;
+  if (threshold < VALUE_ZERO)
+	  threshold = VALUE_ZERO;
 
   // In ProbCut we generate captures with SEE higher than or equal to the given threshold
   ttMove =   ttm
