@@ -75,6 +75,9 @@ namespace {
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
+  Value rootAlpha;
+  Depth depthRootAlpha;
+
   // Threshold used for countermoves based pruning
   const int CounterMovePruneThreshold = 0;
 
@@ -243,6 +246,8 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
+  rootAlpha = -VALUE_INFINITE;
+  depthRootAlpha = DEPTH_ZERO;
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
@@ -435,9 +440,11 @@ void Thread::search() {
                       mainThread->failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
+                  //sync_cout << "Failed low" << sync_endl;
               }
               else if (bestValue >= beta)
               {
+            	  //sync_cout << "Failed high with beta " << beta << " new window will be " << (alpha + beta) / 2 << " , " << std::min(bestValue + delta, VALUE_INFINITE) << sync_endl;
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
@@ -836,9 +843,19 @@ moves_loop: // When in check search starts from here
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
       // mode we also skip PV moves which have been already searched.
-      if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
+      if (rootNode)
+      {
+    	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
-          continue;
+            continue;
+    	  if (moveCount && alpha < rootAlpha - 4 && depth <= depthRootAlpha)
+    	  {
+    		  //sync_cout << "Getting new rootAlpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising alpha from " << alpha << " to " << rootAlpha - 1 << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
+    		  alpha = rootAlpha - 4;
+    		  if (alpha >= beta)
+    			  beta = alpha + 4;
+    	  }
+      }
 
       ss->moveCount = ++moveCount;
 
@@ -1059,6 +1076,13 @@ moves_loop: // When in check search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+
+              if (value > alpha && value > rootAlpha && depthRootAlpha <= depth)
+              {
+            	sync_cout << "Raising rootalpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising rootalpha from " << rootAlpha << " to " << value << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
+            	rootAlpha = value;
+            	depthRootAlpha = depth;
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this is
