@@ -848,12 +848,13 @@ moves_loop: // When in check search starts from here
     	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
             continue;
-    	  if (moveCount && alpha < rootAlpha - 4 && depth <= depthRootAlpha)
+    	  if (alpha < rootAlpha - 1 && depth <= depthRootAlpha)
     	  {
     		  //sync_cout << "Getting new rootAlpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising alpha from " << alpha << " to " << rootAlpha - 1 << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
-    		  alpha = rootAlpha - 4;
+    		  Value diff = beta - alpha;
+    		  alpha = rootAlpha + alpha / 2;
     		  if (alpha >= beta)
-    			  beta = alpha + 4;
+    			  beta = std::min(beta + diff, VALUE_INFINITE);
     	  }
       }
 
@@ -1077,9 +1078,10 @@ moves_loop: // When in check search starts from here
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
 
-              if (value > alpha && value > rootAlpha && depthRootAlpha <= depth)
+              if (value > alpha && value < beta - 5 && value > rootAlpha && depthRootAlpha <= depth )
               {
-            	sync_cout << "Raising rootalpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising rootalpha from " << rootAlpha << " to " << value << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
+            	// don't consider high-fails and raises near beta: these results are to unstable at root
+            	//sync_cout << "Raising rootalpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising rootalpha from " << rootAlpha << " to " << value << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
             	rootAlpha = value;
             	depthRootAlpha = depth;
               }
