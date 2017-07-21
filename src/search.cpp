@@ -440,14 +440,9 @@ void Thread::search() {
                       mainThread->failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
-                  //sync_cout << "Failed low" << sync_endl;
               }
               else if (bestValue >= beta)
-              {
-            	  //sync_cout << "Failed high with beta " << beta << " new window will be " << (alpha + beta) / 2 << " , " << std::min(bestValue + delta, VALUE_INFINITE) << sync_endl;
-                  alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-              }
               else
                   break;
 
@@ -848,13 +843,12 @@ moves_loop: // When in check search starts from here
     	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
             continue;
-    	  if (alpha < rootAlpha - 1 && depth <= depthRootAlpha)
+    	  if (depth > 5 * ONE_PLY && alpha < rootAlpha - 1 && depth < depthRootAlpha)
     	  {
-    		  //sync_cout << "Getting new rootAlpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising alpha from " << alpha << " to " << rootAlpha - 1 << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
     		  Value diff = beta - alpha;
-    		  alpha = rootAlpha + alpha / 2;
-    		  if (alpha >= beta)
-    			  beta = std::min(beta + diff, VALUE_INFINITE);
+    		  // push up alpha and maintain beta if aspiration window remains big enough
+    		  alpha = (rootAlpha + alpha) / 2;
+   			  beta = std::min(std::max(beta, alpha + diff / 2), VALUE_INFINITE);
     	  }
       }
 
@@ -1078,7 +1072,7 @@ moves_loop: // When in check search starts from here
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
 
-              if (value > alpha && value < beta - 5 && value > rootAlpha && depthRootAlpha <= depth )
+              if (depth >= 5 * ONE_PLY && value > alpha && value < beta - 5 && value > rootAlpha && depthRootAlpha <= depth )
               {
             	// don't consider high-fails and raises near beta: these results are to unstable at root
             	//sync_cout << "Raising rootalpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising rootalpha from " << rootAlpha << " to " << value << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
