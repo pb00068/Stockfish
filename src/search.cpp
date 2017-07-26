@@ -1054,8 +1054,14 @@ moves_loop: // When in check search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
-                  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              if (moveCount > 1)
+              {
+                  if (thisThread == Threads.main())
+                      ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+                  // for helpers bring best move immediately to the front so that pickbest-logic can pick them even if their search is uncompleted
+                  else
+                	  std::swap(thisThread->rootMoves[thisThread->PVIdx], rm);
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this
