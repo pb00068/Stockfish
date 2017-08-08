@@ -76,6 +76,7 @@ namespace {
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
   Value rootAlpha;
+  Move rootBest;
   Depth depthRootAlpha;
 
   // Threshold used for countermoves based pruning
@@ -248,6 +249,7 @@ void MainThread::search() {
   TT.new_search();
   rootAlpha = -VALUE_INFINITE;
   depthRootAlpha = DEPTH_ZERO;
+  rootBest = MOVE_NONE;
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
@@ -842,12 +844,20 @@ moves_loop: // When in check search starts from here
     	  if (!std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
             continue;
-    	  if (depth > 5 * ONE_PLY && alpha < rootAlpha - 1 && depth < depthRootAlpha)
+    	  if (depth > 5 * ONE_PLY && alpha < rootAlpha - 1 && depth < depthRootAlpha && rootBest != MOVE_NONE)
     	  {
     		  Value diff = beta - alpha;
     		  // push up alpha and maintain beta if aspiration window remains big enough
-    		  alpha = (rootAlpha + alpha) / 2;
+    		  alpha = rootAlpha;
    			  beta = std::min(std::max(beta, alpha + diff / 2), VALUE_INFINITE);
+
+              RootMove& rm = *std::find(thisThread->rootMoves.begin(), thisThread->rootMoves.end(), rootBest);
+              if (rm.pv[0] == rootBest) {
+                  rm.selDepth = depthRootAlpha;
+                  rm.score = bestValue = rootAlpha;
+                  rm.pv.resize(1);
+                  bestMove = rootBest;
+   			  }
     	  }
       }
 
@@ -1074,8 +1084,8 @@ moves_loop: // When in check search starts from here
               if (depth >= 5 * ONE_PLY && value > alpha && value < beta - 5 && value > rootAlpha && depthRootAlpha <= depth )
               {
             	// don't consider high-fails and raises near beta: these results are to unstable at root
-            	//sync_cout << "Raising rootalpha! Thread " << thisThread->idx << " Rootmove nr " << moveCount << "  Raising rootalpha from " << rootAlpha << " to " << value << " rootDepth " << depth << " storeddepth " << depthRootAlpha << sync_endl;
             	rootAlpha = value;
+            	rootBest = move;
             	depthRootAlpha = depth;
               }
           }
