@@ -216,6 +216,7 @@ namespace {
   const Score Hanging             = S( 48, 27);
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
+  const Score KnightCheckingFork  = S( 16, 16);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -486,6 +487,15 @@ namespace {
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
+        if (b) {
+        	b1 = b & ~attackedBy[Us][ALL_PIECES];
+			while (b1)
+			{
+			   Square s = pop_lsb(&b1); //Knight can safely check us, can it fork a major piece?
+			   if (PseudoAttacks[KNIGHT][s] & pos.pieces(Us, ROOK, QUEEN))
+			     score -= KnightCheckingFork;
+			}
+        }
         if (b & safe)
             kingDanger += KnightCheck;
 
@@ -594,6 +604,7 @@ namespace {
         if (b)
             score += ThreatByKing[more_than_one(b)];
     }
+
 
     // Find squares where our pawns can push on the next move
     b  = shift<Up>(pos.pieces(Us, PAWN)) & ~pos.pieces();
