@@ -304,11 +304,8 @@ void MainThread::search() {
           Depth depthDiff = th->completedDepth - bestThread->completedDepth;
           Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
 
-          if (th->getIdx() == 1)
-        	  bestThread = th;
-
           if (th->getIdx() == 3)
-        	  break;
+        	  bestThread = th;
 
           if (scoreDiff > 0 && depthDiff >= 0)
               bestThread = th;
