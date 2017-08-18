@@ -571,8 +571,7 @@ namespace {
     if (defended | weak)
     {
         b = (defended | weak) & (attackedBy[Us][KNIGHT] | attackedBy[Us][BISHOP]);
-        int8_t count = 0;
-        while (b && ++count < 3)
+        while (b)
         {
             Square s = pop_lsb(&b);
             score += ThreatByMinor[type_of(pos.piece_on(s))];
@@ -581,8 +580,7 @@ namespace {
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & attackedBy[Us][ROOK];
-        count = 0;
-        while (b && ++count < 3)
+        while (b)
         {
             Square s = pop_lsb(&b);
             score += ThreatByRook[type_of(pos.piece_on(s))];
