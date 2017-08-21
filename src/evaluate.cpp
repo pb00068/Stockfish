@@ -207,7 +207,7 @@ namespace {
   const Score RookOnPawn          = S(  8, 24);
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
-  const Score OtherCheck          = S( 10, 10);
+  const Score ParalyzedKing       = S(  5,  5);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -416,11 +416,17 @@ namespace {
                                        : ~Bitboard(0) ^ Rank1BB ^ Rank2BB ^ Rank3BB);
 
     const Square ksq = pos.square<KING>(Us);
-    Bitboard kingOnlyDefended, b, b1, b2, safe, other;
-    int kingDanger;
+    Bitboard kingOnlyDefended, b, b1, b2, b3, safe, other;
+    int kingDanger, kingMob;
 
     // King shelter and enemy pawns storm
     Score score = pe->king_safety<Us>(pos, ksq);
+
+
+    // King tropism: firstly, find squares that opponent attacks in our king flank
+    File kf = file_of(ksq);
+    b3 = attackedBy[Them][ALL_PIECES] & KingFlank[kf] & Camp;
+    kingMob = popcount(attackedBy[Us][KING] & ~b3 & ~pos.pieces(Us));
 
     // Main king safety evaluation
     if (kingAttackersCount[Them] > (1 - pos.count<QUEEN>(Them)))
@@ -454,9 +460,11 @@ namespace {
         b1 = pos.attacks_from<  ROOK>(ksq);
         b2 = pos.attacks_from<BISHOP>(ksq);
 
+        int kingStrait = std::max(1, 2 - kingMob);
+
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe)
-            kingDanger += QueenCheck;
+            kingDanger += kingStrait * QueenCheck;
 
         // For minors and rooks, also consider the square safe if attacked twice,
         // and only defended by our queen.
@@ -470,36 +478,42 @@ namespace {
         other = ~(   attackedBy[Us][PAWN]
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
+        int otherChecks = 0;
+
+
         // Enemy rooks safe and other checks
         if (b1 & attackedBy[Them][ROOK] & safe)
-            kingDanger += RookCheck;
+            kingDanger += kingStrait * RookCheck;
 
         else if (b1 & attackedBy[Them][ROOK] & other)
-            score -= OtherCheck;
+        	otherChecks++;
 
         // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
-            kingDanger += BishopCheck;
+            kingDanger += kingStrait * BishopCheck;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
-            score -= OtherCheck;
+        	otherChecks++;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
         if (b & safe)
-            kingDanger += KnightCheck;
+            kingDanger += kingStrait * KnightCheck;
 
         else if (b & other)
-            score -= OtherCheck;
+        	otherChecks++;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
+
+        score -= make_score(9 * (otherChecks + std::max(0, 3 - kingMob)), 9 * (otherChecks + std::max(0, 3 - kingMob)));
     }
 
-    // King tropism: firstly, find squares that opponent attacks in our king flank
-    File kf = file_of(ksq);
-    b = attackedBy[Them][ALL_PIECES] & KingFlank[kf] & Camp;
+
+    b = b3;
+    if (!kingMob)
+       score -= ParalyzedKing;
 
     assert(((Us == WHITE ? b << 4 : b >> 4) & b) == 0);
     assert(popcount(Us == WHITE ? b << 4 : b >> 4) == popcount(b));
