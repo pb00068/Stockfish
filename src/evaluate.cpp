@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -487,17 +488,21 @@ namespace {
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
-        if (b) {
-        	b1 = b & ~attackedBy[Us][ALL_PIECES];
+        if (b & safe)
+        {
+            kingDanger += KnightCheck;
+            b1 = b & safe;
 			while (b1)
 			{
-			   Square s = pop_lsb(&b1); //Knight can safely check us, can it fork a major piece?
+			   Square s = pop_lsb(&b1); //can it fork a major piece?
 			   if (PseudoAttacks[KNIGHT][s] & pos.pieces(Us, ROOK, QUEEN))
-			     score -= KnightCheckingFork;
+			   {
+				 score -= KnightCheckingFork;
+				 break;
+				 //sync_cout << pos << " safe: " << Bitboards::pretty(safe) << sync_endl;
+			   }
 			}
         }
-        if (b & safe)
-            kingDanger += KnightCheck;
 
         else if (b & other)
             score -= OtherCheck;
