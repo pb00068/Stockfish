@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -499,7 +498,6 @@ namespace {
 			   {
 				 score -= KnightCheckingFork;
 				 break;
-				 //sync_cout << pos << " safe: " << Bitboards::pretty(safe) << sync_endl;
 			   }
 			}
         }
