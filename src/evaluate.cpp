@@ -439,6 +439,8 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and weak squares around our king, the absence of queen and
         // the quality of the pawn shelter (current 'score' value).
+        bool kingParalyzed = !(attackedBy[Us][KING] & ~(attackedBy[Them][ALL_PIECES] | pos.pieces(Us)));
+        int others = 0;
 
         kingDanger =        kingAttackersCount[Them] * kingAttackersWeight[Them]
                     + 102 * kingAdjacentZoneAttacksCount[Them]
@@ -447,7 +449,7 @@ namespace {
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
 					// increase danger when king has no escape field
-					+ 200 * !(attackedBy[Us][KING] & ~(attackedBy[Them][ALL_PIECES] | pos.pieces(Us)))
+					+ 150 * kingParalyzed
                     +  40;
 
         // Analyse the safe enemy's checks which are possible on next move
@@ -459,7 +461,7 @@ namespace {
 
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe)
-            kingDanger += QueenCheck;
+            kingDanger += QueenCheck + kingParalyzed * 50;
 
         // For minors and rooks, also consider the square safe if attacked twice,
         // and only defended by our queen.
@@ -475,29 +477,31 @@ namespace {
 
         // Enemy rooks safe and other checks
         if (b1 & attackedBy[Them][ROOK] & safe)
-            kingDanger += RookCheck;
+            kingDanger += RookCheck + kingParalyzed * 50;
 
         else if (b1 & attackedBy[Them][ROOK] & other)
-            score -= OtherCheck;
+            others++;
 
         // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
-            kingDanger += BishopCheck;
+            kingDanger += BishopCheck + kingParalyzed * 50;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
-            score -= OtherCheck;
+            others++;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
         if (b & safe)
-            kingDanger += KnightCheck;
+            kingDanger += KnightCheck + kingParalyzed * 50;
 
         else if (b & other)
-            score -= OtherCheck;
+            others++;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
+
+        score -= make_score(10 * others + 16 * kingParalyzed, 10 * others + 16 * kingParalyzed);
     }
 
     // King tropism: firstly, find squares that opponent attacks in our king flank
