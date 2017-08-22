@@ -307,9 +307,15 @@ void MainThread::search() {
       {
           Depth depthDiff = th->completedDepth - bestThread->completedDepth;
           Value scoreDiff = th->rootMoves[0].score - bestThread->rootMoves[0].score;
+          int selDepthDiff = th->rootMoves[0].selDepth - bestThread->rootMoves[0].selDepth;
 
-          if (scoreDiff > 0 && depthDiff >= 0)
-              bestThread = th;
+          if (scoreDiff > 0)
+          {
+              if (depthDiff >= 0)
+                  bestThread = th;
+              else if ((depthDiff >= -1 || depthDiff + selDepthDiff >= -1) && bestThread->rootMoves[0].pv[0] != th->rootMoves[0].pv[0])
+                  bestThread = th; // switch to a lower depth analysis only if move is different
+          }
       }
   }
 
