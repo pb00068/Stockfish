@@ -439,12 +439,15 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and weak squares around our king, the absence of queen and
         // the quality of the pawn shelter (current 'score' value).
+
         kingDanger =        kingAttackersCount[Them] * kingAttackersWeight[Them]
                     + 102 * kingAdjacentZoneAttacksCount[Them]
                     + 201 * popcount(kingOnlyDefended)
                     + 143 * (popcount(b) + !!pos.pinned_pieces(Us))
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
+					// increase danger when king has no escape field
+					+ 200 * !(attackedBy[Us][KING] & ~(attackedBy[Them][ALL_PIECES] | pos.pieces(Us)))
                     +  40;
 
         // Analyse the safe enemy's checks which are possible on next move
