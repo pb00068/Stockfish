@@ -447,8 +447,8 @@ namespace {
                     + 143 * (popcount(b) + !!pos.pinned_pieces(Us))
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
-					// increase danger when king has no escape field
-					+ 100 * kingParalyzed
+                    // increase danger when king has no escape field
+                    + 100 * kingParalyzed
                     +  40;
 
         // Analyse the safe enemy's checks which are possible on next move
@@ -486,7 +486,7 @@ namespace {
             kingDanger += BishopCheck + kingParalyzed * 16;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
-			score -= OtherCheck;
+            score -= OtherCheck;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
@@ -499,7 +499,6 @@ namespace {
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
-
     }
 
     // King tropism: firstly, find squares that opponent attacks in our king flank
