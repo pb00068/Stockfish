@@ -216,6 +216,7 @@ namespace {
   const Score Hanging             = S( 48, 27);
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
+  const Score DangerousCheck      = S( 20, 20);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -231,8 +232,8 @@ namespace {
   // Penalties for enemy's safe checks
   const int QueenCheck  = 780;
   const int RookCheck   = 880;
-  const int BishopCheck = 435 - 5;
-  const int KnightCheck = 790 - 5;
+  const int BishopCheck = 435;
+  const int KnightCheck = 790;
 
   // Threshold for lazy and space evaluation
   const Value LazyThreshold  = Value(1500);
@@ -441,6 +442,7 @@ namespace {
         // the quality of the pawn shelter (current 'score' value).
         bool kingParalyzed = !(attackedBy[Us][KING] & ~(attackedBy[Them][ALL_PIECES] | pos.pieces(Us)));
 
+
         kingDanger =        kingAttackersCount[Them] * kingAttackersWeight[Them]
                     + 102 * kingAdjacentZoneAttacksCount[Them]
                     + 201 * popcount(kingOnlyDefended)
@@ -448,7 +450,7 @@ namespace {
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
                     // increase danger when king has no escape field
-                    + 220 * kingParalyzed
+                    +  50 * kingParalyzed
                     +  35;
 
         // Analyse the safe enemy's checks which are possible on next move
@@ -483,18 +485,29 @@ namespace {
 
         // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
-            kingDanger += BishopCheck + kingParalyzed * 256;
+        {
+            kingDanger += BishopCheck;
+        }
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
-            score -= kingParalyzed ? OtherCheck + OtherCheck : OtherCheck;
+            score -= OtherCheck;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
         if (b & safe)
-            kingDanger += KnightCheck + kingParalyzed * 256;
+        {
+            kingDanger += KnightCheck;
+            if (kingParalyzed && !(attackedBy[Us][KING] & ~((attackedBy[Them][ALL_PIECES] & ~attackedBy[Them][KNIGHT]) | pos.pieces(Us))))
+              // If the knight can safely check, then it's very dangerous (so act on score directly):
+              // it's either:
+              // - checkmate, just avoidable by a possible queen sacrifice
+              // - forcing the king into a square which is subsequently subject to a discovered check by the knight (smothered mate-theme)
+              // - the check-move itself is opening some last escape square for the king
+               score -= DangerousCheck;
+        }
 
         else if (b & other)
-            score -= kingParalyzed ? OtherCheck + OtherCheck : OtherCheck;
+            score -= OtherCheck;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
