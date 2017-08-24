@@ -217,7 +217,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
-  const Score KnightCheckThreat   = S(  8,  4);
+  const Score KnightCheckThreat   = S(  8,  3);
 
   #undef S
   #undef V
@@ -491,7 +491,7 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
 
-        if (attackedBy[Them][KNIGHT] & Camp & safe) // detect knights threatening check in 2 moves
+        else if (attackedBy[Them][KNIGHT] & Camp & safe) // detect knights threatening check in 2 moves
         {
             b = pos.attacks_from<KNIGHT>(ksq) & safe;
             while (b)
