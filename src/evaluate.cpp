@@ -489,6 +489,14 @@ namespace {
 
         else if (b & other)
             score -= OtherCheck;
+        else if (attackedBy[Them][KNIGHT] & Camp & safe) // detect knights threatening check in 2 moves
+        {
+            b = pos.attacks_from<KNIGHT>(ksq) & safe;
+            while (b)
+                if (attackedBy[Them][KNIGHT] & pos.attacks_from<KNIGHT>(pop_lsb(&b)) & safe)
+                   score -= OtherCheck;
+        }
+
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
