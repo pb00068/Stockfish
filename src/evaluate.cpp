@@ -208,6 +208,7 @@ namespace {
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
+  const Score DirectCheck         = S(  5,  5);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -225,10 +226,10 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 780;
-  const int RookCheck   = 880;
-  const int BishopCheck = 435;
-  const int KnightCheck = 790;
+  const int QueenCheck  = 780 - 50;
+  const int RookCheck   = 880 - 55;
+  const int BishopCheck = 435 - 30;
+  const int KnightCheck = 790 - 40;
 
   // Threshold for lazy and space evaluation
   const Value LazyThreshold  = Value(1500);
@@ -454,7 +455,10 @@ namespace {
 
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe)
+        {
             kingDanger += QueenCheck;
+            score -= DirectCheck;
+        }
 
         // For minors and rooks, also consider the square safe if attacked twice,
         // and only defended by our queen.
@@ -469,23 +473,29 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        if (b1 & attackedBy[Them][ROOK] & safe) {
             kingDanger += RookCheck;
+            score -= DirectCheck;
+        }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
 
         // Enemy bishops safe and other checks
-        if (b2 & attackedBy[Them][BISHOP] & safe)
+        if (b2 & attackedBy[Them][BISHOP] & safe) {
             kingDanger += BishopCheck;
+            score -= DirectCheck;
+        }
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
             score -= OtherCheck;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
-        if (b & safe)
+        if (b & safe) {
             kingDanger += KnightCheck;
+            score -= DirectCheck;
+        }
 
         else if (b & other)
             score -= OtherCheck;
