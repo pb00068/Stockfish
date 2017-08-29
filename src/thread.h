@@ -85,6 +85,7 @@ struct MainThread : public Thread {
   double bestMoveChanges;
   Value previousScore;
   int callsCnt;
+  Move pondermove, lastparsedmove;
 };
 
 
