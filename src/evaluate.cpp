@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -497,17 +498,20 @@ namespace {
 
     // King tropism: firstly, find squares that opponent attacks in our king flank
     File kf = file_of(ksq);
-    b = attackedBy[Them][ALL_PIECES] & KingFlank[kf] & Camp;
+    //dbg_hit_on(me->game_phase() > 30); bench hit rate (%) 63
+    if (me->game_phase() > 30) {
+		b = attackedBy[Them][ALL_PIECES] & KingFlank[kf] & Camp  & ~(attackedBy[Us][PAWN] & attackedBy2[Us]);
 
-    assert(((Us == WHITE ? b << 4 : b >> 4) & b) == 0);
-    assert(popcount(Us == WHITE ? b << 4 : b >> 4) == popcount(b));
+		assert(((Us == WHITE ? b << 4 : b >> 4) & b) == 0);
+		assert(popcount(Us == WHITE ? b << 4 : b >> 4) == popcount(b));
 
-    // Secondly, add the squares which are attacked twice in that flank and
-    // which are not defended by our pawns.
-    b =  (Us == WHITE ? b << 4 : b >> 4)
-       | (b & attackedBy2[Them] & ~attackedBy[Us][PAWN]);
+		// Secondly, add the squares which are attacked twice in that flank and
+		// which are not defended by our pawns.
+		b =  (Us == WHITE ? b << 4 : b >> 4)
+		   | (b & attackedBy2[Them] & ~attackedBy[Us][PAWN]);
 
-    score -= CloseEnemies * popcount(b);
+		score -= CloseEnemies * popcount(b);
+    }
 
     // Penalty when our king is on a pawnless flank
     if (!(pos.pieces(PAWN) & KingFlank[kf]))
