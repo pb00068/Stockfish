@@ -498,8 +498,7 @@ namespace {
 
     // King tropism: firstly, find squares that opponent attacks in our king flank
     File kf = file_of(ksq);
-    //dbg_hit_on(me->game_phase() > 30); bench hit rate (%) 63
-    if (me->game_phase() > 30) {
+    if (me->game_phase() > 0) {
 		b = attackedBy[Them][ALL_PIECES] & KingFlank[kf] & Camp  & ~(attackedBy[Us][PAWN] & attackedBy2[Us]);
 
 		assert(((Us == WHITE ? b << 4 : b >> 4) & b) == 0);
