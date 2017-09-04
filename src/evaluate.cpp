@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -432,6 +433,12 @@ namespace {
                     &  kingRing[Us]
                     & ~pos.pieces(Them);
 
+//        if (!!(pos.pinners_onKing(Us) & ~attackedBy[Us][ALL_PIECES]))
+//        {
+//        	sync_cout << pos << Bitboards::pretty(pos.pinners_onKing(Us)) << Bitboards::pretty(pos.pinned_pieces(Us)) << sync_endl;
+//        	abort();
+//        }
+
         // Initialize the 'kingDanger' variable, which will be transformed
         // later into a king danger score. The initial value is based on the
         // number and types of the enemy's attacking pieces, the number of
@@ -440,7 +447,7 @@ namespace {
         kingDanger =        kingAttackersCount[Them] * kingAttackersWeight[Them]
                     + 102 * kingAdjacentZoneAttacksCount[Them]
                     + 191 * popcount(kingOnlyDefended | undefended)
-                    + 143 * (pos.pinned_pieces(Us) && (pos.pinners_onKing(Us) & ~attackedBy[Us][ALL_PIECES]))
+                    +  70 * !!pos.pinned_pieces(Us)
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
                     +  40;
