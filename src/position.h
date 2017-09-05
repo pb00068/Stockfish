@@ -43,6 +43,7 @@ struct StateInfo {
   int    castlingRights;
   int    rule50;
   int    pliesFromNull;
+  int    pinWeight[COLOR_NB];
   Score  psq;
   Square epSquare;
 
@@ -108,6 +109,7 @@ public:
   Bitboard discovered_check_candidates() const;
   Bitboard pinned_pieces(Color c) const;
   Bitboard check_squares(PieceType pt) const;
+  int pinned_weight(Color c) const;
 
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
@@ -115,7 +117,7 @@ public:
   Bitboard attacks_from(PieceType pt, Square s) const;
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, int& pinWeigth) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -302,6 +304,10 @@ inline Bitboard Position::discovered_check_candidates() const {
 
 inline Bitboard Position::pinned_pieces(Color c) const {
   return st->blockersForKing[c] & pieces(c);
+}
+
+inline int Position::pinned_weight(Color c) const {
+	return st->pinWeight[c];
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {

@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -381,7 +382,8 @@ namespace {
         {
             // Penalty if any relative pin or discovered attack against the queen
             Bitboard pinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
+            int i;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners, i))
                 score -= WeakQueen;
         }
     }
@@ -440,11 +442,16 @@ namespace {
         kingDanger =        kingAttackersCount[Them] * kingAttackersWeight[Them]
                     + 102 * kingAdjacentZoneAttacksCount[Them]
                     + 191 * popcount(kingOnlyDefended | undefended)
-                    + 143 * !!pos.pinned_pieces(Us)
+                    //+ 100 * pos.pinned_weight(Us)
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
                     +  40;
 
+        if (kingDanger > 800)
+        	kingDanger += 100 * pos.pinned_weight(Us);
+
+        //if (pos.pinned_weight(Us) == 1)
+        	//sync_cout << pos << " color: " << Us << " weight: " << pos.pinned_weight(Us) << sync_endl;
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
         safe &= ~attackedBy[Us][ALL_PIECES] | (kingOnlyDefended & attackedBy2[Them]);
