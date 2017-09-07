@@ -408,8 +408,10 @@ namespace {
 
     const Color Them    = (Us == WHITE ? BLACK : WHITE);
     const Square Up     = (Us == WHITE ? NORTH : SOUTH);
+
     const Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                        : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
+    const Bitboard BackRank = Us == WHITE ? Rank1BB : Rank8BB;
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard kingOnlyDefended, undefended, b, b1, b2, safe, other;
@@ -444,6 +446,8 @@ namespace {
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
                     +  40;
+
+       
 
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
@@ -489,6 +493,17 @@ namespace {
 
         else if (b & other)
             score -= OtherCheck;
+        
+        if ((BackRank & ksq) &&
+			!more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
+            !(attackedBy[Us][KING] & ~BackRank & ~((pos.pieces(Us, PAWN)) | attackedBy[Them][PAWN])) && // king's front squares occupied by own pawns or attacked by enemy pawns
+            (more_than_one(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK])) ||
+                          (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]) & attackedBy2[Them]) ))
+		{
+            //sync_cout << pos << Bitboards::pretty((BackRank & (attackedBy[Them][ROOK] | attackedBy[Them][QUEEN]))) << sync_endl;
+            kingDanger += 300;
+            score -= OtherCheck;
+		}
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
