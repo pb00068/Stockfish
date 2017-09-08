@@ -23,7 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-
+#include <iostream>
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
@@ -408,7 +408,6 @@ namespace {
 
     const Color Them    = (Us == WHITE ? BLACK : WHITE);
     const Square Up     = (Us == WHITE ? NORTH : SOUTH);
-
     const Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                        : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
     const Bitboard BackRank = Us == WHITE ? Rank1BB : Rank8BB;
@@ -446,8 +445,6 @@ namespace {
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
                     +  40;
-
-       
 
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
@@ -494,15 +491,25 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        if ((BackRank & ksq) &&
-			!more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
-            !(attackedBy[Us][KING] & ~BackRank & ~((pos.pieces(Us, PAWN)) | attackedBy[Them][PAWN])) && // king's front squares occupied by own pawns or attacked by enemy pawns
-            (more_than_one(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK])) ||
-                          (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]) & attackedBy2[Them]) ))
+        // Weak back rank detection
+        if ((BackRank & ksq) && // King on back rank
+			!more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) && // with no more than one friendly piece there
+            !(BackRank & pos.pieces(Us, ROOK, QUEEN) & attackedBy[Us][ALL_PIECES]) && // and there's no defended heavy piece on back rank
+            // and King's front squares are all occupied by our pawns or under attack (no friendly pieces there for defense)
+            !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][ALL_PIECES])))
 		{
-            //sync_cout << pos << Bitboards::pretty((BackRank & (attackedBy[Them][ROOK] | attackedBy[Them][QUEEN]))) << sync_endl;
-            kingDanger += 300;
-            score -= OtherCheck;
+            Bitboard backRankThreats = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK] | attackedBy[Them][PAWN]);
+            if (backRankThreats)
+            {
+                kingDanger += 160;
+			    // detect if possibly more heavy pieces can appear on back rank
+			    if (more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them]))
+			    {
+                 // more danger when king will still have no forward escape after check on back rank
+                  kingDanger += !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])) ? 220 : 80;
+                  score -= OtherCheck;
+                }
+            }
 		}
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
