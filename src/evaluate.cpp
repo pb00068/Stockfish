@@ -496,20 +496,12 @@ namespace {
         if ((BackRank & ksq) && !more_than_one(BackRank & pos.pieces(Us, ROOK, QUEEN)) &&
             // king's front squares occupied by own pawns or attacked by pawn/minors
             !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])) &&
-            !(pos.pieces(Us, KNIGHT) | (ksq + Up + Up))) // No knight in front to assist our king flanks
+            !(pos.pieces(Us, KNIGHT) & (ksq + Up + Up))) // No knight in front to assist our king flanks
         {
-            kingDanger += 250; // for having king exposed in a corridor
-            Bitboard backRankThreats = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]);
+            Bitboard backRankThreats = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK] | attackedBy[Them][PAWN]);
+            kingDanger += backRankThreats ? 200 : 64;
             if (more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them]))
-                while (backRankThreats)
-                {
-                    Square s = pop_lsb(&backRankThreats);
-                    if (!between_bb(s, ksq) && (!(attackedBy[Us][ALL_PIECES] & s) || ((attackedBy2[Them] & s) && !(attackedBy2[Us] & s))))
-                    {
-                        kingDanger += 120;
-                        score -= OtherCheck;
-                    }
-                }
+                score -= OtherCheck;
         }
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
