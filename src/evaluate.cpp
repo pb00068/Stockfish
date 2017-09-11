@@ -209,6 +209,7 @@ namespace {
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
+  const Score Corridor            = S(  0, 10);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -492,16 +493,18 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        // Detect weak back rank (king in corridor) with no or just one rook/queen and no pieces in front to protect our king flanks
-        if ((BackRank & ksq) && !more_than_one(BackRank & pos.pieces(Us, ROOK, QUEEN)) &&
+        // Detect weak back rank (king in corridor) with no or just one further piece and no pieces in front to protect our king flanks
+        if ((BackRank & ksq) && !more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
             // king's front squares occupied by own pawns or attacked by pawn/minors
-            !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])) &&
-            !(pos.pieces(Us, KNIGHT) & (ksq + Up + Up))) // No knight in front to assist our king flanks
+            !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
         {
             Bitboard backRankThreats = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK] | attackedBy[Them][PAWN]);
-            kingDanger += backRankThreats ? 200 : 64;
-            if (more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them]))
-                score -= OtherCheck;
+            if ((more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them])) && !(pos.pieces(Us, KNIGHT) & (ksq + Up + Up)))
+            {
+            	kingDanger += 300;
+                score -= Corridor;
+            }
+
         }
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
