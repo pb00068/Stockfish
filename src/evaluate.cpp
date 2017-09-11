@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -491,16 +492,24 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        if ((BackRank & ksq) &&
-            !more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
-            // king's front squares occupied by own pawns or attacked by minors
+        // Detect weak back rank (king in corridor) with no or just one rook/queen and no pieces in front to protect our king flanks
+        if ((BackRank & ksq) && !more_than_one(BackRank & pos.pieces(Us, ROOK, QUEEN)) &&
+            // king's front squares occupied by own pawns or attacked by pawn/minors
             !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])) &&
-            (more_than_one(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK])) ||
-                          (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]) & attackedBy2[Them]) ))
+            !(pos.pieces(Us, KNIGHT) | (ksq + Up + Up))) // No knight in front to assist our king flanks
         {
-            //sync_cout << pos << Bitboards::pretty((BackRank & (attackedBy[Them][ROOK] | attackedBy[Them][QUEEN]))) << sync_endl;
-            kingDanger += 300;
-            score -= OtherCheck;
+            kingDanger += 250; // for having king exposed in a corridor
+            Bitboard backRankThreats = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]);
+            if (more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them]))
+                while (backRankThreats)
+                {
+                    Square s = pop_lsb(&backRankThreats);
+                    if (!between_bb(s, ksq) && (!(attackedBy[Us][ALL_PIECES] & s) || ((attackedBy2[Them] & s) && !(attackedBy2[Us] & s))))
+                    {
+                        kingDanger += 120;
+                        score -= OtherCheck;
+                    }
+                }
         }
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
