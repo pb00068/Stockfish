@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -209,7 +208,7 @@ namespace {
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
-  const Score Corridor            = S(  5,  5);
+  const Score Corridor            = S(  2,  5);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -493,40 +492,21 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        // Detect weak back rank (king in corridor) with no pieces in front to protect our king flanks
-        if ((BackRank & ksq) && (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK])) &&
+        // Detect weak back rank invasions. King in a corridor with no pieces in front to protect our king flanks
+        if ((BackRank & ksq) && !more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
             // king's front squares all occupied by own pawns or attacked by pawn/minors
             !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
         {
-        	Bitboard backRankAttacks = BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]);
-        	if (backRankAttacks & ~attackedBy[Us][ALL_PIECES])
-        	{   //enemy queen/rook can enter back rank safely
-        		kingDanger += backRankAttacks & b1 ? 350 : 200; // 350 if with check
-        		score-=Corridor;
-        	}
-        	else {
-        	    // verify if opponent can attack/check with a battery
-        		backRankAttacks &= b1 & ~attackedBy2[Us];
-                while (backRankAttacks) {
-            	    Square s = pop_lsb(&backRankAttacks);
-            	    b =  pos.attacks_from<ROOK >(s) & pos.pieces(Them, ROOK );
-            	    b |= pos.attacks_from<QUEEN>(s) & pos.pieces(Them, QUEEN);
-            	    if (more_than_one(b))
-            	    {
-            		   kingDanger += 300;
-            		   score-=Corridor;
+            Bitboard brAttacks = BackRank & (attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]);
+            kingDanger += brAttacks ? 170 : 74;
+            if (!((BackRank & ksq) ^ (BackRank & pos.pieces(Us)))) {
+            	kingDanger += 60;
+            }
 
-            	    }
-                }
-        	}
-//            if (((backRankThreats & ~attackedBy[Us][ALL_PIECES]) || more_than_one(backRankThreats) || (backRankThreats & attackedBy2[Them] & ~attackedBy[Them][KNIGHT] & ~attackedBy[Them][BISHOP])))
-//           // 	&& !(pos.pieces(Us, KNIGHT) & (ksq + Up + Up)))
-//            {
-//            	sync_cout << pos << sync_endl;
-//                kingDanger += 300;
-//                score -= OtherCheck;
-//            }
-
+            if (more_than_one(brAttacks) || (brAttacks & attackedBy2[Them] & ~attackedBy2[Us])) {
+            	kingDanger += 90;
+            	score -= Corridor;
+            }
         }
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
