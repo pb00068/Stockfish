@@ -208,7 +208,7 @@ namespace {
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
-  const Score DangerousBackRankCheck            = S(  6,  8);
+  const Score DangBackRankCheck   = S(  3,  4);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -226,8 +226,8 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 780;
-  const int RookCheck   = 880;
+  const int QueenCheck  = 780 - 50;
+  const int RookCheck   = 880 - 50;
   const int BishopCheck = 435;
   const int KnightCheck = 790;
 
@@ -454,12 +454,11 @@ namespace {
         b1 = pos.attacks_from<  ROOK>(ksq);
         b2 = pos.attacks_from<BISHOP>(ksq);
 
-        bool backRankCheck = false;
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe) {
             kingDanger += QueenCheck;
-            if ((BackRank & ksq) && (((b1 | b2) & attackedBy[Them][QUEEN] & safe) & BackRank))
-            	backRankCheck = true;
+            if ((((b1 | b2) & attackedBy[Them][QUEEN] & safe) & BackRank) && (BackRank & ksq))
+            	kingDanger += 100, score -= DangBackRankCheck;
         }
 
         // For minors and rooks, also consider the square safe if attacked twice,
@@ -477,8 +476,8 @@ namespace {
         // Enemy rooks safe and other checks
         if (b1 & attackedBy[Them][ROOK] & safe) {
             kingDanger += RookCheck;
-            if (!backRankCheck && (BackRank & ksq) && ((b1 & attackedBy[Them][ROOK] & safe) & BackRank))
-                 backRankCheck = true;
+            if (((b1 & attackedBy[Them][ROOK] & safe) & BackRank) && (BackRank & ksq))
+            	kingDanger += 100, score -= DangBackRankCheck;
         }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
@@ -499,9 +498,9 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        if (backRankCheck && !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
-        	  // King in a corridor (front squares all attacked or occupied by own pawns) with no pieces in front to protect our king flanks
-        	  kingDanger += 100, score -= DangerousBackRankCheck;
+//        if (backRankCheck && !more_than_one(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
+//        	  // King in a corridor (front squares all attacked or occupied by own pawns) with no pieces in front to protect our king flanks
+//        	  kingDanger += 100, score -= DangerousBackRankCheck;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
