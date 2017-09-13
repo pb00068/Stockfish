@@ -208,7 +208,7 @@ namespace {
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
-  const Score Corridor            = S(  2,  5);
+  const Score DangerousBackRankCheck            = S(  6,  8);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
@@ -454,9 +454,13 @@ namespace {
         b1 = pos.attacks_from<  ROOK>(ksq);
         b2 = pos.attacks_from<BISHOP>(ksq);
 
+        bool backRankCheck = false;
         // Enemy queen safe checks
-        if ((b1 | b2) & attackedBy[Them][QUEEN] & safe)
+        if ((b1 | b2) & attackedBy[Them][QUEEN] & safe) {
             kingDanger += QueenCheck;
+            if ((BackRank & ksq) && (((b1 | b2) & attackedBy[Them][QUEEN] & safe) & BackRank))
+            	backRankCheck = true;
+        }
 
         // For minors and rooks, also consider the square safe if attacked twice,
         // and only defended by our queen.
@@ -471,8 +475,11 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        if (b1 & attackedBy[Them][ROOK] & safe) {
             kingDanger += RookCheck;
+            if (!backRankCheck && (BackRank & ksq) && ((b1 & attackedBy[Them][ROOK] & safe) & BackRank))
+                 backRankCheck = true;
+        }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
@@ -492,22 +499,9 @@ namespace {
         else if (b & other)
             score -= OtherCheck;
         
-        // Detect weak back rank invasions. King in a corridor with no pieces in front to protect our king flanks
-        if ((BackRank & ksq) && !more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
-            // king's front squares all occupied by own pawns or attacked by pawn/minors
-            !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
-        {
-            Bitboard brAttacks = BackRank & (attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]);
-            kingDanger += brAttacks ? 170 : 74;
-            if (!((BackRank & ksq) ^ (BackRank & pos.pieces(Us)))) {
-            	kingDanger += 60;
-            }
-
-            if (more_than_one(brAttacks) || (brAttacks & attackedBy2[Them] & ~attackedBy2[Us])) {
-            	kingDanger += 90;
-            	score -= Corridor;
-            }
-        }
+        if (backRankCheck && !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
+        	  // King in a corridor (front squares all attacked or occupied by own pawns) with no pieces in front to protect our king flanks
+        	  kingDanger += 100, score -= DangerousBackRankCheck;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
