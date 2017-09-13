@@ -497,10 +497,6 @@ namespace {
 
         else if (b & other)
             score -= OtherCheck;
-        
-//        if (backRankCheck && !more_than_one(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])))
-//        	  // King in a corridor (front squares all attacked or occupied by own pawns) with no pieces in front to protect our king flanks
-//        	  kingDanger += 100, score -= DangerousBackRankCheck;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
