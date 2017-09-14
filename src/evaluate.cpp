@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -217,7 +218,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
-  const Score BishopSkewer        = S(  0,  8);
+  const Score PinQueenRookThreat  = S(  2, 10);
 
   #undef S
   #undef V
@@ -483,8 +484,11 @@ namespace {
         else if (b2 & attackedBy[Them][BISHOP] & other)
             score -= OtherCheck;
 
-        else if (b2 && (attackedBy[Them][BISHOP] & ~attackedBy[Them][QUEEN] & safe & attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))))
-            kingDanger += BishopCheck, score -= BishopSkewer;
+        else if ((attackedBy[Them][BISHOP] | pos.pieces(Them, BISHOP)) & ~attackedBy[Them][QUEEN] & (safe | pos.pieces(Them, BISHOP)) & attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))) {
+            kingDanger += BishopCheck, score -= PinQueenRookThreat;
+           // sync_cout << pos << Bitboards::pretty(attackedBy[Them][BISHOP] & ~attackedBy[Them][QUEEN] & safe & attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN)))
+           // << sync_endl;
+        }
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
