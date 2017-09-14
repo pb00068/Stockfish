@@ -475,7 +475,9 @@ namespace {
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
 
-        // Enemy bishops safe and other checks
+        if (b2)
+            b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN));
+        // Enemy bishops safe and other checks or skewers
         if (b2 & attackedBy[Them][BISHOP] & safe)
             kingDanger += BishopCheck;
 
