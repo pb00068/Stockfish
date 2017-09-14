@@ -23,11 +23,13 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "uci.h"
 
 namespace {
 
@@ -217,6 +219,8 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
+  const Score RookSkewerRisk      = S( 10, 12);
+  const Score RookSkewerAttack    = S( 80, 92);
 
   #undef S
   #undef V
@@ -287,7 +291,7 @@ namespace {
     const Square* pl = pos.squares<Pt>(Us);
 
     Bitboard b, bb;
-    Square s;
+    Square s, firstRookSq = SQ_NONE;
     Score score = SCORE_ZERO;
 
     attackedBy[Us][Pt] = 0;
@@ -375,6 +379,28 @@ namespace {
                     && !pe->semiopen_side(Us, file_of(ksq), file_of(s) < file_of(ksq)))
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
             }
+
+            if (firstRookSq == SQ_NONE)
+            	firstRookSq = s;
+            else if (LineBB[firstRookSq][s] && file_of(firstRookSq) != file_of(s) && rank_of(firstRookSq) != rank_of(s) &&
+            		!(between_bb(s, firstRookSq) & pos.pieces()))
+            {
+            	bool bishopAttack = LineBB[firstRookSq][s] & attackedBy[Them][BISHOP] & ~attackedBy[Us][ALL_PIECES];
+            	// N.B.: bishopAttack is imprecise as we haven't still complete attack info's
+            	// Assign skewer risk to rooks on the same diagonal when opponent bishop/queen is on a square of diagonals color
+            	if (LineBB[firstRookSq][s] & DarkSquares)
+            	{
+            		if (pos.pieces(Them, BISHOP, QUEEN) & DarkSquares)
+            			score -= bishopAttack ? RookSkewerAttack : RookSkewerRisk;
+            	}
+            	else {
+            		if (pos.pieces(Them, BISHOP, QUEEN) & ~DarkSquares)
+            			score -= bishopAttack ? RookSkewerAttack : RookSkewerRisk;
+            	}
+
+            	//sync_cout << pos << UCI::move(make_move(s,firstRookSq),false) <<  Bitboards::pretty(LineBB[firstRookSq][s]) << sync_endl;
+            }
+
         }
 
         if (Pt == QUEEN)
