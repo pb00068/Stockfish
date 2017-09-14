@@ -217,6 +217,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
+  const Score BishopSkewer        = S(  0,  8);
 
   #undef S
   #undef V
@@ -475,14 +476,15 @@ namespace {
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
 
-        if (b2)
-            b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN));
-        // Enemy bishops safe and other checks or skewers
+        // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
             kingDanger += BishopCheck;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
             score -= OtherCheck;
+
+        else if (b2 && (attackedBy[Them][BISHOP] & ~attackedBy[Them][QUEEN] & safe & attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))))
+            kingDanger += BishopCheck, score -= BishopSkewer;
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
