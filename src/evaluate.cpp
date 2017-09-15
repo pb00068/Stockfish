@@ -28,7 +28,6 @@
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
-#include "uci.h"
 
 namespace {
 
@@ -222,7 +221,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
-  const Score BishopSkewerAttack  = S( 15, 18);
+  const Score BishopSkewerThreat  = S(  6,  6);
 
   #undef S
   #undef V
@@ -396,11 +395,14 @@ namespace {
 
         if (Pt == QUEEN || Pt == ROOK)
         {
-        	if (firstHeavySq[Us] == SQ_NONE)
-				firstHeavySq[Us] = s;
-			else if (attackedBy[Them][BISHOP] && LineBB[firstHeavySq[Us]][s] && file_of(firstHeavySq[Us]) != file_of(s) && rank_of(firstHeavySq[Us]) != rank_of(s) &&
-					!(between_bb(s, firstHeavySq[Us]) & pos.pieces()))
-				heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][s];
+            if (firstHeavySq[Us] == SQ_NONE)
+            {
+               if (((attackedBy[Them][BISHOP] & DarkSquares) && (DarkSquares & s)) || ((attackedBy[Them][BISHOP] & ~DarkSquares) && (~DarkSquares & s)))
+                  firstHeavySq[Us] = s;
+            }
+            else if (LineBB[firstHeavySq[Us]][s] && file_of(firstHeavySq[Us]) != file_of(s) &&
+                 rank_of(firstHeavySq[Us]) != rank_of(s) && !(between_bb(s, firstHeavySq[Us]) & pos.pieces()))
+                 heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][s];
         }
     }
 
@@ -531,9 +533,9 @@ namespace {
     if (!(pos.pieces(PAWN) & KingFlank[kf]))
         score -= PawnlessFlank;
 
-//    if (attackedBy[Them][BISHOP] && firstHeavySq[Us] != SQ_NONE && (LineBB[firstHeavySq[Us]][ksq]	&& file_of(firstHeavySq[Us]) != file_of(ksq) && rank_of(firstHeavySq[Us]) != rank_of(ksq) &&
-//			!(between_bb(ksq, firstHeavySq[Us]) & pos.pieces())))
-//		heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][ksq];
+    if (attackedBy[Them][BISHOP] && firstHeavySq[Us] != SQ_NONE && (LineBB[firstHeavySq[Us]][ksq]	&& file_of(firstHeavySq[Us]) != file_of(ksq) && rank_of(firstHeavySq[Us]) != rank_of(ksq) &&
+			!(between_bb(ksq, firstHeavySq[Us]) & pos.pieces())))
+		heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][ksq];
 
     if (T)
         Trace::add(KING, Us, score);
@@ -631,9 +633,9 @@ namespace {
     score += ThreatByPawnPush * popcount(b);
 
     if (heavyDiagonal[Us] & ~pos.pieces() & attackedBy[Them][BISHOP] & (~attackedBy[Us][ALL_PIECES] | (~attackedBy2[Us] & attackedBy[Us][QUEEN] & attackedBy2[Them]))) {
-    	score -= BishopSkewerAttack;
-    	if (popcount(heavyDiagonal[Us] & pos.pieces()) == 2) // no intermittent pieces, so threat might be stronger
-    		score -= BishopSkewerAttack + BishopSkewerAttack;
+        score -= BishopSkewerThreat;
+        if (popcount(heavyDiagonal[Us] & pos.pieces()) == 2) // no intermittent pieces there, so threat is real
+          score -= BishopSkewerThreat * 2;
     }
 
     if (T)
