@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -112,6 +111,8 @@ namespace {
     // pawn or squares attacked by 2 pawns are not explicitly added.
     Bitboard attackedBy2[COLOR_NB];
 
+    Bitboard heavyDiagonal[COLOR_NB]; // set if 2 majors of the same color are connected on the same diagonal and therefore subject to a skewer/pin attack
+
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
     // adjacent to the king, and (only for a king on its first rank) the
@@ -136,6 +137,8 @@ namespace {
     // a white knight on g5 and black's king is on g8, this white knight adds 2
     // to kingAdjacentZoneAttacksCount[WHITE].
     int kingAdjacentZoneAttacksCount[COLOR_NB];
+
+    Square firstHeavySq[COLOR_NB];
   };
 
   #define V(v) Value(v)
@@ -219,8 +222,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
-  const Score RookSkewerRisk      = S( 10, 12);
-  const Score RookSkewerAttack    = S( 80, 92);
+  const Score BishopSkewerAttack  = S( 15, 18);
 
   #undef S
   #undef V
@@ -263,6 +265,8 @@ namespace {
 
     attackedBy2[Us]            = b & attackedBy[Us][PAWN];
     attackedBy[Us][ALL_PIECES] = b | attackedBy[Us][PAWN];
+    heavyDiagonal[Us] = 0, firstHeavySq[Us] = SQ_NONE; // skewer detection
+
 
     // Init our king safety tables only if we are going to use them
     if (pos.non_pawn_material(Them) >= RookValueMg + KnightValueMg)
@@ -291,7 +295,7 @@ namespace {
     const Square* pl = pos.squares<Pt>(Us);
 
     Bitboard b, bb;
-    Square s, firstRookSq = SQ_NONE;
+    Square s;
     Score score = SCORE_ZERO;
 
     attackedBy[Us][Pt] = 0;
@@ -380,27 +384,6 @@ namespace {
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
             }
 
-            if (firstRookSq == SQ_NONE)
-            	firstRookSq = s;
-            else if (LineBB[firstRookSq][s] && file_of(firstRookSq) != file_of(s) && rank_of(firstRookSq) != rank_of(s) &&
-            		!(between_bb(s, firstRookSq) & pos.pieces()))
-            {
-            	bool bishopAttack = LineBB[firstRookSq][s] & attackedBy[Them][BISHOP] & ~attackedBy[Us][ALL_PIECES];
-            	// N.B.: bishopAttack is imprecise as we haven't still complete attack info's
-            	// Assign skewer risk to rooks on the same diagonal when opponent bishop/queen is on a square of diagonals color
-            	if (LineBB[firstRookSq][s] & DarkSquares)
-            	{
-            		if (pos.pieces(Them, BISHOP, QUEEN) & DarkSquares)
-            			score -= bishopAttack ? RookSkewerAttack : RookSkewerRisk;
-            	}
-            	else {
-            		if (pos.pieces(Them, BISHOP, QUEEN) & ~DarkSquares)
-            			score -= bishopAttack ? RookSkewerAttack : RookSkewerRisk;
-            	}
-
-            	//sync_cout << pos << UCI::move(make_move(s,firstRookSq),false) <<  Bitboards::pretty(LineBB[firstRookSq][s]) << sync_endl;
-            }
-
         }
 
         if (Pt == QUEEN)
@@ -409,6 +392,15 @@ namespace {
             Bitboard pinners;
             if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
                 score -= WeakQueen;
+        }
+
+        if (Pt == QUEEN || Pt == ROOK)
+        {
+        	if (firstHeavySq[Us] == SQ_NONE)
+				firstHeavySq[Us] = s;
+			else if (attackedBy[Them][BISHOP] && LineBB[firstHeavySq[Us]][s] && file_of(firstHeavySq[Us]) != file_of(s) && rank_of(firstHeavySq[Us]) != rank_of(s) &&
+					!(between_bb(s, firstHeavySq[Us]) & pos.pieces()))
+				heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][s];
         }
     }
 
@@ -539,6 +531,10 @@ namespace {
     if (!(pos.pieces(PAWN) & KingFlank[kf]))
         score -= PawnlessFlank;
 
+//    if (attackedBy[Them][BISHOP] && firstHeavySq[Us] != SQ_NONE && (LineBB[firstHeavySq[Us]][ksq]	&& file_of(firstHeavySq[Us]) != file_of(ksq) && rank_of(firstHeavySq[Us]) != rank_of(ksq) &&
+//			!(between_bb(ksq, firstHeavySq[Us]) & pos.pieces())))
+//		heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][ksq];
+
     if (T)
         Trace::add(KING, Us, score);
 
@@ -633,6 +629,12 @@ namespace {
        & ~attackedBy[Us][PAWN];
 
     score += ThreatByPawnPush * popcount(b);
+
+    if (heavyDiagonal[Us] & ~pos.pieces() & attackedBy[Them][BISHOP] & (~attackedBy[Us][ALL_PIECES] | (~attackedBy2[Us] & attackedBy[Us][QUEEN] & attackedBy2[Them]))) {
+    	score -= BishopSkewerAttack;
+    	if (popcount(heavyDiagonal[Us] & pos.pieces()) == 2) // no intermittent pieces, so threat might be stronger
+    		score -= BishopSkewerAttack + BishopSkewerAttack;
+    }
 
     if (T)
         Trace::add(THREAT, Us, score);
