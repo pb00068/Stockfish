@@ -312,6 +312,15 @@ namespace {
             kingAttackersWeight[Us] += KingAttackWeights[Pt];
             kingAdjacentZoneAttacksCount[Us] += popcount(b & attackedBy[Them][KING]);
         }
+        else if (   (Pt == BISHOP || Pt == ROOK)
+        		 && !pos.pinned_pieces(Them)
+                 && (PseudoAttacks[Pt][s] & pos.square<KING>(Them))
+                 && !(BetweenBB[s][pos.square<KING>(Them)] & (pos.pieces(PAWN, Pt) | pos.pieces(Us)) ))
+        {
+        	//dbg_hit_on(popcount(BetweenBB[s][pos.square<KING>(Them)] & pos.pieces()) > 2); // Total 1944 Hits 111 hit rate (%) 5
+        	kingAttackersWeight[Us] += KingAttackWeights[Pt] / 4;
+            kingAttackersCount[Us]++;
+        }
 
         int mob = popcount(b & mobilityArea[Us]);
 
