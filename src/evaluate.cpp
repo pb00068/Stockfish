@@ -173,9 +173,13 @@ namespace {
   // ThreatByMinor/ByRook[attacked PieceType] contains bonuses according to
   // which piece type attacks which one. Attacks on lesser pieces which are
   // pawn-defended are not considered.
-  const Score ThreatByMinor[PIECE_TYPE_NB] = {
-    S(0, 0), S(0, 33), S(45, 43), S(46, 47), S(72, 107), S(48, 118)
+  const Score ThreatByKnight[PIECE_TYPE_NB] = {
+    S(0, 0), S(0, 35), S(47, 45), S(48, 49), S(72, 109), S(50, 120)
   };
+
+  const Score ThreatByBishop[PIECE_TYPE_NB] = {
+     S(0, 0), S(0, 0), S(0, 36), S(43, 44), S(69, 104), S(45, 115)
+   };
 
   const Score ThreatByRook[PIECE_TYPE_NB] = {
     S(0, 0), S(0, 25), S(40, 62), S(40, 59), S(0, 34), S(35, 48)
@@ -573,7 +577,8 @@ namespace {
         while (b)
         {
             Square s = pop_lsb(&b);
-            score += ThreatByMinor[type_of(pos.piece_on(s))];
+            score += (attackedBy[Us][KNIGHT] & s) ? ThreatByKnight[type_of(pos.piece_on(s))] : SCORE_ZERO;
+            score += (attackedBy[Us][BISHOP] & s) ? ThreatByBishop[type_of(pos.piece_on(s))] : SCORE_ZERO;
             if (type_of(pos.piece_on(s)) != PAWN)
                 score += ThreatByRank * (int)relative_rank(Them, s);
         }
