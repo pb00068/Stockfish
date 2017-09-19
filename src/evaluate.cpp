@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -110,8 +111,6 @@ namespace {
     // pawn or squares attacked by 2 pawns are not explicitly added.
     Bitboard attackedBy2[COLOR_NB];
 
-    Bitboard heavyDiagonal[COLOR_NB]; // set if 2 majors of the same color are connected on the same diagonal and therefore subject to a skewer/pin attack
-
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
     // adjacent to the king, and (only for a king on its first rank) the
@@ -137,7 +136,7 @@ namespace {
     // to kingAdjacentZoneAttacksCount[WHITE].
     int kingAdjacentZoneAttacksCount[COLOR_NB];
 
-    Square firstHeavySq[COLOR_NB];
+    Square heavySq[COLOR_NB][2];
   };
 
   #define V(v) Value(v)
@@ -222,7 +221,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
-  const Score BishopSkewerThreat  = S(  6,  6);
+  const Score BishopSkewerThreat  = S( 13, 13);
 
   #undef S
   #undef V
@@ -265,7 +264,7 @@ namespace {
 
     attackedBy2[Us]            = b & attackedBy[Us][PAWN];
     attackedBy[Us][ALL_PIECES] = b | attackedBy[Us][PAWN];
-    heavyDiagonal[Us] = 0, firstHeavySq[Us] = SQ_NONE; // skewer detection
+    heavySq[Us][0] = heavySq[Us][1] = SQ_NONE;
 
 
     // Init our king safety tables only if we are going to use them
@@ -396,14 +395,10 @@ namespace {
 
         if (Pt == QUEEN || Pt == ROOK)
         {
-            if (firstHeavySq[Us] == SQ_NONE)
-            {
-               if (((attackedBy[Them][BISHOP] & DarkSquares) && (DarkSquares & s)) || ((attackedBy[Them][BISHOP] & ~DarkSquares) && (~DarkSquares & s)))
-                  firstHeavySq[Us] = s;
-            }
-            else if (LineBB[firstHeavySq[Us]][s] && file_of(firstHeavySq[Us]) != file_of(s) &&
-                 rank_of(firstHeavySq[Us]) != rank_of(s) && !(between_bb(s, firstHeavySq[Us]) & pos.pieces()))
-                 heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][s];
+            if (heavySq[Us][0] == SQ_NONE)
+                  heavySq[Us][0] = heavySq[Us][1] = s;
+            else if (heavySq[Us][1] == heavySq[Us][0] && file_of(heavySq[Us][0]) != file_of(s) && rank_of(heavySq[Us][0]) != rank_of(s))
+                heavySq[Us][1] = s;
         }
     }
 
@@ -534,9 +529,8 @@ namespace {
     if (!(pos.pieces(PAWN) & KingFlank[kf]))
         score -= PawnlessFlank;
 
-    if (attackedBy[Them][BISHOP] && firstHeavySq[Us] != SQ_NONE && (LineBB[firstHeavySq[Us]][ksq]	&& file_of(firstHeavySq[Us]) != file_of(ksq) && rank_of(firstHeavySq[Us]) != rank_of(ksq) &&
-			!(between_bb(ksq, firstHeavySq[Us]) & pos.pieces())))
-		heavyDiagonal[Us] = LineBB[firstHeavySq[Us]][ksq];
+    if (heavySq[Us][1] == heavySq[Us][0] && file_of(heavySq[Us][0]) != file_of(ksq) && rank_of(heavySq[Us][0]) != rank_of(ksq))
+        heavySq[Us][1] = ksq;
 
     if (T)
         Trace::add(KING, Us, score);
@@ -637,10 +631,14 @@ namespace {
 
     score += ThreatByPawnPush * popcount(b);
 
-    if (heavyDiagonal[Us] & ~pos.pieces() & attackedBy[Them][BISHOP] & (~attackedBy[Us][ALL_PIECES] | (~attackedBy2[Us] & attackedBy[Us][QUEEN] & attackedBy2[Them]))) {
-        score -= BishopSkewerThreat;
-        if (popcount(heavyDiagonal[Us] & pos.pieces()) == 2) // no intermittent pieces there, so threat is real
-          score -= BishopSkewerThreat * 2;
+    // Find squares where bishop threats fork/skewer to 2 major pieces
+    if (LineBB[heavySq[Them][0]][heavySq[Them][1]] & attackedBy[Us][BISHOP])
+    {
+       b = LineBB[heavySq[Them][0]][heavySq[Them][1]] & attackedBy[Us][BISHOP] & ~pos.pieces()
+   		   & (~attackedBy[Them][ALL_PIECES] | (~attackedBy2[Them] & attackedBy[Them][QUEEN] & attackedBy2[Us]));
+       if (b &&  !(between_bb(heavySq[Them][0], heavySq[Them][1]) & pos.pieces()) // assure no pieces between 2 majors
+             && (!(between_bb(heavySq[Them][0], lsb(b)) & pos.pieces()) || !(between_bb(heavySq[Them][0], msb(b)) & pos.pieces()))) // no pieces between attacker and major
+           score += BishopSkewerThreat + (pos.side_to_move() == Us) ? BishopSkewerThreat : SCORE_ZERO;
     }
 
     if (T)
