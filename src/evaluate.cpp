@@ -206,6 +206,7 @@ namespace {
   const Score BishopPawns         = S(  8, 12);
   const Score RookOnPawn          = S(  8, 24);
   const Score TrappedRook         = S( 92,  0);
+  const Score RooksDarkAndLight   = S(  6,  1);
   const Score WeakQueen           = S( 50, 10);
   const Score OtherCheck          = S( 10, 10);
   const Score CloseEnemies        = S(  7,  0);
@@ -287,7 +288,7 @@ namespace {
                                                : Rank5BB | Rank4BB | Rank3BB);
     const Square* pl = pos.squares<Pt>(Us);
 
-    Bitboard b, bb;
+    Bitboard b, bb, firstRook = 0;
     Square s;
     Score score = SCORE_ZERO;
 
@@ -376,6 +377,11 @@ namespace {
                     && !pe->semiopen_side(Us, file_of(ksq), file_of(s) < file_of(ksq)))
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
             }
+
+            if (!firstRook)
+            	 firstRook = (DarkSquares & s) ? DarkSquares : ~DarkSquares;
+            else if (!(firstRook & s))
+                 score += RooksDarkAndLight;
         }
 
         if (Pt == QUEEN)
