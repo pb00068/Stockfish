@@ -207,6 +207,7 @@ namespace {
   const Score RookOnPawn          = S(  8, 24);
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
+  const Score WeakBackRank        = S(  0, 10);
   const Score OtherCheck          = S( 10, 10);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
@@ -411,6 +412,7 @@ namespace {
     const Square Up     = (Us == WHITE ? NORTH : SOUTH);
     const Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                        : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
+    const Bitboard BackRank = Us == WHITE ? Rank1BB : Rank8BB;
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard kingOnlyDefended, undefended, b, b1, b2, safe, other;
@@ -490,6 +492,16 @@ namespace {
 
         else if (b & other)
             score -= OtherCheck;
+
+        if ((BackRank & ksq) && !more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us)))
+            // king's front squares occupied by own pawns or attacked by minors
+            && !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP]))
+            && (more_than_one(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]))
+                          || (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]) & attackedBy2[Them])))
+        {
+           kingDanger += 300;
+           score -= WeakBackRank;
+        }
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
