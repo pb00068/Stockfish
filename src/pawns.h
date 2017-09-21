@@ -53,6 +53,10 @@ struct Entry {
     return pawnsOnSquares[c][!!(DarkSquares & s)];
   }
 
+  int pawns(Color c) const {
+    return pawnsOnSquares[c][0] + pawnsOnSquares[c][1];
+  }
+
   template<Color Us>
   Score king_safety(const Position& pos, Square ksq) {
     return  kingSquares[Us] == ksq && castlingRights[Us] == pos.can_castle(Us)
