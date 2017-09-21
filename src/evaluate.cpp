@@ -387,7 +387,7 @@ namespace {
         }
     }
 
-    if (Pt == BISHOP && s == SQ_NONE && score == SCORE_ZERO)
+    if (Pt == BISHOP && score == SCORE_ZERO && *pos.squares<Pt>(Us) == SQ_NONE)
     	// for no bishops case, assign a small penalty to compensate the penalty the opponent gets for pawns on the same color square
     	score -= BishopPawns * (pe->pawns(Us) / 2);
 
