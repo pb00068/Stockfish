@@ -135,12 +135,14 @@ void MovePicker::score() {
                    - Value(200 * relative_rank(pos.side_to_move(), to_sq(m)));
 
       else if (Type == QUIETS)
+      {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
-                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)]
-				   + (pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 4000;
-
+                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+          if (m.value > 5000 && (pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)))
+             m.value *= 10;
+      }
       else // Type == EVASIONS
       {
           if (pos.capture(m))
