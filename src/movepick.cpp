@@ -138,7 +138,8 @@ void MovePicker::score() {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
-                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)]
+				   + (pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 4000;
 
       else // Type == EVASIONS
       {
@@ -148,6 +149,7 @@ void MovePicker::score() {
           else
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
+
 }
 
 /// next_move() is the most important method of the MovePicker class. It returns
