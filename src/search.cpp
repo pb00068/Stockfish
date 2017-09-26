@@ -544,6 +544,7 @@ namespace {
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture;
+    Square escapeSquare;
     Piece movedPiece;
     int moveCount, quietCount;
 
@@ -813,6 +814,7 @@ moves_loop: // When in check search starts from here
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
     ttCapture = false;
+    escapeSquare = SQ_A1;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -968,9 +970,12 @@ moves_loop: // When in check search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+              if (escapeSquare ||  ( type_of(move) == NORMAL
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
+              {
                   r -= 2 * ONE_PLY - cutNode * ONE_PLY;
+                  escapeSquare = from_sq(move);
+              }
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
