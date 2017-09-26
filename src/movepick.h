@@ -106,7 +106,7 @@ private:
   const Position& pos;
   const ButterflyHistory* mainHistory;
   const PieceToHistory** contHistory;
-  Move ttMove, countermove, killers[2];
+  Move ttMove, countermove, killers[4];
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
   Square recaptureSquare;
