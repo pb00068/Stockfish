@@ -75,7 +75,7 @@ namespace {
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
-  int correctionFactor;
+  int correctionFactor = -4000;
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -241,7 +241,7 @@ void MainThread::search() {
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
   int nonPawnMaterial = rootPos.non_pawn_material(WHITE) + rootPos.non_pawn_material(BLACK);
-  correctionFactor = nonPawnMaterial > 6000 ? -4000 : -(1000 + nonPawnMaterial / 2);
+  correctionFactor = nonPawnMaterial > 6000 ? 1000 : 4000 - nonPawnMaterial / 2;
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
@@ -981,15 +981,6 @@ moves_loop: // When in check search starts from here
                              + (*contHist[1])[movedPiece][to_sq(move)]
                              + (*contHist[3])[movedPiece][to_sq(move)]
                              - correctionFactor;
-
-
-              //if (rootPosNonPawnMaterial > 3000 && rootPosNonPawnMaterial < 5000 )
-              //dbg_mean_of(ss->statScore);
-
-//              if (pos.key() % 10000 == 0)
-//              {
-//            	  sync_cout << pos << "raw statscore: " << ss->statScore + 4000 << " phase: " <<<< sync_endl;
-//              }
 
               // Decrease/increase reduction by comparing opponent's stat score
               if (ss->statScore >= 0 && (ss-1)->statScore < 0)
