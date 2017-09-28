@@ -240,8 +240,7 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
-  int nonPawnMaterial = rootPos.non_pawn_material(WHITE) + rootPos.non_pawn_material(BLACK);
-  correctionFactor = nonPawnMaterial > 6000 ? 1000 : 4000 - nonPawnMaterial / 2;
+  correctionFactor = std::max(1000, 4000 - (rootPos.non_pawn_material(WHITE) + rootPos.non_pawn_material(BLACK)) / 2);
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
