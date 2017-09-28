@@ -75,7 +75,7 @@ namespace {
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
-  int correctionFactor = -4000;
+  int correctionFactor;
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -240,7 +240,7 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
-  correctionFactor = std::max(1000, 4000 - (rootPos.non_pawn_material(WHITE) + rootPos.non_pawn_material(BLACK)) / 2);
+  correctionFactor = std::max(3000, 6000 - rootPos.non_pawn_material() / 2);
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
