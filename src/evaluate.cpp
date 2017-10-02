@@ -357,7 +357,7 @@ namespace {
                 // Bonus for bishop on a long diagonal without pawns in the center
                 if (    (LongDiagonals & s)
                     && !(attackedBy[Them][PAWN] & s)
-                    && !(Center & PseudoAttacks[BISHOP][s] & pos.pieces(PAWN)))
+                    && !(Center & PseudoAttacks[BISHOP][s] & (pos.pieces(Us,PAWN) | (pos.pieces(Them,PAWN) & ~attackedBy[Us][PAWN]))))
                     score += LongRangedBishop;
             }
 
