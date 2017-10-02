@@ -991,7 +991,8 @@ moves_loop: // When in check search starts from here
                   r += ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
-              int statDivisor = std::max(19000, 40000 - 4 * pos.non_pawn_material() );
+
+              int statDivisor = std::min(22000, 18000 + 2 * pos.non_pawn_material() );
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / statDivisor) * ONE_PLY);
           }
 
