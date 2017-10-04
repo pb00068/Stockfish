@@ -217,14 +217,14 @@ namespace {
   const Score LongRangedBishop    = S( 22,  0);
   const Score RookOnPawn          = S(  8, 24);
   const Score TrappedRook         = S( 92,  0);
-  const Score WeakQueen           = S( 50, 10);
+  const Score WeakQueen           = S( 34,  6);
   const Score OtherCheck          = S( 10, 10);
   const Score CloseEnemies        = S(  7,  0);
   const Score PawnlessFlank       = S( 20, 80);
-  const Score ThreatByHangingPawn = S( 71, 61);
-  const Score ThreatBySafePawn    = S(182,175);
-  const Score ThreatByRank        = S( 16,  3);
-  const Score Hanging             = S( 48, 27);
+  const Score ThreatByHangingPawn = S( 61, 51);
+  const Score ThreatBySafePawn    = S( 76, 72);
+  const Score ThreatByRank        = S( 14,  3);
+  const Score Hanging             = S( 52, 30);
   const Score WeakUnopposedPawn   = S(  5, 25);
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
@@ -402,7 +402,11 @@ namespace {
             // Penalty if any relative pin or discovered attack against the queen
             Bitboard pinners;
             if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, pinners))
+            {
                 score -= WeakQueen;
+                if (pos.side_to_move() == Them)
+                	score -= WeakQueen;
+            }
         }
     }
 
@@ -549,18 +553,25 @@ namespace {
 
     // Non-pawn enemies attacked by a pawn
     weak = (pos.pieces(Them) ^ pos.pieces(Them, PAWN)) & attackedBy[Us][PAWN];
-
+    bool ourTurn = pos.side_to_move() == Us;
     if (weak)
     {
-        b = pos.pieces(Us, PAWN) & ( ~attackedBy[Them][ALL_PIECES]
-                                    | attackedBy[Us][ALL_PIECES]);
+          b = pos.pieces(Us, PAWN);
+          b &= ~attackedBy[Them][ALL_PIECES] | attackedBy[Us][ALL_PIECES];
+          b &= ~(attackedBy[Them][PAWN] & attackedBy2[Them]);
 
-        safeThreats = (shift<Right>(b) | shift<Left>(b)) & weak;
+          safeThreats = (shift<Right>(b) | shift<Left>(b)) & weak;
+          int treats = 2 * popcount(safeThreats);
+          if (treats && !ourTurn)
+        	  treats--;
 
-        score += ThreatBySafePawn * popcount(safeThreats);
+          score += ThreatBySafePawn * treats;
 
-        if (weak ^ safeThreats)
-            score += ThreatByHangingPawn;
+          if (weak ^ safeThreats)
+              score += ThreatByHangingPawn;
+
+          if (treats && ourTurn)
+              score += make_score(120, 120);
     }
 
     // Squares strongly protected by the opponent, either because they attack the
@@ -577,6 +588,7 @@ namespace {
           & ~stronglyProtected
           &  attackedBy[Us][ALL_PIECES];
 
+
     // Add a bonus according to the kind of attacking pieces
     if (defended | weak)
     {
@@ -586,7 +598,7 @@ namespace {
             Square s = pop_lsb(&b);
             score += ThreatByMinor[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
-                score += ThreatByRank * (int)relative_rank(Them, s);
+                score += ThreatByRank * ((int)relative_rank(Them, s) + 2 * ourTurn);
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & attackedBy[Us][ROOK];
@@ -595,14 +607,15 @@ namespace {
             Square s = pop_lsb(&b);
             score += ThreatByRook[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
-                score += ThreatByRank * (int)relative_rank(Them, s);
+                score += ThreatByRank * ((int)relative_rank(Them, s) + 2 * ourTurn);
         }
 
-        score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
+        if (ourTurn && (weak & ~attackedBy[Them][ALL_PIECES]))
+        	score += Hanging;
 
         b = weak & attackedBy[Us][KING];
         if (b)
-            score += ThreatByKing[more_than_one(b)];
+            score += ThreatByKing[ourTurn || more_than_one(b)];
     }
 
     // Bonus for opponent unopposed weak pawns
@@ -896,7 +909,7 @@ namespace {
         Trace::add(TOTAL, score);
     }
 
-    return (pos.side_to_move() == WHITE ? v : -v) + Eval::Tempo; // Side to move point of view
+    return (pos.side_to_move() == WHITE ? v : -v) + Value(15); // Side to move point of view
   }
 
 } // namespace
