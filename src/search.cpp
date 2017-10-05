@@ -903,11 +903,7 @@ moves_loop: // When in check search starts from here
 
               // Prune moves which doesn't escape the capture on our weak square
               if (weak != SQ_NONE  && moveCount > 3 && lmrDepth < 4 && from_sq(move) != weak)
-              {
-     			  //sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << " prune move: " <<  UCI::move(move, false) << sync_endl;
-     			  dbg_hit_on(true);
      			    continue;
-     		  }
 
               // Countermoves based pruning
               if (   lmrDepth < 3
