@@ -561,7 +561,7 @@ namespace {
         safeThreats = (shift<Right>(b) | shift<Left>(b)) & weak;
 
         score += ThreatBySafePawn * popcount(safeThreats);
-        if (safeThreats && !more_than_one(safeThreats)) {
+        if (safeThreats && !more_than_one(safeThreats) && !(pos.pinned_pieces(Us) & b)) {
         	weakSq = pos.side_to_move() == Them  ? lsb(safeThreats) : SQ_NONE;
         	//sync_cout << "weak square " << weakSq << "  " << UCI::move(make_move(weakSq, weakSq), false) << sync_endl;
         }

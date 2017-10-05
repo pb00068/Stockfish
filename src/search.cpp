@@ -902,11 +902,12 @@ moves_loop: // When in check search starts from here
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
 
               // Prune moves which doesn't escape the capture on our weak square
-              if (weak != SQ_NONE && moveCount > 1 && lmrDepth < 3 && from_sq(move) != weak)
+              if (weak != SQ_NONE  && moveCount > 3 && lmrDepth < 4 && from_sq(move) != weak)
               {
-            	//sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << " prune move: " <<  UCI::move(move, false) << sync_endl;
-                continue;
-              }
+     			  //sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << " prune move: " <<  UCI::move(move, false) << sync_endl;
+     			  dbg_hit_on(true);
+     			    continue;
+     		  }
 
               // Countermoves based pruning
               if (   lmrDepth < 3
@@ -982,9 +983,10 @@ moves_loop: // When in check search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+              else if (((weak != SQ_NONE && from_sq(move) == weak))
+               || (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
                   r -= 2 * ONE_PLY;
+
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
