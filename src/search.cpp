@@ -546,6 +546,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, quietCount;
+    Square weak;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -553,6 +554,7 @@ namespace {
     moveCount = quietCount = ss->moveCount = 0;
     ss->statScore = 0;
     bestValue = -VALUE_INFINITE;
+    weak = SQ_NONE;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -566,7 +568,7 @@ namespace {
     {
         // Step 2. Check for aborted search and immediate draw
         if (Threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos)
+            return ss->ply >= MAX_PLY && !inCheck ? evaluate(pos, weak)
                                                   : DrawValue[pos.side_to_move()];
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -673,7 +675,7 @@ namespace {
     {
         // Never assume anything on values stored in TT
         if ((ss->staticEval = eval = tte->eval()) == VALUE_NONE)
-            eval = ss->staticEval = evaluate(pos);
+            eval = ss->staticEval = evaluate(pos, weak);
 
         // Can ttValue be used as a better position evaluation?
         if (   ttValue != VALUE_NONE
@@ -683,7 +685,7 @@ namespace {
     else
     {
         eval = ss->staticEval =
-        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+        (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, weak)
                                          : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
@@ -898,6 +900,13 @@ moves_loop: // When in check search starts from here
 
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
+
+              // Prune moves which does not escape the capture on our weak square
+              if (weak != SQ_NONE && lmrDepth < 3 && from_sq(move) != weak)
+              {
+            	  //sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << sync_endl;
+            	  continue;
+              }
 
               // Countermoves based pruning
               if (   lmrDepth < 3
@@ -1160,6 +1169,7 @@ moves_loop: // When in check search starts from here
     bool ttHit, givesCheck, evasionPrunable;
     Depth ttDepth;
     int moveCount;
+    Square weak = SQ_NONE;
 
     if (PvNode)
     {
@@ -1174,7 +1184,7 @@ moves_loop: // When in check search starts from here
 
     // Check for an instant draw or if the maximum ply has been reached
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos)
+        return ss->ply >= MAX_PLY && !InCheck ? evaluate(pos, weak)
                                               : DrawValue[pos.side_to_move()];
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
@@ -1210,7 +1220,7 @@ moves_loop: // When in check search starts from here
         {
             // Never assume anything on values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos);
+                ss->staticEval = bestValue = evaluate(pos, weak);
 
             // Can ttValue be used as a better position evaluation?
             if (   ttValue != VALUE_NONE
@@ -1219,7 +1229,7 @@ moves_loop: // When in check search starts from here
         }
         else
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, weak)
                                              : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         // Stand pat. Return immediately if static value is at least beta

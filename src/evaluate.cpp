@@ -23,11 +23,13 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+//#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+//#include "uci.h"
 
 namespace {
 
@@ -91,7 +93,7 @@ namespace {
     Evaluation(const Position& p) : pos(p) {}
     Evaluation& operator=(const Evaluation&) = delete;
 
-    Value value();
+    Value value(Square& weak);
 
   private:
     // Evaluation helpers (used when calling value())
@@ -110,6 +112,7 @@ namespace {
     Pawns::Entry* pe;
     Bitboard mobilityArea[COLOR_NB];
     Score mobility[COLOR_NB] = { SCORE_ZERO, SCORE_ZERO };
+    Square weakSq;
 
     // attackedBy[color][piece type] is a bitboard representing all squares
     // attacked by a given color and piece type (can be also ALL_PIECES).
@@ -558,6 +561,10 @@ namespace {
         safeThreats = (shift<Right>(b) | shift<Left>(b)) & weak;
 
         score += ThreatBySafePawn * popcount(safeThreats);
+        if (safeThreats && pos.side_to_move() == Us && !more_than_one(safeThreats)) {
+        	weakSq = lsb(safeThreats);
+        	//sync_cout << "weak square " << weakSq << "  " << UCI::move(make_move(weakSq, weakSq), false) << sync_endl;
+        }
 
         if (weak ^ safeThreats)
             score += ThreatByHangingPawn;
@@ -598,7 +605,11 @@ namespace {
                 score += ThreatByRank * (int)relative_rank(Them, s);
         }
 
-        score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
+        int hang = popcount(weak & ~attackedBy[Them][ALL_PIECES]);
+        score += Hanging * hang;
+
+        if (hang == 1 && pos.side_to_move() == Us && weakSq == SQ_NONE)
+            weakSq = lsb(weak & ~attackedBy[Them][ALL_PIECES]);
 
         b = weak & attackedBy[Us][KING];
         if (b)
@@ -823,7 +834,7 @@ namespace {
   // of the side to move.
 
   template<Tracing T>
-  Value Evaluation<T>::value() {
+  Value Evaluation<T>::value(Square& weak) {
 
     assert(!pos.checkers());
 
@@ -853,6 +864,8 @@ namespace {
 
     initialize<WHITE>();
     initialize<BLACK>();
+
+    weakSq = SQ_NONE;
 
     score += evaluate_pieces<WHITE, KNIGHT>() - evaluate_pieces<BLACK, KNIGHT>();
     score += evaluate_pieces<WHITE, BISHOP>() - evaluate_pieces<BLACK, BISHOP>();
@@ -896,7 +909,7 @@ namespace {
         Trace::add(TOTAL, score);
     }
 
-    return (pos.side_to_move() == WHITE ? v : -v) + Eval::Tempo; // Side to move point of view
+    return weak = weakSq, (pos.side_to_move() == WHITE ? v : -v) + Eval::Tempo; // Side to move point of view
   }
 
 } // namespace
@@ -905,9 +918,9 @@ namespace {
 /// evaluate() is the evaluator for the outer world. It returns a static evaluation
 /// of the position from the point of view of the side to move.
 
-Value Eval::evaluate(const Position& pos)
+Value Eval::evaluate(const Position& pos, Square& weak)
 {
-   return Evaluation<>(pos).value();
+   return Evaluation<>(pos).value(weak);
 }
 
 /// trace() is like evaluate(), but instead of returning a value, it returns
@@ -917,8 +930,8 @@ Value Eval::evaluate(const Position& pos)
 std::string Eval::trace(const Position& pos) {
 
   std::memset(scores, 0, sizeof(scores));
-
-  Value v = Evaluation<TRACE>(pos).value();
+  Square none = SQ_NONE;
+  Value v = Evaluation<TRACE>(pos).value(none);
   v = pos.side_to_move() == WHITE ? v : -v; // White's point of view
 
   std::stringstream ss;
