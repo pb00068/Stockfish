@@ -561,8 +561,8 @@ namespace {
         safeThreats = (shift<Right>(b) | shift<Left>(b)) & weak;
 
         score += ThreatBySafePawn * popcount(safeThreats);
-        if (safeThreats && pos.side_to_move() == Us && !more_than_one(safeThreats)) {
-        	weakSq = lsb(safeThreats);
+        if (safeThreats && !more_than_one(safeThreats)) {
+        	weakSq = pos.side_to_move() == Them  ? lsb(safeThreats) : SQ_NONE;
         	//sync_cout << "weak square " << weakSq << "  " << UCI::move(make_move(weakSq, weakSq), false) << sync_endl;
         }
 
@@ -605,11 +605,7 @@ namespace {
                 score += ThreatByRank * (int)relative_rank(Them, s);
         }
 
-        int hang = popcount(weak & ~attackedBy[Them][ALL_PIECES]);
-        score += Hanging * hang;
-
-        if (hang == 1 && pos.side_to_move() == Us && weakSq == SQ_NONE)
-            weakSq = lsb(weak & ~attackedBy[Them][ALL_PIECES]);
+        score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
 
         b = weak & attackedBy[Us][KING];
         if (b)

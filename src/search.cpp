@@ -901,11 +901,11 @@ moves_loop: // When in check search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
 
-              // Prune moves which does not escape the capture on our weak square
-              if (weak != SQ_NONE && lmrDepth < 3 && from_sq(move) != weak)
+              // Prune moves which doesn't escape the capture on our weak square
+              if (weak != SQ_NONE && moveCount > 1 && lmrDepth < 3 && from_sq(move) != weak)
               {
-            	  //sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << sync_endl;
-            	  continue;
+            	//sync_cout << pos << " weak: " << UCI::move(make_move(weak, weak), false) << " prune move: " <<  UCI::move(move, false) << sync_endl;
+                continue;
               }
 
               // Countermoves based pruning
