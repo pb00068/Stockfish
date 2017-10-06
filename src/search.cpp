@@ -932,8 +932,10 @@ moves_loop: // When in check search starts from here
           continue;
       }
 
-      if (move == ttMove && captureOrPromotion)
-          ttCapture = true;
+      if (move == ttMove)
+          ttCapture = captureOrPromotion;
+      else
+    	  ttMove = MOVE_NONE;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1000,7 +1002,7 @@ moves_loop: // When in check search starts from here
 
           Depth d = std::max(newDepth - r, ONE_PLY);
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, ttMove != MOVE_NONE && pos.pseudo_legal(ttMove) ? 1 : 2, false);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, ttMove ? 1 : 2, false);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
