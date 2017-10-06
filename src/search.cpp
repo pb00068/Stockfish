@@ -140,7 +140,7 @@ namespace {
   Value DrawValue[COLOR_NB];
 
   template <NodeType NT>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, bool skipEarlyPruning);
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, int cutNode, bool skipEarlyPruning);
 
   template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
@@ -524,7 +524,7 @@ namespace {
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, bool skipEarlyPruning) {
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, int cutNode, bool skipEarlyPruning) {
 
     const bool PvNode = NT == PV;
     const bool rootNode = PvNode && ss->ply == 0;
@@ -968,7 +968,11 @@ moves_loop: // When in check search starts from here
 
               // Increase reduction for cut nodes
               if (cutNode)
+              {
                   r += 2 * ONE_PLY;
+                  if (cutNode == 2)
+                	  r -= ONE_PLY;
+              }
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
@@ -996,7 +1000,7 @@ moves_loop: // When in check search starts from here
 
           Depth d = std::max(newDepth - r, ONE_PLY);
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, false);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, ttMove != MOVE_NONE && pos.pseudo_legal(ttMove) ? 1 : 2, false);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
