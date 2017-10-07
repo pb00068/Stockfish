@@ -226,7 +226,7 @@ Move MovePicker::next_move(bool skipQuiets) {
                     &&  pos.pseudo_legal(move)
     	            && !pos.capture(move))
     	  {
-        	  countermove = killers[2];
+        	  countermove = move;
               return move;
           }
       }
@@ -249,7 +249,6 @@ Move MovePicker::next_move(bool skipQuiets) {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-			  && move != killers[2]
               && move != countermove)
               return move;
       }
