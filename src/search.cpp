@@ -791,6 +791,13 @@ namespace {
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
+        if (ttMove && !PvNode && tte->depth() >= depth - ONE_PLY)
+        {
+        	ttValue = value_from_tt(tte->value(), ss->ply);
+        	assert(ttValue >= beta);
+        	if (ttValue >= beta) // assert against possible TT access race where ttValue might be VALUE_ZERO
+        		return ttValue;
+        }
     }
 
 moves_loop: // When in check search starts from here
