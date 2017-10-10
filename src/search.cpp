@@ -793,17 +793,17 @@ namespace {
         ttMove = ttHit ? tte->move() : MOVE_NONE;
         if (ttMove && !PvNode && tte->depth() >= depth - ONE_PLY)
         {
-        	ttValue = value_from_tt(tte->value(), ss->ply);
-        	if (ttValue >= beta) {// assert against possible TT access race where ttValue might be VALUE_ZERO
-        		if (!pos.capture_or_promotion(ttMove))
-					update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(tte->depth()));
+            ttValue = value_from_tt(tte->value(), ss->ply);
+            if (ttValue >= beta)
+            {   // assert against possible TT access race where ttValue might be VALUE_ZERO
+        	    if (!pos.capture_or_promotion(ttMove))
+                   update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(tte->depth()));
 
-				// Extra penalty for a quiet TT move in previous ply when it gets refuted
-				if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-					update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(tte->depth() + ONE_PLY));
-				//std::cerr << "hit" << std::endl;
-        		return ttValue;
-        	}
+                // Extra penalty for a quiet TT move in previous ply when it gets refuted
+                if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+                   update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(tte->depth() + ONE_PLY));
+        	    return ttValue;
+            }
         }
     }
 
