@@ -543,7 +543,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, captureFoo, pvExact;
     Piece movedPiece;
     int moveCount, quietCount;
 
@@ -753,6 +753,7 @@ namespace {
         }
     }
 
+    captureFoo = false;
     // Step 9. ProbCut (skipped when in check)
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
@@ -778,13 +779,14 @@ namespace {
                 pos.undo_move(move);
                 if (value >= rbeta)
                     return value;
+                captureFoo = true;
             }
     }
 
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= 6 * ONE_PLY
         && !ttMove
-        && (PvNode || (ss->staticEval + 256 >= beta && !((ss-1)->moveCount == 1 && (ss-2)->moveCount > 1) && (ss-3)->moveCount == 1)))
+        && (PvNode || (ss->staticEval + (captureFoo ? 276 : 236) >= beta)))
     {
         Depth d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
         search<NT>(pos, ss, alpha, beta, d, cutNode, true);
@@ -812,7 +814,7 @@ moves_loop: // When in check search starts from here
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
     skipQuiets = false;
-    ttCapture = false;
+    captureFoo = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
 
     // Step 11. Loop through moves
@@ -933,7 +935,7 @@ moves_loop: // When in check search starts from here
       }
 
       if (move == ttMove && captureOrPromotion)
-          ttCapture = true;
+          captureFoo = true;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -963,7 +965,7 @@ moves_loop: // When in check search starts from here
                   r -= ONE_PLY;
 
               // Increase reduction if ttMove is a capture
-              if (ttCapture)
+              if (captureFoo)
                   r += ONE_PLY;
 
               // Increase reduction for cut nodes
