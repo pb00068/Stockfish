@@ -546,6 +546,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, quietCount;
+    Depth ttDepth;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -598,6 +599,7 @@ namespace {
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
+    ttDepth = ttHit    ? tte->depth() : depth;
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -791,6 +793,7 @@ namespace {
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
+        ttDepth = ttHit    ? tte->depth() : depth;
     }
 
 moves_loop: // When in check search starts from here
@@ -1129,7 +1132,7 @@ moves_loop: // When in check search starts from here
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  depth, bestMove, ss->staticEval, TT.generation());
+                  (depth + ttDepth) / 2, bestMove, ss->staticEval, TT.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
