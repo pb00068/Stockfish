@@ -786,23 +786,23 @@ namespace {
         && !ttMove
         && (PvNode || ss->staticEval + 256 >= beta))
     {
-        Depth d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
+        Depth d = (3 * depth / (4 * ONE_PLY) - Threads.size() == 1 ? 2 : 1) * ONE_PLY;
         search<NT>(pos, ss, alpha, beta, d, cutNode, true);
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
-        if (ttMove && !PvNode && tte->depth() >= depth - ONE_PLY)
+        if (ttMove && !PvNode && tte->depth() >= depth - 2 * ONE_PLY)
         {
-            ttValue = value_from_tt(tte->value(), ss->ply);
+		    ttValue = value_from_tt(tte->value(), ss->ply);
             if (ttValue >= beta)
             {   // assert against possible TT access race where ttValue might be VALUE_ZERO
-        	    if (!pos.capture_or_promotion(ttMove))
+                if (!pos.capture_or_promotion(ttMove))
                    update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(tte->depth()));
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
                    update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(tte->depth() + ONE_PLY));
-        	    return ttValue;
+                return ttValue;
             }
         }
     }
