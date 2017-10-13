@@ -222,6 +222,7 @@ namespace {
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
   const Score ThreatBySafePawn    = S(192,175);
+  const Score FollowThreatByKnight= S( 25, 25);
   const Score ThreatByRank        = S( 16,  3);
   const Score Hanging             = S( 48, 27);
   const Score WeakUnopposedPawn   = S(  5, 25);
@@ -584,6 +585,8 @@ namespace {
             score += ThreatByMinor[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
                 score += ThreatByRank * (int)relative_rank(Them, s);
+            if ((b & weak & attackedBy[Us][KNIGHT]) && more_than_one(PseudoAttacks[KNIGHT][s] & defended))
+            	score += FollowThreatByKnight;
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & attackedBy[Us][ROOK];
