@@ -588,10 +588,7 @@ namespace {
             {
                 score += ThreatByRank * (int)relative_rank(Them, s);
                 if ((attackedBy[Us][KNIGHT] & attackedBy2[Us] & s) && (PseudoAttacks[KNIGHT][s] & pos.pieces(Them) & ~attackedBy[Them][PAWN] & ~pos.pieces(Them, KNIGHT)))
-                {
-                	//sync_cout << pos << Bitboards::pretty(PseudoAttacks[KNIGHT][s] & defended) << sync_endl;
-                	score += FollowThreatByKnight;
-                }
+                    score += FollowThreatByKnight;
             }
         }
 
