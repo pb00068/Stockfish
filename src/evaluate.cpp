@@ -22,7 +22,7 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
-//#include <iostream>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -223,7 +223,7 @@ namespace {
   const Score PawnlessFlank       = S( 20, 80);
   const Score ThreatByHangingPawn = S( 71, 61);
   const Score ThreatBySafePawn    = S(192,175);
-  const Score FollowThreatByKnight= S( 35, 35);
+  const Score FollowThreatByKnight= S( 25, 25);
   const Score ThreatByRank        = S( 16,  3);
   const Score Hanging             = S( 48, 27);
   const Score WeakUnopposedPawn   = S(  5, 25);
@@ -579,26 +579,20 @@ namespace {
     // Add a bonus according to the kind of attacking pieces
     if (defended | weak)
     {
-        b = (defended | weak) & attackedBy[Us][BISHOP];
+        b = (defended | weak) & (attackedBy[Us][BISHOP] | attackedBy[Us][KNIGHT]);
         while (b)
         {
             Square s = pop_lsb(&b);
             score += ThreatByMinor[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
+            {
                 score += ThreatByRank * (int)relative_rank(Them, s);
-        }
-
-        b = (defended | weak) & attackedBy[Us][KNIGHT];
-        while (b)
-        {
-            Square s = pop_lsb(&b);
-            score += ThreatByMinor[type_of(pos.piece_on(s))];
-            if (type_of(pos.piece_on(s)) != PAWN)
-			{
-                score += ThreatByRank * (int)relative_rank(Them, s);
-                if (!(attackedBy[Them][ALL_PIECES] & s) && more_than_one(PseudoAttacks[KNIGHT][s] & defended))
-                  score += FollowThreatByKnight;
-			}
+                if ((attackedBy[Us][KNIGHT] & attackedBy2[Us] & s) && more_than_one(PseudoAttacks[KNIGHT][s] & defended & ~pos.pieces(Them, KNIGHT)))
+                {
+                	//sync_cout << pos << Bitboards::pretty(PseudoAttacks[KNIGHT][s] & defended) << sync_endl;
+                	score += FollowThreatByKnight;
+                }
+            }
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & attackedBy[Us][ROOK];
