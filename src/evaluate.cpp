@@ -587,7 +587,7 @@ namespace {
             if (type_of(pos.piece_on(s)) != PAWN)
             {
                 score += ThreatByRank * (int)relative_rank(Them, s);
-                if ((attackedBy[Us][KNIGHT] & attackedBy2[Us] & s) && more_than_one(PseudoAttacks[KNIGHT][s] & defended & ~pos.pieces(Them, KNIGHT)))
+                if ((attackedBy[Us][KNIGHT] & attackedBy2[Us] & s) && (PseudoAttacks[KNIGHT][s] & pos.pieces(Them) & ~attackedBy[Them][PAWN] & ~pos.pieces(Them, KNIGHT)))
                 {
                 	//sync_cout << pos << Bitboards::pretty(PseudoAttacks[KNIGHT][s] & defended) << sync_endl;
                 	score += FollowThreatByKnight;
