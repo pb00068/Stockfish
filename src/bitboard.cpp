@@ -39,6 +39,7 @@ Bitboard PassedPawnMask[COLOR_NB][SQUARE_NB];
 Bitboard PawnAttackSpan[COLOR_NB][SQUARE_NB];
 Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 Bitboard PawnAttacks[COLOR_NB][SQUARE_NB];
+Bitboard KnightExtended[SQUARE_NB];
 
 Magic RookMagics[SQUARE_NB];
 Magic BishopMagics[SQUARE_NB];
@@ -198,6 +199,15 @@ void Bitboards::init() {
                           PseudoAttacks[pt][s] |= to;
                   }
               }
+
+  for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+	  Bitboard b = KnightExtended[s] = PseudoAttacks[KNIGHT][s];
+	  while (b)
+	  {
+		  Square sq = pop_lsb(&b);
+		  KnightExtended[s] |= PseudoAttacks[KNIGHT][sq];
+	  }
+  }
 
   Square RookDeltas[] = { NORTH,  EAST,  SOUTH,  WEST };
   Square BishopDeltas[] = { NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST };

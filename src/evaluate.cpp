@@ -22,12 +22,14 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "misc.h"
 
 namespace {
 
@@ -108,6 +110,7 @@ namespace {
     Material::Entry* me;
     Pawns::Entry* pe;
     Bitboard mobilityArea[COLOR_NB];
+    Bitboard knightRange[COLOR_NB];
     Score mobility[COLOR_NB] = { SCORE_ZERO, SCORE_ZERO };
 
     // attackedBy[color][piece type] is a bitboard representing all squares
@@ -228,6 +231,7 @@ namespace {
   const Score ThreatByPawnPush    = S( 38, 22);
   const Score HinderPassedPawn    = S(  7,  0);
   const Score TrappedBishopA1H1   = S( 50, 50);
+  const Score KnightRanges        = S(  1,  0);
 
   #undef S
   #undef V
@@ -270,6 +274,7 @@ namespace {
 
     attackedBy2[Us]            = b & attackedBy[Us][PAWN];
     attackedBy[Us][ALL_PIECES] = b | attackedBy[Us][PAWN];
+    knightRange[Us] = 0;
 
     // Init our king safety tables only if we are going to use them
     if (pos.non_pawn_material(Them) >= RookValueMg + KnightValueMg)
@@ -305,6 +310,7 @@ namespace {
 
     while ((s = *pl++) != SQ_NONE)
     {
+
         // Find attacked squares, including x-ray attacks for bishops and rooks
         b = Pt == BISHOP ? attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(Us, QUEEN))
           : Pt ==   ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))
@@ -326,6 +332,8 @@ namespace {
         int mob = popcount(b & mobilityArea[Us]);
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
+        if (Pt == KNIGHT)
+            knightRange[Us] |= KnightExtended[s] & mobilityArea[Us];
 
         // Bonus for this piece as a king protector
         score += KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
@@ -371,6 +379,11 @@ namespace {
                             : pos.piece_on(s + d + d) == make_piece(Us, PAWN) ? TrappedBishopA1H1 * 2
                                                                               : TrappedBishopA1H1;
             }
+
+//            if (Pt == KNIGHT) {
+//            	int accessRange = popcount(KnightExtended[s] & ~pos.pieces(Us) & ~attackedBy[Them][ALL_PIECES]);
+//            	dbg_mean_of(accessRange);
+//            }
         }
 
         if (Pt == ROOK)
@@ -866,6 +879,11 @@ namespace {
 
     score +=  evaluate_passed_pawns<WHITE>()
             - evaluate_passed_pawns<BLACK>();
+
+    score +=  KnightRanges * popcount(knightRange[WHITE]);
+    score -=  KnightRanges * popcount(knightRange[BLACK]);
+    //if (popcount(knightRange[WHITE]))
+    //		sync_cout << pos << Bitboards::pretty(knightRange[WHITE]) << sync_endl;
 
     if (pos.non_pawn_material() >= SpaceThreshold)
         score +=  evaluate_space<WHITE>()
