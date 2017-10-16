@@ -330,8 +330,8 @@ namespace {
         if (Pt == KNIGHT)
         {
             bb = b & mobilityArea[Us];
-        	while(bb)
-        	    mob += popcount(PseudoAttacks[KNIGHT][pop_lsb(&bb)] & mobilityArea[Us]);
+            while(bb)
+               mob += popcount(PseudoAttacks[KNIGHT][pop_lsb(&bb)] & mobilityArea[Us]);
             mobility[Us] += make_score(mob / 4, 0);
         }
 
