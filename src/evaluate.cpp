@@ -329,16 +329,11 @@ namespace {
 
         if (Pt == KNIGHT)
         {
-        	bb = b & mobilityArea[Us];
+            bb = b & mobilityArea[Us];
         	while(bb)
-        	{
-        		Square sq = pop_lsb(&bb);
-        		mob += popcount(PseudoAttacks[KNIGHT][sq] & mobilityArea[Us]);
-        	}
-        	score += make_score(mob / 4, 0);
-        	//dbg_mean_of(mob / 8);
+        	    mob += popcount(PseudoAttacks[KNIGHT][pop_lsb(&bb)] & mobilityArea[Us]);
+            mobility[Us] += make_score(mob / 4, 0);
         }
-
 
         // Bonus for this piece as a king protector
         score += KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
