@@ -327,14 +327,6 @@ namespace {
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
-        if (Pt == KNIGHT)
-        {
-            bb = b & mobilityArea[Us];
-            while(bb)
-               mob += popcount(PseudoAttacks[KNIGHT][pop_lsb(&bb)] & mobilityArea[Us]);
-            mobility[Us] += make_score(mob / 4, 0);
-        }
-
         // Bonus for this piece as a king protector
         score += KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
 
@@ -629,6 +621,17 @@ namespace {
 
     score += ThreatByPawnPush * popcount(b);
 
+
+    safeThreats = attackedBy[Us][KNIGHT] & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us);
+    b = 0;
+    while(safeThreats)
+    	b |= PseudoAttacks[KNIGHT][pop_lsb(&safeThreats)];
+
+    int mob = popcount(b & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us));
+    mobility[Us] += make_score(2 * mob - 6, mob - 3);
+    //dbg_mean_of(popcount(b & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us)));// 3
+
+
     if (T)
         Trace::add(THREAT, Us, score);
 
@@ -864,13 +867,13 @@ namespace {
     score += evaluate_pieces<WHITE, ROOK  >() - evaluate_pieces<BLACK, ROOK  >();
     score += evaluate_pieces<WHITE, QUEEN >() - evaluate_pieces<BLACK, QUEEN >();
 
-    score += mobility[WHITE] - mobility[BLACK];
-
     score +=  evaluate_king<WHITE>()
             - evaluate_king<BLACK>();
 
     score +=  evaluate_threats<WHITE>()
             - evaluate_threats<BLACK>();
+
+    score += mobility[WHITE] - mobility[BLACK];
 
     score +=  evaluate_passed_pawns<WHITE>()
             - evaluate_passed_pawns<BLACK>();
