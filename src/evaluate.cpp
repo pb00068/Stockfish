@@ -628,7 +628,7 @@ namespace {
     	b |= PseudoAttacks[KNIGHT][pop_lsb(&safeThreats)];
 
     int mob = popcount(b & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us));
-    mobility[Us] += make_score(2 * mob - 6, mob - 3);
+    mobility[Us] += make_score(8 * mob - 24, 0);
     //dbg_mean_of(popcount(b & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us)));// 3
 
 
