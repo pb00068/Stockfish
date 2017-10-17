@@ -323,7 +323,7 @@ namespace {
             kingAdjacentZoneAttacksCount[Us] += popcount(b & attackedBy[Them][KING]);
         }
 
-        int mob = popcount(b & mobilityArea[Us]);
+        int mob = popcount(b & mobilityArea[Us] & ~(attackedBy2[Them] & ~attackedBy2[Us]));
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
