@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -175,6 +176,9 @@ namespace {
     { S( 9, 2), S(15, 5) }  // Bishop
   };
 
+  const Score OnDifferentColors[3] = {
+    S(5, 0), S(0, 0), S(4, 0) // Knightpair and Rooks
+  };
   // RookOnFile[semiopen/open] contains bonuses for each rook when there is no
   // friendly pawn on the rook file.
   const Score RookOnFile[] = { S(20, 7), S(45, 20) };
@@ -298,7 +302,7 @@ namespace {
     const Square* pl = pos.squares<Pt>(Us);
 
     Bitboard b, bb;
-    Square s;
+    Square s, pairSq = SQ_A1;
     Score score = SCORE_ZERO;
 
     attackedBy[Us][Pt] = 0;
@@ -329,6 +333,23 @@ namespace {
 
         // Bonus for this piece as a king protector
         score += KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
+
+        // Small midgame bonus for having the Knight pair, Rooks pair, or Rook & King on different colored squares:
+        // Knight pair: less redundancy because attacking different colored squares
+        // Rooks & King: avoid risk of being forked by a knight/pawn or skewed/pinned/forked by diagonal sliders
+        if (Pt == ROOK || Pt == KNIGHT)
+        {
+        	if (!pairSq)
+        	{
+        		pairSq = s;
+        		if (Pt == ROOK && pos.count<Pt>(Us) == 1)
+        			pairSq = pos.square<KING>(Us);
+        	}
+        	if ( pairSq && pairSq != s &&
+        			 ((( DarkSquares | s | pairSq) ==  DarkSquares) ||
+        		      ((~DarkSquares | s | pairSq) == ~DarkSquares)))
+        	    score += OnDifferentColors[Pt - 2];
+        }
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
