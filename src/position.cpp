@@ -1004,11 +1004,15 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard occupied, stmAttackers;
 
   balance = PieceValue[MG][piece_on(to)];
+  if (threshold > 0 && type_of(piece_on(to)) == PAWN)
+	  balance += relative_rank(stm, to) * 20;
 
   if (balance < threshold)
       return false;
 
   balance -= PieceValue[MG][nextVictim];
+  if (threshold > 0 && nextVictim == PAWN)
+ 	  balance -= relative_rank(~stm, to) * 20;
 
   if (balance >= threshold) // Always true if nextVictim == KING
       return true;
