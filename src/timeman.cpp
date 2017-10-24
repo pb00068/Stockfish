@@ -31,7 +31,7 @@ namespace {
   enum TimeType { OptimumTime, MaxTime };
 
   int remaining(int myTime, int myInc, int moveOverhead, int movesToGo,
-                int moveNum, bool ponder, TimeType type, bool expectedCont) {
+                int moveNum, bool ponder, TimeType type) {
 
     if (myTime <= 0)
         return 0;
@@ -69,9 +69,6 @@ namespace {
     if (type == OptimumTime && ponder)
         time = 5 * time / 4;
 
-    if (expectedCont)
-    	time *= 0.95;
-
     return time;
   }
 
@@ -87,7 +84,7 @@ namespace {
 ///  inc >  0 && movestogo == 0 means: x basetime + z increment
 ///  inc >  0 && movestogo != 0 means: x moves in y minutes + z increment
 
-void TimeManagement::init(Search::LimitsType& limits, Color us, int ply, bool expectedCont)
+void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
 {
   int moveOverhead = Options["Move Overhead"];
   int npmsec       = Options["nodestime"];
@@ -112,7 +109,7 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply, bool ex
 
   startTime = limits.startTime;
   optimumTime = remaining(limits.time[us], limits.inc[us], moveOverhead,
-                          limits.movestogo, moveNum, ponder, OptimumTime, expectedCont);
+                          limits.movestogo, moveNum, ponder, OptimumTime);
   maximumTime = remaining(limits.time[us], limits.inc[us], moveOverhead,
-                          limits.movestogo, moveNum, ponder, MaxTime, expectedCont);
+                          limits.movestogo, moveNum, ponder, MaxTime);
 }

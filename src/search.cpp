@@ -219,6 +219,7 @@ void Search::clear() {
 
   Threads.main()->callsCnt = 0;
   Threads.main()->previousScore = VALUE_INFINITE;
+  //Threads.main()->previousPv = nullptr;
 }
 
 
@@ -237,7 +238,35 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
 
   bool expectedContinuation = lastparsedmove != MOVE_NONE && lastparsedmove == pondermove;
-  Time.init(Limits, us, rootPos.game_ply(), expectedContinuation);
+  if (expectedContinuation)
+  {
+      auto& pv = previousPv;
+      StateInfo st[MAX_PLY];
+      unsigned int i, j = 0;
+
+      for (i = 2; i < pv.size() && rootPos.legal(pv[i]); i++)
+      {
+          rootPos.do_move(pv[i], st[i]);
+          j++;
+      }
+
+      while (i > 2)
+      {
+          rootPos.undo_move(pv[--i]);
+	      if (!rootPos.capture_or_promotion(pv[i])) {
+	           Color c = rootPos.side_to_move();
+	           mainHistory.update(c, pv[i], stat_bonus(Depth(j + 2 - i)));
+//	           std::cerr << rootPos << " best continuation is  " << UCI::move(pv[i], false) << std::endl;
+//              std::cerr << "info continuation bonus " << stat_bonus(Depth(j + 2 - i)) << std::endl;
+//			    for (int z : {1, 2, 4})
+//			        if (i - z >= 0)
+//			        {
+//			        	  contHistory[rootPos.moved_piece(pv[i -z])][to_sq(pv[i -z])].update(rootPos.moved_piece(pv[i]), to_sq(pv[i]), stat_bonus(Depth(j + 2 - i)));
+//			        }
+          }
+      }
+  }
+  Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
 
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
@@ -305,6 +334,7 @@ void MainThread::search() {
   }
 
   previousScore = bestThread->rootMoves[0].score;
+  previousPv = bestThread->rootMoves[0].pv;
 
   // Send new PV when needed
   if (bestThread != this)

@@ -87,6 +87,7 @@ struct MainThread : public Thread {
   Value previousScore;
   int callsCnt;
   Move pondermove, lastparsedmove;
+  std::vector<Move> previousPv;
 };
 
 
