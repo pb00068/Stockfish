@@ -242,7 +242,7 @@ void MainThread::search() {
   {
       auto& pv = previousPv;
       StateInfo st[MAX_PLY];
-      unsigned int i;
+      int i;
 
       for (i = 2; i < pv.size() && rootPos.legal(pv[i]); i++)
           rootPos.do_move(pv[i], st[i]);
@@ -252,9 +252,9 @@ void MainThread::search() {
           rootPos.undo_move(pv[--i]);
 	      if (!rootPos.capture_or_promotion(pv[i]))
 	           mainHistory.update(rootPos.side_to_move(), pv[i], stat_bonus(Depth(completedDepth - i)));
-//			    for (int z : {1, 2, 4})
-//			        if (i - z >= 0)
-//			        	  contHistory[rootPos.moved_piece(pv[i -z])][to_sq(pv[i -z])].update(rootPos.moved_piece(pv[i]), to_sq(pv[i]), stat_bonus(Depth(j + 2 - i)));
+			    for (int z : {1, 2, 4})
+			        if (i - z >= 0)
+			        	  contHistory[rootPos.moved_piece(pv[i -z])][to_sq(pv[i -z])].update(rootPos.moved_piece(pv[i]), to_sq(pv[i]), stat_bonus(Depth(completedDepth - i)));
       }
   }
   Time.init(Limits, us, rootPos.game_ply());
