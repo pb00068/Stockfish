@@ -86,8 +86,6 @@ struct MainThread : public Thread {
   double bestMoveChanges, previousTimeReduction;
   Value previousScore;
   int callsCnt;
-  Move pondermove, lastparsedmove;
-  bool expectedContinuation;
 };
 
 

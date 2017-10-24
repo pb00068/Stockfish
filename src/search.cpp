@@ -198,8 +198,6 @@ void MainThread::search() {
 
   Color us = rootPos.side_to_move();
 
-  expectedContinuation = lastparsedmove != MOVE_NONE && lastparsedmove == pondermove;
-
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
 
@@ -274,10 +272,8 @@ void MainThread::search() {
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
-  pondermove = MOVE_NONE;
   if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
   {
-      pondermove = bestThread->rootMoves[0].pv[1];
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
   }
 
@@ -455,8 +451,6 @@ void Thread::search() {
 								 && ::PV_is_draw(rootPos);
 
 				double unstablePvFactor = (thinkHard ? 2 : 1) + mainThread->bestMoveChanges;
-				if (mainThread->expectedContinuation && unstablePvFactor < 1.1)
-				   	  unstablePvFactor-= 0.2;
 
 				// if the bestMove is stable over several iterations, reduce time for this move,
 				// the longer the move has been stable, the more.
