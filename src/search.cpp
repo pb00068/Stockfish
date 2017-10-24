@@ -238,32 +238,23 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
 
   bool expectedContinuation = lastparsedmove != MOVE_NONE && lastparsedmove == pondermove;
-  if (expectedContinuation)
+  if (expectedContinuation && completedDepth > 8 * ONE_PLY)
   {
       auto& pv = previousPv;
       StateInfo st[MAX_PLY];
-      unsigned int i, j = 0;
+      unsigned int i;
 
       for (i = 2; i < pv.size() && rootPos.legal(pv[i]); i++)
-      {
           rootPos.do_move(pv[i], st[i]);
-          j++;
-      }
 
       while (i > 2)
       {
           rootPos.undo_move(pv[--i]);
-	      if (!rootPos.capture_or_promotion(pv[i])) {
-	           Color c = rootPos.side_to_move();
-	           mainHistory.update(c, pv[i], stat_bonus(Depth(j + 2 - i)));
-//	           std::cerr << rootPos << " best continuation is  " << UCI::move(pv[i], false) << std::endl;
-//              std::cerr << "info continuation bonus " << stat_bonus(Depth(j + 2 - i)) << std::endl;
+	      if (!rootPos.capture_or_promotion(pv[i]))
+	           mainHistory.update(rootPos.side_to_move(), pv[i], stat_bonus(Depth(completedDepth - i)));
 //			    for (int z : {1, 2, 4})
 //			        if (i - z >= 0)
-//			        {
 //			        	  contHistory[rootPos.moved_piece(pv[i -z])][to_sq(pv[i -z])].update(rootPos.moved_piece(pv[i]), to_sq(pv[i]), stat_bonus(Depth(j + 2 - i)));
-//			        }
-          }
       }
   }
   Time.init(Limits, us, rootPos.game_ply());
@@ -363,6 +354,7 @@ void Thread::search() {
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
+  completedDepth = DEPTH_ZERO;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
