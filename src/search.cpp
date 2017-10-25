@@ -763,23 +763,9 @@ namespace {
 
         assert(is_ok((ss-1)->currentMove));
 
-        MovePicker* mpp;
+        MovePicker mp(pos, ttMove, rbeta - ss->staticEval);
 
-        if (rbeta - ss->staticEval < 0)
-        {
-           const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
-           Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-           MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, contHist, countermove, ss->killers);
-           mpp = &mp;
-        }
-        else
-        {
-           MovePicker mp(pos, ttMove, rbeta - ss->staticEval);
-           mpp = &mp;
-        }
-
-        int mc = 0;
-        while ((move = mpp->next_move()) != MOVE_NONE && mc < 10)
+        while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
             {
                 ss->currentMove = move;
@@ -791,7 +777,6 @@ namespace {
                 pos.undo_move(move);
                 if (value >= rbeta)
                     return value;
-                mc++;
             }
     }
 
