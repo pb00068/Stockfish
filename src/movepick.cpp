@@ -27,7 +27,7 @@ namespace {
   enum Stages {
     MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
-    PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
+    PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES, PROBCUT_KILLER,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
     QSEARCH_NO_CHECKS, QCAPTURES_2_INIT, QCAPTURES_2,
     QSEARCH_RECAPTURES, QRECAPTURES
@@ -107,15 +107,15 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE higher
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th)
-           : pos(p), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, Move* killers_p)
+           : pos(p), killers{killers_p[0], killers_p[1]}, threshold(th)  {
 
   assert(!pos.checkers());
 
   stage = PROBCUT;
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
-          && pos.capture(ttm)
+          && (pos.capture(ttm) || threshold < VALUE_ZERO)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
@@ -278,7 +278,28 @@ Move MovePicker::next_move(bool skipQuiets) {
               && pos.see_ge(move, threshold))
               return move;
       }
-      break;
+
+      if (threshold >= VALUE_ZERO)
+    	  break;
+
+      ++stage;
+        move = killers[0];  // First killer move
+        if (    move != MOVE_NONE
+            &&  move != ttMove
+            &&  pos.pseudo_legal(move)
+            && !pos.capture(move))
+            return move;
+        /* fallthrough */
+
+    case PROBCUT_KILLER:
+        ++stage;
+        move = killers[1]; // Second killer move
+        if (    move != MOVE_NONE
+            &&  move != ttMove
+            &&  pos.pseudo_legal(move)
+            && !pos.capture(move))
+            return move;
+        break;
 
   case QCAPTURES_1_INIT: case QCAPTURES_2_INIT:
       cur = moves;
