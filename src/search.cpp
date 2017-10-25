@@ -455,13 +455,14 @@ void Thread::search() {
 								 && ::PV_is_draw(rootPos);
 
 				double unstablePvFactor = (thinkHard ? 2 : 1) + mainThread->bestMoveChanges;
-				if (mainThread->expectedContinuation && unstablePvFactor < 1.1)
-				   	  unstablePvFactor-= 0.2;
 
 				// if the bestMove is stable over several iterations, reduce time for this move,
 				// the longer the move has been stable, the more.
 				// Use part of the gained time from a previous stable move for the current move.
 				timeReduction = 1;
+				if (mainThread->expectedContinuation && unstablePvFactor < 1.1 && Limits.time[us] < Limits.time[~us])
+					timeReduction = 1.2;
+
 				for (int i : {3, 4, 5})
 					if (lastBestMoveDepth * i < completedDepth && !thinkHard)
 					   timeReduction *= 1.3;
