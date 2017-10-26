@@ -1021,19 +1021,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   // but possibly an X-ray attacker added behind it.
   Bitboard attackers = attackers_to(to, occupied) & occupied;
 
-//  if (recap != SQ_NONE && recap != to && !(attackers & pieces(stm)) && (occupied & recap))
-//  {
-//	  to = recap;
-//	  // undo calc because nextVictim will be another
-//	  balance += PieceValue[MG][nextVictim];
-//	  nextVictim =  type_of(piece_on(to));
-//	  balance -= PieceValue[MG][nextVictim];
-//	  attackers = attackers_to(to, occupied) & occupied;
-//
-//	  //if (attackers)
-//		//  sync_cout << *this << " move " << UCI::move(m, false) <<  "  " << UCI::move(make_move(recap, recap) , false) << sync_endl;
-//  }
-
   while (true)
   {
       stmAttackers = attackers & pieces(stm);

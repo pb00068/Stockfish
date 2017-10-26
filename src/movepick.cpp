@@ -19,10 +19,8 @@
 */
 
 #include <cassert>
-#include <iostream>
 
 #include "movepick.h"
-#include "uci.h"
 #include "misc.h"
 
 namespace {
@@ -186,12 +184,6 @@ Move MovePicker::next_move(bool skipQuiets) {
           {
               if (pos.see_ge(move, threshold && recaptureSquare != from_sq(move) && !pos.gives_check(move) ? threshold : VALUE_ZERO ))
                   return move;
-
-//              if (pos.see_ge(move))
-//              {
-//            	  sync_cout << pos << " move: " << UCI::move(move, false) << " thr: " << threshold << " recap sq: " <<  UCI::move(make_move(recaptureSquare, recaptureSquare), false) << sync_endl;
-//
-//              }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;

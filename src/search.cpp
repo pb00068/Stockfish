@@ -1025,23 +1025,13 @@ moves_loop: // When in check search starts from here
 
       if (depth > 3 * ONE_PLY && !recapValue && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && to_sq((ss+1)->currentMove) != to_sq(move) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + recapValue + KnightValueMg))
       {
-    	  //recap = to_sq((ss+1)->currentMove);
     	  recapValue += KnightValueMg;
     	  mp.setThreshold(recapValue);
     	  mp.recaptureSquare = to_sq((ss+1)->currentMove);
-    	  //sync_cout << pos << UCI::move((ss+1)->currentMove, false) << " value : " << recapValue << sync_endl;
       }
 
       // Step 17. Undo move
       pos.undo_move(move);
-
-//      if (recapValue)
-//	  {
-//		  sync_cout << pos << " threshold for move " << UCI::move(move, false) << sync_endl;
-//	  }
-      //if (depth > 3 * ONE_PLY)
-    	//  dbg_hit_on(recapSq != SQ_NONE);
-
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
