@@ -27,7 +27,7 @@ namespace {
   enum Stages {
     MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
-    PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES, PROBCUT_KILLER,
+    PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES, PROBCUT_KILLER1, PROBCUT_KILLER2,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
     QSEARCH_NO_CHECKS, QCAPTURES_2_INIT, QCAPTURES_2,
     QSEARCH_RECAPTURES, QRECAPTURES
@@ -115,7 +115,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, Move* killers_p)
   stage = PROBCUT;
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
-          && (pos.capture(ttm) || threshold < VALUE_ZERO)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
@@ -162,7 +161,7 @@ Move MovePicker::next_move(bool skipQuiets) {
   switch (stage) {
 
   case MAIN_SEARCH: case EVASION: case QSEARCH_WITH_CHECKS:
-  case QSEARCH_NO_CHECKS: case PROBCUT:
+  case QSEARCH_NO_CHECKS:
       ++stage;
       return ttMove;
 
@@ -263,6 +262,11 @@ Move MovePicker::next_move(bool skipQuiets) {
       }
       break;
 
+  case PROBCUT:
+	++stage;
+    if (ttMove && pos.capture(ttMove))
+    	return ttMove;
+
   case PROBCUT_INIT:
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
@@ -283,6 +287,11 @@ Move MovePicker::next_move(bool skipQuiets) {
     	  break;
 
       ++stage;
+       if (ttMove && !pos.capture(ttMove))
+    	   return ttMove;
+
+   case PROBCUT_KILLER1:
+      ++stage;
         move = killers[0];  // First killer move
         if (    move != MOVE_NONE
             &&  move != ttMove
@@ -291,7 +300,7 @@ Move MovePicker::next_move(bool skipQuiets) {
             return move;
         /* fallthrough */
 
-    case PROBCUT_KILLER:
+    case PROBCUT_KILLER2:
         ++stage;
         move = killers[1]; // Second killer move
         if (    move != MOVE_NONE

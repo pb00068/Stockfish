@@ -759,7 +759,7 @@ namespace {
         &&  depth >= 5 * ONE_PLY
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value rbeta = std::min(beta + 200, VALUE_INFINITE);
+        Value rbeta = std::min(beta + 193, VALUE_INFINITE);
 
         assert(is_ok((ss-1)->currentMove));
 
