@@ -1023,15 +1023,24 @@ moves_loop: // When in check search starts from here
                                        : - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, false);
       }
 
-      if (depth > 3 * ONE_PLY && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && to_sq((ss+1)->currentMove) != to_sq(move) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + recapValue + KnightValueMg))
+      if (depth > 4 * ONE_PLY && value <= alpha && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && to_sq((ss+1)->currentMove) != to_sq(move) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + recapValue + PawnValueMg))
       {
-    	  recapValue += KnightValueMg;
+    	  recapValue += PawnValueMg;
     	  mp.setThreshold(recapValue);
     	  mp.recaptureSquare = to_sq((ss+1)->currentMove);
+    	  pos.undo_move(move);
+    	  if (!pos.see_ge((ss+1)->currentMove, recapValue))
+    	  {
+    		  recapValue = VALUE_ZERO;
+    		  mp.setThreshold(VALUE_ZERO);
+    		  mp.recaptureSquare = SQ_NONE;
+    	  }
       }
-
+      else
       // Step 17. Undo move
       pos.undo_move(move);
+
+
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
