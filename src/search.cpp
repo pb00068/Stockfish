@@ -796,7 +796,7 @@ moves_loop: // When in check search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-
+    Square recap = SQ_NONE;
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
@@ -873,7 +873,7 @@ moves_loop: // When in check search starts from here
       }
       else if (    givesCheck
                && !moveCountPruning
-               &&  pos.see_ge(move))
+               &&  pos.see_ge(move, VALUE_ZERO, SQ_NONE))
           extension = ONE_PLY;
 
       // Calculate new depth for this move
@@ -912,12 +912,12 @@ moves_loop: // When in check search starts from here
 
               // Prune moves with negative SEE
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth), recap))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY), recap))
                   continue;
       }
 
@@ -973,7 +973,7 @@ moves_loop: // When in check search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), VALUE_ZERO, SQ_NONE))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
@@ -1023,8 +1023,23 @@ moves_loop: // When in check search starts from here
                                        : - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, false);
       }
 
+      if (recap == SQ_NONE && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + KnightValueMg, SQ_NONE))
+      {
+    	  recap = to_sq((ss+1)->currentMove);
+    	  mp.recaptureSquare = recap;
+    	  //sync_cout << pos << UCI::move((ss+1)->currentMove, false) << sync_endl;
+      }
+
       // Step 17. Undo move
       pos.undo_move(move);
+
+//      if (recap != SQ_NONE)
+//	  {
+//		  sync_cout << pos << sync_endl;
+//	  }
+     // if (depth > 3 * ONE_PLY)
+    	//  dbg_hit_on(recap != SQ_NONE);
+
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1270,7 +1285,7 @@ moves_loop: // When in check search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1, SQ_NONE))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1286,7 +1301,7 @@ moves_loop: // When in check search starts from here
       // Don't search moves with negative SEE values
       if (  (!InCheck || evasionPrunable)
           &&  type_of(move) != PROMOTION
-          &&  !pos.see_ge(move))
+          &&  !pos.see_ge(move, VALUE_ZERO, SQ_NONE))
           continue;
 
       // Speculative prefetch as early as possible

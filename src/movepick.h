@@ -97,6 +97,7 @@ public:
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const PieceToHistory**, Move, Move*);
   Move next_move(bool skipQuiets = false);
+  Square recaptureSquare;
 
 private:
   template<GenType> void score();
@@ -109,7 +110,6 @@ private:
   Move ttMove, countermove, killers[2];
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
-  Square recaptureSquare;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
