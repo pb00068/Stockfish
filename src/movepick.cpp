@@ -19,8 +19,11 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
+#include "uci.h"
+#include "misc.h"
 
 namespace {
 
@@ -77,6 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  threshold = VALUE_ZERO;
   recaptureSquare = SQ_NONE;
 }
 
@@ -117,7 +121,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th)
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, threshold, SQ_NONE) ? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
 }
@@ -180,8 +184,14 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO, recaptureSquare))
+              if (pos.see_ge(move, threshold && recaptureSquare != from_sq(move) && !pos.gives_check(move) ? threshold : VALUE_ZERO ))
                   return move;
+
+//              if (pos.see_ge(move))
+//              {
+//            	  sync_cout << pos << " move: " << UCI::move(move, false) << " thr: " << threshold << " recap sq: " <<  UCI::move(make_move(recaptureSquare, recaptureSquare), false) << sync_endl;
+//
+//              }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
@@ -276,7 +286,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, threshold, SQ_NONE))
+              && pos.see_ge(move, threshold))
               return move;
       }
       break;

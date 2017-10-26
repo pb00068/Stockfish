@@ -990,7 +990,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold, Square recap) const {
+bool Position::see_ge(Move m, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1021,18 +1021,18 @@ bool Position::see_ge(Move m, Value threshold, Square recap) const {
   // but possibly an X-ray attacker added behind it.
   Bitboard attackers = attackers_to(to, occupied) & occupied;
 
-  if (recap != SQ_NONE && recap != to && !(attackers & pieces(stm)) && (occupied & recap))
-  {
-	  to = recap;
-	  // undo calc because nextVictim will be another
-	  balance += PieceValue[MG][nextVictim];
-	  nextVictim =  type_of(piece_on(to));
-	  balance -= PieceValue[MG][nextVictim];
-	  attackers = attackers_to(to, occupied) & occupied;
-
-	  //if (attackers)
-		//  sync_cout << *this << " move " << UCI::move(m, false) <<  "  " << UCI::move(make_move(recap, recap) , false) << sync_endl;
-  }
+//  if (recap != SQ_NONE && recap != to && !(attackers & pieces(stm)) && (occupied & recap))
+//  {
+//	  to = recap;
+//	  // undo calc because nextVictim will be another
+//	  balance += PieceValue[MG][nextVictim];
+//	  nextVictim =  type_of(piece_on(to));
+//	  balance -= PieceValue[MG][nextVictim];
+//	  attackers = attackers_to(to, occupied) & occupied;
+//
+//	  //if (attackers)
+//		//  sync_cout << *this << " move " << UCI::move(m, false) <<  "  " << UCI::move(make_move(recap, recap) , false) << sync_endl;
+//  }
 
   while (true)
   {

@@ -97,6 +97,7 @@ public:
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const PieceToHistory**, Move, Move*);
   Move next_move(bool skipQuiets = false);
+  void setThreshold(Value t) { threshold = t; }
   Square recaptureSquare;
 
 private:
@@ -110,6 +111,7 @@ private:
   Move ttMove, countermove, killers[2];
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
+
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
