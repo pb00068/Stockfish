@@ -1023,7 +1023,7 @@ moves_loop: // When in check search starts from here
                                        : - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, false);
       }
 
-      if (depth > 3 * ONE_PLY && !recapValue && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && to_sq((ss+1)->currentMove) != to_sq(move) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + recapValue + KnightValueMg))
+      if (depth > 3 * ONE_PLY && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) && to_sq((ss+1)->currentMove) != to_sq(move) && pos.see_ge((ss+1)->currentMove, PieceValue[MG][pos.captured_piece()] + recapValue + KnightValueMg))
       {
     	  recapValue += KnightValueMg;
     	  mp.setThreshold(recapValue);

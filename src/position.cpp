@@ -23,7 +23,6 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
