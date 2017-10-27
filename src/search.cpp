@@ -924,11 +924,8 @@ moves_loop: // When in check search starts from here
             	  if (!pos.see_ge(move, threshold))
             	     continue;
 
-//            	  if ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move())))
-//            	  {
-//            	      continue;
-//            	  }
-
+            	  if ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move())))
+            	      continue;
               }
           }
           else if (    depth < 7 * ONE_PLY && !extension)
@@ -937,12 +934,7 @@ moves_loop: // When in check search starts from here
         	  if (!pos.see_ge(move, threshold))
         	       continue;
         	  if (!givesCheck && ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move()))))
-        	  {
-        		  //dbg_hit_on (more_than_one(pinnedOnQueen));
-        		  //sync_cout << pos << UCI::move(move, false) << sync_endl;
         		  continue;
-        	  }
-
           }
       }
 
