@@ -486,8 +486,8 @@ Bitboard Position::queen_enprise_or_pinned_on(Square qsq) const {
   if (PseudoAttacks[KNIGHT][qsq] & pieces(~sideToMove, KNIGHT))
 	 return AllSquares ^ qsq;
 
-  if (Pawns::probe(*this)->pawnAttacks[~sideToMove] & qsq)
-	  return AllSquares ^ qsq;
+  //if (Pawns::probe(*this)->pawnAttacks[~sideToMove] & qsq)
+  //	  return AllSquares ^ qsq;
 
   Bitboard result = 0;
 

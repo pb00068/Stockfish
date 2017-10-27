@@ -815,6 +815,7 @@ moves_loop: // When in check search starts from here
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
 
     Bitboard freezedSquares = 0;
+    bool freezedcalc = false;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -850,8 +851,9 @@ moves_loop: // When in check search starts from here
                   ? pos.check_squares(type_of(pos.piece_on(from_sq(move)))) & to_sq(move)
                   : pos.gives_check(move);
 
-      moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
+      moveCountPruning = depth < 16 * ONE_PLY && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
+
+
 
       // Step 12. Singular and Gives Check Extensions
 
@@ -888,8 +890,7 @@ moves_loop: // When in check search starts from here
           && pos.non_pawn_material(pos.side_to_move())
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
-    	  if (moveCount == 7 && depth < 16 * ONE_PLY && pos.count<QUEEN>(pos.side_to_move()))
-    	       freezedSquares = pos.queen_enprise_or_pinned_on(pos.square<QUEEN>(pos.side_to_move()));
+
 
           if (   !captureOrPromotion
               && !givesCheck
@@ -921,10 +922,18 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 8 )
               {
             	  Value threshold = Value(-35 * lmrDepth * lmrDepth);
-            	  if (!pos.see_ge(move, threshold))
-            	     continue;
-
+            	  if (!freezedcalc && lmrDepth > 1)
+            	  {
+            	    	freezedcalc = true;
+            	    	if (pos.count<QUEEN>(pos.side_to_move())) {
+            	    		freezedSquares = pos.queen_enprise_or_pinned_on(pos.square<QUEEN>(pos.side_to_move()));
+            	    	}
+            	  }
             	  if ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move())))
+            	  {
+            	      continue;
+            	  }
+            	  if (!pos.see_ge(move, threshold))
             	      continue;
               }
           }
@@ -933,8 +942,8 @@ moves_loop: // When in check search starts from here
         	  Value threshold = -PawnValueEg * (depth / ONE_PLY);
         	  if (!pos.see_ge(move, threshold))
         	       continue;
-        	  if (!givesCheck && ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move()))))
-        		  continue;
+        	 // if (!givesCheck && ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move()))))
+        	//	  continue;
           }
       }
 
@@ -1089,18 +1098,6 @@ moves_loop: // When in check search starts from here
           if (value > alpha)
           {
               bestMove = move;
-
-//              if (    depth < 7 * ONE_PLY && !extension)
-//			{
-//			  Value threshold = -PawnValueEg * (depth / ONE_PLY);
-//			  if (!givesCheck && ((freezedSquares & from_sq(move)) && pos.moveExposesQueen(move, threshold, pos.square<QUEEN>(pos.side_to_move()))))
-//			  {
-//				  //dbg_hit_on (more_than_one(pinnedOnQueen));
-//				  sync_cout << pos << UCI::move(move, false) << sync_endl;
-//
-//			  }
-//			}
-
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
