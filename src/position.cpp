@@ -482,6 +482,34 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 }
 
 
+Bitboard Position::queen_enprise_or_pinned_on(Square qsq) const {
+  if (PseudoAttacks[KNIGHT][qsq] & pieces(~sideToMove, KNIGHT))
+	 return AllSquares ^ qsq;
+
+  if (Pawns::probe(*this)->pawnAttacks[~sideToMove] & qsq)
+	  return AllSquares ^ qsq;
+
+  Bitboard result = 0;
+
+  // Snipers are sliders that attack 's' when a piece is removed
+  Bitboard snipers = (  (PseudoAttacks[  ROOK][qsq] & pieces(QUEEN, ROOK))
+                      | (PseudoAttacks[BISHOP][qsq] & pieces(QUEEN, BISHOP))) & pieces(~sideToMove, ROOK, BISHOP);
+
+  while (snipers)
+  {
+    Square sniperSq = pop_lsb(&snipers);
+    Bitboard b = between_bb(qsq, sniperSq) & pieces();
+
+    if (!b)
+    	return AllSquares ^ qsq;
+    if (!more_than_one(b))
+       result |= b;
+
+  }
+  return result;
+}
+
+
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
 /// given square. Slider attacks use the occupied bitboard to indicate occupancy.
 
@@ -1050,6 +1078,24 @@ bool Position::see_ge(Move m, Value threshold) const {
   }
 }
 
+bool Position::moveExposesQueen(Move m, Value threshold, Square q) const {
+
+  assert(is_ok(m));
+
+  // Only deal with normal moves, assume others pass a simple see
+  if (type_of(m) != NORMAL)
+      return false;
+
+  Square from = from_sq(m), to = to_sq(m);
+  Bitboard occupied = pieces() ^ from;
+  if (piece_on(to) == NO_PIECE)
+	  occupied ^= to;
+  Bitboard queenAttacks = attackers_to(q, occupied) & occupied & pieces(~sideToMove);
+  if (queenAttacks && PieceValue[MG][piece_on(to)] - PieceValue[MG][QUEEN] < threshold)
+	    return true;
+
+  return false;
+}
 
 /// Position::is_draw() tests whether the position is drawn by 50-move rule
 /// or by repetition. It does not detect stalemates.

@@ -116,6 +116,7 @@ public:
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  Bitboard queen_enprise_or_pinned_on(Square qsq) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -140,6 +141,7 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value threshold = VALUE_ZERO) const;
+  bool moveExposesQueen(Move m, Value threshold, Square q) const;
 
   // Accessing hash keys
   Key key() const;
