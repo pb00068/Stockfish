@@ -176,10 +176,12 @@ Move MovePicker::next_move(bool skipQuiets) {
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
-          move = pick_best(cur++, endMoves);
+          move = pick_best(cur, endMoves);
+          int val = cur->value;
+          cur++;
           if (move != ttMove)
           {
-              if (pos.see_ge(move))
+              if (pos.see_ge(move, Value(std::min(0, 1500 - val))))
                   return move;
 
               // Losing capture, move it to the beginning of the array
