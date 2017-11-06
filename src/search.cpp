@@ -888,7 +888,7 @@ moves_loop: // When in check search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 3 && ss->counterStrike && to_sq(move) != from_sq(ss->counterStrike) && from_sq(move) != to_sq(ss->counterStrike) && pos.see_ge(ss->counterStrike, Value(300)))
+              if (lmrDepth < 6 && ss->counterStrike && from_sq(move) != to_sq(ss->counterStrike) && pos.see_ge(ss->counterStrike, Value(300)))
             	  continue;
           }
           else if (    depth < 7 * ONE_PLY
