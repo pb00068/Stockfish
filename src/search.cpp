@@ -782,6 +782,8 @@ moves_loop: // When in check search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
+    bool csInit = false;
+    Move counterStrike = MOVE_NONE;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -883,6 +885,35 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
+
+              if (!csInit && depth > 4 * ONE_PLY && lmrDepth < 4 && mp.remainingQuiets() > 10)
+              {
+            	  StateInfo sti;
+            	  pos.do_null_move(sti);
+            	  MovePicker mpn(pos, MOVE_NONE, Value(300), &thisThread->captureHistory);
+            	  Move m;
+            	  while ((m = mpn.next_move()) != MOVE_NONE)
+            	  if (pos.legal(m))
+            	  {
+            		  if (!counterStrike)
+            			  counterStrike = m;
+            		  else if (to_sq(counterStrike) != to_sq(m))
+            		  {
+            			  counterStrike = MOVE_NONE;
+            			  break; // position to sharp & complex
+            		  }
+            	  }
+            	  pos.undo_null_move();
+            	  csInit = true;
+              }
+
+              if (lmrDepth < 4 && counterStrike && from_sq(move) != to_sq(counterStrike) &&
+            	  !(between_bb(from_sq(counterStrike), to_sq(counterStrike)) & to_sq(move))) {
+
+            	  //  sync_cout << pos << "bad move : " << UCI::move(move,false) << " opp will play : " << UCI::move(counterStrike,false) << sync_endl;
+            	  //dbg_hit_on(true);
+            	  continue;
+              }
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension

@@ -150,6 +150,12 @@ void MovePicker::score() {
       }
 }
 
+int MovePicker::remainingQuiets() {
+	if (stage != QUIET)
+		return 0;
+	return endMoves - cur;
+}
+
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves
 /// left. It picks the move with the biggest value from a list of generated moves
