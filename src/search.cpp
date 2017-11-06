@@ -550,7 +550,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     (ss+1)->ply = ss->ply + 1;
-    ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->currentMove = (ss+1)->excludedMove = bestMove = ss->counterStrike = MOVE_NONE;
     ss->contHistory = &thisThread->contHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
@@ -658,8 +658,6 @@ namespace {
                   ss->staticEval, TT.generation());
     }
 
-    Move threatening = MOVE_NONE;
-
     if (skipEarlyPruning)
         goto moves_loop;
 
@@ -712,13 +710,7 @@ namespace {
                 nullValue = beta;
 
             if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
-            {
-            	if (depth < 7 * ONE_PLY && is_ok((ss+1)->currentMove) && pos.capture_or_promotion((ss+1)->currentMove) && pos.see_ge((ss+1)->currentMove, Value(300)))
-            		threatening = (ss+1)->currentMove;
-            		//sync_cout << pos << " capture: " << UCI::move((ss+1)->currentMove, false) << " is threatening, depth " << depth << sync_endl;
-            		//dbg_hit_on(depth < 6);
                 return nullValue;
-            }
 
             // Do verification search at high depths
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
@@ -753,7 +745,11 @@ namespace {
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
                 pos.undo_move(move);
                 if (value >= rbeta)
+                {
+                	if (depth < 8 * ONE_PLY && pos.see_ge(move, Value(300)))
+                		(ss-1)->counterStrike = move;
                     return value;
+                }
             }
     }
 
@@ -892,7 +888,7 @@ moves_loop: // When in check search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (threatening && to_sq(move) != from_sq(threatening) && from_sq(move) != to_sq(threatening))
+              if (lmrDepth < 3 && ss->counterStrike && to_sq(move) != from_sq(ss->counterStrike) && from_sq(move) != to_sq(ss->counterStrike) && pos.see_ge(ss->counterStrike, Value(300)))
             	  continue;
           }
           else if (    depth < 7 * ONE_PLY
