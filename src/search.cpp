@@ -658,6 +658,8 @@ namespace {
                   ss->staticEval, TT.generation());
     }
 
+    Move threatening = MOVE_NONE;
+
     if (skipEarlyPruning)
         goto moves_loop;
 
@@ -710,7 +712,13 @@ namespace {
                 nullValue = beta;
 
             if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            {
+            	if (depth < 7 * ONE_PLY && is_ok((ss+1)->currentMove) && pos.capture_or_promotion((ss+1)->currentMove) && pos.see_ge((ss+1)->currentMove, Value(300)))
+            		threatening = (ss+1)->currentMove;
+            		//sync_cout << pos << " capture: " << UCI::move((ss+1)->currentMove, false) << " is threatening, depth " << depth << sync_endl;
+            		//dbg_hit_on(depth < 6);
                 return nullValue;
+            }
 
             // Do verification search at high depths
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
@@ -883,6 +891,9 @@ moves_loop: // When in check search starts from here
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
+
+              if (threatening && to_sq(move) != from_sq(threatening) && from_sq(move) != to_sq(threatening))
+            	  continue;
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
