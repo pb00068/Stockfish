@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -176,15 +177,16 @@ Move MovePicker::next_move(bool skipQuiets) {
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
-          move = pick_best(cur++, endMoves);
+          move = pick_best(cur, endMoves);
+          int value = cur++->value;
           if (move != ttMove)
           {
-              if (pos.see_ge(move))
-                  return move;
+              if (pos.see_ge(move, VALUE_ZERO + (value < -100 ?  1 : 0)))
+            	  return move;
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
                   && type_of(pos.moved_piece(move)) == BISHOP
-                  && (cur-1)->value > 1090)
+                  && value > 1090)
                   return move;
 
               // Losing capture, move it to the beginning of the array
