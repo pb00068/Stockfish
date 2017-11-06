@@ -725,31 +725,37 @@ namespace {
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
-        &&  depth >= 5 * ONE_PLY
+        &&  ((depth >= 3 * ONE_PLY && !(ss-1)->counterStrike) || depth >= 5 * ONE_PLY)
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 200, VALUE_INFINITE);
 
         assert(is_ok((ss-1)->currentMove));
+        (ss-1)->counterStrike = MOVE_NONE;
 
-        MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
+        MovePicker mp(pos, ttMove, depth >= 5 * ONE_PLY ? rbeta - ss->staticEval : Value(300), &thisThread->captureHistory);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
             {
+
+                if (!(ss-1)->counterStrike && (rbeta - ss->staticEval > VALUE_ZERO || depth < 5 * ONE_PLY) && to_sq(move) != to_sq((ss-1)->currentMove))
+                	 (ss-1)->counterStrike = move;
+                else if ((ss-1)->counterStrike && to_sq(move) != to_sq((ss-1)->counterStrike))
+                {
+                	(ss-1)->counterStrike = MOVE_NONE; // to complex
+                	if (depth < 5 * ONE_PLY)
+                	   break;
+                }
+
                 ss->currentMove = move;
                 ss->contHistory = &thisThread->contHistory[pos.moved_piece(move)][to_sq(move)];
-
                 assert(depth >= 5 * ONE_PLY);
                 pos.do_move(move, st);
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
                 pos.undo_move(move);
                 if (value >= rbeta)
-                {
-                	if (depth < 8 * ONE_PLY && pos.see_ge(move, Value(300)))
-                		(ss-1)->counterStrike = move;
                     return value;
-                }
             }
     }
 
@@ -888,8 +894,13 @@ moves_loop: // When in check search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 6 && ss->counterStrike && from_sq(move) != to_sq(ss->counterStrike) && pos.see_ge(ss->counterStrike, Value(300)))
-            	  continue;
+              if (lmrDepth < 4 && ss->counterStrike && from_sq(move) != to_sq(ss->counterStrike))
+              {
+            	  if (pos.see_ge(ss->counterStrike, Value(300)))
+                     continue;
+                  else
+                     ss->counterStrike = MOVE_NONE;
+              }
           }
           else if (    depth < 7 * ONE_PLY
                    && !extension
