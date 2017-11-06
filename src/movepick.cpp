@@ -176,7 +176,7 @@ Move MovePicker::next_move(bool skipQuiets) {
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
-          move = pick_best(cur, endMoves);
+          move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
               if (pos.see_ge(move, (cur-1)->value > 1090 ? KnightValueMg - BishopValueMg  : VALUE_ZERO))
