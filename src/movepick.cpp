@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -70,7 +71,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers_p)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm),
-             killers{killers_p[0], killers_p[1]}, depth(d){
+             killers{killers_p[0], killers_p[1], killers_p[2]}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
@@ -179,6 +180,10 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
+
+        	  if (move == killers[2] && (cur-1)->value > 200)
+        		  return move;
+
               if (pos.see_ge(move))
                   return move;
 
@@ -186,6 +191,8 @@ Move MovePicker::next_move(bool skipQuiets) {
                   && type_of(pos.moved_piece(move)) == BISHOP
                   && (cur-1)->value > 1090)
                   return move;
+
+              //dbg_mean_of((cur-1)->value); 613
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
