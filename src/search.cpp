@@ -508,7 +508,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
-    bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
+    bool ttHit, inCheck, givesCheck, singularExtensionNode, improving, dangerous;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
@@ -816,6 +816,11 @@ moves_loop: // When in check search starts from here
       givesCheck =  type_of(move) == NORMAL && !pos.discovered_check_candidates()
                   ? pos.check_squares(type_of(pos.piece_on(from_sq(move)))) & to_sq(move)
                   : pos.gives_check(move);
+      
+      Color stm = pos.side_to_move();
+      Bitboard newattacks = givesCheck || depth > 5 * ONE_PLY ? 0 : type_of(pos.moved_piece(move)) == PAWN ?
+                 			   pos.attacks_from<PAWN>(to_sq(move), stm) : attacks_bb(type_of(pos.moved_piece(move)), to_sq(move), pos.pieces() & ~pos.pieces(stm, QUEEN));
+      dangerous = newattacks & (pos.pieces(~stm, QUEEN, ROOK) | DistanceRingBB[pos.square<KING>(~stm)][0]);
 
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
@@ -855,6 +860,7 @@ moves_loop: // When in check search starts from here
       {
           if (   !captureOrPromotion
               && !givesCheck
+			  && !dangerous
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
               // Move count based pruning
