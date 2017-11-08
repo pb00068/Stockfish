@@ -70,7 +70,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers_p)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm),
-             killers{killers_p[0], killers_p[1]}, depth(d){
+             killers{killers_p[0], killers_p[1], killers_p[2]}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
@@ -179,6 +179,8 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
+        	  if (move == killers[2] && (cur-1)->value > 1200)
+        	      return move;
               if (pos.see_ge(move))
                   return move;
 
