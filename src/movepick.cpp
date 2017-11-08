@@ -181,7 +181,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           int value = cur++->value;
           if (move != ttMove)
           {
-              if (pos.see_ge(move, VALUE_ZERO + (value < -100 ?  1 : 0)))
+              if (pos.see_ge(move, VALUE_ZERO + (value < -400 ?  1 : 0)))
             	  return move;
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
