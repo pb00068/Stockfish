@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_TRADES, BAD_QUIETS, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -168,6 +168,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
+      endBadTrades = moves + MAX_MOVES - 1;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       ++stage;
@@ -180,7 +181,15 @@ Move MovePicker::next_move(bool skipQuiets) {
           if (move != ttMove)
           {
               if (pos.see_ge(move))
-                  return move;
+              {
+                  if ((cur-1)->value > -300 || type_of(pos.piece_on(to_sq(move)))!= type_of(pos.moved_piece(move)))
+                     return move;
+            	  else // BAD_TRADE: Zero see_value & very bad history score
+            	  {
+                    (endBadTrades--)->move = move;
+                    continue;
+            	  }
+              }
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
                   && type_of(pos.moved_piece(move)) == BISHOP
@@ -233,7 +242,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case QUIET:
       while (    cur < endMoves
-             && (!skipQuiets || cur->value >= VALUE_ZERO))
+             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= VALUE_ZERO)
       {
           move = *cur++;
 
@@ -244,6 +253,30 @@ Move MovePicker::next_move(bool skipQuiets) {
               return move;
       }
       ++stage;
+      /* fallthrough */
+      curQuietes = cur;
+      cur = moves + MAX_MOVES - 1;
+
+   case BAD_TRADES:
+      while (cur > endBadTrades)
+        return (cur--)->move;
+      /* fallthrough */
+      ++stage;
+      cur = curQuietes;
+   case BAD_QUIETS:
+      while (    cur < endMoves && !skipQuiets)
+		{
+			move = *cur++;
+
+			if (   move != ttMove
+				&& move != killers[0]
+				&& move != killers[1]
+				&& move != countermove)
+				return move;
+		}
+		++stage;
+
+
       cur = moves; // Point to beginning of bad captures
       /* fallthrough */
 
