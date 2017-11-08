@@ -179,8 +179,10 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if ((move == killers[2] && (cur-1)->value > 200)
-                  || pos.see_ge(move))
+              if ((move == killers[2] && (cur-1)->value > 1200))
+                  return move;
+
+              if (pos.see_ge(move))
                   return move;
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
