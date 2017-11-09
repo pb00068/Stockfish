@@ -812,7 +812,7 @@ moves_loop: // When in check search starts from here
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       lmrCount++;
-      if (!captureOrPromotion)
+      if (captureOrPromotion)
     	  lmrCount++;
       movedPiece = pos.moved_piece(move);
 
@@ -821,7 +821,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && lmrCount / 2 >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && lmrCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 12. Singular and Gives Check Extensions
 
