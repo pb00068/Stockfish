@@ -198,7 +198,14 @@ Move MovePicker::next_move(bool skipQuiets) {
           &&  move != ttMove
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
+      {
+    	  if (ttMove && pos.pseudo_legal(ttMove))
+    	  {
+    		  ++stage; // skip second killer if we have also a tt move
+    		  killers[1] = MOVE_NONE;
+    	  }
           return move;
+      }
       /* fallthrough */
 
   case KILLERS:
