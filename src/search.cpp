@@ -900,7 +900,7 @@ moves_loop: // When in check search starts from here
           continue;
       }
 
-      if (move == ttMove && captureOrPromotion)
+      if (move == ttMove && captureOrPromotion && thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] > 800)
           ttCapture = true;
 
       // Update the current move (this must be done after singular extension search)
