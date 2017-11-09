@@ -192,7 +192,6 @@ Move MovePicker::next_move(bool skipQuiets) {
                      return move;
             	  else // BAD_TRADE: Zero see_value & bad history score
             	  {
-            		//  dbg_mean_of((cur-1)->value);
                     *endBadTrades-- = move;
                     continue;
             	  }
@@ -249,7 +248,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case QUIET:
       while (    cur < endMoves
-             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= Value(8000))
+             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= Value(10000))
       {
           move = *cur++;
 
