@@ -21,7 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
-
+#include "misc.h"
 namespace {
 
   enum Stages {
@@ -134,11 +134,14 @@ void MovePicker::score() {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    + Value((*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]);
 
-      else if (Type == QUIETS)
+      else if (Type == QUIETS) {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+//          if (depth >= 4 )
+//        	  dbg_mean_of(m.value);
+      }
 
       else // Type == EVASIONS
       {
@@ -182,11 +185,15 @@ Move MovePicker::next_move(bool skipQuiets) {
           {
               if (pos.see_ge(move))
               {
-                  if ((cur-1)->value > -300 || type_of(pos.piece_on(to_sq(move)))!= type_of(pos.moved_piece(move)))
+            	  //if (depth >= 4 * ONE_PLY )
+            	  //  dbg_hit_on( (cur-1)->value < 0 );
+
+                  if (depth < 4 * ONE_PLY || (cur-1)->value >= 0 || type_of(pos.piece_on(to_sq(move))) != type_of(pos.moved_piece(move)))
                      return move;
-            	  else // BAD_TRADE: Zero see_value & very bad history score
+            	  else // BAD_TRADE: Zero see_value & bad history score
             	  {
-                    (endBadTrades--)->move = move;
+            		//  dbg_mean_of((cur-1)->value);
+                    *endBadTrades-- = move;
                     continue;
             	  }
               }
@@ -242,7 +249,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case QUIET:
       while (    cur < endMoves
-             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= VALUE_ZERO)
+             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= Value(4000))
       {
           move = *cur++;
 
@@ -253,18 +260,22 @@ Move MovePicker::next_move(bool skipQuiets) {
               return move;
       }
       ++stage;
-      /* fallthrough */
+
       curQuietes = cur;
       cur = moves + MAX_MOVES - 1;
+      /* fallthrough */
 
    case BAD_TRADES:
       while (cur > endBadTrades)
         return (cur--)->move;
-      /* fallthrough */
+
       ++stage;
       cur = curQuietes;
+      /* fallthrough */
+
    case BAD_QUIETS:
-      while (    cur < endMoves && !skipQuiets)
+	   while (    cur < endMoves
+	       && (!skipQuiets || cur->value >= VALUE_ZERO))
 		{
 			move = *cur++;
 
