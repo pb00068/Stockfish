@@ -188,7 +188,7 @@ Move MovePicker::next_move(bool skipQuiets) {
             	  //if (depth >= 4 * ONE_PLY )
             	  //  dbg_hit_on( (cur-1)->value < 0 );
 
-                  if (depth < 4 * ONE_PLY || (cur-1)->value >= 0 || type_of(pos.piece_on(to_sq(move))) != type_of(pos.moved_piece(move)))
+                  if (depth < 3 * ONE_PLY || (cur-1)->value >= 0 || type_of(pos.piece_on(to_sq(move))) != type_of(pos.moved_piece(move)))
                      return move;
             	  else // BAD_TRADE: Zero see_value & bad history score
             	  {
@@ -249,7 +249,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case QUIET:
       while (    cur < endMoves
-             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= Value(4000))
+             && (!skipQuiets || cur->value >= VALUE_ZERO) && cur->value >= Value(8000))
       {
           move = *cur++;
 
