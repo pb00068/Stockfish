@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, CAPT_KILLER, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -70,7 +70,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers_p)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm),
-             killers{killers_p[0], killers_p[1]}, depth(d){
+             killers{killers_p[0], killers_p[1], killers_p[2]}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
@@ -166,6 +166,20 @@ Move MovePicker::next_move(bool skipQuiets) {
       ++stage;
       return ttMove;
 
+  case CAPT_KILLER:
+	  ++stage;
+	  if (ttMove && killers[2] && killers[2] != ttMove && pos.capture_or_promotion(ttMove) && pos.pseudo_legal(killers[2]) && pos.capture_or_promotion(killers[2])) {
+		  move = killers[2];
+		  int16_t val = (*captureHistory)[pos.moved_piece(move  )][to_sq(move  )][type_of(pos.piece_on(to_sq(move  )))];
+		  if (val >     (*captureHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] && pos.see_ge(move))
+			  return move;
+		  else
+			  killers[2] = MOVE_NONE;
+	  }
+	  else
+		  killers[2] = MOVE_NONE;
+	  /* fallthrough */
+
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
@@ -177,7 +191,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && move != killers[2])
           {
               if (pos.see_ge(move))
                   return move;
