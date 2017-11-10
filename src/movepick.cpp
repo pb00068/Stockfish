@@ -172,7 +172,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 	  ++stage;
 	  if (is_ok(previous)) {
 	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-	     if (move && pos.pseudo_legal(move) && pos.capture_or_promotion(move)) {
+	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)) {
 	    	 previous = move;
 	    	 return move;
 	     }
