@@ -283,7 +283,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           {
         	  Value val = PieceValue[MG][pos.piece_on(to_sq(move))]
         	              + Value((*captureHistory)[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))]);
-              if (val - 1000 > threshold || pos.see_ge(move, threshold))
+              if (val - 1200 > threshold || pos.see_ge(move, threshold))
                  return move;
           }
       }
