@@ -78,6 +78,9 @@ typedef StatBoards<PIECE_NB, SQUARE_NB> PieceToBoards;
 /// CapturePieceToBoards are addressed by a move's [piece][to][captured piece type] information
 typedef StatCubes<PIECE_NB, SQUARE_NB, PIECE_TYPE_NB> CapturePieceToBoards;
 
+/// CaptureSequence like CounterMove stores a move instead of a value, used when strikeBack on another square than to
+typedef StatCubes<PIECE_NB, SQUARE_NB, PIECE_TYPE_NB, Move> CaptureSequence;
+
 /// ButterflyHistory records how often quiet moves have been successful or
 /// unsuccessful during the current search, and is used for reduction and move
 /// ordering decisions. It uses ButterflyBoards as backing store.
@@ -104,6 +107,14 @@ struct CapturePieceToHistory : public CapturePieceToBoards {
   }
 };
 
+
+struct CaptureSeqToHistory : public CaptureSequence {
+
+  void update(Piece pc, Square to, PieceType captured, Move m) {
+    (*this)[pc][to][captured] = m;
+  }
+};
+
 /// CounterMoveHistory stores counter moves indexed by [piece][to] of the previous
 /// move, see chessprogramming.wikispaces.com/Countermove+Heuristic
 typedef StatBoards<PIECE_NB, SQUARE_NB, Move> CounterMoveHistory;
@@ -127,7 +138,7 @@ public:
   MovePicker& operator=(const MovePicker&) = delete;
   MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,  const CapturePieceToHistory*, Square);
-  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, Move, Move*);
+  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, const CaptureSeqToHistory*, Move, Move*, Move);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -139,7 +150,8 @@ private:
   const ButterflyHistory* mainHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
-  Move ttMove, countermove, killers[2];
+  Move ttMove, countermove, killers[2], previous;
+  const CaptureSeqToHistory* captSequence;
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
   Square recaptureSquare;

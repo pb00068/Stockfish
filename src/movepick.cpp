@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, ALT_CAPTURE, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -68,14 +68,16 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers_p)
-           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm),
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, const CaptureSeqToHistory* cs,
+					   Move cm, Move* killers_p, Move prev)
+           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm), captSequence(cs),
              killers{killers_p[0], killers_p[1]}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
+  previous = prev;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -166,6 +168,17 @@ Move MovePicker::next_move(bool skipQuiets) {
       ++stage;
       return ttMove;
 
+  case ALT_CAPTURE:
+	  ++stage;
+	  if (is_ok(previous)) {
+	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
+	     if (move && pos.pseudo_legal(move) && pos.capture_or_promotion(move)) {
+	    	 previous = move;
+	    	 return move;
+	     }
+	  }
+	  else previous = MOVE_NONE;
+
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
@@ -177,7 +190,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && move != previous)
           {
               if (pos.see_ge(move))
                   return move;
