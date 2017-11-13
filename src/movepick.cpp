@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -70,7 +71,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, const CaptureSeqToHistory* cs,
 					   Move cm, Move* killers_p, Move prev)
-           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), countermove(cm), captSequence(cs),
+           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), captSequence(cs), countermove(cm),
              killers{killers_p[0], killers_p[1]}, depth(d){
 
   assert(d > DEPTH_ZERO);
@@ -170,9 +171,9 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case ALT_CAPTURE:
 	  ++stage;
-	  if (is_ok(previous)) {
+	  if (is_ok(previous) && pos.captured_piece()) {
 	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)) {
+	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move) && pos.see_ge(move)) {
 	    	 previous = move;
 	    	 return move;
 	     }

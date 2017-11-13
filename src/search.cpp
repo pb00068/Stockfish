@@ -580,8 +580,6 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else
-                    update_capture_stats(pos, ttMove, nullptr, 0, stat_bonus(depth), (ss-1)->currentMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1387,8 +1385,9 @@ moves_loop: // When in check search starts from here
           captureHistory.update(moved_piece, to_sq(captures[i]), captured, -bonus);
       }
 
-      if (pos.captured_piece() && is_ok(previous) && to_sq(previous) != to_sq(move)) {
-    	  pos.this_thread()->captSeqMoves.update(pos.piece_on(to_sq(previous)), to_sq(previous) ,type_of(pos.captured_piece()), move);
+      if (captureCnt > 1 && pos.captured_piece() && is_ok(previous)) {
+    	  //dbg_hit_on(!pos.see_ge(move));
+    	  pos.this_thread()->captSeqMoves.update(pos.piece_on(to_sq(previous)), to_sq(previous), type_of(pos.captured_piece()), move);
       }
   }
 
