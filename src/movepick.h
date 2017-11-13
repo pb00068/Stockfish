@@ -78,7 +78,7 @@ typedef StatBoards<PIECE_NB, SQUARE_NB> PieceToBoards;
 /// CapturePieceToBoards are addressed by a move's [piece][to][captured piece type] information
 typedef StatCubes<PIECE_NB, SQUARE_NB, PIECE_TYPE_NB> CapturePieceToBoards;
 
-/// CaptureSequence like CounterMove stores a move instead of a value, used when strikeBack on another square than to
+/// CaptureSequence like CounterMove stores a move instead of a value
 typedef StatCubes<PIECE_NB, SQUARE_NB, PIECE_TYPE_NB, Move> CaptureSequence;
 
 /// ButterflyHistory records how often quiet moves have been successful or

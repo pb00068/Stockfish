@@ -580,6 +580,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else if (pos.captured_piece() && is_ok((ss-1)->currentMove))
+              	  pos.this_thread()->captSeqMoves.update(pos.piece_on(to_sq((ss-1)->currentMove)), to_sq((ss-1)->currentMove), type_of(pos.captured_piece()), ttMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1385,7 +1387,7 @@ moves_loop: // When in check search starts from here
           captureHistory.update(moved_piece, to_sq(captures[i]), captured, -bonus);
       }
 
-      if (captureCnt > 1 && pos.captured_piece() && is_ok(previous)) {
+      if (pos.captured_piece() && is_ok(previous)) {
     	  //dbg_hit_on(!pos.see_ge(move));
     	  pos.this_thread()->captSeqMoves.update(pos.piece_on(to_sq(previous)), to_sq(previous), type_of(pos.captured_piece()), move);
       }
@@ -1412,6 +1414,8 @@ moves_loop: // When in check search starts from here
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        if (pos.captured_piece())
+           pos.this_thread()->captSeqMoves.update(pos.piece_on(prevSq), prevSq, type_of(pos.captured_piece()), move);
     }
 
     // Decrease all the other played quiet moves

@@ -173,7 +173,8 @@ Move MovePicker::next_move(bool skipQuiets) {
 	  ++stage;
 	  if (is_ok(previous) && pos.captured_piece()) {
 	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move) && pos.see_ge(move)) {
+	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move) &&
+	    	(*captureHistory)[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] > 0) {
 	    	 previous = move;
 	    	 return move;
 	     }
