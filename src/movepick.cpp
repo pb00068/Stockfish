@@ -77,7 +77,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
-  previousOrKillerCapture = prev;
+  previous = prev;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -170,19 +170,14 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case ALT_CAPTURE:
 	  ++stage;
-	  if (pos.captured_piece() && is_ok(previousOrKillerCapture)) {
-	     move = (*captSequence)[pos.piece_on(to_sq(previousOrKillerCapture))][to_sq(previousOrKillerCapture)][type_of(pos.captured_piece())];
+	  if (is_ok(previous)) {
+	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
 	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move)) {
-	    	 previousOrKillerCapture = move;
+	    	 previous = move;
 	    	 return move;
 	     }
 	  }
-	  else if (is_ok(previousOrKillerCapture) && pos.pseudo_legal(previousOrKillerCapture) && pos.legal(previousOrKillerCapture) && pos.capture(previousOrKillerCapture))
-	  {
-		  move = previousOrKillerCapture;
-		  return move;
-	  }
-	  else previousOrKillerCapture = MOVE_NONE;
+	  else previous = MOVE_NONE;
 
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
@@ -195,7 +190,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && move != previousOrKillerCapture)
+          if (move != ttMove && move != previous)
           {
               if (pos.see_ge(move))
                   return move;

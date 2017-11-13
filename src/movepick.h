@@ -150,7 +150,7 @@ private:
   const ButterflyHistory* mainHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
-  Move ttMove, countermove, killers[2], previousOrKillerCapture;
+  Move ttMove, countermove, killers[2], previous;
   const CaptureSeqToHistory* captSequence;
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
