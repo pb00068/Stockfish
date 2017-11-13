@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, ALT_CAPTURE, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, ALT_CAPTURE, CAPTURES_INIT, GOOD_CAPTURES, CAPTURE_QUIET_RESPONSE, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -179,7 +179,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 	    	 return move;
 	     }
 	  }
-	  else previous = MOVE_NONE;
+
 
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
@@ -216,15 +216,30 @@ Move MovePicker::next_move(bool skipQuiets) {
           return move;
       /* fallthrough */
 
+  case CAPTURE_QUIET_RESPONSE:
+       ++stage;
+       if (is_ok(previous) && pos.captured_piece()) {
+       	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
+       	     if (move && move != ttMove && move != killers[1] && pos.pseudo_legal(move) && !pos.capture(move)) {
+       	    	 previous = move;
+       	    	 return move;
+       	     }
+       	  }
+       	  else previous = MOVE_NONE;
+       /* fallthrough */
+
   case KILLERS:
       ++stage;
       move = killers[1]; // Second killer move
       if (    move != MOVE_NONE
           &&  move != ttMove
+		  &&  move != previous
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
           return move;
       /* fallthrough */
+
+
 
   case COUNTERMOVE:
       ++stage;
@@ -233,6 +248,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           &&  move != ttMove
           &&  move != killers[0]
           &&  move != killers[1]
+		  &&  move != previous
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
           return move;
@@ -255,6 +271,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
+			  && move != previous
               && move != countermove)
               return move;
       }
