@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, ALT_CAPTURE, CAPTURES_INIT, GOOD_CAPTURES, CAPTURE_QUIET_RESPONSE, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -169,32 +169,25 @@ Move MovePicker::next_move(bool skipQuiets) {
       ++stage;
       return ttMove;
 
-  case ALT_CAPTURE:
-	  ++stage;
-	  if (is_ok(previous) && pos.captured_piece()) {
-	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-	     if (move && move != ttMove && pos.pseudo_legal(move) && pos.capture_or_promotion(move) &&
-	    	(*captureHistory)[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] > 0) {
-	    	 previous = move;
-	    	 return move;
-	     }
-	  }
-
-
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       ++stage;
+
+      if (pos.captured_piece() && is_ok(previous))
+         previous = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
+      else
+    	 previous = MOVE_NONE;
       /* fallthrough */
 
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && move != previous)
+          if (move != ttMove)
           {
-              if (pos.see_ge(move))
+              if (move == previous || pos.see_ge(move))
                   return move;
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
@@ -216,42 +209,31 @@ Move MovePicker::next_move(bool skipQuiets) {
           return move;
       /* fallthrough */
 
-  case CAPTURE_QUIET_RESPONSE:
-       ++stage;
-       if (is_ok(previous) && pos.captured_piece()) {
-       	     move = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-       	     if (move && move != ttMove && move != killers[1] && pos.pseudo_legal(move) && !pos.capture(move)) {
-       	    	 previous = move;
-       	    	 return move;
-       	     }
-       	  }
-       	  else previous = MOVE_NONE;
-       /* fallthrough */
-
   case KILLERS:
       ++stage;
       move = killers[1]; // Second killer move
       if (    move != MOVE_NONE
           &&  move != ttMove
-		  &&  move != previous
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
           return move;
       /* fallthrough */
 
 
-
   case COUNTERMOVE:
       ++stage;
+      if (pos.captured_piece() && previous)
+    	  countermove = previous;
+
       move = countermove;
       if (    move != MOVE_NONE
           &&  move != ttMove
           &&  move != killers[0]
           &&  move != killers[1]
-		  &&  move != previous
           &&  pos.pseudo_legal(move)
           && !pos.capture(move))
-          return move;
+    	  return move;
+
       /* fallthrough */
 
   case QUIET_INIT:
@@ -271,7 +253,6 @@ Move MovePicker::next_move(bool skipQuiets) {
           if (   move != ttMove
               && move != killers[0]
               && move != killers[1]
-			  && move != previous
               && move != countermove)
               return move;
       }
