@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, ALT_CAPT, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -169,25 +169,33 @@ Move MovePicker::next_move(bool skipQuiets) {
       ++stage;
       return ttMove;
 
+
+  case ALT_CAPT:
+	  ++stage;
+      cMove = MOVE_NONE;
+      if (pos.captured_piece() && is_ok(previous))
+      {
+     	 cMove = previous = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
+     	 if (cMove && cMove != ttMove && pos.pseudo_legal(cMove) && pos.capture_or_promotion(cMove) && pos.see_ge(cMove))
+     		 return cMove;
+         cMove = MOVE_NONE;
+      }
+
   case CAPTURES_INIT:
       endBadCaptures = cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
       ++stage;
 
-      if (pos.captured_piece() && is_ok(previous))
-         previous = (*captSequence)[pos.piece_on(to_sq(previous))][to_sq(previous)][type_of(pos.captured_piece())];
-      else
-    	 previous = MOVE_NONE;
       /* fallthrough */
 
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && move != cMove)
           {
-              if (move == previous || pos.see_ge(move))
+              if (pos.see_ge(move))
                   return move;
 
               if (   type_of(pos.piece_on(to_sq(move))) == KNIGHT
@@ -222,8 +230,15 @@ Move MovePicker::next_move(bool skipQuiets) {
 
   case COUNTERMOVE:
       ++stage;
-      if (pos.captured_piece() && previous)
-    	  countermove = previous;
+      if (pos.captured_piece() && is_ok(previous))
+      {
+          cMove = previous;
+		  if (cMove != ttMove && cMove != killers[0] && cMove != killers[1] && pos.pseudo_legal(cMove) && !pos.capture(cMove))
+		  {
+			  countermove = cMove;
+			  return countermove;
+		  }
+      }
 
       move = countermove;
       if (    move != MOVE_NONE

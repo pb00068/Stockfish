@@ -151,7 +151,7 @@ private:
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
   const CaptureSeqToHistory* captSequence;
-  Move ttMove, countermove, killers[2], previous;
+  Move ttMove, countermove, killers[2], previous, cMove;
   ExtMove *cur, *endMoves, *endBadCaptures;
   int stage;
   Square recaptureSquare;
