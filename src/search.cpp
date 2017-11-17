@@ -182,6 +182,7 @@ void Search::clear() {
   Threads.main()->callsCnt = 0;
   Threads.main()->previousScore = VALUE_INFINITE;
   Threads.main()->previousTimeReduction = 1;
+  Threads.main()->maxCompleted = ONE_PLY;
 }
 
 
@@ -411,8 +412,13 @@ void Thread::search() {
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
 
-      if (!Threads.stop)
+      if (!Threads.stop) {
           completedDepth = rootDepth;
+          if (completedDepth > 5)
+        	  Threads.main()->maxCompleted = std::max(Threads.main()->maxCompleted, completedDepth);
+      }
+
+
 
       if (rootMoves[0].pv[0] != lastBestMove) {
          lastBestMove = rootMoves[0].pv[0];
@@ -956,8 +962,9 @@ moves_loop: // When in check search starts from here
               else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r += ONE_PLY;
 
+              bool helperOnNewGround = !ttHit && thisThread != Threads.main() && ss->ply > thisThread->rootDepth - 3 && Threads.main()->maxCompleted < thisThread->rootDepth;
               // Decrease/increase reduction for moves with a good/bad history
-              r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / 20000) * ONE_PLY);
+              r = std::max(DEPTH_ZERO, (r / ONE_PLY + ((helperOnNewGround ? 5000 : 0) - ss->statScore) / 20000) * ONE_PLY);
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
