@@ -181,7 +181,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   // is shared by threads but is accessed in read-only mode.
   StateInfo tmp = setupStates->back();
 
-  main()->maxCompleted -= 2 * ONE_PLY;
+  Threads.maxCompleted = Threads.maxCompleted - 2 * ONE_PLY;
 
   for (Thread* th : Threads)
   {
