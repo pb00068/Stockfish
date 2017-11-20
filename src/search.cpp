@@ -510,7 +510,7 @@ namespace {
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
-    bool ttCaptureLooksBest = false;
+    bool firstCaptureLooksBest = false;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -723,8 +723,8 @@ namespace {
     // Step 9. ProbCut (skipped when in check)
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
-    if (depth >= 3 * ONE_PLY
-    	&& (!PvNode || depth <= 6 * ONE_PLY)
+    if (depth >= 5 * ONE_PLY
+//    	&& (!PvNode || depth <= 8 * ONE_PLY)
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 200, VALUE_INFINITE);
@@ -732,19 +732,15 @@ namespace {
         assert(is_ok((ss-1)->currentMove));
 
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
-        Value pieceValue;
+        Value pieceValue = VALUE_ZERO;
+        int z=0;
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
             {
                 ss->currentMove = move;
                 ss->contHistory = &thisThread->contHistory[pos.moved_piece(move)][to_sq(move)];
-                if (ttCaptureLooksBest)
-                    ttCaptureLooksBest = !pos.see_ge(move, pieceValue / 2);
-                else if (move == ttMove && depth <= 6 * ONE_PLY)
-                {
-                	pieceValue = PieceValue[MG][pos.piece_on(to_sq(move))];
-                	ttCaptureLooksBest = pieceValue > KnightValueMg && pos.see_ge(move, 2 * pieceValue / 3);
-                }
+                if (firstCaptureLooksBest)
+                    firstCaptureLooksBest = !pos.see_ge(move, pieceValue / 2);
 
                 if (!PvNode && depth >= 5 * ONE_PLY) {
 					pos.do_move(move, st);
@@ -753,6 +749,11 @@ namespace {
 					if (value >= rbeta)
 						return value;
                 }
+				if (++z == 1)
+				{
+					pieceValue = PieceValue[MG][pos.piece_on(to_sq(move))];
+					firstCaptureLooksBest = pieceValue >= KnightValueMg && pos.see_ge(move, 2 * pieceValue / 3);
+				}
             }
     }
 
@@ -825,7 +826,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount + 3 * ttCaptureLooksBest >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount + 2 * (firstCaptureLooksBest && captureCount) >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 12. Singular and Gives Check Extensions
 
@@ -924,12 +925,17 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning))
+		  && (!captureOrPromotion || moveCountPruning ))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
           if (captureOrPromotion)
-              r -= r ? ttCaptureLooksBest * ONE_PLY + ONE_PLY : DEPTH_ZERO;
+          {
+        	  if (firstCaptureLooksBest && captureCount)
+        	    r += ONE_PLY;
+
+       		  r -= r ? ONE_PLY : DEPTH_ZERO;
+          }
           else
           {
               // Decrease reduction if opponent's move count is high
