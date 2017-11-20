@@ -743,7 +743,7 @@ namespace {
                 else if (move == ttMove && depth <= 6 * ONE_PLY)
                 {
                 	pieceValue = PieceValue[MG][pos.piece_on(to_sq(move))];
-                	ttCaptureLooksBest = pieceValue >= KnightValueMg && pos.see_ge(move, 2 * pieceValue / 3);
+                	ttCaptureLooksBest = pieceValue > KnightValueMg && pos.see_ge(move, 2 * pieceValue / 3);
                 }
 
                 if (!PvNode && depth >= 5 * ONE_PLY) {
