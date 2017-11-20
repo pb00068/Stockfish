@@ -965,7 +965,7 @@ moves_loop: // When in check search starts from here
               bool helperOnNewGround = !ttHit && thisThread != Threads.main() && ss->ply > thisThread->rootDepth - 1
             		                && Threads.maxCompleted.load(std::memory_order_relaxed) < thisThread->rootDepth;
               // Decrease/increase reduction for moves with a good/bad history
-              r = std::max(DEPTH_ZERO, (r / ONE_PLY + ((helperOnNewGround ? 4000 : 0) - ss->statScore) / 20000) * ONE_PLY);
+              r = std::max(DEPTH_ZERO, (r / ONE_PLY + ((helperOnNewGround ? 4500 : 0) - ss->statScore) / 20000) * ONE_PLY);
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
