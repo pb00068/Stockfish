@@ -510,6 +510,7 @@ namespace {
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
+    bool ttCaptureLooksBest = false;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -722,8 +723,8 @@ namespace {
     // Step 9. ProbCut (skipped when in check)
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
-    if (   !PvNode
-        &&  depth >= 5 * ONE_PLY
+    if (depth >= 3 * ONE_PLY
+    	&& (!PvNode || depth <= 6 * ONE_PLY)
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 200, VALUE_INFINITE);
@@ -731,19 +732,27 @@ namespace {
         assert(is_ok((ss-1)->currentMove));
 
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
-
+        Value pieceValue;
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
             {
                 ss->currentMove = move;
                 ss->contHistory = &thisThread->contHistory[pos.moved_piece(move)][to_sq(move)];
+                if (ttCaptureLooksBest)
+                    ttCaptureLooksBest = !pos.see_ge(move, pieceValue / 2);
+                else if (move == ttMove && depth <= 6 * ONE_PLY)
+                {
+                	pieceValue = PieceValue[MG][pos.piece_on(to_sq(move))];
+                	ttCaptureLooksBest = pieceValue >= KnightValueMg && pos.see_ge(move, 2 * pieceValue / 3);
+                }
 
-                assert(depth >= 5 * ONE_PLY);
-                pos.do_move(move, st);
-                value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
-                pos.undo_move(move);
-                if (value >= rbeta)
-                    return value;
+                if (!PvNode && depth >= 5 * ONE_PLY) {
+					pos.do_move(move, st);
+					value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
+					pos.undo_move(move);
+					if (value >= rbeta)
+						return value;
+                }
             }
     }
 
@@ -816,7 +825,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount + 3 * ttCaptureLooksBest >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 12. Singular and Gives Check Extensions
 
@@ -901,6 +910,9 @@ moves_loop: // When in check search starts from here
       if (move == ttMove && captureOrPromotion)
           ttCapture = true;
 
+//      if (ttCapture)
+//    	  dbg_hit_on(ttCaptureLooksBest);
+
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->contHistory = &thisThread->contHistory[movedPiece][to_sq(move)];
@@ -917,7 +929,7 @@ moves_loop: // When in check search starts from here
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
           if (captureOrPromotion)
-              r -= r ? ONE_PLY : DEPTH_ZERO;
+              r -= r ? ttCaptureLooksBest * ONE_PLY + ONE_PLY : DEPTH_ZERO;
           else
           {
               // Decrease reduction if opponent's move count is high
@@ -1057,6 +1069,7 @@ moves_loop: // When in check search starts from here
           quietsSearched[quietCount++] = move;
       else if (captureOrPromotion && move != bestMove && captureCount < 32)
           capturesSearched[captureCount++] = move;
+
     }
 
     // The following condition would detect a stop only after move loop has been
