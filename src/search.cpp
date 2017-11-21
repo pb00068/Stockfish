@@ -743,7 +743,11 @@ namespace {
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
                 pos.undo_move(move);
                 if (value >= rbeta)
-                    return value;
+                {
+                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER ,
+                        depth - 4 * ONE_PLY, move, ss->staticEval, TT.generation());
+                   return value;
+                }
             }
     }
 
