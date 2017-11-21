@@ -744,8 +744,9 @@ namespace {
                 pos.undo_move(move);
                 if (value >= rbeta)
                 {
-                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER ,
-                        depth - 3 * ONE_PLY, move, ss->staticEval, TT.generation());
+                   if (!ttHit || value_to_tt(value, ss->ply) > tte->value())
+                       tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER ,
+                         depth - 2 * ONE_PLY, move, ss->staticEval, TT.generation());
                    return value;
                 }
             }
