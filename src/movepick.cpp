@@ -21,7 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
-
+#include "misc.h"
 namespace {
 
   enum Stages {
@@ -291,7 +291,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove)
+          if (move != ttMove && (cur-1)->value > -200)
               return move;
       }
       if (stage == QCAPTURES_2)
@@ -321,7 +321,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (to_sq(move) == recaptureSquare)
+          if (to_sq(move) == recaptureSquare && (cur-1)->value > -200)
               return move;
       }
       break;
