@@ -284,6 +284,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
+      i=0;
       ++stage;
       /* fallthrough */
 
@@ -291,8 +292,11 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move != ttMove && ((cur-1) == moves || (cur-1)->value > -200))
+          if (move != ttMove && (!i || (cur-1)->value > -180))
+          {
+        	  i++;
               return move;
+          }
       }
       if (stage == QCAPTURES_2)
           break;
@@ -314,6 +318,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       cur = moves;
       endMoves = generate<CAPTURES>(pos, cur);
       score<CAPTURES>();
+      i=0;
       ++stage;
       /* fallthrough */
 
@@ -321,8 +326,11 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (to_sq(move) == recaptureSquare && ((cur-1) == moves || (cur-1)->value > -200))
+          if (to_sq(move) == recaptureSquare && (!i || (cur-1)->value > -180))
+          {
+        	  i++;
               return move;
+          }
       }
       break;
 
