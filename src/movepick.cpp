@@ -275,7 +275,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, threshold + Value(-55 * (cur-1)->value / 1024)))
+              && pos.see_ge(move, threshold + Value((PieceValue[MG][pos.piece_on(to_sq(move))] - (cur-1)->value ) / 4)))
               return move;
       }
       break;
