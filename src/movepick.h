@@ -141,7 +141,7 @@ private:
   const PieceToHistory** contHistory;
   Move ttMove, countermove, killers[2];
   ExtMove *cur, *endMoves, *endBadCaptures;
-  int stage, i;
+  int stage;
   Square recaptureSquare;
   Value threshold;
   Depth depth;
