@@ -293,7 +293,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           // in 1.4% of non-ttmove cases it's a non first-ranked capture with value <= -200
           // 12% of them return a non-negative see-val
-          if (move != ttMove && ((cur-1) == moves || (cur-1)->value > -200 || pos.see_ge(move)))
+          if (move != ttMove && ((cur-1) == moves || (cur-1)->value > -100 || pos.see_ge(move)))
               return move;
       }
       if (stage == QCAPTURES_2)
