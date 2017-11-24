@@ -740,7 +740,7 @@ namespace {
 
                 assert(depth >= 5 * ONE_PLY);
                 Depth rdepth = depth - 4 * ONE_PLY;
-                if (depth > 8 * ONE_PLY && rbeta - ss->staticEval > 200 && pos.see_ge(move, 2 *(rbeta - ss->staticEval)))
+                if (depth > 8 * ONE_PLY && rbeta - ss->staticEval > 100 && pos.see_ge(move, (rbeta - ss->staticEval) + 300))
                 	rdepth = rdepth - ONE_PLY;
                 pos.do_move(move, st);
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode, false);
