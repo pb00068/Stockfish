@@ -911,13 +911,32 @@ moves_loop: // When in check search starts from here
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
-          &&  moveCount > 1
-          && (!captureOrPromotion || moveCountPruning))
+          &&  moveCount > 1)
+          //&& (!captureOrPromotion || moveCountPruning))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
           if (captureOrPromotion)
-              r -= r ? ONE_PLY : DEPTH_ZERO;
+          {
+             Value v = Value(thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))]);
+             if (!moveCountPruning)
+            	 r = ONE_PLY;
+             if (v < 100 && newDepth - r > 2 * ONE_PLY)
+             {
+               r += ONE_PLY;
+               pos.undo_move(move);
+               //dbg_hit_on(!pos.see_ge(move, -KnightValueMg));
+               if (!pos.see_ge(move, -KnightValueMg))
+            	   r += ONE_PLY;
+
+               pos.do_move(move, st, givesCheck);
+             }
+             else if (v > 640)
+            	r = DEPTH_ZERO;
+             else
+                r -= r ? ONE_PLY : DEPTH_ZERO;
+
+          }
           else
           {
               // Decrease reduction if opponent's move count is high
