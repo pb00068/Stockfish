@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -226,7 +227,7 @@ namespace {
   const Score Hanging               = S( 48, 27);
   const Score WeakUnopposedPawn     = S(  5, 25);
   const Score ThreatByPawnPush      = S( 38, 22);
-  const Score ThreatByAttackOnQueen = S( 38, 22);
+  const Score ThreatByAttackOnQueen = S( 46, 24);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
 
@@ -621,7 +622,27 @@ namespace {
     b =  (attackedBy[Us][BISHOP] & attackedBy[Them][QUEEN_DIAGONAL])
        | (attackedBy[Us][ROOK  ] & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
 
-    score += ThreatByAttackOnQueen * popcount(b & safeThreats);
+
+
+    if ( (b & safeThreats))
+    {
+      Bitboard attacks = 0;
+      Square s;
+      const Square* pl = pos.squares<BISHOP>(Us);
+      while ((s = *pl++) != SQ_NONE)
+        attacks |= attacks_bb<BISHOP>(s, pos.pieces());
+      b =  (attacks & attackedBy[Them][QUEEN_DIAGONAL]);
+      pl = pos.squares<ROOK>(Us);
+      attacks = 0;
+      while ((s = *pl++) != SQ_NONE)
+        attacks |= attacks_bb<  ROOK>(s, pos.pieces());
+
+      b |= (attacks & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
+      //dbg_hit_on(!(b & safeThreats)); 6%
+      score += ThreatByAttackOnQueen * popcount(b & safeThreats);
+	  //if (!(bb & safeThreats))
+	  //sync_cout << pos << Bitboards::pretty(b & safeThreats)  << Bitboards::pretty(bb) << Bitboards::pretty(safeThreats) << sync_endl;
+    }
 
     if (T)
         Trace::add(THREAT, Us, score);
