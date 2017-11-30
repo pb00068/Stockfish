@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -226,10 +227,10 @@ namespace {
   const Score Hanging               = S( 48, 27);
   const Score WeakUnopposedPawn     = S(  5, 25);
   const Score ThreatByPawnPush      = S( 38, 22);
-  const Score ThreatByAttackOnQueen = S( 38, 22);
+  const Score ThreatByAttackOnQueen = S( 25, 18);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
-  const Score QueenPin              = S( 10, 22);
+  const Score QueenPin              = S( 19, 12);
 
   #undef S
   #undef V
@@ -624,9 +625,12 @@ namespace {
 
     score += ThreatByAttackOnQueen * popcount(b & safeThreats);
 
-    if ((b & safeThreats & ~attackedBy[Us][QUEEN] & LineBB[pos.square<QUEEN>(Them)][pos.square<KING>(Them)])
+    if ((b & safeThreats) && (b & safeThreats & ~attackedBy[Us][QUEEN] & LineBB[pos.square<QUEEN>(Them)][pos.square<KING>(Them)])
     		&& !(between_bb(pos.square<QUEEN>(Them),pos.square<KING>(Them)) & pos.pieces()))
+    {
 		score += QueenPin;
+		//sync_cout << pos << sync_endl;
+    }
 
     if (T)
         Trace::add(THREAT, Us, score);
