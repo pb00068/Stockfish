@@ -229,6 +229,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
+  const Score QueenPin              = S( 10, 22);
 
   #undef S
   #undef V
@@ -623,8 +624,9 @@ namespace {
 
     score += ThreatByAttackOnQueen * popcount(b & safeThreats);
 
-    if (b & safeThreats & LineBB[pos.square<QUEEN>(Them)][pos.square<KING>(Them)])
-		score += WeakUnopposedPawn;
+    if ((b & safeThreats & ~attackedBy[Us][QUEEN] & LineBB[pos.square<QUEEN>(Them)][pos.square<KING>(Them)])
+    		&& !(between_bb(pos.square<QUEEN>(Them),pos.square<KING>(Them)) & pos.pieces()))
+		score += QueenPin;
 
     if (T)
         Trace::add(THREAT, Us, score);
