@@ -621,23 +621,10 @@ namespace {
     b =  (attackedBy[Us][BISHOP] & attackedBy[Them][QUEEN_DIAGONAL])
        | (attackedBy[Us][ROOK  ] & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
 
-    if (b & safeThreats & attackedBy[Us][QUEEN])
-    {
-      Bitboard attacks = 0;
-      Square s;
-      const Square* pl = pos.squares<BISHOP>(Us);
-      while ((s = *pl++) != SQ_NONE)
-        attacks |= attacks_bb<BISHOP>(s, pos.pieces());
-      b =  (attacks & attackedBy[Them][QUEEN_DIAGONAL]);
-      pl = pos.squares<ROOK>(Us);
-      attacks = 0;
-      while ((s = *pl++) != SQ_NONE)
-        attacks |= attacks_bb<  ROOK>(s, pos.pieces());
-
-      b |= (attacks & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
-    }
-
     score += ThreatByAttackOnQueen * popcount(b & safeThreats);
+
+    if (b & safeThreats & LineBB[pos.square<QUEEN>(Them)][pos.square<KING>(Them)])
+		score += WeakUnopposedPawn;
 
     if (T)
         Trace::add(THREAT, Us, score);
