@@ -230,7 +230,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
-  const Score CheckWithQueenBehind  = S(  8, 16);
+  const Score KingQueenLineAttack   = S(  2, 20);
 
   #undef S
   #undef V
@@ -478,11 +478,10 @@ namespace {
         if (b1 & attackedBy[Them][ROOK] & safe)
         {
             kingDanger += RookCheck;
-            if (pos.kingQueenLine(Us) & b1 & attackedBy[Them][ROOK] & safe) {
-            	if (!between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
-            	   //sync_cout << pos << Bitboards::pretty(attackedBy[Them][ROOK]) << sync_endl;
-            	   score -= CheckWithQueenBehind;
-            	}
+            if ((pos.kingQueenLine(Us) & (b1 & attackedBy[Them][ROOK] & safe))
+            	&& !between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
+               //sync_cout << pos << Bitboards::pretty(attackedBy[Them][ROOK]) << sync_endl;
+               score -= KingQueenLineAttack;
             }
         }
 
@@ -493,12 +492,11 @@ namespace {
         if (b2 & attackedBy[Them][BISHOP] & safe)
         {
             kingDanger += BishopCheck;
-            if (pos.kingQueenLine(Us) & b2 & attackedBy[Them][BISHOP] & safe) {
+            if ((pos.kingQueenLine(Us) & (b2 & attackedBy[Them][BISHOP] & safe))
+            	&& !between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
 
-            	if (!between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
-            		score -= CheckWithQueenBehind;
-            		//sync_cout << pos << Bitboards::pretty(attackedBy[Them][BISHOP]) << sync_endl;
-            	}
+            	//sync_cout << pos << Bitboards::pretty(attackedBy[Them][BISHOP]) << sync_endl;
+            	score -= KingQueenLineAttack;
 			}
         }
 
