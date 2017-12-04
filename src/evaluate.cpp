@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -229,6 +230,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
+  const Score CheckWithQueenBehind  = S(  8, 16);
 
   #undef S
   #undef V
@@ -459,8 +461,8 @@ namespace {
         safe  = ~pos.pieces(Them);
         safe &= ~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]);
 
-        b1 = pos.attacks_from<  ROOK>(ksq);
-        b2 = pos.attacks_from<BISHOP>(ksq);
+        b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));    // pos.attacks_from<  ROOK>(ksq);
+        b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));    // pos.attacks_from<BISHOP>(ksq);
 
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
@@ -474,14 +476,31 @@ namespace {
 
         // Enemy rooks safe and other checks
         if (b1 & attackedBy[Them][ROOK] & safe)
+        {
             kingDanger += RookCheck;
+            if (pos.kingQueenLine(Us) & b1 & attackedBy[Them][ROOK] & safe) {
+            	if (!between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
+            	   //sync_cout << pos << Bitboards::pretty(attackedBy[Them][ROOK]) << sync_endl;
+            	   score -= CheckWithQueenBehind;
+            	}
+            }
+        }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
 
         // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
+        {
             kingDanger += BishopCheck;
+            if (pos.kingQueenLine(Us) & b2 & attackedBy[Them][BISHOP] & safe) {
+
+            	if (!between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
+            		score -= CheckWithQueenBehind;
+            		//sync_cout << pos << Bitboards::pretty(attackedBy[Them][BISHOP]) << sync_endl;
+            	}
+			}
+        }
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
             score -= OtherCheck;

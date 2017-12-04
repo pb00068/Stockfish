@@ -376,6 +376,9 @@ void Position::set_state(StateInfo* si) const {
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
   }
+
+  st->kingQueenLine[ sideToMove] = square<QUEEN>( sideToMove) == SQ_NONE ? 0 : LineBB[square<KING>( sideToMove)][square<QUEEN>( sideToMove)];
+  st->kingQueenLine[~sideToMove] = square<QUEEN>(~sideToMove) == SQ_NONE ? 0 : LineBB[square<KING>(~sideToMove)][square<QUEEN>(~sideToMove)];
 }
 
 
@@ -800,6 +803,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
           remove_piece(pc, to);
           put_piece(promotion, to);
+          if (type_of(promotion) == QUEEN)
+          	  st->kingQueenLine[us] = LineBB[square<KING>(us)][to];
 
           // Update hash keys
           k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[promotion][to];
@@ -824,6 +829,15 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   // Update incremental scores
   st->psq += PSQT::psq[pc][to] - PSQT::psq[pc][from];
+
+  if (type_of(pc) == QUEEN || type_of(pc) == KING)
+	  st->kingQueenLine[us] =  square<QUEEN>(us) == SQ_NONE ? 0 : LineBB[square<KING>(us)][square<QUEEN>(us)];
+
+  if (type_of(captured) == QUEEN)
+  {
+	  st->kingQueenLine[them] = square<QUEEN>(them) == SQ_NONE ? 0 : LineBB[square<KING>(them)][square<QUEEN>(them)];
+//			  sync_cout << *this << Bitboards::pretty(st->kingQueenLine[them]) << " where is the queen ? " << square<QUEEN>(them) << sync_endl;
+  }
 
   // Set capture piece
   st->capturedPiece = captured;

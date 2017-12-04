@@ -45,6 +45,8 @@ struct StateInfo {
   int    pliesFromNull;
   Score  psq;
   Square epSquare;
+  Bitboard kingQueenLine[COLOR_NB];
+  //bool kingQueenIsDiagonal[COLOR_NB];
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -102,6 +104,8 @@ public:
   int can_castle(CastlingRight cr) const;
   bool castling_impeded(CastlingRight cr) const;
   Square castling_rook_square(CastlingRight cr) const;
+  Bitboard kingQueenLine(Color c) const;
+  //bool kingQueenLineisDiagonal(Color c) const;
 
   // Checking
   Bitboard checkers() const;
@@ -262,6 +266,14 @@ inline int Position::can_castle(CastlingRight cr) const {
 inline int Position::can_castle(Color c) const {
   return st->castlingRights & ((WHITE_OO | WHITE_OOO) << (2 * c));
 }
+
+inline Bitboard Position::kingQueenLine(Color c) const {
+  return st->kingQueenLine[c];
+}
+
+//inline bool Position::kingQueenLineisDiagonal(Color c) const {
+//  return st->kingQueenIsDiagonal[c];
+//}
 
 inline bool Position::castling_impeded(CastlingRight cr) const {
   return byTypeBB[ALL_PIECES] & castlingPath[cr];
