@@ -480,7 +480,6 @@ namespace {
             kingDanger += RookCheck;
             if ((pos.kingQueenLine(Us) & (b1 & attackedBy[Them][ROOK] & safe))
             	&& !between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
-               //sync_cout << pos << Bitboards::pretty(attackedBy[Them][ROOK]) << sync_endl;
                score -= KingQueenLineAttack;
             }
         }
@@ -494,8 +493,6 @@ namespace {
             kingDanger += BishopCheck;
             if ((pos.kingQueenLine(Us) & (b2 & attackedBy[Them][BISHOP] & safe))
             	&& !between_bb(pos.square<KING>(Us), pos.square<QUEEN>(Us))) {
-
-            	//sync_cout << pos << Bitboards::pretty(attackedBy[Them][BISHOP]) << sync_endl;
             	score -= KingQueenLineAttack;
 			}
         }

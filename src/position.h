@@ -46,7 +46,6 @@ struct StateInfo {
   Score  psq;
   Square epSquare;
   Bitboard kingQueenLine[COLOR_NB];
-  //bool kingQueenIsDiagonal[COLOR_NB];
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -270,10 +269,6 @@ inline int Position::can_castle(Color c) const {
 inline Bitboard Position::kingQueenLine(Color c) const {
   return st->kingQueenLine[c];
 }
-
-//inline bool Position::kingQueenLineisDiagonal(Color c) const {
-//  return st->kingQueenIsDiagonal[c];
-//}
 
 inline bool Position::castling_impeded(CastlingRight cr) const {
   return byTypeBB[ALL_PIECES] & castlingPath[cr];
