@@ -230,7 +230,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
-  const Score KingQueenLineAttack   = S(  2, 20);
+  const Score KingQueenLineAttack   = S( 10, 16);
 
   #undef S
   #undef V
@@ -240,8 +240,8 @@ namespace {
 
   // Penalties for enemy's safe checks
   const int QueenCheck  = 780;
-  const int RookCheck   = 880;
-  const int BishopCheck = 435;
+  const int RookCheck   = 840;
+  const int BishopCheck = 405;
   const int KnightCheck = 790;
 
   // Threshold for lazy and space evaluation
