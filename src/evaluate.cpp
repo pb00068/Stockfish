@@ -473,14 +473,14 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        if (b1 & attackedBy[Them][ROOK] & safe & ~attackedBy[Us][QUEEN])
             kingDanger += RookCheck;
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
 
         // Enemy bishops safe and other checks
-        if (b2 & attackedBy[Them][BISHOP] & safe)
+        if (b2 & attackedBy[Them][BISHOP] & safe & ~attackedBy[Us][QUEEN])
             kingDanger += BishopCheck;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
