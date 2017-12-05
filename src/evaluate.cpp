@@ -462,8 +462,9 @@ namespace {
         b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));    // pos.attacks_from<  ROOK>(ksq);
         b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));    // pos.attacks_from<BISHOP>(ksq);
 
+        Bitboard safeQueenChecks = (b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN];
         // Enemy queen safe checks
-        if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
+        if (safeQueenChecks)
             kingDanger += QueenCheck;
 
         // Some other potential checks are also analysed, even from squares
@@ -473,17 +474,17 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        if (b1 & attackedBy[Them][ROOK] & safe & ~safeQueenChecks)
             kingDanger += RookCheck;
 
-        else if (b1 & attackedBy[Them][ROOK] & other)
+        else if (b1 & attackedBy[Them][ROOK] & other & ~safeQueenChecks)
             score -= OtherCheck;
 
         // Enemy bishops safe and other checks
-        if (b2 & attackedBy[Them][BISHOP] & safe)
+        if (b2 & attackedBy[Them][BISHOP] & safe & ~safeQueenChecks)
             kingDanger += BishopCheck;
 
-        else if (b2 & attackedBy[Them][BISHOP] & other)
+        else if (b2 & attackedBy[Them][BISHOP] & other & ~safeQueenChecks)
             score -= OtherCheck;
 
         // Enemy knights safe and other checks
