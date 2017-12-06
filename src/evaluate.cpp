@@ -466,6 +466,7 @@ namespace {
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
             kingDanger += QueenCheck;
 
+        int otherChecks = -2;
         // Some other potential checks are also analysed, even from squares
         // currently occupied by the opponent own pieces, as long as the square
         // is not attacked by our pawns, and is not occupied by a blocked pawn.
@@ -477,14 +478,21 @@ namespace {
             kingDanger += RookCheck;
 
         else if (b1 & attackedBy[Them][ROOK] & other)
+        {
             score -= OtherCheck;
+            otherChecks++;
+        }
+
 
         // Enemy bishops safe and other checks
         if (b2 & attackedBy[Them][BISHOP] & safe)
             kingDanger += BishopCheck;
 
         else if (b2 & attackedBy[Them][BISHOP] & other)
+        {
             score -= OtherCheck;
+            otherChecks++;
+        }
 
         // Enemy knights safe and other checks
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
@@ -492,7 +500,12 @@ namespace {
             kingDanger += KnightCheck;
 
         else if (b & other)
+        {
             score -= OtherCheck;
+            otherChecks++;
+        }
+
+        kingDanger += otherChecks * 60;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
         if (kingDanger > 0)
