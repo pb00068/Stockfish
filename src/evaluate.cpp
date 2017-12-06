@@ -318,7 +318,12 @@ namespace {
             b &= LineBB[pos.square<KING>(Us)][s];
 
         attackedBy2[Us] |= attackedBy[Us][ALL_PIECES] & b;
-        attackedBy[Us][ALL_PIECES] |= attackedBy[Us][Pt] |= b;
+        attackedBy[Us][ALL_PIECES] |= b;
+
+	    if (Pt == BISHOP || Pt == ROOK)
+		  attackedBy[Us][Pt] |=  attacks_bb<Pt>(s, pos.pieces());
+	    else
+		  attackedBy[Us][Pt] |= b;
 
         if (Pt == QUEEN)
             attackedBy[Us][QUEEN_DIAGONAL] |= b & PseudoAttacks[BISHOP][s];
@@ -459,8 +464,8 @@ namespace {
         safe  = ~pos.pieces(Them);
         safe &= ~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]);
 
-        b1 = pos.attacks_from<  ROOK>(ksq);
-        b2 = pos.attacks_from<BISHOP>(ksq);
+        b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+        b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
 
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
