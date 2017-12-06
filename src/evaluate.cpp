@@ -23,11 +23,13 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "uci.h"
 
 namespace {
 
@@ -237,8 +239,8 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 780;
-  const int RookCheck   = 880;
+  const int QueenCheck  = 700;
+  const int RookCheck   = 700;
   const int BishopCheck = 435;
   const int KnightCheck = 790;
 
@@ -462,9 +464,23 @@ namespace {
         b1 = pos.attacks_from<  ROOK>(ksq);
         b2 = pos.attacks_from<BISHOP>(ksq);
 
+        Bitboard checkSquares = (b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN];
         // Enemy queen safe checks
-        if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
+        if (checkSquares)
+        {
             kingDanger += QueenCheck;
+            while (checkSquares)
+            {
+            	Square s = pop_lsb(&checkSquares);
+            	if (distance(s, ksq) == 1)
+            	{
+            		kingDanger += 280;
+            		//sync_cout << pos << " checking square " << UCI::move(make_move(s,s), false) << sync_endl;
+            	}
+            	else if (distance(s, ksq) == 2)
+            		kingDanger += 140;
+            }
+        }
 
         // Some other potential checks are also analysed, even from squares
         // currently occupied by the opponent own pieces, as long as the square
@@ -473,8 +489,19 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        checkSquares = b1 & attackedBy[Them][ROOK] & safe;
+        if (checkSquares)
+        {
             kingDanger += RookCheck;
+            while (checkSquares)
+			{
+				Square s = pop_lsb(&checkSquares);
+				if (distance(s, ksq) == 1)
+					kingDanger += 280;
+				else if (distance(s, ksq) == 2)
+					kingDanger += 140;
+			}
+        }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
