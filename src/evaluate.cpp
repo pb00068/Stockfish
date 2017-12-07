@@ -114,6 +114,8 @@ namespace {
     // attacked by a given color and piece type (can be also ALL_PIECES).
     Bitboard attackedBy[COLOR_NB][PIECE_TYPE_NB];
 
+    Bitboard pureAttackedBy[COLOR_NB][2];
+
     // attackedBy2[color] are the squares attacked by 2 pieces of a given color,
     // possibly via x-ray or by one pawn and one piece. Diagonal x-ray through
     // pawn or squares attacked by 2 pawns are not explicitly added.
@@ -237,7 +239,7 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 780;
+  const int QueenCheck  = 800;
   const int RookCheck   = 880;
   const int BishopCheck = 435;
   const int KnightCheck = 790;
@@ -306,6 +308,8 @@ namespace {
 
     if (Pt == QUEEN)
         attackedBy[Us][QUEEN_DIAGONAL] = 0;
+    if (Pt == BISHOP || Pt == ROOK)
+        pureAttackedBy[Us][Pt == ROOK] = 0;
 
     while ((s = *pl++) != SQ_NONE)
     {
@@ -318,12 +322,11 @@ namespace {
             b &= LineBB[pos.square<KING>(Us)][s];
 
         attackedBy2[Us] |= attackedBy[Us][ALL_PIECES] & b;
-        attackedBy[Us][ALL_PIECES] |= b;
+        attackedBy[Us][ALL_PIECES] |= attackedBy[Us][Pt] |= b;
 
 	    if (Pt == BISHOP || Pt == ROOK)
-		  attackedBy[Us][Pt] |=  attacks_bb<Pt>(s, pos.pieces());
-	    else
-		  attackedBy[Us][Pt] |= b;
+		  pureAttackedBy[Us][Pt == ROOK] |=  attacks_bb<Pt>(s, pos.pieces());
+
 
         if (Pt == QUEEN)
             attackedBy[Us][QUEEN_DIAGONAL] |= b & PseudoAttacks[BISHOP][s];
@@ -478,17 +481,17 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        if (b1 & attackedBy[Them][ROOK] & safe)
+        if (b1 & pureAttackedBy[Them][1] & safe)
             kingDanger += RookCheck;
 
-        else if (b1 & attackedBy[Them][ROOK] & other)
+        else if (b1 & pureAttackedBy[Them][1] & other)
             score -= OtherCheck;
 
         // Enemy bishops safe and other checks
-        if (b2 & attackedBy[Them][BISHOP] & safe)
+        if (b2 & pureAttackedBy[Them][0] & safe)
             kingDanger += BishopCheck;
 
-        else if (b2 & attackedBy[Them][BISHOP] & other)
+        else if (b2 & pureAttackedBy[Them][0] & other)
             score -= OtherCheck;
 
         // Enemy knights safe and other checks
