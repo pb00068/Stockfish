@@ -239,7 +239,7 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 770;
+  const int QueenCheck  = 500;
   const int RookCheck   = 880;
   const int BishopCheck = 435;
   const int KnightCheck = 790;
@@ -469,23 +469,16 @@ namespace {
         if (checkSquares)
         {
             kingDanger += QueenCheck;
-            int amount = 300;
+            int prox = 10;
             while (checkSquares)
             {
             	Square s = pop_lsb(&checkSquares);
-            	if (distance(s, ksq) == 1)
-            	{
-            		kingDanger += amount;
-            		amount/=2;
-            		//sync_cout << pos << " checking square " << UCI::move(make_move(s,s), false) << sync_endl;
-            	}
-            	else if (distance(s, ksq) == 2)
-            	{
-            		kingDanger += amount/3;
-            		amount= amount * 2 / 3;
-            	}
-
+            	prox = std::min(distance(s, ksq), prox);
             }
+            if (prox == 1)
+            	kingDanger += 280 + relative_rank(Them, ksq) >= 7 ? 280 : 0;
+            else if (prox == 2)
+            	kingDanger += 120 + relative_rank(Them, ksq) >= 7 ? 120 : 0;
         }
 
         // Some other potential checks are also analysed, even from squares
