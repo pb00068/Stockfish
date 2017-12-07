@@ -239,8 +239,8 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck  = 700;
-  const int RookCheck   = 700;
+  const int QueenCheck  = 770;
+  const int RookCheck   = 880;
   const int BishopCheck = 435;
   const int KnightCheck = 790;
 
@@ -469,16 +469,22 @@ namespace {
         if (checkSquares)
         {
             kingDanger += QueenCheck;
+            int amount = 300;
             while (checkSquares)
             {
             	Square s = pop_lsb(&checkSquares);
             	if (distance(s, ksq) == 1)
             	{
-            		kingDanger += 280;
+            		kingDanger += amount;
+            		amount/=2;
             		//sync_cout << pos << " checking square " << UCI::move(make_move(s,s), false) << sync_endl;
             	}
             	else if (distance(s, ksq) == 2)
-            		kingDanger += 140;
+            	{
+            		kingDanger += amount/3;
+            		amount= amount * 2 / 3;
+            	}
+
             }
         }
 
@@ -489,19 +495,8 @@ namespace {
                   | (pos.pieces(Them, PAWN) & shift<Up>(pos.pieces(PAWN))));
 
         // Enemy rooks safe and other checks
-        checkSquares = b1 & attackedBy[Them][ROOK] & safe;
-        if (checkSquares)
-        {
+        if (b1 & attackedBy[Them][ROOK] & safe)
             kingDanger += RookCheck;
-            while (checkSquares)
-			{
-				Square s = pop_lsb(&checkSquares);
-				if (distance(s, ksq) == 1)
-					kingDanger += 280;
-				else if (distance(s, ksq) == 2)
-					kingDanger += 140;
-			}
-        }
 
         else if (b1 & attackedBy[Them][ROOK] & other)
             score -= OtherCheck;
