@@ -453,7 +453,7 @@ namespace {
                     + 143 * bool(pos.pinned_pieces(Us))
                     - 848 * !pos.count<QUEEN>(Them)
                     -   9 * mg_value(score) / 8
-                    +  40;
+                    + 140;
 
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
@@ -505,6 +505,7 @@ namespace {
             otherChecks++;
         }
 
+        dbg_mean_of(otherChecks);
         kingDanger += otherChecks * 60;
 
         // Transform the kingDanger units into a Score, and substract it from the evaluation
