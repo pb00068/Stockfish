@@ -708,18 +708,17 @@ namespace {
                 return nullValue;
 
             // Do verification search at high depths
-			// increase reduction ...
-			R += ONE_PLY;
-			// but disable nmp for the side to move for first part of the search tree
-			int nmp_ply = thisThread->nmp_ply;
-			int pair = thisThread->pair;
-			thisThread->nmp_ply = ss->ply + 3 * (depth-R) / 4;
-			thisThread->pair = (ss->ply % 2) == 0;
+            // increase reduction ...
+            R += ONE_PLY;
+            // but disable nmp for the side to move for first part of the search tree
+            int nmp_ply = thisThread->nmp_ply;
+            int pair = thisThread->pair;
+            thisThread->nmp_ply = ss->ply + 3 * (depth-R) / 4;
+            thisThread->pair = (ss->ply % 2) == 0;
 
-			Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
-										:  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
-
-			thisThread->pair = pair;
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta)
+                                        :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false, true);
+            thisThread->pair = pair;
             thisThread->nmp_ply = nmp_ply;
 
             if (v >= beta)
