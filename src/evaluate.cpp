@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -666,9 +667,15 @@ namespace {
             if (relative_rank(Us, blockSq) != RANK_8)
                 ebonus -= distance(pos.square<KING>(Us), blockSq + Up) * rr;
 
+            if ( !(pos.pinned_pieces(Us) & s) || file_of(s) == file_of(pos.square<KING>(Us)))
             // If the pawn is free to advance, then increase the bonus
             if (pos.empty(blockSq))
             {
+//            	if ((pos.pinned_pieces(Us) & s) && file_of(s) != file_of(pos.square<KING>(Us)))
+//            	{
+//            		dbg_hit_on(true);
+//            		sync_cout << pos << Bitboards::pretty(pos.pinned_pieces(Us) & s) << sync_endl;
+//            	}
                 // If there is a rook or queen attacking/defending the pawn from behind,
                 // consider all the squaresToQueen. Otherwise consider only the squares
                 // in the pawn's path attacked or occupied by the enemy.
