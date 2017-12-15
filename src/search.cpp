@@ -82,7 +82,11 @@ namespace {
   // History and stats update bonus, based on depth
   int stat_bonus(Depth depth) {
     int d = depth / ONE_PLY;
-    return d > 17 ? 0 : d * d + 2 * d - 2;
+    if (d > 17)
+    	return 0;
+    if (d > 12)
+    	return d * d + 2 * d - 2 * (d - 12) * (d - 12);
+    return d * d + 2 * d - 2;
   }
 
   // Skill structure is used to implement strength limit
@@ -162,6 +166,7 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
   }
+
 }
 
 
