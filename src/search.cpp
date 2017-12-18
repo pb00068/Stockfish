@@ -708,7 +708,8 @@ namespace {
                 return nullValue;
 
             // Do verification search at high depths
-            R += ONE_PLY;
+            R +=  (depth / ONE_PLY - 6) * ONE_PLY / 6;
+
             // disable null move pruning for side to move for the first part of the remaining search tree
             int nmp_ply = thisThread->nmp_ply;
             int pair = thisThread->pair;
