@@ -223,6 +223,7 @@ namespace {
   const Score ThreatByHangingPawn   = S( 71, 61);
   const Score ThreatBySafePawn      = S(192,175);
   const Score ThreatByRank          = S( 16,  3);
+  const Score ThreatOnWeakBackRank  = S( 30, 10);
   const Score Hanging               = S( 48, 27);
   const Score WeakUnopposedPawn     = S(  5, 25);
   const Score ThreatByPawnPush      = S( 38, 22);
@@ -425,6 +426,7 @@ namespace {
     const Color     Them = (Us == WHITE ? BLACK : WHITE);
     const Bitboard  Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                         : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
+    const Bitboard BackRank = Us == WHITE ? Rank1BB : Rank8BB;
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard weak, b, b1, b2, safe, unsafeChecks;
@@ -491,6 +493,15 @@ namespace {
         if (kingDanger > 0)
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
     }
+
+    if ((BackRank & ksq) &&
+		!more_than_one((BackRank & ksq) ^ (BackRank & pos.pieces(Us))) &&
+		// king's front squares occupied by own pawns or attacked by minors
+		!(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP])) &&
+		(more_than_one(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK])) ||
+					  (BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK]) & attackedBy2[Them]) ))
+         score -= ThreatOnWeakBackRank;
+
 
     // King tropism: firstly, find squares that opponent attacks in our king flank
     File kf = file_of(ksq);
