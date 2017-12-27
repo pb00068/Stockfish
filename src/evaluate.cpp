@@ -229,6 +229,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
+  const Score RookThreatAsymmetry   = S( 10, 10);
 
   #undef S
   #undef V
@@ -580,7 +581,11 @@ namespace {
             Square s = pop_lsb(&b);
             score += ThreatByRook[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
+            {
                 score += ThreatByRank * (int)relative_rank(Them, s);
+                if (!(attackedBy[Them][ROOK] & s))
+                  score += RookThreatAsymmetry;
+            }
         }
 
         score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
