@@ -213,6 +213,7 @@ namespace {
 
   // Assorted bonuses and penalties used by evaluation
   const Score MinorBehindPawn       = S( 16,  0);
+  const Score MinorBlockingPawn     = S( 16,  0);
   const Score BishopPawns           = S(  8, 12);
   const Score LongRangedBishop      = S( 22,  0);
   const Score RookOnPawn            = S(  8, 24);
@@ -351,9 +352,17 @@ namespace {
             }
 
             // Bonus when behind a pawn
-            if (    relative_rank(Us, s) < RANK_5
-                && (pos.pieces(PAWN) & (s + pawn_push(Us))))
-                score += MinorBehindPawn;
+			if (    relative_rank(Us, s) < RANK_5)
+			{
+				if ((pos.pieces(PAWN) & (s + pawn_push(Us))))
+				   score += MinorBehindPawn;
+				else if (mob <= 8
+                    && distance(s, pos.square<KING>(Us)) > 3
+                    && relative_rank(Us, s) > RANK_1
+                    && (pos.pieces(Us, PAWN) & (s + pawn_push(Them)))
+                    && popcount(b & mobilityArea[Us] & ~pos.pieces(Us) & ~attackedBy[Them][ALL_PIECES]) <= 3)
+				   score -= MinorBlockingPawn;
+			}
 
             if (Pt == BISHOP)
             {
