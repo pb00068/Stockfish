@@ -675,7 +675,7 @@ namespace {
     // Step 8. Null move search with verification search (is omitted in PV nodes)
     if (   !PvNode
         &&  eval >= beta
-        &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
+        &&  ss->staticEval >= beta - 38 * depth / ONE_PLY + 225
 		&& (ss->ply >= thisThread->nmp_ply || ss->ply % 2 == thisThread->pair))
     {
 
