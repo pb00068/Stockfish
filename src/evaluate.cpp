@@ -23,11 +23,13 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
+#include "uci.h"
 
 namespace {
 
@@ -188,7 +190,7 @@ namespace {
   };
 
   const Score ThreatByRook[PIECE_TYPE_NB] = {
-    S(0, 0), S(0, 25), S(40, 62), S(40, 59), S(0, 34), S(35, 48)
+    S(0, 0), S(0, 25), S(37, 58), S(37, 56), S(0, 33), S(32, 46)
   };
 
   // ThreatByKing[on one/on many] contains bonuses for king attacks on
@@ -583,8 +585,11 @@ namespace {
             if (type_of(pos.piece_on(s)) != PAWN)
             {
                 score += ThreatByRank * (int)relative_rank(Them, s);
-                if (!(attackedBy[Them][ROOK] & s))
+                if (!(attackedBy[Them][ROOK] & s) && !pe->semiopen_file(Them, file_of(s)) && pe->semiopen_file(Us, file_of(s)))
+                {
                   score += RookThreatAsymmetry;
+                  //sync_cout << pos << UCI::move(make_move(s,s), false) << sync_endl;
+                }
             }
         }
 
