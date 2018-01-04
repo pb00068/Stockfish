@@ -179,7 +179,10 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
+        	  Value lim = Value(-55 * (cur-1)->value / 1024);
+        	  if (lim > VALUE_ZERO && lim < BishopValueMg - KnightValueMg)
+        		  lim = VALUE_ZERO;
+              if (pos.see_ge(move, lim))
                   return move;
 
               // Losing capture, move it to the beginning of the array
