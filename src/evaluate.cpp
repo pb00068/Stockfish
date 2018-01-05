@@ -228,7 +228,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
-  const Score ThreatOnWeakBackRank  = S(  8,  1);
+  const Score ThreatOnWeakBackRank  = S( 10,  2);
 
   #undef S
   #undef V
@@ -494,9 +494,9 @@ namespace {
     }
 
     if ((BackRank & ksq)
+    	&& pe->passedPawns[Them]
     		// king's front squares not accessible due pawn structure
-    	&& !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN]))
-    	&&	(BackRank & ( attackedBy[Them][QUEEN] | attackedBy[Them][ROOK] | attackedBy[Them][PAWN])))
+    	&& !(attackedBy[Us][KING] & ~BackRank & ~(pos.pieces(Us, PAWN) | attackedBy[Them][PAWN])))
              score -= ThreatOnWeakBackRank;
 
 
