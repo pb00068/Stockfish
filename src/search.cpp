@@ -698,11 +698,11 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (abs(beta) < VALUE_KNOWN_WIN && (depth < 12 * ONE_PLY || pos.non_pawn_material() > 8000))
+            if (abs(beta) < VALUE_KNOWN_WIN && (depth < 12 * ONE_PLY || pos.non_pawn_material() > 8000 || thisThread->nmp_ply))
                 return nullValue;
 
             // Do verification search at high depths
-            R +=  (depth / ONE_PLY - 6) * ONE_PLY / 6;
+            R +=  (depth / ONE_PLY - 7) * ONE_PLY / 5;
             // disable null move pruning for side to move for the first part of the remaining search tree
             int nmp_ply = thisThread->nmp_ply;
             int pair = thisThread->pair;
