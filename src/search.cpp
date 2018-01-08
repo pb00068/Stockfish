@@ -263,8 +263,6 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  //if(bestThread->rootMoves.size() > 1)
-//	  sync_cout << "info 2nd bestmove " << UCI::move(bestThread->rootMoves[1].pv[0], rootPos.is_chess960()) << " score " << bestThread->rootMoves[1].score << sync_endl;
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
