@@ -321,7 +321,7 @@ void Thread::search() {
       {
           int i = (idx - 1) % 20;
 
-          if (idx == Threads.size() - 1 && rootDepth > 10 * ONE_PLY && rootMoves.size() > 1 && rootPos.see_ge(rootMoves[0].pv[0]))
+          if (idx == Threads.size() - 1 && !ss->excludedMove && rootDepth > 10 * ONE_PLY && rootDepth < 18 * ONE_PLY && rootMoves.size() > 1 && rootPos.see_ge(rootMoves[0].pv[0], VALUE_ZERO + 1))
         	  ss->excludedMove = rootMoves[0].pv[0];
           else
           if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
