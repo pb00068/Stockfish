@@ -180,7 +180,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           if (move != ttMove)
           {
         	  Value v = VALUE_ZERO;
-              if ((cur-1)->value > 0 || (cur-1)->value < -90)
+              if ((cur-1)->value > 0 || (cur-1)->value < -75)
                  v = Value(-55 * (cur-1)->value / 1024);
               if (pos.see_ge(move, v))
                   return move;
