@@ -727,7 +727,10 @@ namespace {
 
         assert(is_ok((ss-1)->currentMove));
 
-        MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
+        const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
+        Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+
+        MovePicker mp(pos, ttMove, rbeta - ss->staticEval, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (pos.legal(move))
