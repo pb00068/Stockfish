@@ -731,8 +731,8 @@ namespace {
         Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
-
-        while ((move = mp.next_move()) != MOVE_NONE)
+        int mc =0;
+        while ((move = mp.next_move(mc > 10)) != MOVE_NONE)
             if (pos.legal(move))
             {
                 ss->currentMove = move;
@@ -744,6 +744,7 @@ namespace {
                 pos.undo_move(move);
                 if (value >= rbeta)
                     return value;
+                mc++;
             }
     }
 

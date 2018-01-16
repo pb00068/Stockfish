@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th,  Depth d, const Bu
   assert(!pos.checkers());
 
   stage = PROBCUT;
-  if (th < 0)
+  if (th <= 0)
 	  stage = MAIN_SEARCH;
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
