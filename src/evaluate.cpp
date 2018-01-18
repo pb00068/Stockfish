@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -228,6 +229,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 38, 22);
   const Score HinderPassedPawn      = S(  7,  0);
   const Score TrappedBishopA1H1     = S( 50, 50);
+  const Score OffsideQueen     = S( 20, 0);
 
   #undef S
   #undef V
@@ -431,6 +433,7 @@ namespace {
     // King shelter and enemy pawns storm
     Score score = pe->king_safety<Us>(pos, ksq);
 
+    int kingDanger = 0;
     // Main king safety evaluation
     if (kingAttackersCount[Them] > (1 - pos.count<QUEEN>(Them)))
     {
@@ -439,7 +442,7 @@ namespace {
               & ~attackedBy2[Us]
               & (attackedBy[Us][KING] | attackedBy[Us][QUEEN] | ~attackedBy[Us][ALL_PIECES]);
 
-        int kingDanger = unsafeChecks = 0;
+        unsafeChecks = 0;
 
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
@@ -512,6 +515,13 @@ namespace {
     // Penalty when our king is on a pawnless flank
     if (!(pos.pieces(PAWN) & KingFlank[kf]))
         score -= PawnlessFlank;
+
+    if (kingDanger > 270 && pos.count<QUEEN>(Them) == 1 && pos.count<QUEEN>(Us) == 1)
+    {
+        if (! (KingFlank[kf] & pos.pieces(Us,QUEEN)) &&
+            ! (attackedBy[Us][QUEEN] & KingFlank[kf] & ~(attackedBy[Them][ALL_PIECES] ^ attackedBy[Them][QUEEN]) & ~pos.pieces(Us)))
+           score -= OffsideQueen;
+    }
 
     if (T)
         Trace::add(KING, Us, score);
