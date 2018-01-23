@@ -1062,12 +1062,8 @@ moves_loop: // When in check search starts from here
       // according to a comment in talkchess singularHighFailMove has now more chances than the rest of all moves together
       {
     	  assert(singularHighFailMove != ttMove);
-    	  if (ss->killers[0] != singularHighFailMove && !pos.capture_or_promotion(singularHighFailMove))
-		  {
-			 ss->killers[1] = ss->killers[0];
-			 ss->killers[0] = singularHighFailMove;
+    	  if (!pos.capture_or_promotion(singularHighFailMove))
 			 mp.setKillers(ss->killers);
-		  }
     	  singularHighFailMove = MOVE_NONE;
       }
     } // end moves loop
