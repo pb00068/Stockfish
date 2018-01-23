@@ -150,6 +150,11 @@ void MovePicker::score() {
       }
 }
 
+void  MovePicker::setKillers(Move* killers_p) {
+	killers[0] = killers_p[0];
+	killers[1] = killers_p[1];
+}
+
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves
 /// left. It picks the move with the biggest value from a list of generated moves

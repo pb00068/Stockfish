@@ -498,7 +498,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -542,7 +542,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     (ss+1)->ply = ss->ply + 1;
-    ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->currentMove = (ss+1)->excludedMove = ss->bestMove = MOVE_NONE;
     ss->contHistory = &thisThread->contHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
@@ -817,6 +817,7 @@ moves_loop: // When in check search starts from here
 
       // Step 12. Singular and Gives Check Extensions
 
+      Move singularHighFailMove = MOVE_NONE;
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
       // is singular and should be extended. To verify this we do a reduced search
@@ -834,6 +835,8 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
+          else
+        	  singularHighFailMove = ss->bestMove;
       }
       else if (    givesCheck
                && !moveCountPruning
@@ -1035,7 +1038,7 @@ moves_loop: // When in check search starts from here
 
           if (value > alpha)
           {
-              bestMove = move;
+              ss->bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1050,11 +1053,25 @@ moves_loop: // When in check search starts from here
           }
       }
 
-      if (!captureOrPromotion && move != bestMove && quietCount < 64)
+      if (!captureOrPromotion && move != ss->bestMove && quietCount < 64)
           quietsSearched[quietCount++] = move;
-      else if (captureOrPromotion && move != bestMove && captureCount < 32)
+      else if (captureOrPromotion && move != ss->bestMove && captureCount < 32)
           capturesSearched[captureCount++] = move;
-    }
+
+      if (singularHighFailMove) // ttMove did not produce a cut-off,
+      // according to a comment in talkchess singularHighFailMove has now more chances than the rest of all moves together
+      {
+    	  assert(singularHighFailMove != ttMove);
+    	  if (pos.capture_or_promotion(singularHighFailMove))
+    		  update_capture_stats(pos, singularHighFailMove, capturesSearched, 0, stat_bonus(depth));
+    	  else if (ss->killers[0] != singularHighFailMove)
+		  {
+			 ss->killers[1] = ss->killers[0];
+			 ss->killers[0] = singularHighFailMove;
+			 mp.setKillers(ss->killers);
+		  }
+      }
+    } // end moves loop
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
@@ -1074,13 +1091,13 @@ moves_loop: // When in check search starts from here
     if (!moveCount)
         bestValue = excludedMove ? alpha
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
-    else if (bestMove)
+    else if (ss->bestMove)
     {
         // Quiet best move: update move sorting heuristics
-        if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+        if (!pos.capture_or_promotion(ss->bestMove))
+            update_stats(pos, ss, ss->bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else
-            update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+            update_capture_stats(pos, ss->bestMove, capturesSearched, captureCount, stat_bonus(depth));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1095,8 +1112,8 @@ moves_loop: // When in check search starts from here
     if (!excludedMove)
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
-                  PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  depth, bestMove, ss->staticEval, TT.generation());
+                  PvNode && ss->bestMove ? BOUND_EXACT : BOUND_UPPER,
+                  depth, ss->bestMove, ss->staticEval, TT.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 

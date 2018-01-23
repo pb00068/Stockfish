@@ -129,6 +129,7 @@ public:
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,  const CapturePieceToHistory*, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, Move, Move*);
   Move next_move(bool skipQuiets = false);
+  void setKillers(Move* killers_p);
 
 private:
   template<GenType> void score();
