@@ -817,7 +817,6 @@ moves_loop: // When in check search starts from here
 
       // Step 12. Singular and Gives Check Extensions
 
-      Move singularHighFailMove = MOVE_NONE;
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
       // is singular and should be extended. To verify this we do a reduced search
@@ -835,8 +834,8 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
-          else
-        	  singularHighFailMove = ss->currentMove;
+          else if (!pos.capture_or_promotion(ss->currentMove)) // update killers in movepicker
+        	  mp.setKillers(ss->killers);
       }
       else if (    givesCheck
                && !moveCountPruning
@@ -1058,14 +1057,6 @@ moves_loop: // When in check search starts from here
       else if (captureOrPromotion && move != bestMove && captureCount < 32)
           capturesSearched[captureCount++] = move;
 
-      if (singularHighFailMove) // ttMove did not produce a cut-off,
-      // according to a comment in talkchess singularHighFailMove has now more chances than the rest of all moves together
-      {
-    	  assert(singularHighFailMove != ttMove);
-    	  if (!pos.capture_or_promotion(singularHighFailMove))
-			 mp.setKillers(ss->killers);
-    	  singularHighFailMove = MOVE_NONE;
-      }
     } // end moves loop
 
     // The following condition would detect a stop only after move loop has been
