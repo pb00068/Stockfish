@@ -498,7 +498,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove, bestMove, seHighFailMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
@@ -777,6 +777,7 @@ moves_loop: // When in check search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
+    seHighFailMove = MOVE_NONE;
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
@@ -784,7 +785,7 @@ moves_loop: // When in check search starts from here
     {
       assert(is_ok(move));
 
-      if (move == excludedMove)
+      if (move == excludedMove || move == seHighFailMove)
           continue;
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
@@ -793,6 +794,8 @@ moves_loop: // When in check search starts from here
       if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.end(), move))
           continue;
+
+      move2:
 
       ss->moveCount = ++moveCount;
 
@@ -834,8 +837,8 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
-          else if (!pos.capture_or_promotion(ss->currentMove)) // update killers in movepicker
-        	  mp.setKillers(ss->killers);
+          else
+        	  seHighFailMove = ss->currentMove;
       }
       else if (    givesCheck
                && !moveCountPruning
@@ -1056,6 +1059,13 @@ moves_loop: // When in check search starts from here
           quietsSearched[quietCount++] = move;
       else if (captureOrPromotion && move != bestMove && captureCount < 32)
           capturesSearched[captureCount++] = move;
+
+      if (seHighFailMove && move == ttMove)
+      // we got here after singular extension search failed high with seHighFailMove and normal search did'nt produce a cut-off with ttMove
+      {
+    	     move = seHighFailMove;
+    	     goto move2;
+      }
 
     } // end moves loop
 
