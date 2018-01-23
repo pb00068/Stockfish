@@ -1070,6 +1070,7 @@ moves_loop: // When in check search starts from here
 			 ss->killers[0] = singularHighFailMove;
 			 mp.setKillers(ss->killers);
 		  }
+    	  singularHighFailMove = MOVE_NONE;
       }
     } // end moves loop
 
