@@ -1070,32 +1070,38 @@ moves_loop: // When in check search starts from here
 
     assert(moveCount || !inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
-    if (!moveCount)
-        bestValue = excludedMove ? alpha
-                   :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
-    else if (bestMove)
+    if (excludedMove)
     {
-        // Quiet best move: update move sorting heuristics
-        if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-        else
-            update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+        if (!moveCount)
+           bestValue = alpha;
     }
-    // Bonus for prior countermove that caused the fail low
-    else if (    depth >= 3 * ONE_PLY
-             && !pos.captured_piece()
-             && is_ok((ss-1)->currentMove))
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+    else
+    {
+        if (!moveCount)
+           bestValue = inCheck ? mated_in(ss->ply) : VALUE_DRAW;
+		else if (bestMove)
+		{
+			// Quiet best move: update move sorting heuristics
+			if (!pos.capture_or_promotion(bestMove))
+				update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+			else
+				update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
 
-    if (!excludedMove)
+			// Extra penalty for a quiet TT move in previous ply when it gets refuted
+			if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+				update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+		}
+		// Bonus for prior countermove that caused the fail low
+		else if (    depth >= 3 * ONE_PLY
+				 && !pos.captured_piece()
+				 && is_ok((ss-1)->currentMove))
+			update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval, TT.generation());
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
