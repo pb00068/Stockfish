@@ -1076,14 +1076,15 @@ moves_loop: // When in check search starts from here
     else if (bestMove)
     {
         // Quiet best move: update move sorting heuristics
+    	Depth d = excludedMove ? depth - ONE_PLY : depth;
         if (!pos.capture_or_promotion(bestMove))
-            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+            update_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(d));
         else
-            update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+            update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(d));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(d + ONE_PLY));
     }
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
