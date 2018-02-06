@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -361,9 +360,8 @@ namespace {
 
             if (Pt == BISHOP)
             {
-                // Penalty based on ratio of pawns on the same color square as the bishop
-            	bool dark = bool(DarkSquares & s);
-                score -= BishopPawns * std::max(0 , (pe->pawnsOnSquares[Us][dark] - (pe->pawnsOnSquares[Us][!dark] / 2)));
+                // Penalty for pawns on the same color square as the bishop
+                score -= BishopPawns * std::max(0, pe->pawns_on_same_color_squares(Us, s) - 2);
 
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(Center & (attacks_bb<BISHOP>(s, pos.pieces(PAWN)) | s)))
