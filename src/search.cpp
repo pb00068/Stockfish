@@ -683,6 +683,10 @@ namespace {
             return v;
     }
 
+    // Step 6.b Retire futile extensions
+    if (depth < 4 * ONE_PLY && depth > thisThread->rootDepth - ss->ply && ss->staticEval + (66 * depth / ONE_PLY) < beta)
+    	depth = depth - ONE_PLY;
+
     // Step 7. Futility pruning: child node (skipped when in check)
     if (   !rootNode
         &&  depth < 7 * ONE_PLY
