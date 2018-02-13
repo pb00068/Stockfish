@@ -684,8 +684,12 @@ namespace {
     }
 
     // Step 6.b Retire futile extensions
-    if (depth < 4 * ONE_PLY && depth > thisThread->rootDepth - ss->ply && ss->staticEval + (90 * depth / ONE_PLY) < beta)
-    	depth = depth - ONE_PLY;
+    if (depth <= 3 * ONE_PLY && depth > thisThread->rootDepth - ss->ply)
+    {
+    	//dbg_hit_on(ss->staticEval > beta + 30); Total 510256 Hits 284753 hit rate (%) 55
+    	if (ss->staticEval > beta + 30)
+    	 depth = depth - ONE_PLY;
+    }
 
     // Step 7. Futility pruning: child node (skipped when in check)
     if (   !rootNode
