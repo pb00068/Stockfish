@@ -679,6 +679,13 @@ namespace {
             return v;
     }
 
+    if (depth <= 3 * ONE_PLY && thisThread->extensions > 0)
+    {
+        	//dbg_hit_on(ss->staticEval > beta + 30); //Total 1049171 Hits 642288 hit rate (%) 61
+        	if (ss->staticEval > beta + 30)
+        	  depth = std::max(DEPTH_ZERO, depth - ONE_PLY);
+    }
+
     // Step 8. Futility pruning: child node (skipped when in check)
     if (   !rootNode
         &&  depth < 7 * ONE_PLY
@@ -979,10 +986,14 @@ moves_loop: // When in check, search starts from here
 
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
+      {
+    	  thisThread->extensions += extension / ONE_PLY;
           value = newDepth <   ONE_PLY ?
                             givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha)
                                        : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha)
                                        : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode, false);
+          thisThread->extensions -= extension / ONE_PLY;
+      }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
@@ -992,10 +1003,12 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
+          thisThread->extensions += extension / ONE_PLY;
           value = newDepth <   ONE_PLY ?
                             givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha)
                                        : -qsearch<PV, false>(pos, ss+1, -beta, -alpha)
                                        : - search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, false);
+          thisThread->extensions -= extension / ONE_PLY;
       }
 
       // Step 18. Undo move
