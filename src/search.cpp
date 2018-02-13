@@ -679,10 +679,10 @@ namespace {
             return v;
     }
 
-    if (depth <= 3 * ONE_PLY && thisThread->extensions > 0)
+    if (depth <= 2 * ONE_PLY && thisThread->extensions > 0)
     {
-        	//dbg_hit_on(ss->staticEval > beta + 30); //Total 1049171 Hits 642288 hit rate (%) 61
-        	if (ss->staticEval > beta + 30)
+        	//dbg_hit_on(ss->staticEval > beta + 40); //Total 1065860 Hits 651787 hit rate (%) 61
+        	if (ss->staticEval > beta + 40)
         	  depth = std::max(DEPTH_ZERO, depth - ONE_PLY);
     }
 
