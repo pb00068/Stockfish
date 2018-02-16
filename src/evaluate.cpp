@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
+#include <sstream>
 
 #include "bitboard.h"
 #include "evaluate.h"
