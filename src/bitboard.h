@@ -60,6 +60,8 @@ const Bitboard Rank6BB = Rank1BB << (8 * 5);
 const Bitboard Rank7BB = Rank1BB << (8 * 6);
 const Bitboard Rank8BB = Rank1BB << (8 * 7);
 
+const Bitboard NearBorder = Rank1BB | Rank2BB | Rank7BB |Rank8BB | FileABB | FileBBB | FileGBB | FileHBB;
+
 extern int SquareDistance[SQUARE_NB][SQUARE_NB];
 
 extern Bitboard SquareBB[SQUARE_NB];

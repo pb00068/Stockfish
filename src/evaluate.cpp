@@ -22,7 +22,6 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
-#include <sstream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -232,6 +231,7 @@ namespace {
   const Score ThreatByAttackOnQueen = S( 42, 21);
   const Score HinderPassedPawn      = S(  8,  1);
   const Score TrappedBishopA1H1     = S( 50, 50);
+  const Score BishopControlsKnight  = S(  0, 25);
 
   #undef S
   #undef V
@@ -618,6 +618,18 @@ namespace {
        | (attackedBy[Us][ROOK  ] & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
 
     score += ThreatByAttackOnQueen * popcount(b & safeThreats);
+
+    // Enemy Knight controlled by our Bishop (& King)
+    if (pos.non_pawn_material(Them) < 4000 && attackedBy[Us][BISHOP])
+    {
+		b = pos.pieces(Them, KNIGHT) & NearBorder;
+		while (b)
+		{
+		   Square s = pop_lsb(&b);
+		   if ((PseudoAttacks[KNIGHT][s] & ~(attackedBy[Us][BISHOP] | attackedBy[Us][KING])) == 0)
+			   score += BishopControlsKnight;
+		}
+    }
 
     if (T)
         Trace::add(THREAT, Us, score);
