@@ -111,7 +111,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
+          && pos.see_ge<true>(ttm, threshold) ? ttm : MOVE_NONE;
 
   stage += (ttMove == MOVE_NONE);
 }
@@ -173,7 +173,7 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
+              if (pos.see_ge<true>(move, Value(-55 * (cur-1)->value / 1024)))
                   return move;
 
               // Losing capture, move it to the beginning of the array
@@ -269,7 +269,7 @@ Move MovePicker::next_move(bool skipQuiets) {
       {
           move = pick_best(cur++, endMoves);
           if (   move != ttMove
-              && pos.see_ge(move, threshold))
+              && pos.see_ge<true>(move, threshold))
               return move;
       }
       break;

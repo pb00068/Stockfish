@@ -989,7 +989,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+template<bool Capture> bool Position::see_ge(Move m, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1003,12 +1003,18 @@ bool Position::see_ge(Move m, Value threshold) const {
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
+
   // The opponent may be able to recapture so this is the best result
   // we can hope for.
-  balance = PieceValue[MG][piece_on(to)] - threshold;
+  if (Capture)
+  {
+	  balance = PieceValue[MG][piece_on(to)] - threshold;
+	  if (balance < VALUE_ZERO)
+	       return false;
+  }
+  else
+	  balance = VALUE_ZERO;
 
-  if (balance < VALUE_ZERO)
-      return false;
 
   // Now assume the worst possible result: that the opponent can
   // capture our piece for free.
@@ -1018,7 +1024,10 @@ bool Position::see_ge(Move m, Value threshold) const {
       return true;
 
   bool opponentToMove = true;
-  occupied = pieces() ^ from ^ to;
+  if (Capture)
+	  occupied = pieces() ^ from ^ to;
+  else
+	  occupied = pieces() ^ from;
 
   // Find all attackers to the destination square, with the moving piece removed,
   // but possibly an X-ray attacker added behind it.
@@ -1036,8 +1045,16 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // If all pinners are on their original square then only keep attackers
       // that are in line with the king and the 'to' square or are not pinned.
-      if (st->pinnersForKing[stm] && !(st->pinnersForKing[stm] & ~occupied))
+      if (Capture)
+      {
+         if (!(st->pinnersForKing[stm] & ~occupied))
+           stmAttackers &= ~st->blockersForKing[stm];
+      }
+      else {
+    	 if (st->pinnersForKing[stm] && !(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= LineBB[to][square<KING>(stm)] | ~st->blockersForKing[stm];
+      }
+
 
       // If we have no more attackers we must give up
       if (!stmAttackers)
