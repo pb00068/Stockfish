@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -175,6 +176,7 @@ namespace {
   const Score ThreatByRank      = S( 16,  3);
   const Score ThreatBySafePawn  = S(175,168);
   const Score ThreatOnQueen     = S( 42, 21);
+  const Score ThreatOnPinner    = S(  8,  8);
   const Score TrappedBishopA1H1 = S( 50, 50);
   const Score TrappedRook       = S( 92,  0);
   const Score WeakQueen         = S( 50, 10);
@@ -596,6 +598,9 @@ namespace {
        | (attackedBy[Us][ROOK  ] & attackedBy[Them][QUEEN] & ~attackedBy[Them][QUEEN_DIAGONAL]);
 
     score += ThreatOnQueen * popcount(b & safeThreats);
+
+    if (pos.pinnersForKing(Us) & attackedBy[Us][ALL_PIECES])
+      score += ThreatOnPinner;
 
     if (T)
         Trace::add(THREAT, Us, score);

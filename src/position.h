@@ -108,6 +108,9 @@ public:
   Bitboard blockers_for_king(Color c) const;
   Bitboard check_squares(PieceType pt) const;
 
+  // Pins
+  Bitboard pinnersForKing(Color c) const;
+
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
@@ -297,6 +300,10 @@ inline Bitboard Position::checkers() const {
 
 inline Bitboard Position::blockers_for_king(Color c) const {
   return st->blockersForKing[c];
+}
+
+inline Bitboard Position::pinnersForKing(Color c) const {
+	  return st->pinnersForKing[c];
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {
