@@ -996,6 +996,9 @@ moves_loop: // When in check, search starts from here
 
           Depth d = std::max(newDepth - r, ONE_PLY);
 
+          if (ss->statScore > 0 && ss->staticEval + 50 > alpha && d < newDepth - 4 * ONE_PLY && d < thisThread->rootDepth - ss->ply - 10 * ONE_PLY)
+        	  d += 2 * ONE_PLY;
+
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, false);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
