@@ -618,8 +618,8 @@ bool Position::pseudo_legal(const Move m) const {
 
 bool Position::threatens_check(PieceType pt, Square from, Bitboard checkSquares) const {
 	 if (pt == PAWN)
-		  return (checkSquares & attacks_from<PAWN>(from, sideToMove) & pieces(~sideToMove)) ||
-		         (checkSquares & (from + pawn_push(sideToMove)) & ~pieces());
+		  return (checkSquares & attacks_from<PAWN>(from, ~sideToMove) & pieces(sideToMove)) ||
+		         (checkSquares & (from + pawn_push(~sideToMove)) & ~pieces());
 
 	 return (checkSquares & attacks_from(pt, from) & ~pieces());
 }
