@@ -995,6 +995,19 @@ moves_loop: // When in check, search starts from here
               else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r += ONE_PLY;
 
+              if (depth >= 4 * ONE_PLY && pos.count<QUEEN>(~pos.side_to_move()) > 0)
+              {
+            	  StateInfo stn;
+            	  pos.do_null_move(stn);
+            	  Move seq = make_move(to_sq(move), pos.square<QUEEN>(~pos.side_to_move()));
+            	  if (pos.pseudo_legal(seq) && pos.legal(seq))
+            	  {
+            		  r -= ONE_PLY; // less reduction if chasing queen
+            		  //sync_cout << pos << UCI::move(move, false) << " seqmove: " << UCI::move(seq, false) << sync_endl;
+            	  }
+            	  pos.undo_null_move();
+              }
+
               // Decrease/increase reduction for moves with a good/bad history
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / 20000) * ONE_PLY);
           }
