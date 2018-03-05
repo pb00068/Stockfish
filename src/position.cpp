@@ -616,6 +616,14 @@ bool Position::pseudo_legal(const Move m) const {
   return true;
 }
 
+bool Position::threatens_check(PieceType pt, Square from, Bitboard checkSquares) const {
+	 if (pt == PAWN)
+		  return (checkSquares & attacks_from<PAWN>(from, sideToMove) & pieces(~sideToMove)) ||
+		         (checkSquares & (from + pawn_push(sideToMove)) & ~pieces());
+
+	 return (checkSquares & attacks_from(pt, from) & ~pieces());
+}
+
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 

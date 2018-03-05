@@ -995,17 +995,24 @@ moves_loop: // When in check, search starts from here
               else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r += ONE_PLY;
 
-              if (depth >= 4 * ONE_PLY && pos.count<QUEEN>(~pos.side_to_move()) > 0)
+              if (type_of(movedPiece) < QUEEN)
               {
-            	  StateInfo stn;
-            	  pos.do_null_move(stn);
-            	  Move seq = make_move(to_sq(move), pos.square<QUEEN>(~pos.side_to_move()));
-            	  if (pos.pseudo_legal(seq) && pos.legal(seq))
+            	  Square ksq = pos.square<KING>(pos.side_to_move());
+            	  PieceType pt = type_of(movedPiece);
+            	  Bitboard b = 0;
+            	  if (pt == PAWN)
+            	     b = pos.attacks_from<PAWN>(ksq, pos.side_to_move());
+            	  else if (pt == KNIGHT)
+            	     b = pos.attacks_from<KNIGHT>(ksq);
+            	  else if (pt == BISHOP)
+            		 b = pos.attacks_from<BISHOP>(ksq);
+            	  else if (pt == ROOK)
+            	     b = pos.attacks_from<ROOK>(ksq);
+            	  if (pos.threatens_check(pt, to_sq(move), b))
             	  {
-            		  r -= ONE_PLY; // less reduction if chasing queen
-            		  //sync_cout << pos << UCI::move(move, false) << " seqmove: " << UCI::move(seq, false) << sync_endl;
+            		  r -= ONE_PLY; // next move threatens quiet check or check by pawn capture
+            		  //sync_cout << pos << UCI::move(move, false) << " threatens check " << sync_endl;
             	  }
-            	  pos.undo_null_move();
               }
 
               // Decrease/increase reduction for moves with a good/bad history
