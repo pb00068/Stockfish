@@ -945,6 +945,7 @@ moves_loop: // When in check, search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->contHistory = thisThread->contHistory[movedPiece][to_sq(move)].get();
+      Piece capturedPiece = pos.captured_piece();
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
@@ -998,7 +999,8 @@ moves_loop: // When in check, search starts from here
                   r += ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
-              r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / 20000) * ONE_PLY);
+              if (!capturedPiece)
+            	  r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / 20000) * ONE_PLY);
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
