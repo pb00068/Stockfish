@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, CAPTURES_INIT, ADDKILLERS, GOOD_CAPTURES, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_CAPTURES_INIT, PROBCUT_CAPTURES,
     QSEARCH, QCAPTURES_INIT, QCAPTURES, QCHECKS
@@ -160,6 +160,25 @@ Move MovePicker::next_move(bool skipQuiets) {
       // Rebranch at the top of the switch via a recursive call
       return next_move(skipQuiets);
 
+  case ADDKILLERS:
+	  for (int i=0; i < 2; i++)
+	  {
+		  move = killers[i];
+		  if (    move != MOVE_NONE
+			  &&  move != ttMove
+			  &&  pos.pseudo_legal(move)
+			  && !pos.capture(move))
+		  {
+			  endMoves->move = move;
+			  endMoves->value = (*mainHistory)[pos.side_to_move()][from_to(move)];
+			  if (endMoves->value < 9000)
+				  endMoves->value = 0;
+		      endMoves++;
+		  }
+	  }
+	  ++stage;
+	  /* fallthrough */
+
   case GOOD_CAPTURES:
       while (cur < endMoves)
       {
@@ -173,21 +192,6 @@ Move MovePicker::next_move(bool skipQuiets) {
               *endBadCaptures++ = move;
           }
       }
-      ++stage;
-      /* fallthrough */
-
-  case KILLER0:
-  case KILLER1:
-      do
-      {
-          move = killers[++stage - KILLER1];
-          if (    move != MOVE_NONE
-              &&  move != ttMove
-              &&  pos.pseudo_legal(move)
-              && !pos.capture(move))
-              return move;
-      } while (stage <= KILLER1);
-      /* fallthrough */
 
   case COUNTERMOVE:
       ++stage;
