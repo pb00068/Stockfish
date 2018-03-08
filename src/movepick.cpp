@@ -168,17 +168,19 @@ Move MovePicker::next_move(bool skipQuiets) {
 	  {
 		  move = specials[i];
 		  if (    move != MOVE_NONE
-			  &&  move != ttMove
-			  &&  pos.pseudo_legal(move)
-			  && !pos.capture(move))
+		 	  &&  move != ttMove
+		 	  &&  pos.pseudo_legal(move)
+		 	  && !pos.capture(move))
 		  {
 			  endMoves->move = move;
 			  endMoves->value = (*mainHistory)[pos.side_to_move()][from_to(move)];
-			  if (endMoves->value < 10000)
-			      endMoves->value = -20000;
+			  //dbg_hit_on(endMoves->value > 9500 && pos.see_ge(move));
+			  if (endMoves->value > 9000)
+				  endMoves->value>>= 2;
 			  else
-				  endMoves->value = PawnValueMg + 1;
-		      endMoves++;
+				  endMoves->value = -20000;
+
+			  endMoves++;
 		  }
 	  }
 	  ++stage;
@@ -188,8 +190,10 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if (move == specials[0] || move == specials[1] || move == specials[2])
-               return move;
+          if ((move == specials[0] || move == specials[1] || move == specials[2]) && !pos.capture_or_promotion(move))
+             return move;
+
+
           if (move != ttMove)
           {
               if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
