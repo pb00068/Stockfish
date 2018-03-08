@@ -174,7 +174,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 			  if (endMoves->value < 10000)
 			      endMoves->value = -20000;
 			  else
-				  endMoves->value = PawnValueMg + 1;
+				  endMoves->value = PawnValueMg - 1;
 		      endMoves++;
 		  }
 	  }
