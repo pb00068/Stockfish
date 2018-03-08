@@ -171,10 +171,6 @@ Move MovePicker::next_move(bool skipQuiets) {
 		  {
 			  endMoves->move = move;
 			  endMoves->value = (*mainHistory)[pos.side_to_move()][from_to(move)];
-			  if (endMoves->value < 10000)
-			      endMoves->value = -20000;
-			  else
-				  endMoves->value = PawnValueMg - 1;
 		      endMoves++;
 		  }
 	  }
@@ -187,9 +183,6 @@ Move MovePicker::next_move(bool skipQuiets) {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-        	  if (move == killers[0] || move == killers[1])
-        	      return move;
-
               if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
                   return move;
 
