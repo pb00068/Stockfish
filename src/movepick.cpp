@@ -174,13 +174,7 @@ Move MovePicker::next_move(bool skipQuiets) {
 		 	  && !pos.capture(move))
 		  {
 			  endMoves->move = move;
-			  endMoves->value = (*mainHistory)[pos.side_to_move()][from_to(move)];
-			  //dbg_hit_on(endMoves->value > 9500 && pos.see_ge(move));
-			  if (endMoves->value > 9500)
-				  endMoves->value = 200;
-			  else
-				  endMoves->value = -20000;
-
+			  endMoves->value = -20000;
 			  endMoves++;
 		  }
 	  }
