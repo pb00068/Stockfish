@@ -830,6 +830,7 @@ moves_loop: // When in check, search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
+//    std::vector<Move> moves;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -839,6 +840,14 @@ moves_loop: // When in check, search starts from here
 
       if (move == excludedMove)
           continue;
+
+//      if (std::find(moves.begin(), moves.end(), move) != moves.end())
+//      {
+//    	  sync_cout << "move " << UCI::move(move, pos.is_chess960()) << " was already processed once" << sync_endl;
+//    	  abort();
+//      }
+//      moves.push_back(move);
+      //moves.push_back(make_move(SQ_A1, SQ_B2));
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV

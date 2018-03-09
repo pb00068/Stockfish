@@ -19,8 +19,11 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
+#include "misc.h"
+#include "uci.h"
 
 namespace {
 
@@ -175,8 +178,8 @@ Move MovePicker::next_move(bool skipQuiets) {
 			  endMoves->move = move;
 			  endMoves->value = (*mainHistory)[pos.side_to_move()][from_to(move)];
 			  //dbg_hit_on(endMoves->value > 9500 && pos.see_ge(move));
-			  if (endMoves->value > 9000)
-				  endMoves->value>>= 2;
+			  if (endMoves->value > 9500)
+				  endMoves->value = 200;
 			  else
 				  endMoves->value = -20000;
 
@@ -190,14 +193,25 @@ Move MovePicker::next_move(bool skipQuiets) {
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
-          if ((move == specials[0] || move == specials[1] || move == specials[2]) && !pos.capture_or_promotion(move))
-             return move;
-
-
           if (move != ttMove)
           {
               if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
                   return move;
+              // if it is a killer then don't let it  shift to bad-captures
+              if ((move == specials[0] || move == specials[1] || move == specials[2]) && !pos.capture(move))
+		      {
+             //        	  if ((cur-1)->value != 1000 && (cur-1)->value != -20000)
+             //        	  {9500
+             //        		  sync_cout << "move seems to be capture " << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+             //        		  abort();
+             //        	  }
+             //        	  if (endMoves - cur > 3 && (cur-1)->value == -20000)
+             //        	  {
+             //				  sync_cout << "move seems to be capture " << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+             //				  abort();
+             //			  }
+			   return move;
+		      }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
