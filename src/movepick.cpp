@@ -19,11 +19,9 @@
 */
 
 #include <cassert>
-#include <iostream>
 
 #include "movepick.h"
-#include "misc.h"
-#include "uci.h"
+
 
 namespace {
 
@@ -199,19 +197,7 @@ Move MovePicker::next_move(bool skipQuiets) {
                   return move;
               // if it is a killer then don't let it  shift to bad-captures
               if ((move == specials[0] || move == specials[1] || move == specials[2]) && !pos.capture(move))
-		      {
-             //        	  if ((cur-1)->value != 1000 && (cur-1)->value != -20000)
-             //        	  {9500
-             //        		  sync_cout << "move seems to be capture " << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
-             //        		  abort();
-             //        	  }
-             //        	  if (endMoves - cur > 3 && (cur-1)->value == -20000)
-             //        	  {
-             //				  sync_cout << "move seems to be capture " << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
-             //				  abort();
-             //			  }
 			   return move;
-		      }
 
               // Losing capture, move it to the beginning of the array
               *endBadCaptures++ = move;
