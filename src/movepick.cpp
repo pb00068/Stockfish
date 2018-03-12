@@ -171,6 +171,19 @@ begin_switch:
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
+        	  if ((cur-1)->value < -500 && refutations[0] != MOVE_NONE)
+              {
+                 // consume killer[0] and return it if valid
+                 move = refutations[0];
+                 refutations[0] = MOVE_NONE;
+                 if (move != ttMove  && pos.pseudo_legal(move) && !pos.capture(move))
+                 {
+                    --cur;
+					return move;
+                 }
+                 else
+                    move = (cur-1)->move;
+              }
               if (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)))
                   return move;
 
