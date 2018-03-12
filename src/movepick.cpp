@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -166,18 +167,38 @@ begin_switch:
       goto begin_switch;
 
   case GOOD_CAPTURES:
+	   // If the countermove is the same as a killer, skip it
+	  if (   refutations[0] == refutations[2]
+	      || refutations[1] == refutations[2])
+	         refutations[2] = MOVE_NONE;
+
       while (cur < endMoves)
       {
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-        	  if ((cur-1)->value < -500 && refutations[0] != MOVE_NONE)
+        	  //dbg_mean_of((cur-1)->value);
+        	  if ((cur-1)->value < 400 && refutations[0] != MOVE_NONE)
               {
-                 // consume killer[0] and return it if valid
-                 move = refutations[0];
-                 refutations[0] = MOVE_NONE;
-                 if (move != ttMove  && pos.pseudo_legal(move) && !pos.capture(move))
+                 // consume best scored refutation and return it if valid
+        		  //dbg_hit_on((*mainHistory)[pos.side_to_move()][from_to(refutations[0])] > 3500);
+        		  //dbg_mean_of((*mainHistory)[pos.side_to_move()][from_to(refutations[0])]);
+        		  int16_t max = 2000;
+        		  int z=-1;
+        		  for (int i=0; i < 3 && refutations[i]; i++)
+        		  {
+        			  move = refutations[i];
+        			  if (move != ttMove && (*mainHistory)[pos.side_to_move()][from_to(move)] > max && pos.pseudo_legal(move) && !pos.capture(move))
+					  {
+							max = (*mainHistory)[pos.side_to_move()][from_to(move)];
+							z=i;
+					  }
+        		  }
+
+                 if (z >= 0)
                  {
+                	move = refutations[z];
+                	refutations[z] = MOVE_NONE;
                     --cur;
 					return move;
                  }
@@ -193,10 +214,7 @@ begin_switch:
       }
       ++stage;
 
-      // If the countermove is the same as a killer, skip it
-      if (   refutations[0] == refutations[2]
-          || refutations[1] == refutations[2])
-         refutations[2] = MOVE_NONE;
+
 
       /* fallthrough */
 
