@@ -1074,8 +1074,8 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              bigRaise |= value > alpha + Value(1100);
-              //dbg_hit_on(bigRaise); //bench depth 18: Total 8716495 Hits 913436 hit rate (%) 10
+              bigRaise |= value > alpha + Value(1500);
+              //dbg_hit_on(bigRaise); //1113762 Hits 75939 hit rate (%) 6
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
