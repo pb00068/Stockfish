@@ -171,8 +171,8 @@ begin_switch:
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-        	  Value thresh  = Value(-59 * (cur-1)->value / 1024);
-        	  if (thresh > 0)
+        	  Value thresh  = Value(-60 * (cur-1)->value / 1024);
+        	  if (thresh < 0)
         		  thresh/=2;
               if (pos.see_ge(move, thresh))
                   return move;
