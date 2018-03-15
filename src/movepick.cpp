@@ -171,7 +171,10 @@ begin_switch:
           move = pick_best(cur++, endMoves);
           if (move != ttMove)
           {
-              if (pos.see_ge(move, Value(-59 * (cur-1)->value / 1024)))
+        	  Value thresh  = Value(-59 * (cur-1)->value / 1024);
+        	  if (thresh > 0)
+        		  thresh/=2;
+              if (pos.see_ge(move, thresh))
                   return move;
 
               // Losing capture, move it to the beginning of the array
