@@ -70,6 +70,7 @@ public:
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;
+  CapturePieceToHistory recaptureHistory;
   ContinuationHistory contHistory;
 };
 
