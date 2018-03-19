@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, DISCO_KILLER, CAPTURE_INIT, GOOD_CAPTURE, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -62,7 +62,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers_p)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
-             refutations{killers_p[0], killers_p[1], cm}, depth(d){
+             refutations{killers_p[0], killers_p[1], cm, killers_p[2], killers_p[3]}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
@@ -161,6 +161,15 @@ top:
       ++stage;
       return ttMove;
 
+  case DISCO_KILLER:
+	  ++stage;
+	  if (refutations[3] != ttMove && refutations[3] != MOVE_NONE) {
+		  if (!(between_bb(from_sq(refutations[3]),to_sq(refutations[3])) & from_sq(refutations[4])) || !pos.pseudo_legal(refutations[3]) )
+			  refutations[3] = MOVE_NONE;
+		  else
+			  return refutations[3];
+	  }
+
   case CAPTURE_INIT:
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
@@ -171,9 +180,13 @@ top:
       goto top;
 
   case GOOD_CAPTURE:
-      if (select_move<BEST_SCORE>([&](){ return  pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
+      if (select_move<BEST_SCORE>([&](){
+    	  if (move == refutations[3])
+    		  return false;
+    	  return  pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
                                                  // Move losing capture to endBadCaptures to be tried later
-                                                 true : (*endBadCaptures++ = move, false); }))
+                                                 true : (*endBadCaptures++ = move, false);
+      }))
           return move;
 
       // If the countermove is the same as a killer, skip it
@@ -191,6 +204,7 @@ top:
           move = refutations[ stage++ - KILLER0];
           if (    move != MOVE_NONE
               &&  move != ttMove
+			  &&  move != refutations[3]
               &&  pos.pseudo_legal(move)
               && !pos.capture(move))
               return move;
@@ -209,7 +223,8 @@ top:
       if (   !skipQuiets
           && select_move<NEXT>([&](){return    move != refutations[0]
                                             && move != refutations[1]
-                                            && move != refutations[2];}))
+											&& move != refutations[2]
+                                            && move != refutations[3];}))
           return move;
 
       // Point to beginning and end of bad captures

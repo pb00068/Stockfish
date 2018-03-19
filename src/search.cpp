@@ -555,7 +555,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->killers[2] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1111,11 +1111,22 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
     else if (bestMove)
     {
+    	if  (is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(bestMove) && (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove)) )
+	    {
+		//sync_cout << pos << UCI::move((ss-1)->currentMove, pos.is_chess960()) << " cross:" <<  UCI::move(bestMove, pos.is_chess960()) << sync_endl;
+			ss->killers[2] = bestMove;
+			ss->killers[3] = (ss-1)->currentMove;
+		//dbg_hit_on(pos.captured_piece()); // 30 % ,tot 1%
+	    }
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-        else
+        else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+
+        }
+
+
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1422,7 +1433,7 @@ moves_loop: // When in check, search starts from here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
                           Move* quiets, int quietsCnt, int bonus) {
 
-    if (ss->killers[0] != move)
+    if (ss->killers[0] != move && ss->killers[2] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
