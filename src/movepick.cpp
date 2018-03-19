@@ -21,11 +21,12 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
   enum Stages {
-    MAIN_TT, DISCO_KILLER, CAPTURE_INIT, GOOD_CAPTURE, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, DISCO_KILLER, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -161,15 +162,6 @@ top:
       ++stage;
       return ttMove;
 
-  case DISCO_KILLER:
-	  ++stage;
-	  if (refutations[3] != ttMove && refutations[3] != MOVE_NONE) {
-		  if (!(between_bb(from_sq(refutations[3]),to_sq(refutations[3])) & from_sq(refutations[4])) || !pos.pseudo_legal(refutations[3]) )
-			  refutations[3] = MOVE_NONE;
-		  else
-			  return refutations[3];
-	  }
-
   case CAPTURE_INIT:
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
@@ -181,8 +173,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select_move<BEST_SCORE>([&](){
-    	  if (move == refutations[3])
-    		  return false;
+
     	  return  pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
                                                  // Move losing capture to endBadCaptures to be tried later
                                                  true : (*endBadCaptures++ = move, false);
@@ -195,6 +186,15 @@ top:
           refutations[2] = MOVE_NONE;
       ++stage;
       /* fallthrough */
+
+  case DISCO_KILLER:
+  	  ++stage;
+  	  if (refutations[3] != ttMove && refutations[3] != MOVE_NONE) {
+  		  if (!(between_bb(from_sq(refutations[3]), to_sq(refutations[3])) & from_sq(refutations[4])) || !pos.pseudo_legal(refutations[3]) || pos.capture(refutations[3]))
+  			  refutations[3] = MOVE_NONE;
+  		  else
+  			  return refutations[3];
+  	  }
 
   case KILLER0:
   case KILLER1:

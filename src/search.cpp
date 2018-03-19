@@ -280,7 +280,7 @@ void MainThread::search() {
 
 void Thread::search() {
 
-  Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
+  Stack stack[MAX_PLY+9], *ss = stack+4; // To reference from (ss-4) to (ss+4)
   Value bestValue, alpha, beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
@@ -555,7 +555,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->killers[2] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1111,16 +1111,17 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
     else if (bestMove)
     {
-    	if  (is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(bestMove) && (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove)) )
-	    {
-		//sync_cout << pos << UCI::move((ss-1)->currentMove, pos.is_chess960()) << " cross:" <<  UCI::move(bestMove, pos.is_chess960()) << sync_endl;
-			ss->killers[2] = bestMove;
-			ss->killers[3] = (ss-1)->currentMove;
-		//dbg_hit_on(pos.captured_piece()); // 30 % ,tot 1%
-	    }
+
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
+        {
+        	if  (is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(bestMove) && (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove)) )
+			{
+				ss->killers[2] = bestMove;
+				ss->killers[3] = (ss-1)->currentMove;
+			}
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
+        }
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
 
