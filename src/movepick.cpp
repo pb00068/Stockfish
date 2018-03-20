@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, DISCO_KILLER, KILLER0, KILLER1, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -180,16 +180,21 @@ top:
       }))
           return move;
 
-      if (refutations[3] != ttMove && refutations[3] != MOVE_NONE && refutations[3] != refutations[0]
-    	  && (between_bb(from_sq(refutations[3]), to_sq(refutations[3])) & from_sq(refutations[4])))
-        	refutations[0] = refutations[3];
-
       // If the countermove is the same as a killer, skip it
       if (   refutations[0] == refutations[2]
           || refutations[1] == refutations[2])
           refutations[2] = MOVE_NONE;
       ++stage;
       /* fallthrough */
+
+  case DISCO_KILLER:
+  	  ++stage;
+  	  if (refutations[3] != ttMove && refutations[3] != MOVE_NONE) {
+  		  if (!(between_bb(from_sq(refutations[3]), to_sq(refutations[3])) & from_sq(refutations[4])) || !pos.pseudo_legal(refutations[3]) || pos.capture(refutations[3]))
+  			  refutations[3] = MOVE_NONE;
+  		  else
+  			  return refutations[3];
+  	  }
 
   case KILLER0:
   case KILLER1:
@@ -199,6 +204,7 @@ top:
           move = refutations[ stage++ - KILLER0];
           if (    move != MOVE_NONE
               &&  move != ttMove
+			  &&  move != refutations[3]
               &&  pos.pseudo_legal(move)
               && !pos.capture(move))
               return move;
@@ -217,7 +223,8 @@ top:
       if (   !skipQuiets
           && select_move<NEXT>([&](){return    move != refutations[0]
                                             && move != refutations[1]
-                                            && move != refutations[2];}))
+											&& move != refutations[2]
+                                            && move != refutations[3];}))
           return move;
 
       // Point to beginning and end of bad captures
