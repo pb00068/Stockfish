@@ -288,7 +288,7 @@ void Thread::search() {
   double timeReduction = 1.0;
   Color us = rootPos.side_to_move();
 
-  std::memset(ss-4, 0, 7 * sizeof(Stack));
+  std::memset(ss-4, 0, 9 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
      (ss-i)->contHistory = this->contHistory[NO_PIECE][0].get(); // Use as sentinel
 
