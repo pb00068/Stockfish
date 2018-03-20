@@ -106,14 +106,14 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
 template<GenType Type>
 void MovePicker::score() {
 
-  static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+  static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS || Type == REFUTATIONS, "Wrong type");
 
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
-      else if (Type == QUIETS)
+      else if (Type == QUIETS || Type == REFUTATIONS)
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
@@ -183,11 +183,12 @@ top:
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
           --endMoves;
+      score<REFUTATIONS>();
       ++stage;
       /* fallthrough */
 
   case REFUTATION:
-      if (select_move<NEXT>([&](){ return     move != MOVE_NONE
+      if (select_move<BEST_SCORE>([&](){ return     move != MOVE_NONE
                                           && !pos.capture(move)
                                           &&  pos.pseudo_legal(move); }))
           return move;
