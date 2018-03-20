@@ -1115,7 +1115,7 @@ moves_loop: // When in check, search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
         {
-        	if  (is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(bestMove) && (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove)) )
+        	if  (is_ok((ss-1)->currentMove) && (between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove)) )
 			{
 				ss->killers[2] = bestMove;
 				ss->killers[3] = (ss-1)->currentMove;
