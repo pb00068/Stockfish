@@ -62,7 +62,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d){
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}, {killers[2], 0}}, depth(d){
 
   assert(d > DEPTH_ZERO);
 
@@ -172,8 +172,7 @@ top:
       goto top;
 
   case GOOD_CAPTURE:
-      if (select_move<BEST_SCORE>([&](){ return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024
-                                                                       -PawnValueEg * (depth / ONE_PLY) * (refutations[0].move == move || refutations[1].move == move || refutations[2].move == move))) ?
+      if (select_move<BEST_SCORE>([&](){ return refutations[0].move == move || refutations[1].move == move || refutations[2].move == move || refutations[3].move == move || pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
                                                  // Move losing capture to endBadCaptures to be tried later
                                                  true : (*endBadCaptures++ = move, false); }))
           return move;

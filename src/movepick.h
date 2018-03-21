@@ -132,7 +132,7 @@ private:
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
   Move ttMove;
-  ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
+  ExtMove refutations[4], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
   Square recaptureSquare;
