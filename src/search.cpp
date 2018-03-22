@@ -590,8 +590,6 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else
-                	ss->killers[2] = ttMove;
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1119,7 +1117,8 @@ moves_loop: // When in check, search starts from here
         else
         {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            ss->killers[2] = bestMove;
+            if (quietCount > 4)
+            	ss->killers[2] = bestMove;
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
