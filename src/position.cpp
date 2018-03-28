@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -61,13 +62,14 @@ constexpr Piece Pieces[] = { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING
 
 template<int Pt>
 PieceType min_attacker(const Bitboard* byTypeBB, Square to, Bitboard stmAttackers,
-                       Bitboard& occupied, Bitboard& attackers) {
+                       Bitboard& occupied, Bitboard& attackers, Bitboard& fromb) {
 
   Bitboard b = stmAttackers & byTypeBB[Pt];
   if (!b)
-      return min_attacker<Pt + 1>(byTypeBB, to, stmAttackers, occupied, attackers);
+      return min_attacker<Pt + 1>(byTypeBB, to, stmAttackers, occupied, attackers, fromb);
 
-  occupied ^= lsb(b); // Remove the attacker from occupied
+  fromb = b & ~(b - 1);
+  occupied ^= fromb; // Remove the attacker from occupied
 
   // Add any X-ray attack behind the just removed piece. For instance with
   // rooks in a8 and a7 attacking a1, after removing a7 we add rook in a8.
@@ -85,7 +87,7 @@ PieceType min_attacker(const Bitboard* byTypeBB, Square to, Bitboard stmAttacker
 }
 
 template<>
-PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&, Bitboard&) {
   return KING; // No need to update bitboards: it is the last cycle
 }
 
@@ -1030,6 +1032,8 @@ bool Position::see_ge(Move m, Value threshold) const {
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard fromb = 0;
+  fromb|=from;
 
   while (true)
   {
@@ -1040,13 +1044,19 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (!(st->pinners[~stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
+      //Bitboard fromb = pieces(stm, KING);
+      if (stmAttackers && !this->checkers() && (st->blockersForKing[stm] & fromb)
+                 && type_of(piece_on(lsb(fromb))) != PAWN
+                 && type_of(piece_on(lsb(fromb))) != KING)
+                      stmAttackers &= pieces(stm, KING);
+
       // If stm has no more attackers then give up: stm loses
       if (!stmAttackers)
           break;
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' the possibly X-ray attackers behind it.
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, fromb);
 
       stm = ~stm; // Switch side to move
 
