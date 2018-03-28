@@ -1033,7 +1033,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
   Bitboard fromb = 0;
-  fromb|=from;
+  fromb^=from;
 
   while (true)
   {
@@ -1044,11 +1044,10 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (!(st->pinners[~stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      //Bitboard fromb = pieces(stm, KING);
-      if (stmAttackers && !this->checkers() && (st->blockersForKing[stm] & fromb)
-                 && type_of(piece_on(lsb(fromb))) != PAWN
-                 && type_of(piece_on(lsb(fromb))) != KING)
-                      stmAttackers &= pieces(stm, KING);
+      if (stmAttackers && (st->blockersForKing[stm] & fromb)
+            && nextVictim != KING && !aligned(lsb(fromb), to, square<KING>(stm)))
+            stmAttackers &= square<KING>(stm);
+
 
       // If stm has no more attackers then give up: stm loses
       if (!stmAttackers)
