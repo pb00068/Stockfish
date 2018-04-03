@@ -921,14 +921,14 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
+				  !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-50 * lmrDepth * lmrDepth)))
+			     continue;
+
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
-
-              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
-                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-45 * lmrDepth * lmrDepth)))
-				   continue;
 
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
@@ -990,7 +990,11 @@ moves_loop: // When in check, search starts from here
               // hence break make_move().
               else if (    type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+              {
                   r -= 2 * ONE_PLY;
+                  if ((ss+1)->weakSq == SQ_NONE)
+                      (ss+1)->weakSq = from_sq(move);
+              }
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1131,7 +1135,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(bestMove))) > PAWN)
             	ss->weakSq = to_sq(bestMove);
         }
 
