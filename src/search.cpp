@@ -927,7 +927,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
-                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-45 * lmrDepth * lmrDepth)))
+                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-40 * lmrDepth * lmrDepth)))
 				   continue;
 
           }
