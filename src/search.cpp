@@ -931,10 +931,14 @@ moves_loop: // When in check, search starts from here
 				   continue;
 
           }
-          else if (    depth < 7 * ONE_PLY // (~20 Elo)
-                   && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
+          else if (    depth < 7 * ONE_PLY && !extension)  {// (~20 Elo)
+           if (!pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
                   continue;
+           if (!givesCheck && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
+               !pos.see_ge_alt(move, (ss+1)->weakSq, -PawnValueEg -Value(CapturePruneMargin[depth / ONE_PLY])))
+        	   continue;
+
+          }
       }
 
       // Speculative prefetch as early as possible
