@@ -567,7 +567,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->weakSq = SQ_NONE;
+    (ss+1)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -927,7 +927,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
-                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-45 * lmrDepth * lmrDepth)))
+                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-50 * lmrDepth * lmrDepth)))
 				   continue;
 
           }
