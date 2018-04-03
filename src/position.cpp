@@ -1107,7 +1107,7 @@ bool Position::see_ge_alt(Move m, Square back, Value threshold) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  Bitboard occupied = pieces() ^ from ^ to;
+  Bitboard occupied = pieces() ^ from ^ to_sq(m);
   Bitboard attackers = attackers_to(to, occupied) & occupied;
 
   while (true)
