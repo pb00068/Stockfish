@@ -76,8 +76,8 @@ namespace {
   constexpr int CapturePruneMargin[] = { 0,
                                          1 * PawnValueEg * 1055 / 1000,
                                          2 * PawnValueEg * 1042 / 1000,
-                                         3 * PawnValueEg * 963  / 1000,
-                                         4 * PawnValueEg * 1038 / 1000,
+                                         3 * PawnValueEg * 1012 / 1000,
+                                         4 * PawnValueEg * 982  / 1000,
                                          5 * PawnValueEg * 950  / 1000,
                                          6 * PawnValueEg * 930  / 1000
                                        };
