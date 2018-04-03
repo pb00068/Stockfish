@@ -925,6 +925,10 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 8
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
+
+              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
+                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-35 * lmrDepth * lmrDepth)))
+				   continue;
           }
           else if (    depth < 7 * ONE_PLY && !extension)// (~20 Elo)
           {
@@ -932,10 +936,7 @@ moves_loop: // When in check, search starts from here
                   continue;
               if ((ss+1)->weakSq != SQ_NONE && !givesCheck && pos.piece_on((ss+1)->weakSq) > movedPiece &&
                   !pos.see_ge_alt(move, (ss+1)->weakSq, -Value(CapturePruneMargin[depth / ONE_PLY])))
-              {
-            	  //sync_cout << pos << UCI::move(move, pos.is_chess960()) << " weaksquare is " << UCI::move(make_move((ss+1)->weakSq,(ss+1)->weakSq), false) << sync_endl;
                   continue;
-              }
           }
       }
 
