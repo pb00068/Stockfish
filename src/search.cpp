@@ -928,16 +928,16 @@ moves_loop: // When in check, search starts from here
 
               if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
                      !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-35 * lmrDepth * lmrDepth)))
+              {
+				   //sync_cout << pos << UCI::move(move, pos.is_chess960()) << " weaksquare is " << UCI::move(make_move((ss+1)->weakSq,(ss+1)->weakSq), false) << sync_endl;
 				   continue;
+			  }
+
           }
-          else if (    depth < 7 * ONE_PLY && !extension)// (~20 Elo)
-          {
-              if (!pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
+          else if (    depth < 7 * ONE_PLY // (~20 Elo)
+                   && !extension
+                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
                   continue;
-              if ((ss+1)->weakSq != SQ_NONE && !givesCheck && pos.piece_on((ss+1)->weakSq) > movedPiece &&
-                  !pos.see_ge_alt(move, (ss+1)->weakSq, -Value(CapturePruneMargin[depth / ONE_PLY])))
-                  continue;
-          }
       }
 
       // Speculative prefetch as early as possible
@@ -1134,7 +1134,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, RookValueMg))
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
             	ss->weakSq = to_sq(bestMove);
         }
 
