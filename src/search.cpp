@@ -567,6 +567,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -925,10 +926,17 @@ moves_loop: // When in check, search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (    depth < 7 * ONE_PLY // (~20 Elo)
-                   && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
+          else if (    depth < 7 * ONE_PLY && !extension)// (~20 Elo)
+          {
+              if (!pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
                   continue;
+              if ((ss+1)->weakSq != SQ_NONE && !givesCheck && pos.piece_on((ss+1)->weakSq) > movedPiece &&
+                  !pos.see_ge_alt(move, (ss+1)->weakSq, -Value(CapturePruneMargin[depth / ONE_PLY])))
+              {
+            	  //sync_cout << pos << UCI::move(move, pos.is_chess960()) << " weaksquare is " << UCI::move(make_move((ss+1)->weakSq,(ss+1)->weakSq), false) << sync_endl;
+                  continue;
+              }
+          }
       }
 
       // Speculative prefetch as early as possible
@@ -1123,8 +1131,11 @@ moves_loop: // When in check, search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-        else
+        else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, RookValueMg))
+            	ss->weakSq = to_sq(bestMove);
+        }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
