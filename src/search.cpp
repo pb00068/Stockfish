@@ -602,6 +602,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, KnightValueMg))
+                	ss->weakSq = to_sq(ttMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -926,9 +928,13 @@ moves_loop: // When in check, search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece &&
-                     !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-40 * lmrDepth * lmrDepth)))
+              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) > movedPiece)
+              {
+            	  // don't prune if our move is going to defend our weak Square
+            	  bool veto = lmrDepth > 3 && ((type_of(movedPiece) == PAWN ? pos.attacks_from(type_of(movedPiece), to_sq(move)) : pos.attacks_from(type_of(movedPiece), to_sq(move))) & (ss+1)->weakSq);
+                  if (!veto && !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-45 * lmrDepth * lmrDepth)))
 				   continue;
+              }
 
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)

@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1109,7 +1110,6 @@ bool Position::see_ge_alt(Move m, Square back, Value threshold) const {
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to_sq(m);
   Bitboard attackers = attackers_to(to, occupied) & occupied;
-
   while (true)
   {
       stmAttackers = attackers & pieces(stm);
