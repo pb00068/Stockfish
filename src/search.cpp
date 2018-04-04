@@ -602,7 +602,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, RookValueMg))
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, BishopValueMg))
                 	ss->weakSq = to_sq(ttMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -928,9 +928,11 @@ moves_loop: // When in check, search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && pos.piece_on((ss+1)->weakSq) >= movedPiece && from_sq(move) != (ss+1)->weakSq)
+              if (lmrDepth < 8 && (ss+1)->weakSq != SQ_NONE && type_of(movedPiece) == PAWN && type_of(pos.piece_on((ss+1)->weakSq)) >= BISHOP)
               {
-            	  if (!pos.see_ge_alt(move, (ss+1)->weakSq, Value(-40 -(35 * lmrDepth * lmrDepth))))
+            	  // don't prune if our move is going to defend our weak Square
+            	  bool veto = lmrDepth > 2 && (pos.attacks_from<PAWN>(to_sq(move), pos.side_to_move()) & (ss+1)->weakSq);
+            	  if (!veto && !pos.see_ge_alt(move, (ss+1)->weakSq, Value(-40 -(35 * lmrDepth * lmrDepth))))
                   {
                    //sync_cout << pos << UCI::move(move, pos.is_chess960()) << " weak: " <<  UCI::move(make_move((ss+1)->weakSq, (ss+1)->weakSq), pos.is_chess960()) << sync_endl;
 				   continue;
@@ -1138,7 +1140,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, RookValueMg))
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, BishopValueMg))
             	ss->weakSq = to_sq(bestMove);
         }
 
