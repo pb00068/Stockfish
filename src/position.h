@@ -139,7 +139,6 @@ public:
 
   // Static Exchange Evaluation
   bool see_ge    (Move m, Value threshold = VALUE_ZERO) const;
-  bool see_ge_alt(Move m, Square back, Value threshold = VALUE_ZERO) const;
 
   // Accessing hash keys
   Key key() const;
