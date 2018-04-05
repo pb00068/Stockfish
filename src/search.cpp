@@ -602,7 +602,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(ttMove))) > BISHOP) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(ttMove))) >= BISHOP && pos.see_ge(ttMove, BishopValueMg)) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
                 {
                 	 ss->weakSq = to_sq(ttMove);
                 }
@@ -930,11 +930,11 @@ moves_loop: // When in check, search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 6 && (ss+1)->weakSq != SQ_NONE && movedPiece < pos.piece_on((ss+1)->weakSq))
+              if (lmrDepth < 6 && (ss+1)->weakSq != SQ_NONE && type_of(movedPiece) < type_of(pos.piece_on((ss+1)->weakSq)))
               {
             	  // don't prune if our move is going to defend our weak Square or attacking other heavy pieces
             	  bool veto = (type_of(movedPiece) == PAWN ? pos.attacks_from<PAWN>(to_sq(move), pos.side_to_move()) : pos.attacks_from(type_of(movedPiece), to_sq(move) ) &
-            			  ((ss+1)->weakSq | pos.pieces(~pos.side_to_move(), QUEEN, ROOK)));
+            			  ((ss+1)->weakSq | (pos.pieces(~pos.side_to_move()) ^ pos.pieces(~pos.side_to_move(), PAWN))));
             	  if (!veto)
 				   continue;
               }
@@ -1140,7 +1140,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(bestMove))) > BISHOP) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(bestMove))) >= BISHOP && pos.see_ge(bestMove, BishopValueMg)) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
             {
             	 ss->weakSq = to_sq(bestMove);
             	 //sync_cout << pos << UCI::move(bestMove, pos.is_chess960()) << " follow: " <<  UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
