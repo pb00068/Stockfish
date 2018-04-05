@@ -525,6 +525,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
+    //Move skippedMove = MOVE_NONE;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -928,12 +929,12 @@ moves_loop: // When in check, search starts from here
                   && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (lmrDepth < 6 && (ss+1)->weakSq != SQ_NONE && type_of(movedPiece) < type_of(pos.piece_on((ss+1)->weakSq))
-            		  && !pos.see_ge(make_move((ss+1)->weakSq,(ss+1)->weakSq), PieceValue[MG][type_of(pos.piece_on((ss+1)->weakSq))] ))
+              if (lmrDepth < 4 && (ss+1)->weakSq != SQ_NONE && type_of(movedPiece) == PAWN && !pos.advanced_pawn_push(move)
+                  && !pos.see_ge(make_move((ss+1)->weakSq,(ss+1)->weakSq), PieceValue[MG][type_of(pos.piece_on((ss+1)->weakSq))] ))
               {
-            	  // don't prune if our move is going to defend our weak Square or attacking other heavy pieces
-            	  bool veto = (type_of(movedPiece) == PAWN ? pos.attacks_from<PAWN>(to_sq(move), pos.side_to_move()) : pos.attacks_from(type_of(movedPiece), to_sq(move) ) &
-            			  ((pos.pieces(~pos.side_to_move()) ^ pos.pieces(~pos.side_to_move(), PAWN)) | (ss+1)->weakSq ));
+            	  // don't prune if our move is going to defend our weak Square or attacking other pieces
+            	  bool veto = pos.attacks_from<PAWN>(to_sq(move), pos.side_to_move()) &
+            			    ((pos.pieces(~pos.side_to_move()) ^ pos.pieces(~pos.side_to_move(), PAWN)) | (ss+1)->weakSq );
             	  if (!veto)
 				   continue;
               }
@@ -1090,6 +1091,9 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+//              if (bestMove == skippedMove) {
+//            	  sync_cout << pos << " bestmove skipped " << UCI::move(bestMove, pos.is_chess960()) << " weak" << UCI::move(make_move((ss+1)->weakSq, (ss+1)->weakSq), pos.is_chess960()) << sync_endl;
+//              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);

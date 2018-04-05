@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
