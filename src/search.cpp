@@ -525,7 +525,6 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
-    //Move skippedMove = MOVE_NONE;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -603,8 +602,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if ((ss-1)->moveCount > 1 && to_sq(ttMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(ttMove))) >= KNIGHT && pos.see_ge(ttMove, KnightValueMg)) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
-                	 ss->weakSq = to_sq(ttMove);
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && type_of(pos.piece_on(to_sq(ttMove))) >= KNIGHT && pos.see_ge(ttMove, KnightValueMg))
+                	ss->weakSq = to_sq(ttMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -924,21 +923,15 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+              // adapt threshold according to if we are doing somewhat to avoid the (presumably) free capture or not
+              int g = 0;
+              if ((ss+1)->weakSq != SQ_NONE)
+            	  g = from_sq(move) == (ss+1)->weakSq ? 1 : -1;
+
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(-35 * (lmrDepth + g) * abs(lmrDepth + g))))
                   continue;
-
-              if (lmrDepth < 3 && (ss+1)->weakSq != SQ_NONE && type_of(movedPiece) < type_of(pos.piece_on((ss+1)->weakSq)) && !pos.advanced_pawn_push(move))
-                  //&& !pos.see_ge(make_move((ss+1)->weakSq,(ss+1)->weakSq), PieceValue[MG][type_of(pos.piece_on((ss+1)->weakSq))] ))
-              {
-            	  // don't prune if our move is going to defend our weak Square or attacking other pieces
-            	  bool veto = (type_of(movedPiece) == PAWN ? pos.attacks_from<PAWN>(to_sq(move), pos.side_to_move()) : pos.attacks_from(type_of(movedPiece), to_sq(move) )) &
-            			    ((pos.pieces(~pos.side_to_move()) ^ pos.pieces(~pos.side_to_move(), PAWN)) | (ss+1)->weakSq );
-            	  dbg_hit_on(veto);
-            	  if (!veto)
-				   continue;
-              }
 
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
@@ -1092,9 +1085,6 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-//              if (bestMove == skippedMove) {
-//            	  sync_cout << pos << " bestmove skipped " << UCI::move(bestMove, pos.is_chess960()) << " weak" << UCI::move(make_move((ss+1)->weakSq, (ss+1)->weakSq), pos.is_chess960()) << sync_endl;
-//              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1117,9 +1107,6 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
-
-      if (ss->weakSq == from_sq(move))
-    	  ss->weakSq = SQ_NONE;
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1147,15 +1134,11 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if ((ss-1)->moveCount > 1 &&
-            		to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
-					to_sq(bestMove) != from_sq(ttMove) &&
-					type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT &&
-					pos.see_ge(bestMove, KnightValueMg)) // && is_ok((ss+1)->currentMove) && !pos.capture((ss+1)->currentMove))
-            {
-            	 ss->weakSq = to_sq(bestMove);
-            	 //sync_cout << pos << UCI::move(bestMove, pos.is_chess960()) << " follow: " <<  UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
-            }
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
+				to_sq(bestMove) != from_sq(ttMove) &&
+				type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT &&
+				pos.see_ge(bestMove, KnightValueMg))
+               ss->weakSq = to_sq(bestMove);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
