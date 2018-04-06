@@ -602,7 +602,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, KnightValueMg))
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, RookValueMg))
                 	ss->weakSq = to_sq(ttMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1135,8 +1135,7 @@ moves_loop: // When in check, search starts from here
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
-				to_sq(bestMove) != from_sq(ttMove) &&
-				pos.see_ge(bestMove, KnightValueMg))
+				pos.see_ge(bestMove, RookValueMg))
                ss->weakSq = to_sq(bestMove);
         }
 
