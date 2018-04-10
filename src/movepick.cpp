@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -134,7 +135,12 @@ void MovePicker::score() {
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
 
-     if (Type == QUIETS && recaptureSquare != SQ_NONE && from_sq(ttMove) != recaptureSquare && from_sq(refutations[0].move) != recaptureSquare)
+     if (Type == QUIETS
+    		 && recaptureSquare != SQ_NONE
+			 && from_sq(ttMove) != recaptureSquare
+			 && from_sq(refutations[0].move) != recaptureSquare
+			 && from_sq(refutations[1].move) != recaptureSquare
+		)
     	 for (auto& m : *this)
     		 if (from_sq(m) == recaptureSquare)
     			 m.value += 10000;

@@ -50,7 +50,6 @@ struct Stack {
   int statScore;
   int moveCount;
   Square weakSq;
-  bool triggerWeak;
 };
 
 

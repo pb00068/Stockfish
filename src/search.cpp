@@ -601,6 +601,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, KnightValueMg))
+                       ss->weakSq = to_sq(bestMove);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -817,7 +819,6 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     (ss+1)->weakSq = SQ_NONE;
-    (ss+1)->triggerWeak = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1032,8 +1033,9 @@ moves_loop: // When in check, search starts from here
       // Step 18. Undo move
       pos.undo_move(move);
 
-      if (from_sq(move) == (ss+1)->weakSq)
+      if (from_sq(move) == (ss+1)->weakSq) {
     	  (ss+1)->weakSq = SQ_NONE;
+      }
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1105,7 +1107,7 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-      if ((ss+1)->triggerWeak)
+      if (cutNode)
     	  mp.setRecapSquare((ss+1)->weakSq);
     }
 
@@ -1135,12 +1137,7 @@ moves_loop: // When in check, search starts from here
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
-            {
-            	if (ss->weakSq == to_sq(bestMove))
-            		ss->triggerWeak = true;
-            	else
-                   ss->weakSq = to_sq(bestMove);
-            }
+                ss->weakSq = to_sq(bestMove);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
