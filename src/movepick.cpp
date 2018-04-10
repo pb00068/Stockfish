@@ -21,7 +21,6 @@
 #include <cassert>
 
 #include "movepick.h"
-#include "misc.h"
 
 namespace {
 
@@ -118,14 +117,14 @@ void MovePicker::score() {
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-				   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
+                   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
-				   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
+                   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
                    + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
 
       else // Type == EVASIONS

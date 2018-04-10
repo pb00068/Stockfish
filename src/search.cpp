@@ -567,6 +567,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -818,7 +819,7 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    (ss+1)->weakSq = SQ_NONE;
+    //(ss+1)->weakSq = SQ_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1033,10 +1034,6 @@ moves_loop: // When in check, search starts from here
       // Step 18. Undo move
       pos.undo_move(move);
 
-      if (from_sq(move) == (ss+1)->weakSq) {
-    	  (ss+1)->weakSq = SQ_NONE;
-      }
-
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 19. Check for a new best move
@@ -1107,8 +1104,7 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-      if (cutNode)
-    	  mp.setRecapSquare((ss+1)->weakSq);
+   	  mp.setRecapSquare((ss+1)->weakSq);
     }
 
     // The following condition would detect a stop only after move loop has been
