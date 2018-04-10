@@ -118,12 +118,14 @@ void MovePicker::score() {
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
+				   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
+				   + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
                    + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
 
       else // Type == EVASIONS
@@ -134,16 +136,6 @@ void MovePicker::score() {
           else
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
-
-     if (Type == QUIETS
-    		 && recaptureSquare != SQ_NONE
-			 && from_sq(ttMove) != recaptureSquare
-			 && from_sq(refutations[0].move) != recaptureSquare
-			 && from_sq(refutations[1].move) != recaptureSquare
-		)
-    	 for (auto& m : *this)
-    		 if (from_sq(m) == recaptureSquare)
-    			 m.value += 10000;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
