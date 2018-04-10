@@ -816,6 +816,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    (ss+1)->weakSq = SQ_NONE;
+    (ss+1)->triggerWeak = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1099,6 +1101,9 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
+
+      if ((ss+1)->triggerWeak)
+    	  mp.setRecapSquare((ss+1)->weakSq);
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1124,8 +1129,16 @@ moves_loop: // When in check, search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-        else
+        else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
+            {
+            	if (ss->weakSq == to_sq(bestMove))
+            		ss->triggerWeak = true;
+            	else
+                   ss->weakSq = to_sq(bestMove);
+            }
+        }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())

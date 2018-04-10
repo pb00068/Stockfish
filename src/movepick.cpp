@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  recaptureSquare = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -100,6 +101,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   stage += (ttMove == MOVE_NONE);
 }
 
+void MovePicker::setRecapSquare(Square recap)
+{
+	recaptureSquare = recap;
+}
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -127,6 +133,11 @@ void MovePicker::score() {
           else
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
+
+     if (Type == QUIETS && recaptureSquare != SQ_NONE)
+    	 for (auto& m : *this)
+    		 if (from_sq(m) == recaptureSquare)
+    			 m.value += 10000;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
