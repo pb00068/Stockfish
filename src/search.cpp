@@ -1104,7 +1104,7 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-   	  mp.setRecapSquare((ss+1)->weakSq);
+   	  mp.setWeakSquare((ss+1)->weakSq);
     }
 
     // The following condition would detect a stop only after move loop has been
