@@ -602,7 +602,16 @@ namespace {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
-                   ss->weakSq = to_sq(ttMove);
+                {
+                	ss->triggerWeak[0] |= ss->weakSq[0] == to_sq(ttMove);
+					if (ss->weakSq[0] != to_sq(ttMove))
+						ss->weakSq[0]  = to_sq(ttMove);
+					else {
+						ss->triggerWeak[1] |= ss->weakSq[1] == to_sq(ttMove);
+						if (ss->weakSq[1] != to_sq(ttMove))
+							ss->weakSq[1]  = to_sq(ttMove);
+					}
+                }
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -797,8 +806,16 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta) {
-                	if (rbeta - ss->staticEval >= KnightValueMg)
-                		ss->weakSq = to_sq(move);
+                	if (rbeta - ss->staticEval >= KnightValueMg) {
+                		ss->triggerWeak[0] |= ss->weakSq[0] == to_sq(move);
+						if (ss->weakSq[0] != to_sq(move))
+							ss->weakSq[0]  = to_sq(move);
+						else {
+							ss->triggerWeak[1] |= ss->weakSq[1] == to_sq(move);
+							if (ss->weakSq[1] != to_sq(move))
+								ss->weakSq[1]  = to_sq(move);
+						}
+                	}
                     return value;
                 }
             }
@@ -821,7 +838,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    (ss+1)->weakSq = SQ_NONE;
+    (ss+1)->weakSq[0] = (ss+1)->weakSq[1] = SQ_NONE;
+    (ss+1)->triggerWeak[0] = (ss+1)->triggerWeak[1] = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -988,13 +1006,13 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if ((ss+1)->weakSq == from_sq(move))
+              else if ( ((ss+1)->triggerWeak[0] && (ss+1)->weakSq[0] == from_sq(move)) ||
+            		    ((ss+1)->triggerWeak[1] && (ss+1)->weakSq[1] == from_sq(move)) )
               {
-                  //dbg_hit_on(type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))); // 72%
+                  //dbg_hit_on(type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))); // 76%
                   r -= 2 * ONE_PLY;
               }
-              else if (depth <= 6 * ONE_PLY && type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
-                  r -= 2 * ONE_PLY;
+
 
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
@@ -1138,7 +1156,16 @@ moves_loop: // When in check, search starts from here
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (to_sq(bestMove) != to_sq((ss-1)->currentMove))
-            	ss->weakSq = to_sq(bestMove);
+            {
+            	ss->triggerWeak[0] |= ss->weakSq[0] == to_sq(bestMove);
+            	if (ss->weakSq[0] != to_sq(bestMove))
+            		ss->weakSq[0]  = to_sq(bestMove);
+            	else {
+            		ss->triggerWeak[1] |= ss->weakSq[1] == to_sq(bestMove);
+            		if (ss->weakSq[1] != to_sq(bestMove))
+            		    ss->weakSq[1]  = to_sq(bestMove);
+            	}
+            }
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
