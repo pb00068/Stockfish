@@ -797,8 +797,10 @@ namespace {
 
                 pos.undo_move(move);
 
-                if (value >= rbeta)
+                if (value >= rbeta) {
+                	ss->weakSq = to_sq(move);
                     return value;
+                }
             }
     }
 
