@@ -601,7 +601,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, KnightValueMg))
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
                 {
                    ss->triggerWeak = ss->weakSq == to_sq(ttMove);
                    ss->weakSq = to_sq(ttMove);
@@ -997,7 +997,10 @@ moves_loop: // When in check, search starts from here
               else if ( ((ss+1)->triggerWeak))
               {
             	  if ((ss+1)->weakSq == from_sq(move))
+            	  {
+            		  //dbg_hit_on(type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))); // 77%
                       r -= 2 * ONE_PLY;
+            	  }
               }
               else if (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                       r -= 2 * ONE_PLY;
@@ -1143,7 +1146,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove))
             {
             	ss->triggerWeak = ss->weakSq == to_sq(bestMove);
             	ss->weakSq = to_sq(bestMove);
