@@ -801,7 +801,8 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta) {
-                	if (pos.see_ge(move, KnightValueMg)) {
+                	if (rbeta - ss->staticEval >= KnightValueMg) {
+                	//if (pos.see_ge(move, KnightValueMg)) {
                 		ss->triggerWeak = ss->weakSq == to_sq(move);
                 		ss->weakSq = to_sq(move);
                 	}

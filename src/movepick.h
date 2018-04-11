@@ -136,7 +136,7 @@ private:
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
-  Square recaptureSquare, weakSq;
+  Square recaptureSquare;//, weakSq;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];

@@ -19,9 +19,11 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
-
+#include "uci.h"
+#include "misc.h"
 namespace {
 
   enum Stages {
@@ -69,7 +71,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  weakSq = SQ_NONE;
+  //weakSq = SQ_NONE;
+  recaptureSquare = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -84,7 +87,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
            && pos.pseudo_legal(ttm)
            && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  weakSq = SQ_NONE;
+  //weakSq = SQ_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -100,12 +103,12 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.capture(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  weakSq = SQ_NONE;
+  //weakSq = SQ_NONE;
 }
 
 void MovePicker::setWeakSquare(Square weak)
 {
-	weakSq = weak;
+	recaptureSquare = weak;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
@@ -117,16 +120,18 @@ void MovePicker::score() {
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
   for (auto& m : *this)
-      if (Type == CAPTURES)
+      if (Type == CAPTURES) {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-                   + ((weakSq == from_sq(m)) ? QueenValueMg : 0)
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+      }
 
-      else if (Type == QUIETS)
+      else if (Type == QUIETS) {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
+		           + ((recaptureSquare == from_sq(m)) ? 5000 : 0)
                    + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+      }
 
       else // Type == EVASIONS
       {
@@ -196,6 +201,14 @@ top:
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
           --endMoves;
+
+      // preffer killer which escapes the capture
+      if (recaptureSquare == from_sq(refutations[1].move) && recaptureSquare != from_sq(refutations[0].move))
+      {
+    	  Move m = refutations[0].move;
+    	  refutations[0].move = refutations[1].move;
+    	  refutations[1].move = m;
+      }
 
       ++stage;
       /* fallthrough */
