@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  weakSq = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -83,6 +84,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
            && pos.pseudo_legal(ttm)
            && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  weakSq = SQ_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -98,6 +100,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.capture(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  weakSq = SQ_NONE;
 }
 
 void MovePicker::setWeakSquare(Square weak)
@@ -166,7 +169,6 @@ top:
   case QSEARCH_TT:
   case PROBCUT_TT:
       ++stage;
-      weakSq = SQ_NONE;
       return ttMove;
 
   case CAPTURE_INIT:
