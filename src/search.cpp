@@ -567,7 +567,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->weakSq = SQ_NONE;
+    //(ss+2)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -603,7 +603,10 @@ namespace {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove) && pos.see_ge(ttMove, KnightValueMg))
-                       ss->weakSq = to_sq(bestMove);
+                {
+                   ss->triggerWeak = ss->weakSq == to_sq(ttMove);
+                   ss->weakSq = to_sq(ttMove);
+                }
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -798,7 +801,10 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta) {
-                	ss->weakSq = to_sq(move);
+                	if (pos.see_ge(move, KnightValueMg)) {
+                		ss->triggerWeak = ss->weakSq == to_sq(move);
+                		ss->weakSq = to_sq(move);
+                	}
                     return value;
                 }
             }
@@ -821,7 +827,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    //(ss+1)->weakSq = SQ_NONE;
+    (ss+1)->weakSq = SQ_NONE;
+    (ss+1)->triggerWeak = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1106,7 +1113,8 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-   	  mp.setWeakSquare((ss+1)->weakSq);
+      if ((ss+1)->triggerWeak)
+    	  mp.setWeakSquare((ss+1)->weakSq);
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1135,7 +1143,10 @@ moves_loop: // When in check, search starts from here
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (to_sq(bestMove) != to_sq((ss-1)->currentMove) && pos.see_ge(bestMove, KnightValueMg))
-                ss->weakSq = to_sq(bestMove);
+            {
+            	ss->triggerWeak = ss->weakSq == to_sq(bestMove);
+            	ss->weakSq = to_sq(bestMove);
+            }
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
