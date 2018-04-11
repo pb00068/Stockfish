@@ -567,7 +567,6 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    //(ss+2)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -802,7 +801,6 @@ namespace {
 
                 if (value >= rbeta) {
                 	if (rbeta - ss->staticEval >= KnightValueMg) {
-                	//if (pos.see_ge(move, KnightValueMg)) {
                 		ss->triggerWeak = ss->weakSq == to_sq(move);
                 		ss->weakSq = to_sq(move);
                 	}
@@ -996,9 +994,14 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
-                  r -= 2 * ONE_PLY;
+              else if ( ((ss+1)->triggerWeak))
+              {
+            	  if ((ss+1)->weakSq == from_sq(move))
+                      r -= 2 * ONE_PLY;
+              }
+              else if (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+                      r -= 2 * ONE_PLY;
+
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1113,9 +1116,6 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
-
-      if ((ss+1)->triggerWeak)
-    	  mp.setWeakSquare((ss+1)->weakSq);
     }
 
     // The following condition would detect a stop only after move loop has been

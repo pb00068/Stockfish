@@ -120,7 +120,6 @@ public:
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,  const CapturePieceToHistory*, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, Move, Move*);
   Move next_move(bool skipQuiets = false);
-  void setWeakSquare(Square recap);
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -136,7 +135,7 @@ private:
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
-  Square recaptureSquare;//, weakSq;
+  Square recaptureSquare;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
