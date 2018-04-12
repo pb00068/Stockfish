@@ -865,10 +865,10 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
-      int escapeProbability = ((ss+1)->weakSq == from_sq(move)) + 2 * (ss+1)->triggerWeak; // range [0,1,3]
+      bool escapeCandidate = (ss+1)->triggerWeak && (ss+1)->weakSq == from_sq(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount - escapeProbability >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount - 5 * escapeCandidate >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 13. Extensions (~70 Elo)
 
@@ -923,7 +923,7 @@ moves_loop: // When in check, search starts from here
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
-            	  && escapeProbability < 3
+            	  && !escapeCandidate
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
@@ -931,18 +931,18 @@ moves_loop: // When in check, search starts from here
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 7
                   && !inCheck
-				  && escapeProbability < 3
+				  && !escapeCandidate
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - escapeProbability * PawnValueMg)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - escapeCandidate * PawnValueMg)))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
                    && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY] - escapeProbability * PawnValueMg)))
+                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY] - escapeCandidate * KnightValueMg)))
                   continue;
       }
 
