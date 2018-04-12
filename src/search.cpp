@@ -865,10 +865,9 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
-      bool escapeCandidate = (ss+1)->triggerWeak && (ss+1)->weakSq == from_sq(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount - escapeCandidate >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 13. Extensions (~70 Elo)
 
@@ -911,8 +910,9 @@ moves_loop: // When in check, search starts from here
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
+              bool escapeCandidate = (ss+1)->triggerWeak && (ss+1)->weakSq == from_sq(move);
               // Move count based pruning (~30 Elo)
-              if (moveCountPruning)
+              if (moveCountPruning && !escapeCandidate)
               {
                   skipQuiets = true;
                   continue;
@@ -923,7 +923,6 @@ moves_loop: // When in check, search starts from here
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
-            	  && !escapeCandidate
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
@@ -931,17 +930,17 @@ moves_loop: // When in check, search starts from here
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 7
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth + escapeCandidate * 200 <= alpha)
+                  && ss->staticEval + 256 + 200 * lmrDepth + escapeCandidate * 50 <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - escapeCandidate * KnightValueMg)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - escapeCandidate * PawnValueMg)))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
                    && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY] - escapeCandidate * KnightValueMg)))
+                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
                   continue;
       }
 
@@ -996,12 +995,7 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (((ss+1)->triggerWeak))
-              {
-                  if ((ss+1)->weakSq == from_sq(move))
-                     r -= 2 * ONE_PLY;
-              }
-              else if (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+              else if ((ss+1)->weakSq == from_sq(move) || (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
