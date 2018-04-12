@@ -603,7 +603,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
                 {
-                    ss->triggerWeak = ss->weakSq == to_sq(ttMove);
+                    ss->triggerWeak += ss->weakSq == to_sq(ttMove);
                     ss->weakSq = to_sq(ttMove);
                 }
 
@@ -801,7 +801,7 @@ namespace {
 
                 if (value >= rbeta) {
                     if (rbeta - ss->staticEval >= KnightValueMg) {
-                        ss->triggerWeak = ss->weakSq == to_sq(move);
+                        ss->triggerWeak += ss->weakSq == to_sq(move);
                         ss->weakSq = to_sq(move);
                     }
                     return value;
@@ -827,7 +827,7 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     (ss+1)->weakSq = SQ_NONE;
-    (ss+1)->triggerWeak = false;
+    (ss+1)->triggerWeak = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -910,7 +910,7 @@ moves_loop: // When in check, search starts from here
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
-              bool escapeCandidate = (ss+1)->triggerWeak && (ss+1)->weakSq == from_sq(move);
+              bool escapeCandidate = (ss+1)->triggerWeak > 1 && (ss+1)->weakSq == from_sq(move);
               // Move count based pruning (~30 Elo)
               if (moveCountPruning && !escapeCandidate)
               {
@@ -930,7 +930,7 @@ moves_loop: // When in check, search starts from here
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 7
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth + escapeCandidate * 50 <= alpha)
+                  && ss->staticEval + 256 + 200 * (lmrDepth + escapeCandidate) <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
@@ -995,7 +995,7 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if ((ss+1)->weakSq == from_sq(move) || (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
+              else if (((ss+1)->triggerWeak > 1 && (ss+1)->weakSq == from_sq(move)) || (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
@@ -1138,9 +1138,9 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            if (to_sq(bestMove) != to_sq((ss-1)->currentMove))
+            if (value >= beta && to_sq(bestMove) != to_sq((ss-1)->currentMove))
             {
-               ss->triggerWeak = ss->weakSq == to_sq(bestMove);
+               ss->triggerWeak += ss->weakSq == to_sq(bestMove);
                ss->weakSq = to_sq(bestMove);
             }
         }
