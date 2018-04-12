@@ -601,6 +601,11 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
+                {
+                    ss->triggerWeak = ss->weakSq == to_sq(ttMove);
+                    ss->weakSq = to_sq(ttMove);
+                }
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -794,8 +799,13 @@ namespace {
 
                 pos.undo_move(move);
 
-                if (value >= rbeta)
+                if (value >= rbeta) {
+                    if (rbeta - ss->staticEval >= KnightValueMg) {
+                        ss->triggerWeak = ss->weakSq == to_sq(move);
+                        ss->weakSq = to_sq(move);
+                    }
                     return value;
+                }
             }
     }
 
@@ -816,6 +826,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    (ss+1)->weakSq = SQ_NONE;
+    (ss+1)->triggerWeak = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -853,9 +865,10 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
+      bool escapeCandidate = (ss+1)->triggerWeak && (ss+1)->weakSq == from_sq(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount - 5 * escapeCandidate >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 13. Extensions (~70 Elo)
 
@@ -910,6 +923,7 @@ moves_loop: // When in check, search starts from here
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
+            	  && !escapeCandidate
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
@@ -917,17 +931,18 @@ moves_loop: // When in check, search starts from here
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 7
                   && !inCheck
+				  && !escapeCandidate
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - escapeCandidate * PawnValueMg)))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
                    && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
+                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY] - escapeCandidate * KnightValueMg)))
                   continue;
       }
 
@@ -982,8 +997,12 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+              else if (((ss+1)->triggerWeak))
+              {
+                  if ((ss+1)->weakSq == from_sq(move))
+                     r -= 2 * ONE_PLY;
+              }
+              else if (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
@@ -1124,8 +1143,14 @@ moves_loop: // When in check, search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
-        else
+        else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
+            if (to_sq(bestMove) != to_sq((ss-1)->currentMove))
+            {
+               ss->triggerWeak = ss->weakSq == to_sq(bestMove);
+               ss->weakSq = to_sq(bestMove);
+            }
+        }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
