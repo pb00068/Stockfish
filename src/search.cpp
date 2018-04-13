@@ -604,7 +604,7 @@ namespace {
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
                 {
                     (ss-1)->triggerWeak += (ss-1)->weakSq == to_sq(ttMove);
-                    if (!(ss-1)->triggerWeak)
+                    if ((ss-1)->triggerWeak <= 0)
                     	(ss-1)->weakSq = to_sq(ttMove);
                 }
 
@@ -803,7 +803,7 @@ namespace {
                 if (value >= rbeta) {
                     if (rbeta - ss->staticEval >= PawnValueMg) {
                         (ss-1)->triggerWeak += (ss-1)->weakSq == to_sq(move);
-                        if (!(ss-1)->triggerWeak)
+                        if ((ss-1)->triggerWeak <= 0)
                         	(ss-1)->weakSq = to_sq(move);
                     }
                     return value;
@@ -990,22 +990,16 @@ moves_loop: // When in check, search starts from here
                   r += ONE_PLY;
 
               // Increase reduction for cut nodes
-              if (cutNode && (!ss->triggerWeak || ss->weakSq != from_sq(move)))
+              if (cutNode)
                   r += 2 * ONE_PLY;
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
-              else if (ss->triggerWeak && ss->weakSq == from_sq(move))
+              else if ((type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
               {
-            	  //dbg_hit_on(type_of(move) == NORMAL, !pos.see_ge(make_move(to_sq(move), from_sq(move)))); //79% , without triggerWeak check = 69%
-            	  r -= 2 * ONE_PLY;
-              }
-              else if  ((type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
-              {
+            	  //dbg_hit_on((ss->triggerWeak > 0 && ss->weakSq == from_sq(move)));
                   r -= 2 * ONE_PLY;
-                  ss->triggerWeak++;
-                  ss->weakSq = from_sq(move);
               }
 
               ss->statScore =  thisThread->mainHistory[~pos.side_to_move()][from_to(move)]
@@ -1120,7 +1114,12 @@ moves_loop: // When in check, search starts from here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (ss->weakSq == from_sq(move))
+        	  ss->triggerWeak--; // an escape was tried but was useless
       }
+
+   	  mp.setRecap(ss->triggerWeak > 0 ? ss->weakSq : SQ_NONE);
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1151,7 +1150,7 @@ moves_loop: // When in check, search starts from here
             if (value >= beta && to_sq(bestMove) != to_sq((ss-1)->currentMove))
             {
                (ss-1)->triggerWeak += (ss-1)->weakSq == to_sq(bestMove);
-               if (!(ss-1)->triggerWeak)
+               if ((ss-1)->triggerWeak <= 0)
             	   (ss-1)->weakSq = to_sq(bestMove);
             }
         }
