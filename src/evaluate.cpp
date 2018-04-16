@@ -464,12 +464,9 @@ namespace {
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
         if (b & safe)
             kingDanger += KnightSafeCheck;
-        else  if (b && (pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT)))
-        {
+        else if (b && (pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT))
+        		&& (PseudoAttacks[KNIGHT][lsb(pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT))] & b))
         	kingDanger += KnightSafeCheck; // Double check
-        	//dbg_hit_on(PseudoAttacks[KNIGHT][lsb(pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT))] & b); // 88% @ bench with depth 18
-        	//sync_cout << pos << Bitboards::pretty(pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT)) << sync_endl;
-        }
         else
             unsafeChecks |= b;
 
