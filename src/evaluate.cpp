@@ -396,8 +396,8 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
+            Bitboard queenPinners, dummy;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, dummy))
                 score -= WeakQueen;
         }
     }
@@ -469,7 +469,7 @@ namespace {
         // Unsafe or occupied checking squares will also be considered, as long as
         // the square is in the attacker's mobility area.
         unsafeChecks &= mobilityArea[Them];
-        pinned = pos.blockers_for_king(Us) & pos.pieces(Us);
+        pinned = pos.noStrikeBackPinned(Us);
 
         kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                      + 102 * kingAttacksCount[Them]
@@ -588,6 +588,8 @@ namespace {
        & ~attackedBy[Us][PAWN];
 
     score += ThreatByPawnPush * popcount(b);
+    if (b & pos.noStrikeBackPinned(Them))
+    	score += ThreatByPawnPush;
 
     // Bonus for threats on the next moves against enemy queen
     if (pos.count<QUEEN>(Them) == 1)
