@@ -484,13 +484,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
             pinners |= sniperSq;
             Square pinned = lsb(b);
             if (type_of(piece_on(pinned)) != PAWN)
-            {
             	if (!(attacks_from(type_of(piece_on(pinned)), pinned) & sniperSq))
-            		nostrikeBackPinned |= b;
-            }
-            else if (type_of(piece_on(pinned)) == PAWN)
-            	if (!(attacks_from<PAWN>(pinned, color_of(piece_on(s))) & sniperSq))
-            	    nostrikeBackPinned |= b;
+                    nostrikeBackPinned |= b;
         }
     }
   }
