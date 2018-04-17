@@ -602,11 +602,8 @@ namespace {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
-                {
-                    (ss-1)->triggerWeak += (ss-1)->upcomingCapture == ttMove;
-                    if ((ss-1)->triggerWeak <= 0)
-                    	(ss-1)->upcomingCapture = ttMove;
-                }
+                    (ss-1)->upcomingCapture = ttMove;
+
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -801,11 +798,8 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta) {
-                    if (rbeta - ss->staticEval >= PawnValueMg) {
-                        (ss-1)->triggerWeak += (ss-1)->upcomingCapture == move;
-                        if ((ss-1)->triggerWeak <= 0)
-                        	(ss-1)->upcomingCapture = move;
-                    }
+                    if (rbeta - ss->staticEval >= PawnValueMg)
+                       (ss-1)->upcomingCapture = move;
                     return value;
                 }
             }
@@ -829,7 +823,6 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     ss->upcomingCapture = MOVE_NONE;
-    ss->triggerWeak = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory, contHist, countermove, ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -912,9 +905,8 @@ moves_loop: // When in check, search starts from here
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
-        	  bool escapesOrInterfers = ss->triggerWeak > 0 && (to_sq(ss->upcomingCapture) == from_sq(move) || (between_bb(from_sq(ss->upcomingCapture), to_sq(ss->upcomingCapture)) & to_sq(move)));
               // Move count based pruning (~30 Elo)
-              if (moveCountPruning && !escapesOrInterfers)
+              if (moveCountPruning)
               {
                   skipQuiets = true;
                   continue;
@@ -922,6 +914,7 @@ moves_loop: // When in check, search starts from here
 
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
+              bool escapesOrInterfers = lmrDepth < 7 && ss->upcomingCapture && (to_sq(ss->upcomingCapture) == from_sq(move) || (between_bb(from_sq(ss->upcomingCapture), to_sq(ss->upcomingCapture)) & to_sq(move)));
               lmrDepth += escapesOrInterfers;
 
               // Countermoves based pruning (~20 Elo)
@@ -1114,9 +1107,6 @@ moves_loop: // When in check, search starts from here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
-
-          if (to_sq(ss->upcomingCapture) == from_sq(move))
-        	  ss->triggerWeak--; // an escape was tried but was useless
       }
     }
 
@@ -1146,11 +1136,7 @@ moves_loop: // When in check, search starts from here
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (value >= beta && to_sq(bestMove) != to_sq((ss-1)->currentMove))
-            {
-               (ss-1)->triggerWeak += (ss-1)->upcomingCapture == bestMove;
-               if ((ss-1)->triggerWeak <= 0)
-            	   (ss-1)->upcomingCapture = bestMove;
-            }
+            	(ss-1)->upcomingCapture = bestMove;
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
