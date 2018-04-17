@@ -127,7 +127,6 @@ void MovePicker::score() {
           else
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
-
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
@@ -147,7 +146,6 @@ Move MovePicker::select(Pred filter) {
   }
   return move = MOVE_NONE;
 }
-
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo legal move every time it is called until there are no more
