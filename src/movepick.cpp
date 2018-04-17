@@ -69,7 +69,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  recaptureSquare = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -129,11 +128,6 @@ void MovePicker::score() {
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
 
-  	  if (Type == QUIETS && recaptureSquare != SQ_NONE)
-  		for (auto& m : *this)
-  			if (recaptureSquare == from_sq(m.move))
-  				m.value += 10000;
-
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
@@ -154,9 +148,6 @@ Move MovePicker::select(Pred filter) {
   return move = MOVE_NONE;
 }
 
-void MovePicker::setRecap(Square r) {
-	recaptureSquare = r;
-}
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo legal move every time it is called until there are no more

@@ -49,7 +49,7 @@ struct Stack {
   Value staticEval;
   int statScore;
   int moveCount;
-  Square weakSq;
+  Move upcomingCapture;
   int triggerWeak;
 };
 
