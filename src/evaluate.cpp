@@ -97,6 +97,7 @@ namespace {
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
+  constexpr int DiscoveredCheck = 790;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -464,11 +465,11 @@ namespace {
         b = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
         if (b & safe)
             kingDanger += KnightSafeCheck;
-        else if (b && (pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT))
-        		&& (PseudoAttacks[KNIGHT][lsb(pos.blockers_for_king(Us) & pos.pieces(Them, KNIGHT))] & b))
-        	kingDanger += KnightSafeCheck; // Double check
         else
             unsafeChecks |= b;
+
+        if (pos.blockers_for_king(Us) && (pos.blockers_for_king(Us) & (pos.pieces(Them) ^ pos.pieces(Them, PAWN))))
+        	kingDanger += DiscoveredCheck; //exclude pawns because the are blocked often
 
         // Unsafe or occupied checking squares will also be considered, as long as
         // the square is in the attacker's mobility area.
