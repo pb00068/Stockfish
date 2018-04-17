@@ -603,7 +603,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
                 else if (to_sq(ttMove) != to_sq((ss-1)->currentMove))
                 {
-                    (ss-1)->triggerWeak += (ss-1)->upcomingCapture == ttMove;
+                    (ss-1)->triggerWeak += 2 *((ss-1)->upcomingCapture == ttMove);
                     if ((ss-1)->triggerWeak <= 0)
                     	(ss-1)->upcomingCapture = ttMove;
                 }
@@ -802,7 +802,7 @@ namespace {
 
                 if (value >= rbeta) {
                     if (rbeta - ss->staticEval >= PawnValueMg) {
-                        (ss-1)->triggerWeak += (ss-1)->upcomingCapture == move;
+                        (ss-1)->triggerWeak += 2 * ((ss-1)->upcomingCapture == move);
                         if ((ss-1)->triggerWeak <= 0)
                         	(ss-1)->upcomingCapture = move;
                     }
@@ -994,7 +994,8 @@ moves_loop: // When in check, search starts from here
               // Increase reduction for cut nodes
               if (cutNode)
                   r += 2 * ONE_PLY;
-
+              else if (ss->triggerWeak > 0 && (to_sq(ss->upcomingCapture) == from_sq(move) || (between_bb(from_sq(ss->upcomingCapture), to_sq(ss->upcomingCapture)) & to_sq(move))))
+                  r -= 2 * ONE_PLY;
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move().
@@ -1147,7 +1148,7 @@ moves_loop: // When in check, search starts from here
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
             if (value >= beta && to_sq(bestMove) != to_sq((ss-1)->currentMove))
             {
-               (ss-1)->triggerWeak += (ss-1)->upcomingCapture == bestMove;
+               (ss-1)->triggerWeak += 2 * ((ss-1)->upcomingCapture == bestMove);
                if ((ss-1)->triggerWeak <= 0)
             	   (ss-1)->upcomingCapture = bestMove;
             }
