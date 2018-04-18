@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -97,11 +96,10 @@ namespace {
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
-  constexpr int DiscoveredCheck = 790;
 
   // contains bonuses by piecetype for discovered check
   // for instance a knight is a powerful discoverer
-  constexpr int DangerByDiscoveredCheck[] = { 100, 500, 300, 300, 0, 200 };
+  constexpr int DangerByDiscoveredCheck[PIECE_TYPE_NB] = { 0, 100, 500, 300, 300, 0, 200 };
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -149,7 +147,6 @@ namespace {
   // ThreatByKing[on one/on many] contains bonuses for king attacks on
   // pawns or pieces which are not pawn-defended.
   constexpr Score ThreatByKing[] = { S(3, 65), S(9, 145) };
-
 
   // PassedRank[Rank] contains a bonus according to the rank of a passed pawn
   constexpr Score PassedRank[RANK_NB] = {
