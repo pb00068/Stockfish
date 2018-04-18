@@ -400,8 +400,8 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
+            Bitboard queenPinners, dummy;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, dummy))
                 score -= WeakQueen;
         }
     }
@@ -488,13 +488,13 @@ namespace {
         if (kingDanger > 0)
         {
             b = pos.blockers_for_king(Us) & pos.pieces(Them);
-            while (b)
+            if (b && (pos.snipers(Us) & (~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]))))
             {
-                 Square s = pop_lsb(&b);
+                 Square discoSQ = lsb(b);
                  // in case of enemy pawn, only assign bonus if it can push forward
-                 // unhandled corner case is rook as sniper on the same file, here the pawn must capture to discover
-                 if (type_of(pos.piece_on(s)) != PAWN || !(pos.pieces() & (s + Down)))
-                    kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(s))];
+                 // corner case is rook as sniper on the same file: here the pawn must capture to discover
+                 if (type_of(pos.piece_on(discoSQ)) != PAWN || (!(pos.pieces() & (discoSQ + Down)) && file_of(discoSQ) != file_of(lsb(pos.snipers(Us))) ) )
+                      kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(discoSQ))];
             }
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
             kingDanger = std::max(0, kingDanger + mobilityDanger);
