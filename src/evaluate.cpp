@@ -99,6 +99,10 @@ namespace {
   constexpr int KnightSafeCheck = 790;
   constexpr int DiscoveredCheck = 790;
 
+  // contains bonuses by piecetype for discovered check
+  // for instance a knight is a powerful discoverer
+  constexpr int DangerByDiscoveredCheck[] = { 100, 500, 300, 300, 0, 200 };
+
 #define S(mg, eg) make_score(mg, eg)
 
   // MobilityBonus[PieceType-2][attacked] contains bonuses for middle and end game,
@@ -145,6 +149,7 @@ namespace {
   // ThreatByKing[on one/on many] contains bonuses for king attacks on
   // pawns or pieces which are not pawn-defended.
   constexpr Score ThreatByKing[] = { S(3, 65), S(9, 145) };
+
 
   // PassedRank[Rank] contains a bonus according to the rank of a passed pawn
   constexpr Score PassedRank[RANK_NB] = {
@@ -417,6 +422,7 @@ namespace {
     constexpr Color    Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
+    constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard weak, b, b1, b2, safe, unsafeChecks, pinned;
@@ -468,8 +474,6 @@ namespace {
         else
             unsafeChecks |= b;
 
-        if (pos.blockers_for_king(Us) && (pos.blockers_for_king(Us) & (pos.pieces(Them) ^ pos.pieces(Them, PAWN))))
-        	kingDanger += DiscoveredCheck; //exclude pawns because the are blocked often
 
         // Unsafe or occupied checking squares will also be considered, as long as
         // the square is in the attacker's mobility area.
@@ -487,6 +491,15 @@ namespace {
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
         {
+        	b = pos.blockers_for_king(Us) & pos.pieces(Them);
+            while (b)
+            {
+                 Square s = pop_lsb(&b);
+                 // in case of pawn, only assign bonus if it can push forward
+                 // unhandled corner case is rook as sniper on the same file, here the pawn must capture to discover
+                 if (type_of(pos.piece_on(s)) != PAWN || !(pos.pieces() & (s + Up)))
+                    kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(s))];
+            }
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
             kingDanger = std::max(0, kingDanger + mobilityDanger);
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
