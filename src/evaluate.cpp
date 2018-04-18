@@ -99,7 +99,7 @@ namespace {
 
   // contains bonuses by piecetype for discovered check
   // for instance a knight is a powerful discoverer
-  constexpr int DangerByDiscoveredCheck[PIECE_TYPE_NB] = { 0, 100, 500, 300, 300, 0, 200 };
+  constexpr int DangerByDiscoveredCheck[PIECE_TYPE_NB] = { 0, 500, 790, 500, 500, 0, 400 };
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -475,6 +475,15 @@ namespace {
         // the square is in the attacker's mobility area.
         unsafeChecks &= mobilityArea[Them];
         pinned = pos.blockers_for_king(Us) & pos.pieces(Us);
+        b = pos.blockers_for_king(Us) & pos.pieces(Them);
+        if (b && (pos.snipers(Us) & (~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]))))
+        {
+            Square discoSQ = lsb(b);
+           // in case of enemy pawn, only assign bonus if it can push forward
+           // corner case is rook as sniper on the same file: here the pawn must capture to discover
+           if (type_of(pos.piece_on(discoSQ)) != PAWN || (!(pos.pieces() & (discoSQ + Down)) && file_of(discoSQ) != file_of(lsb(pos.snipers(Us))) ) )
+              kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(discoSQ))];
+        }
 
         kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                      + 102 * kingAttacksCount[Them]
@@ -487,15 +496,6 @@ namespace {
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
         {
-            b = pos.blockers_for_king(Us) & pos.pieces(Them);
-            if (b && (pos.snipers(Us) & (~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]))))
-            {
-                 Square discoSQ = lsb(b);
-                 // in case of enemy pawn, only assign bonus if it can push forward
-                 // corner case is rook as sniper on the same file: here the pawn must capture to discover
-                 if (type_of(pos.piece_on(discoSQ)) != PAWN || (!(pos.pieces() & (discoSQ + Down)) && file_of(discoSQ) != file_of(lsb(pos.snipers(Us))) ) )
-                      kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(discoSQ))];
-            }
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
             kingDanger = std::max(0, kingDanger + mobilityDanger);
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
