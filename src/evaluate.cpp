@@ -419,7 +419,7 @@ namespace {
     constexpr Color    Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
-    constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
+    constexpr Direction Down       = (Us == WHITE ? SOUTH : NORTH);
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard weak, b, b1, b2, safe, unsafeChecks, pinned;
@@ -471,7 +471,6 @@ namespace {
         else
             unsafeChecks |= b;
 
-
         // Unsafe or occupied checking squares will also be considered, as long as
         // the square is in the attacker's mobility area.
         unsafeChecks &= mobilityArea[Them];
@@ -488,13 +487,13 @@ namespace {
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
         {
-        	b = pos.blockers_for_king(Us) & pos.pieces(Them);
+            b = pos.blockers_for_king(Us) & pos.pieces(Them);
             while (b)
             {
                  Square s = pop_lsb(&b);
-                 // in case of pawn, only assign bonus if it can push forward
+                 // in case of enemy pawn, only assign bonus if it can push forward
                  // unhandled corner case is rook as sniper on the same file, here the pawn must capture to discover
-                 if (type_of(pos.piece_on(s)) != PAWN || !(pos.pieces() & (s + Up)))
+                 if (type_of(pos.piece_on(s)) != PAWN || !(pos.pieces() & (s + Down)))
                     kingDanger += DangerByDiscoveredCheck[type_of(pos.piece_on(s))];
             }
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
