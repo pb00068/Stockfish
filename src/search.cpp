@@ -899,7 +899,7 @@ moves_loop: // When in check, search starts from here
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
               // Move count based pruning (~30 Elo)
-              if (moveCountPruning && (!inCheck || type_of(movedPiece) != KING))
+              if (moveCountPruning)
               {
                   skipQuiets = true;
                   continue;
@@ -998,6 +998,9 @@ moves_loop: // When in check, search starts from here
 
               else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r += ONE_PLY;
+
+              if (r > 3 * ONE_PLY && type_of(movedPiece) == KING)
+            	  r -= ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->statScore / 20000) * ONE_PLY);
