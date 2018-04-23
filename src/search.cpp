@@ -814,7 +814,13 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                    update_capture_stats(pos, move, probCapturesSearched, probCutCount, stat_bonus(depth - ONE_PLY));
+                    // Decrease bonus on the unsuccessful played capture moves
+                    for (int i = 0; i < probCutCount; ++i)
+                    {
+	                   Piece moved_piece = pos.moved_piece(probCapturesSearched[i]);
+	                   PieceType captured = type_of(pos.piece_on(to_sq(probCapturesSearched[i])));
+	                   pos.this_thread()->captureHistory[moved_piece][to_sq(probCapturesSearched[i])][captured] << -stat_bonus(depth - 2 * ONE_PLY);
+                    }
                     return value;
                 }
                 probCapturesSearched[probCutCount] = move;
