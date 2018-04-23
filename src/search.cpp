@@ -789,7 +789,7 @@ namespace {
         Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
-        Move probCapturesSearched[2];
+        Move probCapturesSearched[3];
         while (  (move = mp.next_move()) != MOVE_NONE
                && probCutCount < 3)
             if (pos.legal(move))
@@ -814,7 +814,7 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                	update_capture_stats(pos, move, probCapturesSearched, probCutCount, stat_bonus(depth - 4 * ONE_PLY));
+                	update_capture_stats(pos, move, probCapturesSearched, probCutCount, stat_bonus(depth - ONE_PLY));
                     return value;
                 }
                 probCapturesSearched[probCutCount] = move;
