@@ -790,31 +790,35 @@ namespace {
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
-        while (  (move = mp.next_move()) != MOVE_NONE
-               && probCutCount < 3)
-            if (pos.legal(move))
+        while (  (move = mp.next_move()) != MOVE_NONE)
+        	if (pos.legal(move))
             {
-                probCutCount++;
+	           givesCheck = gives_check(pos, move);
 
-                ss->currentMove = move;
-                ss->contHistory = thisThread->contHistory[pos.moved_piece(move)][to_sq(move)].get();
+	           if (probCutCount < 3 || givesCheck)
+	           {
+		            probCutCount++;
 
-                assert(depth >= 5 * ONE_PLY);
+		            ss->currentMove = move;
+		            ss->contHistory = thisThread->contHistory[pos.moved_piece(move)][to_sq(move)].get();
 
-                pos.do_move(move, st);
+		            assert(depth >= 5 * ONE_PLY);
 
-                // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -rbeta, -rbeta+1);
+		            pos.do_move(move, st, givesCheck);
 
-                // If the qsearch held perform the regular search
-                if (value >= rbeta)
-                    value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, false);
+		            // Perform a preliminary qsearch to verify that the move holds
+		            value = -qsearch<NonPV>(pos, ss + 1, -rbeta, -rbeta + 1);
 
-                pos.undo_move(move);
+		            // If the qsearch held perform the regular search
+		            if (value >= rbeta)
+		   	          value = -search<NonPV>(pos, ss + 1, -rbeta, -rbeta + 1, depth - 4 * ONE_PLY, !cutNode, false);
 
-                if (value >= rbeta)
-                    return value;
-            }
+		            pos.undo_move(move);
+
+		            if (value >= rbeta)
+			          return value;
+	           }
+           }
     }
 
     // Step 11. Internal iterative deepening (skipped when in check, ~2 Elo)
