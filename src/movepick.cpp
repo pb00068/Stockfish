@@ -174,7 +174,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024 - (move == refutations[3] ? PawnValueMg : 0))) ?
+                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024 - (move == refutations[3] ? 2 * PawnValueMg : 0))) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
