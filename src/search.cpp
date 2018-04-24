@@ -797,7 +797,8 @@ namespace {
 
 	           if (probCutCount < 3 || givesCheck)
 	           {
-		            probCutCount++;
+	        	    if (!givesCheck)
+	        	    	probCutCount++;
 
 		            ss->currentMove = move;
 		            ss->contHistory = thisThread->contHistory[pos.moved_piece(move)][to_sq(move)].get();

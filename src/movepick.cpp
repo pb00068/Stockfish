@@ -239,7 +239,7 @@ top:
   case PROBCUT:
       if  (select<Best>([&](){ return pos.see_ge(move, threshold); }))
     	  return move;
-      if(threshold > VALUE_ZERO)
+      if(threshold >= VALUE_ZERO)
     	  return MOVE_NONE;
       ++stage;
       /* fallthrough */
