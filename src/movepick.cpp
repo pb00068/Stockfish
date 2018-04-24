@@ -62,7 +62,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}, {killers[2], 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -174,14 +174,14 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
+                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024 - (move == refutations[3] ? PawnValueMg : 0))) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
 
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
-      endMoves = std::end(refutations);
+      endMoves = std::end(refutations) - 1;
 
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
