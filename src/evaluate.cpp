@@ -133,7 +133,7 @@ namespace {
   // which piece type attacks which one. Attacks on lesser pieces which are
   // pawn-defended are not considered.
   constexpr Score ThreatByMinor[PIECE_TYPE_NB] = {
-    S(0, 0), S(0, 31), S(33, 38), S(57, 44), S(68, 112), S(47, 120)
+    S(0, 0), S(0, 31), S(35, 38), S(57, 44), S(68, 112), S(47, 120)
   };
 
   constexpr Score ThreatByRook[PIECE_TYPE_NB] = {
@@ -169,7 +169,7 @@ namespace {
   constexpr Score Hanging            = S( 52, 30);
   constexpr Score HinderPassedPawn   = S(  8,  1);
   constexpr Score KnightOnQueen      = S( 21, 11);
-  constexpr Score KnightMultiThreat  = S(  3,  2);
+  constexpr Score KnightMultiThreat  = S(  4,  4);
   constexpr Score LongDiagonalBishop = S( 22,  0);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 10,  5);
@@ -547,13 +547,15 @@ namespace {
             {
                 score += ThreatByRank * (int)relative_rank(Them, s);
                 if (!multi && (attackedBy[Us][KNIGHT] & s)) {
-                	Bitboard targets = pos.pieces(Them, QUEEN, ROOK) | (pos.pieces(Them, BISHOP, PAWN) & ~attackedBy[Them][PAWN]);
+                	Bitboard targets = pos.pieces(Them) & ~pos.pieces(Them, PAWN);
                 	Bitboard attacks = pos.attacks_from<KNIGHT>(s);
-                	Bitboard bb = pos.pieces(Us, KNIGHT);
+                	Bitboard bb = pos.pieces(Us, KNIGHT) & ~attackedBy[Them][ALL_PIECES];
                 	while (bb)
                 		attacks |= pos.attacks_from<KNIGHT>(pop_lsb(&bb));
 
                 	score += KnightMultiThreat * popcount(attacks & targets);
+                	//dbg_hit_on(popcount(attacks & targets));
+                	//dbg_mean_of( popcount(attacks & targets));
                 	multi = true;
                 }
             }
