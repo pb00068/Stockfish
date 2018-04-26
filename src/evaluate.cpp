@@ -133,7 +133,7 @@ namespace {
   // which piece type attacks which one. Attacks on lesser pieces which are
   // pawn-defended are not considered.
   constexpr Score ThreatByMinor[PIECE_TYPE_NB] = {
-    S(0, 0), S(0, 31), S(23, 26), S(57, 44), S(68, 112), S(47, 120)
+    S(0, 0), S(0, 31), S(33, 38), S(57, 44), S(68, 112), S(47, 120)
   };
 
   constexpr Score ThreatByRook[PIECE_TYPE_NB] = {
@@ -169,7 +169,7 @@ namespace {
   constexpr Score Hanging            = S( 52, 30);
   constexpr Score HinderPassedPawn   = S(  8,  1);
   constexpr Score KnightOnQueen      = S( 21, 11);
-  constexpr Score KnightMultiThreat  = S(  8,  8);
+  constexpr Score KnightMultiThreat  = S(  3,  2);
   constexpr Score LongDiagonalBishop = S( 22,  0);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 10,  5);
