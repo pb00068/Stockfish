@@ -169,6 +169,7 @@ namespace {
   constexpr Score Hanging            = S( 52, 30);
   constexpr Score HinderPassedPawn   = S(  8,  1);
   constexpr Score KnightOnQueen      = S( 21, 11);
+  constexpr Score KnightMultiple     = S(  4,  4);
   constexpr Score LongDiagonalBishop = S( 22,  0);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 10,  5);
@@ -537,12 +538,25 @@ namespace {
     if (defended | weak)
     {
         b = (defended | weak) & (attackedBy[Us][KNIGHT] | attackedBy[Us][BISHOP]);
+        bool multi = false;
         while (b)
         {
             Square s = pop_lsb(&b);
             score += ThreatByMinor[type_of(pos.piece_on(s))];
             if (type_of(pos.piece_on(s)) != PAWN)
+            {
                 score += ThreatByRank * (int)relative_rank(Them, s);
+                if (!multi && (attackedBy[Us][KNIGHT] & s)) {
+                	Bitboard targets = pos.pieces(Them, QUEEN, ROOK) | (pos.pieces(Them, BISHOP, PAWN) & ~attackedBy[Them][PAWN]);
+                	Bitboard attacks = pos.attacks_from<KNIGHT>(s);
+                	Bitboard bb = pos.pieces(Us, KNIGHT);
+                	while (bb)
+                		attacks |= pos.attacks_from<KNIGHT>(pop_lsb(&bb));
+
+                	score += KnightMultiple * popcount(attacks & targets);
+                	multi = true;
+                }
+            }
         }
 
         b = (pos.pieces(Them, QUEEN) | weak) & attackedBy[Us][ROOK];
