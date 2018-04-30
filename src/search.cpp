@@ -881,16 +881,14 @@ moves_loop: // When in check, search starts from here
 
       // Step 13. Extensions (~70 Elo)
 
-      if ( depth <= 8 * ONE_PLY &&
-    	   !moveCountPruning &&
-           captureOrPromotion &&
-		   type_of(movedPiece) == BISHOP &&
-		   type_of(pos.piece_on(to_sq(move))) == KNIGHT)
+      if ( depth < 8 * ONE_PLY && captureOrPromotion && quietCount > 2)
       {
 
     	  int v = (int)(thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))]);
-    	  if (v > 10000)
-    	   extension = ONE_PLY;
+//    	  dbg_mean_of(v);
+//    	  dbg_hit_on(v > 8000);
+    	  if (v > 8000)
+    	  extension = ONE_PLY;
       }
       // Singular extension search (~60 Elo). If all moves but one fail low on a
       // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
