@@ -294,11 +294,10 @@ namespace {
   Score Evaluation<T>::pieces() {
 
     constexpr Color Them = (Us == WHITE ? BLACK : WHITE);
-    constexpr Bitboard OutpostRanks = (Us == WHITE ? Rank4BB | Rank5BB | Rank6BB
-                                                   : Rank5BB | Rank4BB | Rank3BB);
+
     const Square* pl = pos.squares<Pt>(Us);
 
-    Bitboard b, bb;
+    Bitboard b;
     Square s;
     Score score = SCORE_ZERO;
 
@@ -332,36 +331,19 @@ namespace {
         // Penalty if the piece is far from the king
         score -= KingProtector[Pt - 2] * distance(s, pos.square<KING>(Us));
 
-        if (Pt == BISHOP || Pt == KNIGHT)
+        if (Pt == BISHOP)
         {
-            // Bonus if piece is on an outpost square or can reach one
-            bb = OutpostRanks & ~pe->pawn_attacks_span(Them);
-            if (bb & s)
-                score += Outpost[Pt == BISHOP][bool(attackedBy[Us][PAWN] & s)] * 2;
-
-            else if (bb &= b & ~pos.pieces(Us))
-                score += Outpost[Pt == BISHOP][bool(attackedBy[Us][PAWN] & bb)];
-
-            // Bonus when behind a pawn
-            if (    relative_rank(Us, s) < RANK_5
-                && (pos.pieces(PAWN) & (s + pawn_push(Us))))
-                score += MinorBehindPawn;
-
-            if (Pt == BISHOP)
-            {
                 // Penalty according to number of pawns on the same color square as the bishop
                 score -= BishopPawns * pe->pawns_on_same_color_squares(Us, s);
 
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(Center & (attacks_bb<BISHOP>(s, pos.pieces(PAWN)) | s)))
                     score += LongDiagonalBishop;
-            }
 
             // An important Chess960 pattern: A cornered bishop blocked by a friendly
             // pawn diagonally in front of it is a very serious problem, especially
             // when that pawn is also blocked.
-            if (   Pt == BISHOP
-                && pos.is_chess960()
+            if (pos.is_chess960()
                 && (s == relative_square(Us, SQ_A1) || s == relative_square(Us, SQ_H1)))
             {
                 Direction d = pawn_push(Us) + (file_of(s) == FILE_A ? EAST : WEST);
@@ -515,6 +497,8 @@ namespace {
     constexpr Color     Them     = (Us == WHITE ? BLACK   : WHITE);
     constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
     constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
+    constexpr Bitboard OutpostRanks = (Us == WHITE ? Rank4BB | Rank5BB | Rank6BB
+                                                     : Rank5BB | Rank4BB | Rank3BB);
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safeThreats;
     Score score = SCORE_ZERO;
@@ -565,6 +549,25 @@ namespace {
            & attackedBy[Us][ALL_PIECES]   & ~attackedBy2[Us]
            & attackedBy[Them][ALL_PIECES] & ~attackedBy2[Them];
         score += Overload * popcount(b);
+    }
+
+    b = pos.pieces(Us, KNIGHT, BISHOP);
+    while (b)
+    {
+       Square s = pop_lsb(&b);
+       PieceType pt = type_of(pos.piece_on(s));
+
+       // Bonus if piece is on an outpost square or can reach one
+       Bitboard bb = OutpostRanks & ~pe->pawn_attacks_span(Them);
+	   if (bb & s)
+		   score += Outpost[pt == BISHOP][bool(attackedBy[Us][PAWN] & s)] * (bool(~attackedBy[Them][KNIGHT] & s) ? 2 : 1);
+	   else if (bb &= b & ~pos.pieces(Us))
+		   score += Outpost[pt == BISHOP][bool(attackedBy[Us][PAWN] & bb)];
+
+	   // Bonus when behind a pawn
+	   if (    relative_rank(Us, s) < RANK_5
+		   && (pos.pieces(PAWN) & (s + pawn_push(Us))))
+	         score += MinorBehindPawn;
     }
 
     // Bonus for enemy unopposed weak pawns
