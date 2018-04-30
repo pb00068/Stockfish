@@ -881,11 +881,14 @@ moves_loop: // When in check, search starts from here
 
       // Step 13. Extensions (~70 Elo)
 
+      if (!moveCountPruning && captureOrPromotion && type_of(pos.captured_piece()) >= ROOK && type_of(movedPiece) == type_of(pos.captured_piece()))
+    	  extension = ONE_PLY;
       // Singular extension search (~60 Elo). If all moves but one fail low on a
       // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
       // then that move is singular and should be extended. To verify this we do
       // a reduced search on on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin then we will extend the ttMove.
+      else
       if (    depth >= 8 * ONE_PLY
           &&  move == ttMove
           && !rootNode
