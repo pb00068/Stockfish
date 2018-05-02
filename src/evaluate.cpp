@@ -77,6 +77,7 @@ namespace {
   constexpr Bitboard CenterFiles = FileCBB | FileDBB | FileEBB | FileFBB;
   constexpr Bitboard KingSide    = FileEBB | FileFBB | FileGBB | FileHBB;
   constexpr Bitboard Center      = (FileDBB | FileEBB) & (Rank4BB | Rank5BB);
+  constexpr Bitboard LargeCenter      = CenterFiles & (Rank3BB | Rank4BB | Rank5BB | Rank6BB);
 
   constexpr Bitboard KingFlank[FILE_NB] = {
     QueenSide,   QueenSide, QueenSide,
@@ -355,7 +356,7 @@ namespace {
                 Bitboard blocked = pos.pieces(Us, PAWN) & shift<Down>(pos.pieces() ^ s);
 
                 score -= BishopPawns * pe->pawns_on_same_color_squares(Us, s)
-                                     * (1 +  popcount(blocked & CenterFiles));
+                                     * (1 + popcount(blocked & LargeCenter));
 
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(Center & (attacks_bb<BISHOP>(s, pos.pieces(PAWN)) | s)))
