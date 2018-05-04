@@ -170,7 +170,7 @@ namespace {
   constexpr Score Hanging            = S( 52, 30);
   constexpr Score HinderPassedPawn   = S(  8,  1);
   constexpr Score KnightOnQueen      = S( 21, 11);
-  constexpr Score KnightOnRook       = S( 14,  7);
+  constexpr Score KnightOnRook       = S( 12,  6);
   constexpr Score LongDiagonalBishop = S( 22,  0);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 10,  5);
@@ -398,8 +398,9 @@ namespace {
             }
 
             b = attackedBy[Them][KNIGHT] & pos.attacks_from<KNIGHT>(s);
-            score -= KnightOnRook * popcount(b & mobilityArea[Them] & ~attackedBy[Us][PAWN]);
+            score -= KnightOnRook * popcount(b & mobilityArea[Them] & ~attackedBy[Us][ALL_PIECES]);
         }
+
 
         if (Pt == QUEEN)
         {
@@ -865,10 +866,12 @@ namespace {
 
     // Pieces should be evaluated first (populate attack tables)
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
-            + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>();
-
-    score +=  pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
+            + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
             + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
+
+    score +=  pieces<WHITE, ROOK  >();
+    score -=  pieces<BLACK, ROOK  >();
+
 
     score += mobility[WHITE] - mobility[BLACK];
 
