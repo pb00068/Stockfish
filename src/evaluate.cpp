@@ -331,7 +331,6 @@ namespace {
         if (Pt == QUEEN && mob && ((attackedBy[Them][PAWN] | attackedBy[Them][KNIGHT] | attackedBy[Them][BISHOP] | attackedBy[Them][ROOK]) & s))
         	mob=-1;
 
-
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
         // Penalty if the piece is far from the king
