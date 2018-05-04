@@ -538,6 +538,7 @@ namespace {
     // Enemies not strongly protected and under our attack
     weak = pos.pieces(Them) & ~stronglyProtected & attackedBy[Us][ALL_PIECES];
 
+    Bitboard hanging = 0;
     // Bonus according to the kind of attacking pieces
     if (defended | weak)
     {
@@ -563,7 +564,8 @@ namespace {
         if (b)
             score += ThreatByKing[more_than_one(b)];
 
-        score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
+        hanging = weak & ~attackedBy[Them][ALL_PIECES];
+        score += Hanging * popcount(hanging);
 
         // Bonus for overload (non-pawn enemies attacked and defended exactly once)
         b =  nonPawnEnemies
@@ -581,7 +583,7 @@ namespace {
        & (~attackedBy[Them][ALL_PIECES] | attackedBy[Us][ALL_PIECES]);
 
     safeThreats = pawn_attacks_bb<Us>(b) & nonPawnEnemies;
-    score += ThreatBySafePawn * popcount(safeThreats);
+    score += ThreatBySafePawn * popcount(safeThreats & ~hanging);
 
     // Find squares where our pawns can push on the next move
     b  = shift<Up>(pos.pieces(Us, PAWN)) & ~pos.pieces();
