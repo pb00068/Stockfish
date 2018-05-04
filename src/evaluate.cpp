@@ -178,10 +178,10 @@ namespace {
   constexpr Score ThreatByPawnPush   = S( 47, 26);
   constexpr Score ThreatByRank       = S( 16,  3);
   constexpr Score ThreatBySafePawn   = S(175,168);
+  constexpr Score ThreatByUnsafePawn = S( 20, 20);
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
-  constexpr Score QueenThreatByPawn  = S( 12, 12);
 
 #undef S
 
@@ -564,10 +564,6 @@ namespace {
         if (b)
             score += ThreatByKing[more_than_one(b)];
 
-        b = pos.pieces(Them, QUEEN) & attackedBy[Us][PAWN];
-        if (b)
-        	score += QueenThreatByPawn;
-
         score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
 
         // Bonus for overload (non-pawn enemies attacked and defended exactly once)
@@ -586,7 +582,10 @@ namespace {
        & (~attackedBy[Them][ALL_PIECES] | attackedBy[Us][ALL_PIECES]);
 
     safeThreats = pawn_attacks_bb<Us>(b) & nonPawnEnemies;
-    score += ThreatBySafePawn * popcount(safeThreats);
+    if (safeThreats)
+    	score += ThreatBySafePawn * popcount(safeThreats);
+    else if (pos.pieces(Them, QUEEN, ROOK) & attackedBy[Us][PAWN])
+    	score += ThreatByUnsafePawn;
 
     // Find squares where our pawns can push on the next move
     b  = shift<Up>(pos.pieces(Us, PAWN)) & ~pos.pieces();
