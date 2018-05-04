@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -396,8 +397,8 @@ namespace {
                     score -= (TrappedRook - make_score(mob * 22, 0)) * (1 + !pos.can_castle(Us));
             }
 
-            b = attackedBy[Us][KNIGHT] & pos.attacks_from<KNIGHT>(s);
-            score += KnightOnRook * popcount(b & mobilityArea[Us] & ~attackedBy[Them][PAWN]);
+            b = attackedBy[Them][KNIGHT] & pos.attacks_from<KNIGHT>(s);
+            score -= KnightOnRook * popcount(b & mobilityArea[Them] & ~attackedBy[Us][PAWN]);
         }
 
         if (Pt == QUEEN)
