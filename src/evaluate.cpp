@@ -181,6 +181,9 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
+  Score QueenThreatByPawn  = S( 50, 50);
+
+  TUNE(QueenThreatByPawn);
 
 #undef S
 
@@ -562,6 +565,10 @@ namespace {
         b = weak & attackedBy[Us][KING];
         if (b)
             score += ThreatByKing[more_than_one(b)];
+
+        b = pos.pieces(Them, QUEEN) & attackedBy[Us][PAWN];
+        if (b)
+          score += QueenThreatByPawn;
 
         score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
 
