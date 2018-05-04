@@ -565,7 +565,6 @@ namespace {
             score += ThreatByKing[more_than_one(b)];
 
         hanging = weak & ~attackedBy[Them][ALL_PIECES];
-        score += Hanging * popcount(hanging);
 
         // Bonus for overload (non-pawn enemies attacked and defended exactly once)
         b =  nonPawnEnemies
@@ -583,7 +582,8 @@ namespace {
        & (~attackedBy[Them][ALL_PIECES] | attackedBy[Us][ALL_PIECES]);
 
     safeThreats = pawn_attacks_bb<Us>(b) & nonPawnEnemies;
-    score += ThreatBySafePawn * popcount(safeThreats & ~hanging);
+    score += ThreatBySafePawn * popcount(safeThreats);
+    score += Hanging * popcount(hanging & ~safeThreats);
 
     // Find squares where our pawns can push on the next move
     b  = shift<Up>(pos.pieces(Us, PAWN)) & ~pos.pieces();
