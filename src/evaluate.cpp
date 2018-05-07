@@ -183,7 +183,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
-  constexpr Score BackRankSkewerThreat = S( 10, 10);
+  constexpr Score BackRankSkewerThreat= S(20, 15);
 
 #undef S
 
@@ -622,17 +622,17 @@ namespace {
         	{
         		Square ss = lsb(b);
         		Piece pc = pos.piece_on(ss);
-        		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
+        		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && type_of(pc) != ROOK && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
         		{
-        			Square skewerAttack = lsb(FileBB[file_of(s)] & RankBB[relative_rank(Them, RANK_8)]);
-        			if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & skewerAttack)
-        			{
-        				score += BackRankSkewerThreat * (type_of(pc) == KING ? 3 : 1);
-        				//sync_cout << pos << UCI::move(make_move(s, skewerAttack), pos.is_chess960()) << " " << skewerAttack << sync_endl;
-        				//dbg_hit_on(type_of(pc) == KING );
-        			}
-        		}
-        	}
+        	        Square skewerAttack = lsb(FileBB[file_of(s)] & RankBB[relative_rank(Them, RANK_8)]);
+        	        if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & attackedBy2[Us] & skewerAttack)
+        	        {
+                       score += BackRankSkewerThreat * (type_of(pc) == KING ? 2 : 1);
+        			   //sync_cout << pos << UCI::move(make_move(s, skewerAttack), pos.is_chess960()) << " " << skewerAttack << sync_endl;
+                       //dbg_hit_on(type_of(pc) == KING );
+                    }
+                }
+            }
         }
     }
 
