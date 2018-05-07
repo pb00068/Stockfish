@@ -169,6 +169,7 @@ namespace {
   constexpr Score Hanging            = S( 52, 30);
   constexpr Score HinderPassedPawn   = S(  8,  1);
   constexpr Score KnightOnQueen      = S( 21, 11);
+  constexpr Score KnightThreats      = S(  5,  5);
   constexpr Score LongDiagonalBishop = S( 22,  0);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 10,  5);
@@ -347,6 +348,20 @@ namespace {
             if (    relative_rank(Us, s) < RANK_5
                 && (pos.pieces(PAWN) & (s + pawn_push(Us))))
                 score += MinorBehindPawn;
+
+            if (Pt == KNIGHT)
+            {
+            	int attackWeight = -1 + 2 * popcount(b & (pos.pieces(Them) & ~pos.pieces(Them, PAWN, KNIGHT)));
+            	bb = Bitboard(0);
+            	while (b)
+            	{
+            		Square sq = pop_lsb(&b);
+            		if (mobilityArea[Us] & sq)
+            			bb |= pos.attacks_from<KNIGHT>(sq);
+            	}
+            	attackWeight += popcount(bb & (pos.pieces(Them) & ~pos.pieces(Them, PAWN, KNIGHT)));
+            	score += KnightThreats * attackWeight;
+            }
 
             if (Pt == BISHOP)
             {
