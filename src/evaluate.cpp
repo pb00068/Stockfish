@@ -523,7 +523,6 @@ namespace {
     constexpr Color     Them     = (Us == WHITE ? BLACK   : WHITE);
     constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
     constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
-    constexpr int Opposite       = (Us == WHITE ? SQ_A8   : -SQ_A8);
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safeThreats;
     Score score = SCORE_ZERO;
@@ -617,7 +616,7 @@ namespace {
 
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
 
-        if (relative_rank(Them, s) == RANK_1) {
+        if (relative_rank(Them, s) < RANK_5 && pe->semiopen_file(Them, file_of(s)) && pe->semiopen_file(Us, file_of(s))) {
         	b = (pos.pieces() & FileBB[file_of(s)]) ^ s;
         	if (b && !more_than_one(b))
         	{
@@ -625,9 +624,13 @@ namespace {
         		Piece pc = pos.piece_on(ss);
         		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
         		{
-        			Square opp = (Square) (s + Opposite);
-        			if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & opp)
-        				score += BackRankSkewerThreat * (type_of(pc) == KING ? 2 : 1);
+        			Square skewerAttack = lsb(FileBB[file_of(s)] & RankBB[relative_rank(Them, RANK_8)]);
+        			if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & skewerAttack)
+        			{
+        				score += BackRankSkewerThreat * (type_of(pc) == KING ? 3 : 1);
+        				//sync_cout << pos << UCI::move(make_move(s, skewerAttack), pos.is_chess960()) << " " << skewerAttack << sync_endl;
+        				//dbg_hit_on(type_of(pc) == KING );
+        			}
         		}
         	}
         }
