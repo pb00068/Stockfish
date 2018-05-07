@@ -614,6 +614,17 @@ namespace {
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
     }
 
+    Bitboard bb = attackedBy[Us][KNIGHT] & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces(Us);
+    int attacks = 0;
+    while (bb)
+    {
+    	Square s = pop_lsb(&bb);
+    	b = pos.attacks_from<KNIGHT>(s) & (pos.pieces(Them, KING,QUEEN) | pos.pieces(Them, ROOK, BISHOP));
+    	if (b)
+    		attacks += more_than_one(b);
+    }
+    score += KnightOnQueen * attacks;
+
     // Connectivity: ensure that knights, bishops, rooks, and queens are protected
     b = (pos.pieces(Us) ^ pos.pieces(Us, PAWN, KING)) & attackedBy[Us][ALL_PIECES];
     score += Connectivity * popcount(b);
