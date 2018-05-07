@@ -183,7 +183,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
-  constexpr Score BackRankSkewerThreat= S(20, 15);
+  constexpr Score BackRankSkewerThreat=S( 10, 10);
 
 #undef S
 
@@ -320,6 +320,31 @@ namespace {
 
         attackedBy2[Us] |= attackedBy[Us][ALL_PIECES] & b;
         attackedBy[Us][Pt] |= b;
+
+        if (Pt == QUEEN &&
+        	pe->semiopen_file(Them, file_of(s)) &&
+			pe->semiopen_file(  Us, file_of(s)) &&
+			(attackedBy[Them][ROOK] & attackedBy2[Them] & FileBB[file_of(s)]))
+        {
+           b = (pos.pieces() & FileBB[file_of(s)]) ^ s;
+           if (b && !more_than_one(b))
+           {
+               Bitboard skewerPoint = attackedBy[Them][ROOK] & attackedBy2[Them] & FileBB[file_of(s)] & RankBB[relative_rank(Us, RANK_8)];
+               Square exposedSq = lsb(b);
+               Piece pc = pos.piece_on(exposedSq);
+               if (skewerPoint && color_of(pc) == Us && type_of(pc) != ROOK && (type_of(pc) == KING || (attackedBy[Them][ALL_PIECES] & ~attackedBy2[Us] & exposedSq)))
+               {
+                  score -= BackRankSkewerThreat;
+                  if (type_of(pc) == KING)
+                  {
+                      Square advanced = Us == WHITE ? std::max(exposedSq, s) : std::min(exposedSq, s);
+                      if (!(attackedBy[Us][ALL_PIECES] & between_bb(advanced, lsb(skewerPoint))))
+                        score -= BackRankSkewerThreat * 5;
+                  }
+        	   }
+            }
+        }
+
         attackedBy[Us][ALL_PIECES] |= b;
 
         if (b & kingRing[Them])
@@ -615,25 +640,6 @@ namespace {
            | (attackedBy[Us][ROOK  ] & pos.attacks_from<ROOK  >(s));
 
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
-
-        if (relative_rank(Them, s) < RANK_7 && pe->semiopen_file(Them, file_of(s)) && pe->semiopen_file(Us, file_of(s))) {
-        	b = (pos.pieces() & FileBB[file_of(s)]) ^ s;
-        	if (b && !more_than_one(b))
-        	{
-        		Square ss = lsb(b);
-        		Piece pc = pos.piece_on(ss);
-        		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && type_of(pc) != ROOK && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
-        		{
-        	        Square skewerAttack = lsb(FileBB[file_of(s)] & RankBB[relative_rank(Them, RANK_8)]);
-        	        if (attackedBy[Us][ROOK] & attackedBy2[Us] & skewerAttack)
-        	        {
-                       score += BackRankSkewerThreat * (type_of(pc) == KING ? 2 : 1);
-        			   //sync_cout << pos << UCI::move(make_move(s, skewerAttack), pos.is_chess960()) << " " << skewerAttack << sync_endl;
-                       //dbg_hit_on(type_of(pc) == KING );
-                    }
-                }
-            }
-        }
     }
 
     // Connectivity: ensure that knights, bishops, rooks, and queens are protected
@@ -883,8 +889,8 @@ namespace {
     // Pieces should be evaluated first (populate attack tables)
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
             + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
-            + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
-            + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
+            + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >();
+    score +=  pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
 
     score += mobility[WHITE] - mobility[BLACK];
 
