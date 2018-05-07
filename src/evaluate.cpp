@@ -23,12 +23,14 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
 #include "thread.h"
+#include "uci.h"
 
 namespace Trace {
 
@@ -181,6 +183,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
+  constexpr Score BackRankSkewerThreat = S( 10, 10);
 
 #undef S
 
@@ -520,6 +523,7 @@ namespace {
     constexpr Color     Them     = (Us == WHITE ? BLACK   : WHITE);
     constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
     constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
+    constexpr int Opposite       = (Us == WHITE ? SQ_A8   : -SQ_A8);
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safeThreats;
     Score score = SCORE_ZERO;
@@ -612,6 +616,21 @@ namespace {
            | (attackedBy[Us][ROOK  ] & pos.attacks_from<ROOK  >(s));
 
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
+
+        if (relative_rank(Them, s) == RANK_1) {
+        	b = (pos.pieces() & FileBB[file_of(s)]) ^ s;
+        	if (b && !more_than_one(b))
+        	{
+        		Square ss = lsb(b);
+        		Piece pc = pos.piece_on(ss);
+        		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
+        		{
+        			Square opp = (Square) (s + Opposite);
+        			if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & opp)
+        				score += BackRankSkewerThreat * (type_of(pc) == KING ? 2 : 1);
+        		}
+        	}
+        }
     }
 
     // Connectivity: ensure that knights, bishops, rooks, and queens are protected
