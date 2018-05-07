@@ -616,7 +616,7 @@ namespace {
 
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
 
-        if (relative_rank(Them, s) < RANK_5 && pe->semiopen_file(Them, file_of(s)) && pe->semiopen_file(Us, file_of(s))) {
+        if (relative_rank(Them, s) < RANK_7 && pe->semiopen_file(Them, file_of(s)) && pe->semiopen_file(Us, file_of(s))) {
         	b = (pos.pieces() & FileBB[file_of(s)]) ^ s;
         	if (b && !more_than_one(b))
         	{
@@ -625,7 +625,7 @@ namespace {
         		if (color_of(pc) == Them && type_of(pc) >= KNIGHT && type_of(pc) != ROOK && (type_of(pc) == KING || (attackedBy[Us][ALL_PIECES] & ~attackedBy2[Them] & ss)))
         		{
         	        Square skewerAttack = lsb(FileBB[file_of(s)] & RankBB[relative_rank(Them, RANK_8)]);
-        	        if ((attackedBy[Us][ROOK] | attackedBy[Us][QUEEN]) & attackedBy2[Us] & skewerAttack)
+        	        if (attackedBy[Us][ROOK] & attackedBy2[Us] & skewerAttack)
         	        {
                        score += BackRankSkewerThreat * (type_of(pc) == KING ? 2 : 1);
         			   //sync_cout << pos << UCI::move(make_move(s, skewerAttack), pos.is_chess960()) << " " << skewerAttack << sync_endl;
