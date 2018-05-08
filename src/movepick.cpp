@@ -21,7 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
-
+#include "misc.h"
 namespace {
 
   enum Stages {
@@ -60,15 +60,16 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool killerGaveCheck)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0},  {killers[2], 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  killergaveCheck = killerGaveCheck;
 }
 
 /// MovePicker constructor for quiescence search
@@ -181,7 +182,13 @@ top:
 
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
-      endMoves = std::end(refutations);
+      endMoves = std::end(refutations) - 1;
+
+      if ( refutations[3].move && refutations[3].move != refutations[0].move && pos.pseudo_legal(refutations[3].move) && (!killergaveCheck || pos.gives_check(refutations[3].move)))
+      {
+    	  refutations[1].move = refutations[0].move;
+    	  refutations[0].move = refutations[3].move;
+      }
 
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move

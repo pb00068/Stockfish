@@ -45,10 +45,11 @@ struct Stack {
   int ply;
   Move currentMove;
   Move excludedMove;
-  Move killers[2];
+  Move killers[3];
   Value staticEval;
   int statScore;
   int moveCount;
+  bool killer2gaveCheck;
 };
 
 

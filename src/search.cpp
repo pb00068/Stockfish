@@ -584,7 +584,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] =MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -837,7 +837,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, ss->killer2gaveCheck);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -943,12 +943,12 @@ moves_loop: // When in check, search starts from here
 
               // Prune moves with negative SEE (~10 Elo)
               if (   lmrDepth < 8
-                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth)))
+                  && !pos.see_ge(move, Value(-35 * lmrDepth * lmrDepth - 200 * (move == ss->killers[2] && !ss->killer2gaveCheck) )))
                   continue;
           }
           else if (    depth < 7 * ONE_PLY // (~20 Elo)
                    && !extension
-                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY])))
+                   && !pos.see_ge(move, -Value(CapturePruneMargin[depth / ONE_PLY] + 200 * (move == ss->killers[2] && givesCheck == ss->killer2gaveCheck))))
                   continue;
       }
 
@@ -1459,6 +1459,12 @@ moves_loop: // When in check, search starts from here
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
+    }
+
+    //if (!pos.see_ge(move)) 	dbg_hit_on(pos.gives_check(move)); Total 8157 Hits 1142 hit rate (%) 14
+    if (!pos.see_ge(move)) {
+    	ss->killers[2] = move;
+    	ss->killer2gaveCheck = pos.gives_check(move);
     }
 
     Color us = pos.side_to_move();

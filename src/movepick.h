@@ -118,7 +118,7 @@ public:
   MovePicker& operator=(const MovePicker&) = delete;
   MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,  const CapturePieceToHistory*, Square);
-  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, Move, Move*);
+  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const CapturePieceToHistory*, const PieceToHistory**, Move, Move*, bool killerGaveCheck);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -132,13 +132,14 @@ private:
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
   Move ttMove;
-  ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
+  ExtMove refutations[4], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
   Square recaptureSquare;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  bool killergaveCheck;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
