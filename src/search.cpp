@@ -972,6 +972,9 @@ moves_loop: // When in check, search starts from here
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
+      if (captureOrPromotion && pos.captured_piece())
+         ss->statScore = thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.captured_piece())] - 24000;
+
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
