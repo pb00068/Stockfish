@@ -739,6 +739,11 @@ namespace {
         &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
         && !ss->excludedMove
         &&  pos.non_pawn_material(pos.side_to_move())
+		&& (!pos.captured_piece()
+        || 16 * PieceValue[MG][pos.captured_piece()] +
+            thisThread->captureHistory[pos.piece_on(to_sq((ss-1)->currentMove))]
+                                      [to_sq((ss-1)->currentMove)]
+                                      [type_of(pos.captured_piece())] < 25000)
         && (ss->ply >= thisThread->nmp_ply || ss->ply % 2 != thisThread->nmp_odd))
     {
         assert(eval - beta >= 0);
@@ -971,9 +976,6 @@ moves_loop: // When in check, search starts from here
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
-
-      if (captureOrPromotion && depth >= 3 * ONE_PLY && moveCount > 1 && pos.captured_piece())
-          ss->statScore = 3 * (thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.captured_piece())] - 9400);
 
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
