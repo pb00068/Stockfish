@@ -64,6 +64,11 @@ struct TTEntry {
     }
   }
 
+  void saveMove(Move m) {
+          move16 = (uint16_t)m;
+  }
+
+
 private:
   friend class TranspositionTable;
 
