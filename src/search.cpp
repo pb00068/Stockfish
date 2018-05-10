@@ -578,6 +578,18 @@ namespace {
         if (alpha >= beta)
             return alpha;
     }
+    else if (thisThread->getIdx()
+          && thisThread->getIdx() == Threads.size() - 1)
+    {
+    	 thisThread->special = false;
+    	 MovePicker mp(pos, MOVE_NONE, DEPTH_ZERO, &pos.this_thread()->mainHistory, &pos.this_thread()->captureHistory, SQ_NONE);
+    	 int legal = 0;
+    	 while (  (move = mp.next_move()) != MOVE_NONE)
+    	 {
+            legal += pos.legal(move);
+            thisThread->special = legal > 1;
+    	 }
+    }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -867,6 +879,12 @@ moves_loop: // When in check, search starts from here
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->PVIdx << sync_endl;
+
+      if (rootNode
+        && thisThread->special
+		&& move == ttMove && thisThread->rootMoves[thisThread->PVIdx].score < 400)
+    	  continue;
+
       if (PvNode)
           (ss+1)->pv = nullptr;
 

@@ -56,6 +56,7 @@ public:
   void idle_loop();
   void start_searching();
   void wait_for_search_finished();
+  size_t getIdx() { return idx; }
 
   Pawns::Table pawnsTable;
   Material::Table materialTable;
@@ -63,6 +64,7 @@ public:
   size_t PVIdx, PVLast;
   int selDepth, nmp_ply, nmp_odd;
   std::atomic<uint64_t> nodes, tbHits;
+  bool special = false;
 
   Position rootPos;
   Search::RootMoves rootMoves;
