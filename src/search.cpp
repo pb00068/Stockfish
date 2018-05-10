@@ -540,7 +540,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
     bool ttHit, inCheck, givesCheck, improving;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
+    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, pvExact;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -841,7 +841,6 @@ moves_loop: // When in check, search starts from here
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
-    ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
@@ -962,9 +961,6 @@ moves_loop: // When in check, search starts from here
           continue;
       }
 
-      if (move == ttMove && captureOrPromotion)
-          ttCapture = true;
-
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->contHistory = thisThread->contHistory[movedPiece][to_sq(move)].get();
@@ -991,10 +987,6 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for exact PV nodes (~0 Elo)
               if (pvExact)
                   r -= ONE_PLY;
-
-              // Increase reduction if ttMove is a capture (~0 Elo)
-              if (ttCapture)
-                  r += ONE_PLY;
 
               // Increase reduction for cut nodes (~5 Elo)
               if (cutNode)
@@ -1162,10 +1154,16 @@ moves_loop: // When in check, search starts from here
         bestValue = std::min(bestValue, maxValue);
 
     if (!excludedMove)
-        tte->save(posKey, value_to_tt(bestValue, ss->ply),
-                  bestValue >= beta ? BOUND_LOWER :
-                  PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
+    {
+    	Bound bound = bestValue >= beta ? BOUND_LOWER : PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER;
+    	if (   !bestMove
+            && !ttMove
+            && captureCount + quietCount)
+           bestMove = captureCount ? capturesSearched[0] : quietsSearched[0];
+
+        tte->save(posKey, value_to_tt(bestValue, ss->ply), bound,
                   depth, bestMove, ss->staticEval, TT.generation());
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
