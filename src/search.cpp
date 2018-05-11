@@ -584,7 +584,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = (ss+2)->killers[3] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -619,7 +619,11 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
-                else ss->killers[2] = ttMove;
+                else if (ss->killers[2] != ttMove)
+                {
+                    ss->killers[3] = ss->killers[2];
+                    ss->killers[2] = ttMove;
+                }
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -834,7 +838,14 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove ? ttMove : ss->killers[2] && pos.legal(ss->killers[2]) ? ss->killers[2] : ss->killers[0] , depth, &thisThread->mainHistory,
+    Move firstMove = ttMove ? ttMove : ss->killers[2] && pos.pseudo_legal(ss->killers[2]) && pos.see_ge(ss->killers[2]) ? ss->killers[2] : MOVE_NONE;
+    if (!firstMove
+        && ss->killers[3]
+        && pos.pseudo_legal(ss->killers[3])
+        && pos.see_ge(ss->killers[3]))
+    	firstMove = ss->killers[3];
+
+    MovePicker mp(pos, firstMove , depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
@@ -1148,7 +1159,11 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else {
             update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth));
-            ss->killers[2] = bestMove;
+            if (ss->killers[2] != move)
+			{
+				ss->killers[3] = ss->killers[2];
+				ss->killers[2] = move;
+			}
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1276,11 +1291,18 @@ moves_loop: // When in check, search starts from here
         futilityBase = bestValue + 128;
     }
 
+    Move firstMove = ttMove ? ttMove : ss->killers[2] && pos.pseudo_legal(ss->killers[2]) && pos.see_ge(ss->killers[2]) ? ss->killers[2] : MOVE_NONE;
+    if (!firstMove
+        && ss->killers[3]
+        && pos.pseudo_legal(ss->killers[3])
+        && pos.see_ge(ss->killers[3]))
+    	firstMove = ss->killers[3];
+
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
-    MovePicker mp(pos, ttMove, depth, &pos.this_thread()->mainHistory,
+    MovePicker mp(pos, firstMove, depth, &pos.this_thread()->mainHistory,
                                       &pos.this_thread()->captureHistory,
                                       to_sq((ss-1)->currentMove));
 
