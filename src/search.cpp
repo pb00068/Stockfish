@@ -812,7 +812,12 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta)
+                {
+                	if (!ttHit || tte->depth() < depth || ttMove != move)
+                       tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, depth + int((value - rbeta ) / 400) * ONE_PLY, move, ss->staticEval, TT.generation());
+                	   //dbg_hit_on(value > rbeta + 400); Total 25612 Hits 14335 hit rate (%) 55
                     return value;
+                }
             }
     }
 
