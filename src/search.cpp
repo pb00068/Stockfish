@@ -813,9 +813,14 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                	if (!ttHit || tte->depth() < depth || ttMove != move)
-                       tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, depth + int((value - rbeta ) / 400) * ONE_PLY, move, ss->staticEval, TT.generation());
-                	   //dbg_hit_on(value > rbeta + 400); Total 25612 Hits 14335 hit rate (%) 55
+                    if (!ttHit || tte->depth() < depth || ttMove != move)
+                    {
+                       Depth ndepth = - 4 * ONE_PLY + int((value - beta ) / 150) * ONE_PLY;
+                       //dbg_hit_on(ndepth >= depth); Total 36096 Hits 2788 hit rate (%) 7
+                       //dbg_hit_on(ndepth >  depth); Total 36096 Hits 2376 hit rate (%) 6
+                       if (ndepth >= depth)
+                           tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, ndepth, move, ss->staticEval, TT.generation());
+                    }
                     return value;
                 }
             }
