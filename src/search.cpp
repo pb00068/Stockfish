@@ -452,7 +452,7 @@ void Thread::search() {
           if (completedDepth > 5 * ONE_PLY) {
         	  int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
         	  int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
-        	  if (rootMoves[0].score > maxScore && completedDepth >= maxCompleted)
+        	  if ((rootMoves[0].score > maxScore && completedDepth >= maxCompleted) || completedDepth > maxCompleted)
         	  {
         		  Threads.maxCompleted = std::max(maxCompleted, (int) completedDepth);
         		  Threads.maxScore = rootMoves[0].score;
@@ -590,19 +590,6 @@ namespace {
         beta = std::min(mate_in(ss->ply+1), beta);
         if (alpha >= beta)
             return alpha;
-    }
-    else if (moveCount && thisThread != Threads.main() && depth > 5 * ONE_PLY) {
-        int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
-        int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
-        if (maxScore > alpha + 100 && maxCompleted > thisThread->completedDepth)
-        {
-        	  RootMove& rm = *std::find(thisThread->rootMoves.begin(),
-        	                            thisThread->rootMoves.end(), Threads.bestMove);
-              rm.score = Value(maxScore);
-              rm.selDepth = maxCompleted;
-              rm.pv.resize(1);
-              return rm.score;
-        }
     }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
@@ -886,6 +873,20 @@ moves_loop: // When in check, search starts from here
       if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->PVIdx,
                                   thisThread->rootMoves.begin() + thisThread->PVLast, move))
           continue;
+
+      if (rootNode && moveCount && thisThread != Threads.main() && depth > 5 * ONE_PLY)
+      {
+		  int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
+		  int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
+	      if (maxScore > alpha + 80 && maxCompleted > thisThread->completedDepth)
+	      {
+		    RootMove& rm = *std::find(thisThread->rootMoves.begin(), thisThread->rootMoves.end(), Threads.bestMove);
+			rm.score = Value(maxScore);
+			rm.selDepth = maxCompleted;
+			rm.pv.resize(1);
+              return rm.score;
+          }
+      }
 
       ss->moveCount = ++moveCount;
 
