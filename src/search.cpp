@@ -456,6 +456,7 @@ void Thread::search() {
         	  {
         		  Threads.maxCompleted = std::max(maxCompleted, (int) completedDepth);
         		  Threads.maxScore = rootMoves[0].score;
+        		  Threads.bestMove = rootMoves[0].pv[0];
         	  }
           }
       }
@@ -589,6 +590,19 @@ namespace {
         beta = std::min(mate_in(ss->ply+1), beta);
         if (alpha >= beta)
             return alpha;
+    }
+    else if (moveCount && thisThread != Threads.main() && depth > 5 * ONE_PLY) {
+        int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
+        int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
+        if (maxScore > alpha + 100 && maxCompleted > thisThread->completedDepth)
+        {
+        	  RootMove& rm = *std::find(thisThread->rootMoves.begin(),
+        	                            thisThread->rootMoves.end(), Threads.bestMove);
+              rm.score = Value(maxScore);
+              rm.selDepth = maxCompleted;
+              rm.pv.resize(1);
+              return rm.score;
+        }
     }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);

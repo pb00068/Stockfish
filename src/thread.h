@@ -108,6 +108,7 @@ struct ThreadPool : public std::vector<Thread*> {
   std::atomic_bool stop, ponder, stopOnPonderhit;
   std::atomic_int maxCompleted;
   std::atomic_int maxScore;
+  Move bestMove;
 
 private:
   StateListPtr setupStates;
