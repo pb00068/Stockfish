@@ -449,7 +449,7 @@ void Thread::search() {
       if (!Threads.stop)
       {
           completedDepth = rootDepth;
-          if (completedDepth > 5 * ONE_PLY) {
+          if (completedDepth > 14 * ONE_PLY) {
         	  int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
         	  int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
         	  if ((rootMoves[0].score > maxScore && completedDepth >= maxCompleted) || completedDepth > maxCompleted)
@@ -874,16 +874,17 @@ moves_loop: // When in check, search starts from here
                                   thisThread->rootMoves.begin() + thisThread->PVLast, move))
           continue;
 
-      if (rootNode && moveCount && thisThread != Threads.main() && depth > 5 * ONE_PLY)
+      if (rootNode && moveCount > 4 && thisThread != Threads.main() && depth > 14 * ONE_PLY)
       {
 		  int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
 		  int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
-	      if (maxScore > alpha + 80 && maxCompleted > thisThread->completedDepth)
+	      if (maxScore > alpha + 30 && maxCompleted > thisThread->completedDepth + 1)
 	      {
 		    RootMove& rm = *std::find(thisThread->rootMoves.begin(), thisThread->rootMoves.end(), Threads.bestMove);
 			rm.score = Value(maxScore);
 			rm.selDepth = maxCompleted;
 			rm.pv.resize(1);
+			//std::cerr << " realign thread idx " << thisThread->getIdx() <<  " alpha: " << alpha << " best is " << maxScore << " maxcompleted " << maxCompleted << " thiscompleted " << thisThread->completedDepth <<  std::endl;
               return rm.score;
           }
       }
