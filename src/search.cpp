@@ -815,10 +815,10 @@ namespace {
                 {
                     if (!ttHit || tte->depth() < depth || ttMove != move)
                     {
-                       int rr = (value - rbeta ) / 64;
-                       tte->save(posKey, value_to_tt(beta + rr, ss->ply), BOUND_LOWER, depth + rr * ONE_PLY / 16, move, ss->staticEval, TT.generation());
-                       //dbg_hit_on(rr * ONE_PLY / 16 > 0); // 19%
-                       //dbg_mean_of(rr); // 13
+                       int rr = (value - rbeta ) / 128;
+                       tte->save(posKey, value_to_tt(beta + rr, ss->ply), BOUND_LOWER, depth + rr * ONE_PLY / 4, move, ss->staticEval, TT.generation());
+                       //dbg_hit_on(rr * ONE_PLY / 4 > 0); // 46%
+                       //dbg_mean_of(rr); // 6
                     }
                     return value;
                 }
