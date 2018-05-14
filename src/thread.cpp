@@ -185,6 +185,9 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   // is shared by threads but is accessed in read-only mode.
   StateInfo tmp = setupStates->back();
 
+  Threads.maxCompleted = 0;
+  Threads.maxScore = -VALUE_INFINITE;
+
   for (Thread* th : *this)
   {
       th->nodes = th->tbHits = th->nmp_ply = th->nmp_odd = 0;

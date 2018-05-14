@@ -190,6 +190,7 @@ void Search::clear() {
   Time.availableNodes = 0;
   TT.clear();
   Threads.clear();
+  Threads.maxCompleted = ONE_PLY;
 }
 
 
@@ -446,7 +447,18 @@ void Thread::search() {
       }
 
       if (!Threads.stop)
+      {
           completedDepth = rootDepth;
+          if (completedDepth > 5 * ONE_PLY) {
+        	  int maxCompleted = Threads.maxCompleted.load(std::memory_order_relaxed);
+        	  int maxScore = Threads.maxScore.load(std::memory_order_relaxed);
+        	  if (rootMoves[0].score > maxScore && completedDepth >= maxCompleted)
+        	  {
+        		  Threads.maxCompleted = std::max(maxCompleted, (int) completedDepth);
+        		  Threads.maxScore = rootMoves[0].score;
+        	  }
+          }
+      }
 
       if (rootMoves[0].pv[0] != lastBestMove) {
          lastBestMove = rootMoves[0].pv[0];
