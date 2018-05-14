@@ -814,9 +814,7 @@ namespace {
                 if (value >= rbeta)
                 {
                     if (!ttHit || tte->depth() < depth || ttMove != move)
-                    {
-                       tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, depth + int((value - rbeta ) / 500) * ONE_PLY, move, ss->staticEval, TT.generation());
-                    }
+                       tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, depth + int((value - rbeta ) / 200) * ONE_PLY, move, ss->staticEval, TT.generation());
                     return value;
                 }
             }
