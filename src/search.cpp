@@ -814,7 +814,12 @@ namespace {
                 if (value >= rbeta)
                 {
                     if (!ttHit || tte->depth() < depth || ttMove != move)
-                       tte->save(posKey, value_to_tt(beta, ss->ply), BOUND_LOWER, depth + int((value - rbeta ) / 200) * ONE_PLY, move, ss->staticEval, TT.generation());
+                    {
+                       int rr = (value - rbeta ) / 64;
+                       tte->save(posKey, value_to_tt(beta + rr, ss->ply), BOUND_LOWER, depth + rr * ONE_PLY / 16, move, ss->staticEval, TT.generation());
+                       //dbg_hit_on(rr * ONE_PLY / 16 > 0); // 19%
+                       //dbg_mean_of(rr); // 13
+                    }
                     return value;
                 }
             }
