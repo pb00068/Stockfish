@@ -432,6 +432,19 @@ void Thread::search() {
               else
                   break;
 
+              if (Threads.size() > 1 && beta - alpha > 16)
+              {
+            	  if (rootPos.game_ply() % 2)
+            	  {
+            		  beta  -= beta  % 4;
+            	  	  alpha -= alpha % 4;
+            	  }
+            	  else {
+            		  beta  += beta  % 4;
+            		  alpha += alpha % 4;
+            	  }
+              }
+
               delta += delta / 4 + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
