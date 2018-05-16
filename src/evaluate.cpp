@@ -487,9 +487,9 @@ namespace {
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
             b1 = attackedBy[Us][KING] & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces();
             if (!b1)
-            	kingDanger = (kingDanger * 14) / 10;
+            	kingDanger += 200;
             else if (!more_than_one(b1))
-            	kingDanger = (kingDanger * 12) / 10;
+            	kingDanger +=  70;
 
             kingDanger = std::max(0, kingDanger + mobilityDanger);
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
