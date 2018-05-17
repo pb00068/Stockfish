@@ -828,9 +828,6 @@ namespace {
             }
     }
 
-    if (!ttMove && beta < VALUE_DRAW && ss->drawMove)
-         ttMove = ss->drawMove;
-
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
         && !ttMove)
@@ -842,6 +839,9 @@ namespace {
         ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
+
+    if (!ttMove && beta < VALUE_DRAW && ss->drawMove)
+         ttMove = ss->drawMove;
 
 moves_loop: // When in check, search starts from here
 
