@@ -1172,14 +1172,14 @@ bool Position::has_repeated() const {
 /// Position::has_game_cycle() tests if the position has a move which draws by repetition,
 /// or an earlier position has a move that directly reaches the current position.
 
-bool Position::has_game_cycle(int ply) const {
+Move Position::has_game_cycle(int ply) const {
 
   unsigned int j;
 
   int end = std::min(st->rule50, st->pliesFromNull);
 
   if (end < 3)
-    return false;
+    return MOVE_NONE;
 
   Key originalKey = st->key;
   StateInfo* stp = st->previous;
@@ -1203,7 +1203,7 @@ bool Position::has_game_cycle(int ply) const {
               if (!(between_bb(from_sq(m), to_sq(m)) & pieces()))
               {
                   if (ply > i)
-                      return true;
+                      return m;
 
                   // For repetitions before or at the root, require one more
                   StateInfo* next_stp = stp;
@@ -1211,14 +1211,14 @@ bool Position::has_game_cycle(int ply) const {
                   {
                       next_stp = next_stp->previous->previous;
                       if (next_stp->key == stp->key)
-                         return true;
+                         return m;
                   }
               }
           }
       }
       progressKey ^= stp->key;
   }
-  return false;
+  return MOVE_NONE;
 }
 
 
