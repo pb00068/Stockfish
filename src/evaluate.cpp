@@ -92,7 +92,7 @@ namespace {
   constexpr int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 77, 55, 44, 10 };
 
   // Penalties for enemy's safe checks
-  constexpr int QueenSafeCheck  = 780;
+  constexpr int QueenSafeCheck  = 686;
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
@@ -447,19 +447,12 @@ namespace {
         Bitboard queenSafeChecks = (b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN];
         if (queenSafeChecks)
         {
-        	int nearest = 8;
-        	while(queenSafeChecks)
-        	{
-        		int dist = distance(ksq, pop_lsb(&queenSafeChecks));
-        		kingDanger += 300 + bool(dist == 1) * 180;
-        		if (nearest > dist)
-        			nearest = dist;
-        	}
-        	if (nearest == 1)
-        		kingDanger += 695 * kingAttacksCount[Them];
-        	else if (nearest == 2)
-        		kingDanger += 500;
+        	kingDanger+= QueenSafeCheck;
+        	if (queenSafeChecks & attackedBy[Us][KING])
+        		kingDanger+= 150;
         }
+        // 183
+        //dbg_mean_of(kingDanger);
 
         b1 &= attackedBy[Them][ROOK];
         b2 &= attackedBy[Them][BISHOP];
