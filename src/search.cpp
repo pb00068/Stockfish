@@ -828,8 +828,8 @@ namespace {
             }
     }
 
-    if (!ttMove && alpha < VALUE_DRAW && ss->drawMove)
-    	ttMove = ss->drawMove;
+    if (!ttMove && beta < VALUE_DRAW && ss->drawMove)
+         ttMove = ss->drawMove;
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
