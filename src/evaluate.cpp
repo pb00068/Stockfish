@@ -444,8 +444,22 @@ namespace {
         b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
 
         // Enemy queen safe checks
-        if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
-            kingDanger += QueenSafeCheck;
+        Bitboard queenSafeChecks = (b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN];
+        if (queenSafeChecks)
+        {
+        	int nearest = 8;
+        	while(queenSafeChecks)
+        	{
+        		int dist = distance(ksq, pop_lsb(&queenSafeChecks));
+        		kingDanger += 300 + bool(dist == 1) * 180;
+        		if (nearest > dist)
+        			nearest = dist;
+        	}
+        	if (nearest == 1)
+        		kingDanger += 695 * kingAttacksCount[Them];
+        	else if (nearest == 2)
+        		kingDanger += 500;
+        }
 
         b1 &= attackedBy[Them][ROOK];
         b2 &= attackedBy[Them][BISHOP];
