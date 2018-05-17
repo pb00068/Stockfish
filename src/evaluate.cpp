@@ -478,22 +478,20 @@ namespace {
                      + 191 * popcount(kingRing[Us] & weak)
                      + 143 * popcount(pos.blockers_for_king(Us) | unsafeChecks)
                      - 848 * !pos.count<QUEEN>(Them)
-                     -   9 * mg_value(score) / 8
-                     +  40;
+                     -   9 * mg_value(score) / 8;
 
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
         {
             int mobilityDanger = mg_value(mobility[Them] - mobility[Us]);
-            if (mobilityDanger > 12)
+            if (mobilityDanger > 5)
             {
             b1 = attackedBy[Us][KING] & ~attackedBy[Them][ALL_PIECES] & ~pos.pieces();
             if (!b1)
-            	kingDanger += 140;
+            	kingDanger +=  8 * mobilityDanger;
             else if (!more_than_one(b1))
-            	kingDanger +=  30;
+            	kingDanger +=  3 * mobilityDanger;
             }
-
 
             kingDanger = std::max(0, kingDanger + mobilityDanger);
             score -= make_score(kingDanger * kingDanger / 4096, kingDanger / 16);
