@@ -542,12 +542,12 @@ namespace {
     bool ttHit, inCheck, givesCheck, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, fatalCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    moveCount = captureCount = quietCount = ss->moveCount = 0;
+    moveCount = captureCount = quietCount = fatalCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
 
@@ -595,7 +595,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] =  (ss+2)->mating = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -749,6 +749,7 @@ namespace {
         &&  eval >= beta
         &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
         && !excludedMove
+		&& !ss->mating
         &&  pos.non_pawn_material(pos.side_to_move())
         && (ss->ply >= thisThread->nmp_ply || ss->ply % 2 != thisThread->nmp_odd))
     {
@@ -826,6 +827,10 @@ namespace {
                     return value;
             }
     }
+
+    if (!ttMove && ss->mating && pos.pseudo_legal(ss->mating))
+         ttMove =  ss->mating;
+
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
@@ -1122,7 +1127,12 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
-
+      else if (value <= VALUE_MATED_IN_MAX_PLY)
+      {
+    	  fatalCount++;
+    	  if (fatalCount > 1 && (ss+1)->currentMove)
+		       (ss+1)->mating = (ss+1)->currentMove;
+      }
       if (move != bestMove)
       {
           if (captureOrPromotion && captureCount < 32)
