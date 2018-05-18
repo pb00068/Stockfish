@@ -1130,7 +1130,7 @@ moves_loop: // When in check, search starts from here
       else if (value <= VALUE_MATED_IN_MAX_PLY)
       {
     	  fatalCount++;
-    	  if (fatalCount > 1 && (ss+1)->currentMove)
+    	  if (fatalCount > 2 && (ss+1)->currentMove)
 		       (ss+1)->mating = (ss+1)->currentMove;
       }
       if (move != bestMove)
