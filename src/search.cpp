@@ -840,7 +840,7 @@ namespace {
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
-    if (!ttMove && beta < VALUE_DRAW && ss->drawMove)
+    if (!ttMove && alpha < VALUE_DRAW && ss->drawMove)
          ttMove = ss->drawMove;
 
 moves_loop: // When in check, search starts from here
@@ -1225,7 +1225,15 @@ moves_loop: // When in check, search starts from here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) : VALUE_DRAW;
+    {
+        if (ss->ply >= MAX_PLY && !inCheck)
+        	return evaluate(pos);
+        else
+        {
+        	(ss-1)->drawMove = (ss-1)->currentMove;
+        	return VALUE_DRAW;
+        }
+    }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
