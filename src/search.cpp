@@ -839,6 +839,9 @@ namespace {
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
+    if (!ttMove && alpha < VALUE_DRAW && (ss->killers[0] || ss->killers[1]))
+         ttMove = ss->killers[0] ? ss->killers[0] : ss->killers[1];
+
 moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
