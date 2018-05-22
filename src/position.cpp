@@ -1051,7 +1051,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (balance < VALUE_ZERO)
       return false;
 
-
   // Now assume the worst possible result: that the opponent can
   // capture our piece for free.
   balance -= PieceValue[MG][nextVictim];
@@ -1065,18 +1064,27 @@ bool Position::see_ge(Move m, Value threshold) const {
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
+  Bitboard attackers;
 
-  if (piece_on(to) && (st->blockersForKing[stm] & from))
+  if ((st->blockersForKing[stm] & from) && (piece_on(to) || !(LineBB[from][square<KING>(stm)] & to)))
   {
-  	  //try to strike back to the discovered sniper
-      to = lsb(st->pinners[us]);
-      //sync_cout << (*this) << UCI::move(m, is_chess960()) << " " << UCI::move(make_move(to,to), is_chess960()) << sync_endl;
-  	  balance += PieceValue[MG][nextVictim];
-  	  nextVictim = type_of(piece_on(to));
-  	  balance -= PieceValue[MG][nextVictim];
+	  if (attacks_from<KING>(to) & pieces(stm, KING))
+		  attackers = pieces(stm, KING); // let us assume king can strike back without going into check
+	  else
+	  {
+  	    //try to strike back to the discovered sniper
+        to = lsb(st->pinners[us]);
+        //sync_cout << (*this) << UCI::move(m, is_chess960()) << " " << UCI::move(make_move(to,to), is_chess960()) << sync_endl;
+  	    balance += PieceValue[MG][nextVictim];
+  	    nextVictim = type_of(piece_on(to));
+  	    balance -= PieceValue[MG][nextVictim];
+        attackers = attackers_to(to, occupied) & occupied;
+      }
   }
+  else
+	  attackers = attackers_to(to, occupied) & occupied;
 
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+
 
 
   while (true)
