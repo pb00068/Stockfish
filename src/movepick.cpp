@@ -174,7 +174,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                    return   ((pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)) || pos.see_ge(move, Value(-55 * (cur-1)->value / 1024))) ?
+                    return   (pos.see_ge(move, Value(-55 * (cur-1)->value / 1024 - bool(pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)) * KnightValueMg ))) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
