@@ -1051,6 +1051,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (balance < VALUE_ZERO)
       return false;
 
+
   // Now assume the worst possible result: that the opponent can
   // capture our piece for free.
   balance -= PieceValue[MG][nextVictim];
@@ -1065,6 +1066,22 @@ bool Position::see_ge(Move m, Value threshold) const {
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
+
+  if (piece_on(to) && (blockers_for_king(stm) & from))
+  {
+	  //discovering check capture
+
+	  // if king can't capture then try to strike back to the discovered sniper
+	  if (!(attackers & pieces(stm, KING)) || (attackers & pieces(us)))
+	  {
+		  to = lsb(st->pinners[us]);
+		  balance += PieceValue[MG][nextVictim];
+		  nextVictim = type_of(piece_on(to));
+		  balance -= PieceValue[MG][nextVictim];
+		  attackers = attackers_to(to, occupied) & occupied;
+	  }
+  }
+
 
   while (true)
   {
