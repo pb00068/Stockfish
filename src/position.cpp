@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -514,8 +515,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
     if (b && !more_than_one(b))
     {
         blockers |= b;
-        if (b & pieces(color_of(piece_on(s))))
-            pinners |= sniperSq;
+        pinners |= sniperSq;
     }
   }
   return blockers;
@@ -1066,10 +1066,11 @@ bool Position::see_ge(Move m, Value threshold) const {
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
 
-  if (piece_on(to) && (blockers_for_king(stm) & from))
+  if (piece_on(to) && (st->blockersForKing[stm] & from))
   {
   	  //try to strike back to the discovered sniper
       to = lsb(st->pinners[us]);
+      //sync_cout << (*this) << UCI::move(m, is_chess960()) << " " << UCI::move(make_move(to,to), is_chess960()) << sync_endl;
   	  balance += PieceValue[MG][nextVictim];
   	  nextVictim = type_of(piece_on(to));
   	  balance -= PieceValue[MG][nextVictim];
