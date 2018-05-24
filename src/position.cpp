@@ -515,7 +515,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
     if (b && !more_than_one(b))
     {
         blockers |= b;
-        pinners |= sniperSq;
+        if (b & pieces(color_of(piece_on(s))))
+            pinners |= sniperSq;
     }
   }
   return blockers;
@@ -1073,8 +1074,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 	  else
 	  {
   	    //try to strike back to the discovered sniper
-        to = lsb(st->pinners[us]);
-        //sync_cout << (*this) << UCI::move(m, is_chess960()) << " " << UCI::move(make_move(to,to), is_chess960()) << sync_endl;
+        to = lsb(LineBB[from][square<KING>(stm)] & (pieces(us, ROOK, BISHOP) | pieces(us, QUEEN)) & occupied);
   	    balance += PieceValue[MG][nextVictim];
   	    nextVictim = type_of(piece_on(to));
   	    balance -= PieceValue[MG][nextVictim];
@@ -1083,9 +1083,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   }
   else
 	  attackers = attackers_to(to, occupied) & occupied;
-
-
-
 
   while (true)
   {
