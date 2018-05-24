@@ -915,7 +915,7 @@ moves_loop: // When in check, search starts from here
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning
-               &&  pos.see_ge(move))
+               && (((pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)) && distance(to_sq(move), pos.square<KING>(~pos.side_to_move())) > 1) || pos.see_ge(move)))
           extension = ONE_PLY;
 
       // Calculate new depth for this move
