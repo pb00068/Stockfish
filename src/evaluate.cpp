@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -96,6 +97,7 @@ namespace {
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
+  constexpr int PawnDiscoCheck  = 350;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -418,6 +420,7 @@ namespace {
     constexpr Color    Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
+    constexpr Direction Down       = (Us == WHITE ? SOUTH : NORTH);
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard weak, b, b1, b2, safe, unsafeChecks;
@@ -439,6 +442,16 @@ namespace {
         // Analyse the safe enemy's checks which are possible on next move
         safe  = ~pos.pieces(Them);
         safe &= ~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]);
+
+        b1 = pos.blockers_for_king(Us) & pos.pieces(Them, PAWN);
+        if (b1)
+        {
+        	if (pos.attacks_from<PAWN>(lsb(b1), Them) &  pos.pieces(Us))
+        	    kingDanger += PawnDiscoCheck; // pawn captures and it's discovered check
+        	else if (file_of(ksq) != file_of(lsb(b1)) && (shift<Down>(b1) & ~pos.pieces()))
+        	    kingDanger += PawnDiscoCheck; // pawn pushes   and it's discovered check
+        }
+
 
         b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
         b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
