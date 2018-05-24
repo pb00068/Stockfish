@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -96,6 +97,7 @@ namespace {
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
+  constexpr int PawnSafeCheck   = 350;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -420,7 +422,7 @@ namespace {
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
 
     const Square ksq = pos.square<KING>(Us);
-    Bitboard weak, b, b1, b2, safe, unsafeChecks;
+    Bitboard weak, b, b1, b2, b3, safe, unsafeChecks;
 
     // King shelter and enemy pawns storm
     Score score = pe->king_safety<Us>(pos, ksq);
@@ -442,6 +444,13 @@ namespace {
 
         b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
         b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+        b3 = pos.attacks_from<PAWN>(ksq, Us);
+
+        if (b3 & attackedBy[Them][PAWN] & pos.pieces(Us) & safe)
+        {
+            kingDanger += PawnSafeCheck;
+            //sync_cout << pos << Bitboards::pretty(b3 & attackedBy[Them][PAWN] & pos.pieces(Us) & safe) << sync_endl;
+        }
 
         // Enemy queen safe checks
         if ((b1 | b2) & attackedBy[Them][QUEEN] & safe & ~attackedBy[Us][QUEEN])
