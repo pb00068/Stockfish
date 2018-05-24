@@ -97,7 +97,7 @@ namespace {
   constexpr int RookSafeCheck   = 880;
   constexpr int BishopSafeCheck = 435;
   constexpr int KnightSafeCheck = 790;
-  constexpr int PawnDiscoCheck  = 350;
+  constexpr int PawnDiscoCheck  = 700;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -446,7 +446,7 @@ namespace {
         b1 = pos.blockers_for_king(Us) & pos.pieces(Them, PAWN);
         if (b1)
         {
-        	if (pos.attacks_from<PAWN>(lsb(b1), Them) &  pos.pieces(Us))
+        	if (pos.attacks_from<PAWN>(lsb(b1), Them) & pos.pieces(Us))
         	    kingDanger += PawnDiscoCheck; // pawn captures and it's discovered check
         	else if (file_of(ksq) != file_of(lsb(b1)) && (shift<Down>(b1) & ~pos.pieces()))
         	    kingDanger += PawnDiscoCheck; // pawn pushes   and it's discovered check
@@ -489,7 +489,7 @@ namespace {
         kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                      + 102 * kingAttacksCount[Them]
                      + 191 * popcount(kingRing[Us] & weak)
-                     + 143 * popcount(pos.blockers_for_king(Us) | unsafeChecks)
+                     + 143 * popcount((pos.blockers_for_king(Us) & ~pos.pieces(Them, PAWN)) | unsafeChecks)
                      - 848 * !pos.count<QUEEN>(Them)
                      -   9 * mg_value(score) / 8
                      +  40;
