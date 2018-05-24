@@ -596,6 +596,8 @@ namespace {
        & ~attackedBy[Us][PAWN];
 
     score += ThreatByPawnPush * popcount(b);
+    if (b & pos.pieces(Them, KING))
+       score += ThreatByPawnPush;
 
     // Bonus for threats on the next moves against enemy queen
     if (pos.count<QUEEN>(Them) == 1)
