@@ -181,6 +181,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
+  constexpr Score CastlingFlexibility= S(  8,  0);
 
 #undef S
 
@@ -518,6 +519,10 @@ namespace {
 
     constexpr Color     Them     = (Us == WHITE ? BLACK   : WHITE);
     constexpr Direction Up       = (Us == WHITE ? NORTH   : SOUTH);
+    constexpr CastlingRight LongC =  Us == WHITE ? WHITE_OOO : BLACK_OOO;
+    constexpr CastlingRight ShortC=  Us == WHITE ? WHITE_OO  : BLACK_OO;
+    const Bitboard ShorCastCross = Us == WHITE ? Bitboard(0) | SQ_F1 | SQ_G1 : Bitboard(0) | SQ_F8 | SQ_G8;
+    const Bitboard LongCastCross = Us == WHITE ? Bitboard(0) | SQ_D1 | SQ_C1 : Bitboard(0) | SQ_D8 | SQ_C8;
     constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safeThreats;
@@ -611,6 +616,11 @@ namespace {
            | (attackedBy[Us][ROOK  ] & pos.attacks_from<ROOK  >(s));
 
         score += SliderOnQueen * popcount(b & safeThreats & attackedBy2[Us]);
+
+        if (pos.can_castle(ShortC) && !(attackedBy[Them][ALL_PIECES] & ShorCastCross))
+        	score += CastlingFlexibility;
+        if  (pos.can_castle(LongC) && !(attackedBy[Them][ALL_PIECES] & LongCastCross))
+        	score += CastlingFlexibility;
     }
 
     // Connectivity: ensure that knights, bishops, rooks, and queens are protected
