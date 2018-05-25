@@ -181,7 +181,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 25);
-  constexpr Score CastlingFlexibility= S(  8,  0);
+  constexpr Score CastlingFlexibility= S( 16,  0);
 
 #undef S
 
@@ -619,7 +619,7 @@ namespace {
 
         if (pos.can_castle(ShortC) && !(attackedBy[Them][ALL_PIECES] & ShorCastCross))
         	score += CastlingFlexibility;
-        if  (pos.can_castle(LongC) && !(attackedBy[Them][ALL_PIECES] & LongCastCross))
+        else if  (pos.can_castle(LongC) && !(attackedBy[Them][ALL_PIECES] & LongCastCross))
         	score += CastlingFlexibility;
     }
 
