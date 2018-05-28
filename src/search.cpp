@@ -428,7 +428,10 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
+              {
+            	  alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+              }
               else
                   break;
 
@@ -751,7 +754,7 @@ namespace {
         &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        && (ss->ply > thisThread->nmp_min_ply || us != thisThread->nmp_color))
+        && (ss->ply >= thisThread->nmp_min_ply || us != thisThread->nmp_color))
     {
         assert(eval - beta >= 0);
 
@@ -780,7 +783,7 @@ namespace {
 
             // Do verification search at high depths, with null move pruning disabled
             // for us, until ply exceeds nmp_min_ply.
-            thisThread->nmp_min_ply = ss->ply + 3 * (depth-R) / 4 - 1;
+            thisThread->nmp_min_ply = ss->ply + 3 * (depth-R) / 4;
             thisThread->nmp_color = us;
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
