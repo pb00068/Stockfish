@@ -295,8 +295,9 @@ void Thread::search() {
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
   double timeReduction = 1.0;
+  Value betas[256];
   Color us = rootPos.side_to_move();
-
+  std::memset(betas, 0, 256 * sizeof(Value));
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
      (ss-i)->contHistory = this->contHistory[NO_PIECE][0].get(); // Use as sentinel
@@ -377,6 +378,11 @@ void Thread::search() {
               delta = Value(18);
               alpha = std::max(previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(previousScore + delta, VALUE_INFINITE);
+              int i = std::min(255, std::max(0, int(beta) / 4 + 128));
+              if (!betas[i] || !i || i == 255)
+            	  betas[i] = beta;
+              else
+            	  beta = betas[i];
 
               // Adjust contempt based on root move's previousScore (dynamic contempt)
               int dct = ct + 88 * previousScore / (abs(previousScore) + 200);
@@ -419,6 +425,11 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
+                  int i = std::min(255, std::max(0, int(beta) / 4 + 128));
+                  if (!betas[i] || !i || i == 255)
+                    betas[i] = beta;
+                  else
+                    beta = betas[i];
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
@@ -428,7 +439,14 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
+              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  int i = std::min(255, std::max(0, int(beta) / 4 + 128));
+                  if (!betas[i] || !i || i == 255)
+                    betas[i] = beta;
+                  else
+                    beta = betas[i];
+              }
               else
                   break;
 
