@@ -900,7 +900,7 @@ moves_loop: // When in check, search starts from here
       // a reduced search on on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin then we will extend the ttMove.
       if (    depth >= 8 * ONE_PLY
-          &&  move == ttMove
+          &&  (move == ttMove || (moveCount == 1 && pos.see_ge(move, VALUE_ZERO + 1)))
           && !rootNode
           && !excludedMove // Recursive singular search is not allowed
           &&  ttValue != VALUE_NONE
