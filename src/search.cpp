@@ -914,6 +914,8 @@ moves_loop: // When in check, search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
+          else if (is_ok((ss-1)->currentMove) && is_ok(ss->currentMove))
+        	 mp.setCounterMove(ss->currentMove);
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning

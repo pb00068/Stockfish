@@ -126,6 +126,10 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
+  void setCounterMove (Move m) {
+	  if (m != refutations[0].move && m != refutations[1].move)
+		  refutations[2].move = m;
+  }
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
