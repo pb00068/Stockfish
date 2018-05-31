@@ -245,15 +245,13 @@ namespace {
                 continue;
         }
 
-        Bitboard b = pos.attacks_from<Pt>(from) & target & pos.check_squares(Pt);
+        Bitboard b = pos.attacks_from<Pt>(from) & target;
+
+        if (Checks)
+            b &= pos.check_squares(Pt);
+
         while (b)
             *moveList++ = make_move(from, pop_lsb(&b));
-
-        if (!Checks) {
-        	b = pos.attacks_from<Pt>(from) & target & ~pos.check_squares(Pt);
-			while (b)
-				*moveList++ = make_move(from, pop_lsb(&b));
-        }
     }
 
     return moveList;
