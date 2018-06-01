@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, SECOND_M, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  secondMove = MOVE_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -162,6 +163,18 @@ top:
       ++stage;
       return ttMove;
 
+  case SECOND_M:
+	  ++stage;
+	  if (secondMove)
+	  {
+		  if (pos.pseudo_legal(secondMove))
+		  {
+			  return secondMove;
+		  }
+		  else
+			  secondMove = MOVE_NONE;
+	  }
+
   case CAPTURE_INIT:
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
@@ -174,6 +187,8 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
+    	               if (move == secondMove)
+    	            	   return false;
                        return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
@@ -193,6 +208,7 @@ top:
 
   case REFUTATION:
       if (select<Next>([&](){ return    move != MOVE_NONE
+    		                        && move != secondMove
                                     && !pos.capture(move)
                                     &&  pos.pseudo_legal(move); }))
           return move;
@@ -212,6 +228,7 @@ top:
       if (   !skipQuiets
           && select<Next>([&](){return   move != refutations[0]
                                       && move != refutations[1]
+                                      && move != secondMove
                                       && move != refutations[2];}))
           return move;
 

@@ -126,9 +126,8 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
-  void setCounterMove (Move m) {
-	  if (m != refutations[0].move && m != refutations[1].move)
-		  refutations[2].move = m;
+  void setSecondMove (Move m) {
+	  secondMove = m;
   }
 
 private:
@@ -141,7 +140,7 @@ private:
   const ButterflyHistory* mainHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** contHistory;
-  Move ttMove;
+  Move ttMove, secondMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
