@@ -1167,7 +1167,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else
             update_capture_stats(pos, bestMove, capturesSearched, captureCount,
-                                 stat_bonus(depth + ((bestValue - alpha) / KnightValueMg) * ONE_PLY));
+                           stat_bonus(depth + (std::max(VALUE_ZERO, bestValue - beta) / KnightValueMg) * ONE_PLY));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
