@@ -127,6 +127,10 @@ void MovePicker::score() {
           else
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
+
+  if (Type == QUIETS && depth >= 17 * ONE_PLY)
+	  for (auto& m : *this)
+		  m.value +=  (*mainHistory)[pos.side_to_move() + 2][from_to(m)];
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
