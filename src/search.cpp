@@ -1458,7 +1458,10 @@ moves_loop: // When in check, search starts from here
       CapturePieceToHistory& captureHistory =  pos.this_thread()->captureHistory;
       Piece moved_piece = pos.moved_piece(move);
       PieceType captured = type_of(pos.piece_on(to_sq(move)));
+      int recapture = bool(pos.captured_piece()) * PIECE_TYPE_NB;
       captureHistory[moved_piece][to_sq(move)][captured] << bonus;
+      if (recapture)
+    	  captureHistory[moved_piece][to_sq(move)][captured + recapture] << bonus;
 
       // Decrease all the other played capture moves
       for (int i = 0; i < captureCnt; ++i)
@@ -1466,6 +1469,8 @@ moves_loop: // When in check, search starts from here
           moved_piece = pos.moved_piece(captures[i]);
           captured = type_of(pos.piece_on(to_sq(captures[i])));
           captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
+          if (recapture)
+        	  captureHistory[moved_piece][to_sq(captures[i])][captured + recapture] << -bonus;
       }
   }
 
