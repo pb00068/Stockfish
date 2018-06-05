@@ -117,7 +117,7 @@ namespace {
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
-  void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, int bonus);
+  void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, Move* quiets, int quietsCnt, Stack* ss, int bonus);
 
   inline bool gives_check(const Position& pos, Move move) {
     Color us = pos.side_to_move();
@@ -1165,7 +1165,7 @@ moves_loop: // When in check, search starts from here
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, stat_bonus(depth));
         else
-            update_capture_stats(pos, bestMove, capturesSearched, captureCount,
+            update_capture_stats(pos, bestMove, capturesSearched, captureCount, quietsSearched, quietCount, ss,
                                  stat_bonus(depth + (bestValue > beta + KnightValueMg ? ONE_PLY : DEPTH_ZERO)));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
@@ -1453,7 +1453,15 @@ moves_loop: // When in check, search starts from here
   // update_capture_stats() updates move sorting heuristics when a new capture best move is found
 
   void update_capture_stats(const Position& pos, Move move,
-                            Move* captures, int captureCnt, int bonus) {
+                            Move* captures, int captureCnt, Move* quiets, int quietsCnt, Stack* ss, int bonus) {
+
+	  // Decrease all the other played quiete moves
+	  for (int i = 0; i < quietsCnt; ++i)
+      {
+         pos.this_thread()->mainHistory[pos.side_to_move()][from_to(quiets[i])] << -bonus;
+	     update_continuation_histories(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+      }
+	  bonus += quietsCnt; // more bonus for 'bad' captures becoming bestmove
 
       CapturePieceToHistory& captureHistory =  pos.this_thread()->captureHistory;
       Piece moved_piece = pos.moved_piece(move);
