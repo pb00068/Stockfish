@@ -93,7 +93,6 @@ namespace {
   int stat_bonus(Depth depth) {
     int d = depth / ONE_PLY;
     return std::min(9700, 32 * d * d + 64 * d - 64);
-    //return d > 17 ? 0 : 32 * d * d + 64 * d - 64;
   }
 
   // Skill structure is used to implement strength limit
@@ -179,9 +178,6 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
   }
-
-
-
 }
 
 
