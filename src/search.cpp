@@ -597,7 +597,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->reallyBad = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -887,6 +887,20 @@ moves_loop: // When in check, search starts from here
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
+
+      if (move == ss->reallyBad && moveCount > 5 && depth < 6 * ONE_PLY)
+      {
+    	   int v;
+    	   if (captureOrPromotion)
+    		   v =  PieceValue[MG][pos.piece_on(to_sq(move))]
+    	                   + thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 16;
+    	   else
+    		   v =  thisThread->mainHistory[pos.side_to_move()][from_to(move)];
+
+    	   if (v < 0)
+    		   continue;
+      }
+
       givesCheck = gives_check(pos, move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
@@ -1131,6 +1145,8 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
+      else if (value <= VALUE_MATED_IN_MAX_PLY && alpha > VALUE_MATED_IN_MAX_PLY)
+    	  ss->reallyBad = move;
 
       if (move != bestMove)
       {
