@@ -382,7 +382,7 @@ void Position::set_state(StateInfo* si) const {
   si->pawnKey = Zobrist::noPawns;
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
   si->psq = SCORE_ZERO;
-  si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+  si->checkSquares[NO_PIECE]= attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
   set_check_info(si);
 
@@ -872,7 +872,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   st->key = k;
 
   // Calculate checkers bitboard (if move gives check)
-  st->checkersBB = givesCheck ? attackers_to(square<KING>(them)) & pieces(us) : 0;
+  st->checkSquares[NO_PIECE] = givesCheck ? attackers_to(square<KING>(them)) & pieces(us) : 0;
 
   sideToMove = ~sideToMove;
 

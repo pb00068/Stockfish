@@ -48,7 +48,6 @@ struct StateInfo {
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
-  Bitboard   checkersBB;
   Piece      capturedPiece;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
@@ -294,7 +293,7 @@ inline Bitboard Position::attackers_to(Square s) const {
 }
 
 inline Bitboard Position::checkers() const {
-  return st->checkersBB;
+  return st->checkSquares[NO_PIECE];
 }
 
 inline Bitboard Position::blockers_for_king(Color c) const {
