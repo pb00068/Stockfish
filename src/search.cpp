@@ -1140,7 +1140,7 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
           {
               quietsSearched[quietCount++] = move;
-              if (value <= VALUE_MATED_IN_MAX_PLY && alpha > VALUE_MATED_IN_MAX_PLY && quietCount < 64)
+              if (value + PawnValueMg <= alpha && quietCount < 64)
             	  quietsSearched[quietCount++] = move; // double penalty for these bad moves
           }
       }
