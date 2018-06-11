@@ -1451,12 +1451,14 @@ moves_loop: // When in check, search starts from here
       Piece moved_piece = pos.moved_piece(move);
       PieceType captured = type_of(pos.piece_on(to_sq(move)));
       captureHistory[moved_piece][to_sq(move)][captured] << bonus;
+      captureHistory[moved_piece][to_sq(move)][captured] << bonus;
 
       // Decrease all the other played capture moves
       for (int i = 0; i < captureCnt; ++i)
       {
           moved_piece = pos.moved_piece(captures[i]);
           captured = type_of(pos.piece_on(to_sq(captures[i])));
+          captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
           captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
       }
   }
