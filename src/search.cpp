@@ -823,15 +823,9 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta)
-                {
-                	update_capture_stats(pos, move, capturesSearched, captureCount, capture_stat_bonus(depth));
                     return value;
-                }
-                capturesSearched[captureCount++] = move;
             }
     }
-
-    captureCount = 0;
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
