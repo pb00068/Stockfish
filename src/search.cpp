@@ -87,7 +87,7 @@ namespace {
 
   int capture_stat_bonus(Depth depth) {
      int d = depth / ONE_PLY;
-     return d > 17 ? 0 : 16 * d * d + 256 * d - 256;
+     return d > 19 ? 0 : 256 * d;
    }
 
   // Skill structure is used to implement strength limit
@@ -823,15 +823,9 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta)
-                {
-                    update_capture_stats(pos, move, capturesSearched, captureCount, capture_stat_bonus(depth));
                     return value;
-                }
-                capturesSearched[captureCount++] = move;
             }
     }
-
-    captureCount = 0;
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
