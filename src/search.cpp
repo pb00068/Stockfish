@@ -639,6 +639,8 @@ namespace {
         return ttValue;
     }
 
+    bool gardez = false;
+
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
     {
@@ -782,14 +784,10 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        else if (depth < 7 * ONE_PLY
-             && is_ok((ss+1)->currentMove)
-             && pos.capture((ss+1)->currentMove)
-             && pos.see_ge((ss+1)->currentMove, RookValueMg))
-        {
-        	//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
-        	depth += ONE_PLY;
-        }
+        else gardez = (is_ok((ss+1)->currentMove)
+           && pos.capture((ss+1)->currentMove)
+	       && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN
+           && pos.see_ge((ss+1)->currentMove, VALUE_ZERO + 1));
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -850,7 +848,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, gardez);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
