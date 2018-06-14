@@ -823,9 +823,15 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta)
+                {
+                	update_capture_stats(pos, move, capturesSearched, captureCount, stat_bonus(depth));
                     return value;
+                }
+                capturesSearched[captureCount++] = move;
             }
     }
+
+    captureCount = 0;
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
@@ -1161,7 +1167,7 @@ moves_loop: // When in check, search starts from here
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
                                stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)));
         else
-            update_capture_stats(pos, bestMove, capturesSearched, captureCount, capture_stat_bonus(depth));
+            update_capture_stats(pos, bestMove, capturesSearched, captureCount, capture_stat_bonus(depth + ONE_PLY));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
