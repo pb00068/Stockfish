@@ -639,7 +639,7 @@ namespace {
         return ttValue;
     }
 
-    bool gardez = false;
+    Square gardez = SQ_NONE;
 
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
@@ -784,10 +784,13 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        else gardez = (is_ok((ss+1)->currentMove)
+        else if (is_ok((ss+1)->currentMove)
            && pos.capture((ss+1)->currentMove)
 	       && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN
-           && pos.see_ge((ss+1)->currentMove, VALUE_ZERO + 1));
+           && pos.see_ge((ss+1)->currentMove, VALUE_ZERO + 1))
+        {
+        	gardez = to_sq((ss+1)->currentMove);
+        }
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -848,7 +851,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, gardez);
+                                      ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -917,6 +920,8 @@ moves_loop: // When in check, search starts from here
                && !moveCountPruning
                &&  pos.see_ge(move))
           extension = ONE_PLY;
+      else if (depth < 8 * ONE_PLY && from_sq(move) == gardez)
+    	  extension = ONE_PLY;
 
 
       // Calculate new depth for this move

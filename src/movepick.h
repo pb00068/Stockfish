@@ -124,8 +124,7 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*,
-										   bool);
+                                           Move*);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -141,7 +140,6 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  bool gardes;
   Move move;
   Square recaptureSquare;
   Value threshold;
