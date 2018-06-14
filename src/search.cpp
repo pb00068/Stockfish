@@ -782,6 +782,15 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
+        else if (depth < 7 * ONE_PLY
+        		&& is_ok((ss+1)->currentMove)
+        		&& pos.capture((ss+1)->currentMove)
+				&& type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN
+				&& pos.see_ge((ss+1)->currentMove, VALUE_ZERO + 1))
+        {
+        	//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
+        	depth += ONE_PLY;
+        }
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -911,6 +920,7 @@ moves_loop: // When in check, search starts from here
                && !moveCountPruning
                &&  pos.see_ge(move))
           extension = ONE_PLY;
+
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
