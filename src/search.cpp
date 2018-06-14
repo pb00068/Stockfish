@@ -824,7 +824,7 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                	update_capture_stats(pos, move, capturesSearched, captureCount, stat_bonus(depth));
+                    update_capture_stats(pos, move, capturesSearched, captureCount, capture_stat_bonus(depth));
                     return value;
                 }
                 capturesSearched[captureCount++] = move;
