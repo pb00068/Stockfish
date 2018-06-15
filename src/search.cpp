@@ -639,7 +639,7 @@ namespace {
         return ttValue;
     }
 
-    Square gardez = SQ_NONE;
+    Move threat = MOVE_NONE;
 
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
@@ -759,6 +759,14 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
+        if (nullValue < beta
+            && is_ok((ss+1)->currentMove)
+            && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
+            && pos.capture((ss+1)->currentMove)
+		    && pos.see_ge((ss+1)->currentMove, RookValueMg))
+               threat = (ss+1)->currentMove;
+        	//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
+
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -784,14 +792,27 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        else if (is_ok((ss+1)->currentMove)
-           && pos.capture((ss+1)->currentMove)
-	       && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN
-           && pos.see_ge((ss+1)->currentMove, VALUE_ZERO + 1))
+
+
+        if (threat && pos.pseudo_legal(make_move(to_sq(threat), from_sq(threat))))
         {
-        	gardez = to_sq((ss+1)->currentMove);
+            if (pos.see_ge(make_move(to_sq(threat), from_sq(threat)), VALUE_ZERO + 1))
+            {
+        		//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
+             if (!ttMove)
+             {
+            	ttMove = make_move(to_sq(threat), from_sq(threat)); // inverse move seems good, 2339 hits in normal bench
+            	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
+            	//dbg_hit_on(true);
+             }
+             threat = MOVE_NONE; // this move will be prevented by inverse move
+            }
+
         }
+
     }
+
+
 
     // Step 10. ProbCut (~10 Elo)
     // If we have a good enough capture and a reduced search returns a value
@@ -840,6 +861,8 @@ namespace {
         tte = TT.probe(posKey, ttHit);
         ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
         ttMove = ttHit ? tte->move() : MOVE_NONE;
+        if (ttHit && threat && from_sq(ttMove) == to_sq(threat))
+        	threat = MOVE_NONE;
     }
 
 moves_loop: // When in check, search starts from here
@@ -851,6 +874,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
+									  threat,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
@@ -920,8 +944,6 @@ moves_loop: // When in check, search starts from here
                && !moveCountPruning
                &&  pos.see_ge(move))
           extension = ONE_PLY;
-      else if (depth < 8 * ONE_PLY && from_sq(move) == gardez)
-    	  extension = ONE_PLY;
 
 
       // Calculate new depth for this move
