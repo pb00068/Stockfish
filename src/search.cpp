@@ -760,8 +760,7 @@ namespace {
         Move upcomingCapt = nullValue < beta
         		                  && !ttMove
                                   && is_ok((ss+1)->currentMove)
-                                  && pos.capture((ss+1)->currentMove)
-                                  && pos.see_ge((ss+1)->currentMove, RookValueMg) ? (ss+1)->currentMove : MOVE_NONE;
+                                  && pos.capture((ss+1)->currentMove) ? (ss+1)->currentMove : MOVE_NONE;
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -792,7 +791,7 @@ namespace {
         {
             upcomingCapt = make_move(to_sq(upcomingCapt), from_sq(upcomingCapt));
             if (pos.pseudo_legal(upcomingCapt) && pos.see_ge(upcomingCapt, VALUE_ZERO + 1))
-               ttMove = upcomingCapt; // inverse move seems good
+               ttMove = upcomingCapt; // inverse move seems good, 3788 hits in normal bench run
         }
     }
 
