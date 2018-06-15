@@ -757,7 +757,7 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
-        Move upcomingCapt = nullValue < beta
+        Move cm = nullValue < beta
         		                  && !ttMove
                                   && is_ok((ss+1)->currentMove)
                                   && pos.capture((ss+1)->currentMove) ? (ss+1)->currentMove : MOVE_NONE;
@@ -787,11 +787,12 @@ namespace {
                 return nullValue;
         }
 
-        if (upcomingCapt)
+        if (cm)
         {
-            upcomingCapt = make_move(to_sq(upcomingCapt), from_sq(upcomingCapt));
-            if (pos.pseudo_legal(upcomingCapt) && pos.see_ge(upcomingCapt, VALUE_ZERO + 1))
-               ttMove = upcomingCapt; // inverse move seems good, 3788 hits in normal bench run
+            cm = make_move(to_sq(cm), from_sq(cm));
+            if (pos.pseudo_legal(cm) && pos.see_ge(cm, KnightValueMg)
+               &&  thisThread->captureHistory[pos.moved_piece(cm)][to_sq(cm)][type_of(pos.piece_on(to_sq(cm)))] > 0)
+               ttMove = cm; // inverse move seems good
         }
     }
 
