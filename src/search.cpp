@@ -639,8 +639,6 @@ namespace {
         return ttValue;
     }
 
-    Move threat = MOVE_NONE;
-
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
     {
@@ -759,14 +757,11 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
-        if (nullValue < beta
-            && is_ok((ss+1)->currentMove)
-            && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
-            && pos.capture((ss+1)->currentMove)
-		    && pos.see_ge((ss+1)->currentMove, RookValueMg))
-               threat = (ss+1)->currentMove;
-        	//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
-
+        Move upcomingCapt = nullValue < beta
+        		                  && !ttMove
+                                  && is_ok((ss+1)->currentMove)
+                                  && pos.capture((ss+1)->currentMove)
+                                  && pos.see_ge((ss+1)->currentMove, RookValueMg) ? (ss+1)->currentMove : MOVE_NONE;
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -793,23 +788,12 @@ namespace {
                 return nullValue;
         }
 
-
-        if (threat && pos.pseudo_legal(make_move(to_sq(threat), from_sq(threat))))
+        if (upcomingCapt)
         {
-            if (pos.see_ge(make_move(to_sq(threat), from_sq(threat)), VALUE_ZERO + 1))
-            {
-        		//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
-             if (!ttMove)
-             {
-            	ttMove = make_move(to_sq(threat), from_sq(threat)); // inverse move seems good, 2339 hits in normal bench
-            	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
-            	//dbg_hit_on(true);
-             }
-             threat = MOVE_NONE; // this move will be prevented by inverse move
-            }
-
+            upcomingCapt = make_move(to_sq(upcomingCapt), from_sq(upcomingCapt));
+            if (pos.pseudo_legal(upcomingCapt) && pos.see_ge(upcomingCapt, VALUE_ZERO + 1))
+               ttMove = upcomingCapt; // inverse move seems good
         }
-
     }
 
 
@@ -861,8 +845,6 @@ namespace {
         tte = TT.probe(posKey, ttHit);
         ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
         ttMove = ttHit ? tte->move() : MOVE_NONE;
-        if (ttHit && threat && from_sq(ttMove) == to_sq(threat))
-        	threat = MOVE_NONE;
     }
 
 moves_loop: // When in check, search starts from here
@@ -874,7 +856,6 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-									  threat,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
