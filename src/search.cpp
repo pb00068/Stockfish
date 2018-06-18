@@ -1090,15 +1090,16 @@ moves_loop: // When in check, search starts from here
             && pos.capture((ss+1)->currentMove)
             && pos.see_ge((ss+1)->currentMove, RookValueMg))
       {
-    	  if ((ss+1)->currentMove == threat)
-    	     mp.setThreat(threat);
-    	  if (!threat)
+    	  pos.undo_move(move);
+    	  if (pos.see_ge((ss+1)->currentMove, RookValueMg))
+    	  {
+    		 if ((ss+1)->currentMove == threat) /// set it only when confirmed
+    		    mp.setThreat(threat);
              threat = (ss+1)->currentMove;
+    	  }
       }
-
-
-      // Step 18. Undo move
-      pos.undo_move(move);
+      else // Step 18. Undo move
+         pos.undo_move(move);
 
       if (threat && !pos.pseudo_legal(threat))
     	  threat = MOVE_NONE;
