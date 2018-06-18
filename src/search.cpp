@@ -849,7 +849,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, gardez);
+                                      ss->killers);
+    mp.setRecap(gardez);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -1067,6 +1068,15 @@ moves_loop: // When in check, search starts from here
 
       // Step 18. Undo move
       pos.undo_move(move);
+
+      if (value < alpha
+        && !moveCountPruning
+        && is_ok((ss+1)->currentMove)
+    	&& is_ok((ss+2)->currentMove)
+        && pos.capture((ss+2)->currentMove)
+   	    && type_of(pos.piece_on(  to_sq((ss+2)->currentMove))) == QUEEN
+        && type_of(pos.piece_on(from_sq((ss+2)->currentMove))) <= BISHOP)
+           	mp.setRecap(to_sq((ss+2)->currentMove));
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
