@@ -797,17 +797,8 @@ namespace {
         if (threat && pos.pseudo_legal(make_move(to_sq(threat), from_sq(threat))))
         {
             if (pos.see_ge(make_move(to_sq(threat), from_sq(threat)), VALUE_ZERO + 1))
-            {
-        		//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
-             if (!ttMove)
-             {
-            	ttMove = make_move(to_sq(threat), from_sq(threat)); // inverse move seems good, 2339 hits in normal bench
-            	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
-            	//dbg_hit_on(true);
-             }
+        	//sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << " this move will be prevented by inverse" << sync_endl;
              threat = MOVE_NONE; // this move will be prevented by inverse move
-            }
-
         }
 
     }
@@ -874,8 +865,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-									  threat,
                                       ss->killers);
+    mp.setThreat(threat);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -1091,8 +1082,26 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
+
+      if (value < alpha
+    		&& !moveCountPruning
+            && is_ok((ss+1)->currentMove)
+            && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
+            && pos.capture((ss+1)->currentMove)
+            && pos.see_ge((ss+1)->currentMove, RookValueMg))
+      {
+    	  if ((ss+1)->currentMove == threat)
+    	     mp.setThreat(threat);
+    	  if (!threat)
+             threat = (ss+1)->currentMove;
+      }
+
+
       // Step 18. Undo move
       pos.undo_move(move);
+
+      if (threat && !pos.pseudo_legal(threat))
+    	  threat = MOVE_NONE;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 

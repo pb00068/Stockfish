@@ -124,9 +124,13 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
+
+  void setThreat(Move m)
+  {
+	  threatMove = m;
+  }
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

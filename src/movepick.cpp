@@ -63,7 +63,7 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move threat, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
@@ -72,7 +72,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  threatMove = threat;
 }
 
 /// MovePicker constructor for quiescence search
@@ -134,17 +133,9 @@ void MovePicker::score() {
 
   if (Type == QUIETS && threatMove)
 	  for (auto& m : *this)
-	  {
 		  if (m.value >= -40 && from_sq(m) == to_sq(threatMove))
-		  {
-
-			  //sync_cout << pos << UCI::move(threatMove, pos.is_chess960()) << " gets avoided by " << UCI::move(m, pos.is_chess960()) << " stat val: " << m.value << " d: " << depth << sync_endl;
 			  m.value += 10000;
-		  }
-		  //else if (m.value > -500 && (between_bb(from_sq(threatMove), to_sq(threatMove)) & to_sq(m)))
-		//	  m.value += 10000;
-			  //sync_cout << pos << UCI::move(threatMove, pos.is_chess960()) << " gets interfered by " << UCI::move(m, pos.is_chess960()) << sync_endl;
-	  }
+
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
