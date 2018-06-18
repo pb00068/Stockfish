@@ -125,7 +125,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            Move*,
-										   PieceType);
+										   Square);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -141,7 +141,6 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  PieceType gardes;
   Move move;
   Square recaptureSquare;
   Value threshold;

@@ -639,7 +639,7 @@ namespace {
         return ttValue;
     }
 
-    PieceType gardez = NO_PIECE_TYPE;
+    Square gardez = SQ_NONE;
 
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
@@ -786,9 +786,9 @@ namespace {
         }
         else if ((is_ok((ss+1)->currentMove)
            && pos.capture((ss+1)->currentMove)
-	       && type_of(pos.piece_on(  to_sq((ss+1)->currentMove))) >= ROOK
+	       && type_of(pos.piece_on(  to_sq((ss+1)->currentMove))) == QUEEN
            && type_of(pos.piece_on(from_sq((ss+1)->currentMove))) <= BISHOP))
-        	gardez = type_of(pos.piece_on(  to_sq((ss+1)->currentMove)));
+        	gardez = to_sq((ss+1)->currentMove);
     }
 
     // Step 10. ProbCut (~10 Elo)

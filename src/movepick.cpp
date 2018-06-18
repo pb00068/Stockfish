@@ -60,7 +60,7 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, PieceType gardez)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, Square gardez)
            : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
@@ -68,7 +68,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
-  gardes = gardez;
+  recaptureSquare = gardez;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -129,9 +129,9 @@ void MovePicker::score() {
               m.value = (*mainHistory)[pos.side_to_move()][from_to(m)] - (1 << 28);
       }
 
-  if (Type == QUIETS && gardes)
+  if (Type == QUIETS && recaptureSquare != SQ_NONE)
 	  for (auto& m : *this)
-		  if (type_of(pos.moved_piece(m)) == gardes)
+		  if (from_sq(m) == recaptureSquare)
 			  m.value += 10000;
 }
 
