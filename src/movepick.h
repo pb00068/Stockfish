@@ -124,9 +124,10 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*,
-										   Square);
+                                           Move*);
   Move next_move(bool skipQuiets = false);
+
+  void setSquare (Square t) { recaptureSquare = t; };
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

@@ -849,7 +849,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, gardez);
+                                      ss->killers);
+    mp.setSquare(gardez);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -1064,6 +1065,15 @@ moves_loop: // When in check, search starts from here
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
+
+      if (value < alpha
+    		  && moveCount < 5
+			  && is_ok((ss+1)->currentMove)
+			  && pos.capture((ss+1)->currentMove)
+			  && to_sq((ss+1)->currentMove) != to_sq(move)
+			  && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN
+			  && pos.see_ge((ss+1)->currentMove, RookValueMg))
+			mp.setSquare(to_sq((ss+1)->currentMove));
 
       // Step 18. Undo move
       pos.undo_move(move);
