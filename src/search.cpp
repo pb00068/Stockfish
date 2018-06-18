@@ -1091,7 +1091,7 @@ moves_loop: // When in check, search starts from here
             && pos.see_ge((ss+1)->currentMove, RookValueMg))
       {
     	  pos.undo_move(move);
-    	  if (pos.see_ge((ss+1)->currentMove, RookValueMg))
+    	  if (pos.capture((ss+1)->currentMove))
     	  {
     		 if ((ss+1)->currentMove == threat) /// set it only when confirmed
     		    mp.setThreat(threat);
@@ -1101,7 +1101,7 @@ moves_loop: // When in check, search starts from here
       else // Step 18. Undo move
          pos.undo_move(move);
 
-      if (threat && !pos.pseudo_legal(threat))
+      if (threat && !pos.capture(threat))
     	  threat = MOVE_NONE;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
