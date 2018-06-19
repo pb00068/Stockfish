@@ -60,8 +60,8 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
-           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch),
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, const ClearanceHistory* clh, Move cm, Move* killers)
+           : pos(p), mainHistory(mh), captureHistory(cph), contHistory(ch), clr_History(clh),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
@@ -111,13 +111,15 @@ void MovePicker::score() {
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
+				   //+ (*clr_History)[pos.side_to_move()][from_sq(m)] / 16
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] / 16;
 
       else if (Type == QUIETS)
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
-                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+                   + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)]
+                   + (*clr_History)[pos.side_to_move()][from_sq(m)];
 
       else // Type == EVASIONS
       {

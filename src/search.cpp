@@ -782,6 +782,11 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
+        else if ((is_ok((ss+1)->currentMove)
+             && pos.capture((ss+1)->currentMove)
+        	 && type_of(pos.piece_on(  to_sq((ss+1)->currentMove))) == QUEEN
+             && type_of(pos.piece_on(from_sq((ss+1)->currentMove))) <= BISHOP))
+        	 thisThread->clearanceHistory[us][to_sq((ss+1)->currentMove)] << stat_bonus(depth);
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -841,6 +846,7 @@ moves_loop: // When in check, search starts from here
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
+									  &thisThread->clearanceHistory,
                                       countermove,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -1151,6 +1157,20 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
     else if (bestMove)
     {
+    	if (!PvNode) // only at non-pv nodes we can look at givesCheck and (ss+x)->currentMove
+    	{
+            if (givesCheck && !pos.check_squares(type_of(pos.piece_on(from_sq(bestMove))))) // almost certain a disco check
+               thisThread->clearanceHistory[us][from_sq(bestMove)] << stat_bonus(depth);
+            else if (is_ok((ss+1)->currentMove)  // opponent slider forced to cross our cleared square
+                    && type_of(pos.moved_piece((ss+1)->currentMove)) > KNIGHT
+                    && (between_bb(from_sq((ss+1)->currentMove), to_sq((ss+1)->currentMove)) & from_sq(bestMove)))
+               thisThread->clearanceHistory[us][from_sq(bestMove)] << stat_bonus(depth);
+            else if (is_ok((ss+2)->currentMove)  // we cross our cleared square on next turn
+                    && type_of(pos.moved_piece((ss+2)->currentMove)) > KNIGHT
+                    && ((between_bb(from_sq((ss+2)->currentMove), to_sq((ss+2)->currentMove)) | to_sq((ss+2)->currentMove)) & from_sq(bestMove)))
+               thisThread->clearanceHistory[us][from_sq(bestMove)] << stat_bonus(depth);
+    	}
+    			//sync_cout << pos << "disco check " << UCI::move(bestMove, pos.is_chess960()) << sync_endl;
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
@@ -1486,6 +1506,8 @@ moves_loop: // When in check, search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->mainHistory[us][from_to(quiets[i])] << -bonus;
+        if (from_sq(quiets[i]) != from_sq(move))
+        	thisThread->clearanceHistory[us][from_sq(quiets[i])] << -bonus;
         update_continuation_histories(ss, pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
   }
