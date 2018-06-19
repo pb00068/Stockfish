@@ -784,7 +784,7 @@ namespace {
         }
         else if ((is_ok((ss+1)->currentMove)
              && pos.capture((ss+1)->currentMove)
-        	 && type_of(pos.piece_on(  to_sq((ss+1)->currentMove))) == QUEEN
+             && type_of(pos.piece_on(  to_sq((ss+1)->currentMove))) >= ROOK
              && type_of(pos.piece_on(from_sq((ss+1)->currentMove))) <= BISHOP))
         	 thisThread->clearanceHistory[us][to_sq((ss+1)->currentMove)] << stat_bonus(depth);
     }
@@ -846,7 +846,7 @@ moves_loop: // When in check, search starts from here
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
-									  &thisThread->clearanceHistory,
+                                      &thisThread->clearanceHistory,
                                       countermove,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
