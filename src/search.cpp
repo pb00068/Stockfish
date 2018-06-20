@@ -639,6 +639,9 @@ namespace {
         return ttValue;
     }
 
+    Move threat = MOVE_NONE;
+    Value threshold = VALUE_ZERO;
+
     // Step 5. Tablebases probe
     if (!rootNode && TB::Cardinality)
     {
@@ -757,6 +760,13 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
+        if (nullValue < beta
+             && is_ok((ss+1)->currentMove)
+             && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
+             && pos.capture((ss+1)->currentMove)
+             && pos.see_ge((ss+1)->currentMove, PawnValueMg))
+            threat = (ss+1)->currentMove;
+
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -782,6 +792,8 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
+        else if (threat && pos.pseudo_legal(make_move(to_sq(threat), from_sq(threat))) && pos.see_ge(make_move(to_sq(threat), from_sq(threat))))
+                 threat = MOVE_NONE; // this threatening capture  will be prevented/neutralized by inverse capture
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -831,6 +843,12 @@ namespace {
         tte = TT.probe(posKey, ttHit);
         ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
         ttMove = ttHit ? tte->move() : MOVE_NONE;
+    }
+
+    if (threat)
+    {
+       	threshold = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+       	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << threshold << sync_endl;
     }
 
 moves_loop: // When in check, search starts from here
@@ -947,11 +965,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth + (threshold && from_sq(move) != to_sq(threat) ? threshold : VALUE_ZERO))))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (threshold && from_sq(move) != to_sq(threat) ? threshold : VALUE_ZERO)))
                   continue;
       }
 
