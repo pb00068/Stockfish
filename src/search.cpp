@@ -788,7 +788,7 @@ namespace {
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
-        &&  depth >= 5 * ONE_PLY
+        &&  depth >= 4 * ONE_PLY
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
@@ -804,7 +804,7 @@ namespace {
                 ss->currentMove = move;
                 ss->contHistory = thisThread->contHistory[pos.moved_piece(move)][to_sq(move)].get();
 
-                assert(depth >= 5 * ONE_PLY);
+                assert(depth >= 4 * ONE_PLY);
 
                 pos.do_move(move, st);
 
@@ -813,7 +813,7 @@ namespace {
 
                 // If the qsearch held perform the regular search
                 if (value >= rbeta)
-                    value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 3 * ONE_PLY - (bool) (value > rbeta + 400) * ONE_PLY, !cutNode);
+                    value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 3 * ONE_PLY - (bool) (value > rbeta + 600) * ONE_PLY, !cutNode);
 
                 pos.undo_move(move);
 
