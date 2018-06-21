@@ -979,9 +979,19 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth + off)))
                   continue;
           }
-          else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset : VALUE_ZERO)))
+          else if (   !extension) // (~20 Elo)
+          {
+              int off = 0;
+              if (offset
+                 && !givesCheck
+                 && from_sq(move) != to_sq(threat)
+                 && (captureOrPromotion || !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move))))
+                   off = offset;
+
+               if (!pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + off))
                   continue;
+          }
+
       }
 
       // Speculative prefetch as early as possible
