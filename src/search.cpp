@@ -846,13 +846,13 @@ namespace {
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
-    if (threat)
-    {
-       	offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
-       	if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
-       		offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
-       	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
-    }
+//    if (threat)
+//    {
+//       	offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+//       	if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
+//       		offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
+//       	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
+//    }
 
 
 moves_loop: // When in check, search starts from here
@@ -968,12 +968,17 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+              Value v = Value(-29 * lmrDepth * lmrDepth);
+              if (offset
+                  && from_sq(move) != to_sq(threat)
+                  && !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move)))
+                  v+= offset/2;
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move,  Value(-30 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move,  v))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-        		  && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset : VALUE_ZERO)))
+        		  && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset/2 : VALUE_ZERO)))
                   continue;
       }
 
@@ -1081,9 +1086,11 @@ moves_loop: // When in check, search starts from here
 
       if (value < alpha
     		  && !offset
+			  && !cutNode
     		  && moveCount < 5
               && is_ok((ss+1)->currentMove)
               && pos.capture((ss+1)->currentMove)
+			  && !pos.captured_piece()
               && pos.see_ge((ss+1)->currentMove, PawnValueMg + 1))
       {
     	  if (threat == (ss+1)->currentMove)
@@ -1095,7 +1102,6 @@ moves_loop: // When in check, search starts from here
     	  else
 	          threat = (ss+1)->currentMove;
       }
-
 
       // Step 18. Undo move
       pos.undo_move(move);
