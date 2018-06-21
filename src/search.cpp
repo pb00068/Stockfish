@@ -966,21 +966,18 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-
-
-              int off = 0;
+              Value v = Value(-29 * lmrDepth * lmrDepth);
               if (offset
                  && from_sq(move) != to_sq(threat)
-				 && !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move)))
-				 //&& !(PseudoAttacks[type_of(movedPiece)][to_sq(move)] & to_sq(threat))
-            	  off = offset;
+                 && !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move)))
+                  v+= std::min(offset, Value(500));
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth + off)))
+              if (!pos.see_ge(move, v))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset : VALUE_ZERO)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 
