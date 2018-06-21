@@ -689,6 +689,7 @@ namespace {
     Move threat = MOVE_NONE;
     Value offset = VALUE_ZERO;
 
+
     // Step 6. Static evaluation of the position
     if (inCheck)
     {
@@ -853,6 +854,7 @@ namespace {
        	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
     }
 
+
 moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->contHistory, (ss-2)->contHistory, nullptr, (ss-4)->contHistory };
@@ -966,18 +968,12 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              Value v = Value(-29 * lmrDepth * lmrDepth);
-              if (offset
-                 && from_sq(move) != to_sq(threat)
-                 && !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move)))
-                  v+= std::min(offset, Value(500));
-
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, v))
+              if (!pos.see_ge(move,  Value(-30 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+        		  && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset : VALUE_ZERO)))
                   continue;
       }
 
@@ -1082,6 +1078,24 @@ moves_loop: // When in check, search starts from here
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
+
+      if (value < alpha
+    		  && !offset
+    		  && moveCount < 5
+              && is_ok((ss+1)->currentMove)
+              && pos.capture((ss+1)->currentMove)
+              && pos.see_ge((ss+1)->currentMove, PawnValueMg + 1))
+      {
+    	  if (threat == (ss+1)->currentMove)
+    	  {
+    		  offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+			  if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
+				  offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
+          }
+    	  else
+	          threat = (ss+1)->currentMove;
+      }
+
 
       // Step 18. Undo move
       pos.undo_move(move);
