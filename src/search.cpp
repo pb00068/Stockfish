@@ -846,13 +846,13 @@ namespace {
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
-//    if (threat)
-//    {
-//       	offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
-//       	if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
-//       		offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
-//       	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
-//    }
+    if (threat)
+    {
+       	offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+       	if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
+       		offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
+       	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
+    }
 
 
 moves_loop: // When in check, search starts from here
@@ -1082,25 +1082,6 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
-      }
-
-      if (value < alpha
-    		  && !offset
-			  && !cutNode
-    		  && moveCount < 5
-              && is_ok((ss+1)->currentMove)
-              && pos.capture((ss+1)->currentMove)
-			  && !pos.captured_piece()
-              && pos.see_ge((ss+1)->currentMove, PawnValueMg + 1))
-      {
-    	  if (threat == (ss+1)->currentMove)
-    	  {
-    		  offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
-			  if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
-				  offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
-          }
-    	  else
-	          threat = (ss+1)->currentMove;
       }
 
       // Step 18. Undo move
