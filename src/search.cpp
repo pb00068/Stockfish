@@ -1064,6 +1064,25 @@ moves_loop: // When in check, search starts from here
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
+          if (value < alpha
+        		  && !offset
+    			  && !cutNode
+        		  && moveCount < 5
+                  && is_ok((ss+1)->currentMove)
+                  && pos.capture((ss+1)->currentMove)
+    			  && !pos.captured_piece()
+                  && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) >= KNIGHT)
+          {
+        	  if (threat == (ss+1)->currentMove)
+        	  {
+        		  offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+    			  if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
+    				  offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
+              }
+        	  else
+    	          threat = (ss+1)->currentMove;
+          }
+
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
       else
