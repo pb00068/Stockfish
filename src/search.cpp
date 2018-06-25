@@ -765,7 +765,7 @@ namespace {
              && is_ok((ss+1)->currentMove)
              && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
              && pos.capture((ss+1)->currentMove)
-             && pos.see_ge((ss+1)->currentMove, PawnValueMg + 1))
+             && pos.see_ge((ss+1)->currentMove, KnightValueMg))
             threat = (ss+1)->currentMove;
 
         pos.undo_null_move();
@@ -794,7 +794,7 @@ namespace {
                 return nullValue;
         }
         else if (threat && pos.pseudo_legal(make_move(to_sq(threat), from_sq(threat))) && pos.see_ge(make_move(to_sq(threat), from_sq(threat))))
-                 threat = MOVE_NONE; // this threatening capture  will be prevented/neutralized by inverse capture
+                 threat = MOVE_NONE; // this threatening capture will be prevented/neutralized by inverse capture
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -848,8 +848,10 @@ namespace {
 
     if (threat)
     {
-       	offset = std::max(PawnValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
-       	if (offset == PawnValueMg && pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
+       	offset = std::max(KnightValueMg, PieceValue[MG][pos.piece_on(to_sq(threat))] - PieceValue[MG][pos.piece_on(from_sq(threat))]);
+       	if (offset == KnightValueMg
+       	    && type_of(pos.piece_on(to_sq(threat))) > KNIGHT
+			&& pos.see_ge(threat, PieceValue[MG][pos.piece_on(to_sq(threat))]))
        		offset = PieceValue[MG][pos.piece_on(to_sq(threat))];
        	//sync_cout << pos << UCI::move(threat, pos.is_chess960()) << " threshold " << offset << " d: " << depth << sync_endl;
     }
@@ -970,15 +972,17 @@ moves_loop: // When in check, search starts from here
 
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (offset
-                  && from_sq(move) != to_sq(threat)
-                  && !(between_bb(from_sq(threat), to_sq(threat)) & to_sq(move)))
-                  v+= offset/2;
+                && from_sq(move) != to_sq(threat)
+                && v + offset > 0)
+            	  continue;
+
+
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move,  v))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-        		  && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY) + (offset && !givesCheck && from_sq(move) != to_sq(threat) ? offset/2 : VALUE_ZERO)))
+        		  && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 
