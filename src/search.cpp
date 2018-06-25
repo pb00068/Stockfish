@@ -819,8 +819,8 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                	if (to_sq((ss-1)->currentMove) != to_sq(move))
-                		(ss-1)->captureThreat = move;
+                    if (to_sq((ss-1)->currentMove) != to_sq(move))
+                       (ss-1)->captureThreat = move;
                     return value;
                 }
             }
@@ -952,10 +952,12 @@ moves_loop: // When in check, search starts from here
 
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
+                  && lmrDepth < 4
                   && from_sq(move) != to_sq(ss->captureThreat)
-                  && pos.pseudo_legal(ss->captureThreat, ~us)
-                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] / 2 > 0)
-            	  continue;
+            	  && pos.pseudo_legal(ss->captureThreat, ~us)
+				  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0)
+            		 continue;
+
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, v))
