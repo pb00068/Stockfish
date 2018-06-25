@@ -953,9 +953,10 @@ moves_loop: // When in check, search starts from here
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
                   && lmrDepth < 3
-                  && from_sq(move) != to_sq(ss->captureThreat)
-                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] / 2 > 0)
-            		 continue;
+                  && from_sq(move) != to_sq(ss->captureThreat))
+                   v += PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))];
+              if (v > 0)
+                  continue;
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, v))
@@ -1023,8 +1024,8 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if ((ss->captureThreat && from_sq(move) != to_sq(ss->captureThreat))
-            		|| (type_of(move) == NORMAL && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
+              else if (    type_of(move) == NORMAL
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
