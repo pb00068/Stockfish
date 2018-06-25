@@ -952,12 +952,10 @@ moves_loop: // When in check, search starts from here
 
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
-                  && lmrDepth < 4
+                  && lmrDepth < 3
                   && from_sq(move) != to_sq(ss->captureThreat)
-            	  && pos.pseudo_legal(ss->captureThreat, ~us)
-				  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0)
+                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0)
             		 continue;
-
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, v))

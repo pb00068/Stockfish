@@ -584,8 +584,9 @@ bool Position::legal(Move m) const {
 /// pseudo legal. It is used to validate moves from TT that can be corrupted
 /// due to SMP concurrent access or hash position key aliasing.
 
-bool Position::pseudo_legal(const Move m, const Color us) const {
+bool Position::pseudo_legal(const Move m) const {
 
+  Color us = sideToMove;
   Square from = from_sq(m);
   Square to = to_sq(m);
   Piece pc = moved_piece(m);
