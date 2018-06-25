@@ -757,6 +757,12 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
+        if (nullValue < beta
+		 && is_ok((ss+1)->currentMove)
+		 && pos.capture((ss+1)->currentMove)
+		 && pos.see_ge ((ss+1)->currentMove, KnightValueMg))
+            ss->captureThreat = (ss+1)->currentMove;
+
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -782,6 +788,10 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
+        else if (ss->captureThreat
+              && pos.pseudo_legal(make_move(to_sq(ss->captureThreat), from_sq(ss->captureThreat)))
+              && pos.see_ge      (make_move(to_sq(ss->captureThreat), from_sq(ss->captureThreat))))
+        	ss->captureThreat = MOVE_NONE; // this threatening capture will be prevented/neutralized by inverse capture
     }
 
     // Step 10. ProbCut (~10 Elo)
