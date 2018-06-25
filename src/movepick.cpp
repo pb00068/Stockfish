@@ -67,7 +67,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   assert(d > DEPTH_ZERO);
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
-  ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
+  ttMove = ttm && pos.pseudo_legal(ttm, pos.side_to_move()) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -80,7 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = pos.checkers() ? EVASION_TT : QSEARCH_TT;
   ttMove =    ttm
-           && pos.pseudo_legal(ttm)
+           && pos.pseudo_legal(ttm, pos.side_to_move())
            && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
@@ -94,7 +94,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
 
   stage = PROBCUT_TT;
   ttMove =   ttm
-          && pos.pseudo_legal(ttm)
+          && pos.pseudo_legal(ttm, pos.side_to_move())
           && pos.capture(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
@@ -194,7 +194,7 @@ top:
   case REFUTATION:
       if (select<Next>([&](){ return    move != MOVE_NONE
                                     && !pos.capture(move)
-                                    &&  pos.pseudo_legal(move); }))
+                                    &&  pos.pseudo_legal(move, pos.side_to_move()); }))
           return move;
       ++stage;
       /* fallthrough */

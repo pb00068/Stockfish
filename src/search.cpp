@@ -588,7 +588,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->captureThreat = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -818,7 +818,11 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= rbeta)
+                {
+                	if (to_sq((ss-1)->currentMove) != to_sq(move))
+                		(ss-1)->captureThreat = move;
                     return value;
+                }
             }
     }
 
@@ -946,8 +950,15 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
+              Value v = Value(-29 * lmrDepth * lmrDepth);
+              if (ss->captureThreat
+                  && from_sq(move) != to_sq(ss->captureThreat)
+                  && pos.pseudo_legal(ss->captureThreat, ~us)
+                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] / 2 > 0)
+            	  continue;
+
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, v))
                   continue;
           }
           else if (   !extension // (~20 Elo)
