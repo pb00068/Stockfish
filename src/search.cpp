@@ -819,7 +819,7 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                    if (to_sq((ss-1)->currentMove) != to_sq(move))
+                    if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
                        (ss-1)->captureThreat = move;
                     return value;
                 }
@@ -953,10 +953,11 @@ moves_loop: // When in check, search starts from here
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
                   && lmrDepth < 3
+				  && !inCheck
                   && from_sq(move) != to_sq(ss->captureThreat)
                   && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0
                   && type_of(pos.moved_piece(ss->captureThreat)) != KING
-                  && pos.pseudo_legal(ss->captureThreat, ~us)
+                  && pos.pseudo_legalcapt(ss->captureThreat, ~us)
                   && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
             	  continue;
 

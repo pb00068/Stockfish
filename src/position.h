@@ -118,7 +118,8 @@ public:
 
   // Properties of moves
   bool legal(Move m) const;
-  bool pseudo_legal(const Move m, const Color us) const;
+  bool pseudo_legal(const Move m) const;
+  bool pseudo_legalcapt(const Move m, Color c) const;
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
   bool gives_check(Move m) const;

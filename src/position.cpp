@@ -584,8 +584,9 @@ bool Position::legal(Move m) const {
 /// pseudo legal. It is used to validate moves from TT that can be corrupted
 /// due to SMP concurrent access or hash position key aliasing.
 
-bool Position::pseudo_legal(const Move m, const Color us) const {
+bool Position::pseudo_legal(const Move m) const {
 
+  Color us = sideToMove;
   Square from = from_sq(m);
   Square to = to_sq(m);
   Piece pc = moved_piece(m);
@@ -646,6 +647,47 @@ bool Position::pseudo_legal(const Move m, const Color us) const {
       else if (attackers_to(to, pieces() ^ from) & pieces(~us))
           return false;
   }
+
+  return true;
+}
+
+bool Position::pseudo_legalcapt(const Move m, const Color us) const {
+
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece pc = moved_piece(m);
+
+
+  // If the 'from' square is not occupied by a piece belonging to the side to
+  // move, the move is obviously not legal.
+  if (pc == NO_PIECE || color_of(pc) != us)
+      return false;
+
+  // The destination square cannot be occupied by a friendly piece
+  if (pieces(us) & to)
+      return false;
+
+  // Handle the special case of a pawn move
+  if (type_of(pc) == PAWN)
+  {
+      // We have already handled promotion moves, so destination
+      // cannot be on the 8th/1st rank.
+      if (rank_of(to) == relative_rank(us, RANK_8))
+          return false;
+
+      if (   !(attacks_from<PAWN>(from, us) & pieces(~us) & to) // Not a capture
+          && !((from + pawn_push(us) == to) && empty(to))       // Not a single push
+          && !(   (from + 2 * pawn_push(us) == to)              // Not a double push
+               && (rank_of(from) == relative_rank(us, RANK_2))
+               && empty(to)
+               && empty(to - pawn_push(us))))
+          return false;
+  }
+  else if (!(attacks_from(type_of(pc), from) & to))
+      return false;
+
+
+  assert (!checkers());
 
   return true;
 }
