@@ -952,11 +952,13 @@ moves_loop: // When in check, search starts from here
 
               Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
-                  && lmrDepth < 4
+                  && lmrDepth < 3
                   && from_sq(move) != to_sq(ss->captureThreat)
-            	  && pos.pseudo_legal(ss->captureThreat, ~us)
-				  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0)
-            		 continue;
+                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0
+                  && type_of(pos.moved_piece(ss->captureThreat)) != KING
+                  && pos.pseudo_legal(ss->captureThreat, ~us)
+                  && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
+            	  continue;
 
 
               // Prune moves with negative SEE (~10 Elo)
