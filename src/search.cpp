@@ -819,7 +819,10 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                    if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
+                    if (to_sq((ss-1)->currentMove) != to_sq(move)
+                    	&& type_of(move) == NORMAL
+						&& type_of(pos.piece_on(to_sq(move))) > PAWN
+						&& (type_of(pos.moved_piece(move)) <= KNIGHT || !(between_bb( from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove)) ))
                        (ss-1)->captureThreat = move;
                     return value;
                 }
@@ -950,20 +953,17 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
                   && lmrDepth < 3
 				  && !inCheck
                   && from_sq(move) != to_sq(ss->captureThreat)
-                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0
                   && type_of(pos.moved_piece(ss->captureThreat)) != KING
                   && pos.pseudo_legalcapt(ss->captureThreat, ~us)
                   && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
             	  continue;
 
-
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, v))
+              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
