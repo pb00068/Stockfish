@@ -589,6 +589,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
     (ss+2)->killers[0] = (ss+2)->killers[1] = ss->captureThreat = MOVE_NONE;
+    ss->confirmed = false;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -823,7 +824,10 @@ namespace {
                     	&& type_of(move) == NORMAL
 						&& type_of(pos.piece_on(to_sq(move))) > PAWN
 						&& (type_of(pos.moved_piece(move)) <= KNIGHT || !(between_bb( from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove)) ))
+                    {
+                       (ss-1)->confirmed = (ss-1)->captureThreat == move;
                        (ss-1)->captureThreat = move;
+                    }
                     return value;
                 }
             }
@@ -953,7 +957,7 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              if (ss->captureThreat
+              if (ss->confirmed
                   && lmrDepth < 3
 				  && !inCheck
                   && from_sq(move) != to_sq(ss->captureThreat)
