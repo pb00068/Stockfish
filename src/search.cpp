@@ -950,20 +950,19 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              Value v = Value(-29 * lmrDepth * lmrDepth);
               if (ss->captureThreat
                   && lmrDepth < 3
-				  && !inCheck
-                  && from_sq(move) != to_sq(ss->captureThreat)
-                  && v + PieceValue[MG][pos.piece_on(to_sq(ss->captureThreat))] > 0
-                  && type_of(pos.moved_piece(ss->captureThreat)) != KING
-                  && pos.pseudo_legalcapt(ss->captureThreat, ~us)
-                  && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
-            	  continue;
-
+                  && !inCheck
+                  && from_sq(move) != to_sq(ss->captureThreat))
+              {
+                  if (!pos.pseudo_legalcapt(ss->captureThreat))
+                     ss->captureThreat = MOVE_NONE;
+                  else if (!(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
+                     continue;
+              }
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, v))
+              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
