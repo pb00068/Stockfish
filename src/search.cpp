@@ -819,7 +819,10 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                    if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
+                    if (to_sq((ss-1)->currentMove) != to_sq(move)
+                          && type_of(move) == NORMAL
+						  && type_of(pos.piece_on(to_sq(move))) > PAWN
+						  && type_of(pos.piece_on(to_sq(move))) > type_of(pos.piece_on(from_sq(move))))
                        (ss-1)->captureThreat = move;
                     return value;
                 }
@@ -957,8 +960,14 @@ moves_loop: // When in check, search starts from here
               {
                   if (!pos.pseudo_legalcapt(ss->captureThreat))
                      ss->captureThreat = MOVE_NONE;
-                  else if (!(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
-                     continue;
+                  else if (type_of(pos.moved_piece(move)) != QUEEN && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
+                  {
+                	 if (type_of(pos.moved_piece(move)) > PAWN || !pos.threateningPawnPush(move))
+                	 {
+                		dbg_hit_on(true);
+                	    continue;
+                	 }
+                  }
               }
 
               // Prune moves with negative SEE (~10 Elo)

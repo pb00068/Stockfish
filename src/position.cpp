@@ -656,6 +656,10 @@ bool Position::pseudo_legalcapt(const Move m) const {
   return true;
 }
 
+bool  Position::threateningPawnPush(const Move m) const {
+	return attacks_from<PAWN>(to_sq(m), sideToMove) & pieces(~sideToMove, QUEEN, ROOK);
+}
+
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
