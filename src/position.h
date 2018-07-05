@@ -313,9 +313,14 @@ inline bool Position::pawn_passed(Color c, Square s) const {
   return !(pieces(~c, PAWN) & passed_pawn_mask(c, s));
 }
 
+/**
+ * also return true if push is legal and threatening to capture non-pawn enemies
+ */
 inline bool Position::advanced_pawn_push(Move m) const {
   return   type_of(moved_piece(m)) == PAWN
-        && relative_rank(sideToMove, from_sq(m)) > RANK_4;
+        && (relative_rank(sideToMove, from_sq(m)) > RANK_4
+        || ((attacks_from<PAWN>(to_sq(m), sideToMove) & (pieces(~sideToMove) & ~pieces(~sideToMove, PAWN))) &&
+        ! (blockers_for_king(sideToMove) & from_sq(m))) );
 }
 
 inline Key Position::key() const {
