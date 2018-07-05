@@ -924,8 +924,10 @@ moves_loop: // When in check, search starts from here
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
           {
+        	  bool threateningPawnPush = type_of(movedPiece) == PAWN && pos.threateningPawnPush(move);
+
               // Move count based pruning (~30 Elo)
-              if (moveCountPruning)
+              if (moveCountPruning && !threateningPawnPush)
               {
                   skipQuiets = true;
                   continue;
@@ -936,14 +938,14 @@ moves_loop: // When in check, search starts from here
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
-                  && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
-                  && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+                  && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold - threateningPawnPush * 32
+                  && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold - threateningPawnPush * 32)
                   continue;
 
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 7
                   && !inCheck
-                  && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
+                  && ss->staticEval + 256 + threateningPawnPush * 128 + 200 * lmrDepth <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
