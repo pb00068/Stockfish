@@ -953,7 +953,7 @@ moves_loop: // When in check, search starts from here
               if (ss->captureThreat
                  && lmrDepth < 3
                  && !inCheck
-				 && moveCount > 5
+				 && !cutNode
                  && from_sq(move) != to_sq(ss->captureThreat))
 				continue;
 
