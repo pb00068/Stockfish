@@ -757,13 +757,6 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
-        if (nullValue < beta
-           && cutNode
-           && is_ok((ss+1)->currentMove)
-           && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
-           && pos.capture((ss+1)->currentMove))
-              ss->captureThreat = (ss+1)->currentMove;
-
         pos.undo_null_move();
 
         if (nullValue >= beta)
@@ -827,7 +820,11 @@ namespace {
                 if (value >= rbeta)
                 {
                     if ((ss-1)->moveCount < 5 && to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
-                        (ss-1)->captureThreat = move;
+                    {
+
+                    (ss-1)->captureThreat = move;
+
+                    }
                     return value;
                 }
             }
@@ -957,10 +954,10 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              if (ss->captureThreat
-                 && lmrDepth < 3
+              if (lmrDepth <= 1
+            	 && ss->captureThreat > 0
                  && !inCheck
-				 && cutNode
+				 && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                  && from_sq(move) != to_sq(ss->captureThreat))
 				continue;
 
