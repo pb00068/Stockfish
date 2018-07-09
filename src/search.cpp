@@ -954,8 +954,8 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              if (lmrDepth <= 1
-            	 && ss->captureThreat > 0
+              if (lmrDepth < 5
+            	 && ss->captureThreat
                  && !inCheck
 				 && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                  && from_sq(move) != to_sq(ss->captureThreat))
