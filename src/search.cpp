@@ -757,6 +757,13 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
+        if (nullValue < beta
+        	&& cutNode
+            && is_ok((ss+1)->currentMove)
+            && (!ttMove || from_sq(ttMove) != to_sq((ss+1)->currentMove))
+            && pos.capture((ss+1)->currentMove))
+              ss->captureThreat = (ss+1)->currentMove;
+
         pos.undo_null_move();
 
         if (nullValue >= beta)
