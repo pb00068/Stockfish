@@ -1024,12 +1024,20 @@ moves_loop: // When in check, search starts from here
               if (cutNode)
                   r += 2 * ONE_PLY;
 
-              // Decrease reduction for moves that escape a capture. Filter out
+              // Decrease reduction for moves that escape a capture or interfere. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if (    type_of(move) == NORMAL
+              else if (ss->captureThreat)
+              {
+            	  if ((from_sq(move) == to_sq(ss->captureThreat) && pos.pseudo_legalcapt(ss->captureThreat)) // escapes capture
+            	   || ((between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)) // or interferes
+				      && !pos.see_ge(make_move(from_sq(ss->captureThreat), to_sq(move)), VALUE_ZERO + 1))) // with success
+				   r -= 2 * ONE_PLY;
+              }
+              else if (type_of(move) == NORMAL
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
+
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]

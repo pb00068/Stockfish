@@ -645,6 +645,16 @@ bool Position::pseudo_legal(const Move m) const {
   return true;
 }
 
+bool Position::pseudo_legalcapt(const Move m) const {
+  Piece pc = moved_piece(m);
+  if (type_of(pc) == KING)
+	  return false; // might be a legal capture or not, but for the moment we don't want complicate to much
+
+  if (type_of(pc) != PAWN && !(attacks_from(type_of(pc), from_sq(m)) & to_sq(m)))
+      return false;
+
+  return true;
+}
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
