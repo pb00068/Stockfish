@@ -953,7 +953,8 @@ moves_loop: // When in check, search starts from here
               if (ss->captThreat
                   && lmrDepth < 4
 				  && !inCheck
-                  && from_sq(move) != to_sq(ss->captThreat))
+                  && from_sq(move) != to_sq(ss->captThreat)
+				  && (*contHist[0])[movedPiece][to_sq(move)] + (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
               {
             	  PieceType pt = type_of(pos.moved_piece(ss->captThreat));
             	  if (pt <= KNIGHT) // Pawn and Knight threats can't be blocked
