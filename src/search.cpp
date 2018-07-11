@@ -588,7 +588,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->captureThreat = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->captThreat = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -819,11 +819,8 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                    if (to_sq((ss-1)->currentMove) != to_sq(move)
-                          && type_of(move) == NORMAL
-						  && type_of(pos.piece_on(to_sq(move))) > PAWN
-						  && type_of(pos.piece_on(to_sq(move))) > type_of(pos.piece_on(from_sq(move))))
-                       (ss-1)->captureThreat = move;
+                	if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
+                       (ss-1)->captThreat = move;
                     return value;
                 }
             }
@@ -953,21 +950,17 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              if (ss->captureThreat
-                  && lmrDepth < 3
-                  && !inCheck
-                  && from_sq(move) != to_sq(ss->captureThreat))
+              if (ss->captThreat
+                  && lmrDepth < 4
+				  && !inCheck
+                  && from_sq(move) != to_sq(ss->captThreat))
               {
-                  if (!pos.pseudo_legalcapt(ss->captureThreat))
-                     ss->captureThreat = MOVE_NONE;
-                  else if (type_of(pos.moved_piece(move)) != QUEEN && !(between_bb( from_sq(ss->captureThreat), to_sq(ss->captureThreat)) & to_sq(move)))
-                  {
-                	 if (type_of(pos.moved_piece(move)) > PAWN || !pos.threateningPawnPush(move))
-                	 {
-                		dbg_hit_on(true);
-                	    continue;
-                	 }
-                  }
+            	  PieceType pt = type_of(pos.moved_piece(ss->captThreat));
+            	  if (pt <= KNIGHT) // Pawn and Knight threats can't be blocked
+            		  continue;
+            	  if (pt < KING // slider: verify if threatening capture is still legal (= capture-way is free)
+           			  && (pos.attacks_from(pt, from_sq(ss->captThreat), to_sq(move)) & to_sq(ss->captThreat)))
+            		  continue;
               }
 
               // Prune moves with negative SEE (~10 Elo)

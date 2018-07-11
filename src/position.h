@@ -111,6 +111,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard attacks_from(PieceType pt, Square s) const;
+  Bitboard attacks_from(PieceType pt, Square s, Square occ) const;
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
@@ -118,7 +119,6 @@ public:
   // Properties of moves
   bool legal(Move m) const;
   bool pseudo_legal(const Move m) const;
-  bool pseudo_legalcapt(const Move m) const;
   bool threateningPawnPush(const Move m) const;
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
@@ -294,6 +294,12 @@ inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
 inline Bitboard Position::attacks_from(PieceType pt, Square s) const {
   return attacks_bb(pt, s, byTypeBB[ALL_PIECES]);
 }
+
+
+inline Bitboard Position::attacks_from(PieceType pt, Square s, Square occ) const {
+  return attacks_bb(pt, s, byTypeBB[ALL_PIECES] | occ);
+}
+
 
 inline Bitboard Position::attackers_to(Square s) const {
   return attackers_to(s, byTypeBB[ALL_PIECES]);
