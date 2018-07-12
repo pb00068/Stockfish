@@ -819,7 +819,7 @@ namespace {
 
                 if (value >= rbeta)
                 {
-                	if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
+                    if (to_sq((ss-1)->currentMove) != to_sq(move) && type_of(move) == NORMAL)
                        (ss-1)->captThreat = move;
                     return value;
                 }
@@ -886,9 +886,6 @@ moves_loop: // When in check, search starts from here
 
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
-
-      if (ss->captThreat && from_sq(move) == to_sq(ss->captThreat))
-    	  ss->captThreat = MOVE_NONE;
 
       // Step 13. Extensions (~70 Elo)
 
