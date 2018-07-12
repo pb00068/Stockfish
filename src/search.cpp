@@ -887,6 +887,9 @@ moves_loop: // When in check, search starts from here
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
+      if (ss->captThreat && from_sq(move) == to_sq(ss->captThreat))
+    	  ss->captThreat = MOVE_NONE;
+
       // Step 13. Extensions (~70 Elo)
 
       // Singular extension search (~60 Elo). If all moves but one fail low on a
@@ -935,11 +938,14 @@ moves_loop: // When in check, search starts from here
                   continue;
               }
 
+              bool escape = ss->captThreat && from_sq(move) == to_sq(ss->captThreat);
+
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
+                  && !escape
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
@@ -949,20 +955,6 @@ moves_loop: // When in check, search starts from here
                   && !inCheck
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
-
-              if (ss->captThreat
-                  && lmrDepth < 4
-				  && !inCheck
-                  && from_sq(move) != to_sq(ss->captThreat)
-				  && (*contHist[0])[movedPiece][to_sq(move)] + (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
-              {
-            	  PieceType pt = type_of(pos.moved_piece(ss->captThreat));
-            	  if (pt <= KNIGHT) // Pawn and Knight threats can't be blocked
-            		  continue;
-            	  if (pt < KING // slider: verify if threatening capture is still legal (= capture-way is free)
-           			  && (pos.attacks_from(pt, from_sq(ss->captThreat), to_sq(move)) & to_sq(ss->captThreat)))
-            		  continue;
-              }
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
