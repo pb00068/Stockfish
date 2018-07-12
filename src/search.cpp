@@ -935,14 +935,11 @@ moves_loop: // When in check, search starts from here
                   continue;
               }
 
-              bool escape = ss->captThreat && from_sq(move) == to_sq(ss->captThreat);
-
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO) / ONE_PLY;
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 3
-                  && !escape
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
