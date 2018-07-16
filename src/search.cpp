@@ -1121,7 +1121,11 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-          else if (!cutNode && ttHit && moveCount == 1 && value < alpha)
+          else if (!cutNode
+        		  && ttHit
+				  && moveCount == 1
+				  && value < alpha
+				  && tte->depth() < depth - 2 * ONE_PLY)
             tte->resetMove();
       }
 
