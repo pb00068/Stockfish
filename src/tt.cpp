@@ -51,7 +51,10 @@ void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
   }
 }
 
-
+void TTEntry::resetMove()
+{
+	move16 = MOVE_NONE;
+}
 /// TranspositionTable::resize() sets the size of the transposition table,
 /// measured in megabytes. Transposition table consists of a power of 2 number
 /// of clusters and each cluster consists of ClusterSize number of TTEntry.

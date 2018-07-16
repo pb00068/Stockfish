@@ -1069,6 +1069,7 @@ moves_loop: // When in check, search starts from here
       if (Threads.stop.load(std::memory_order_relaxed))
           return VALUE_ZERO;
 
+
       if (rootNode)
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
@@ -1099,6 +1100,7 @@ moves_loop: // When in check, search starts from here
               rm.score = -VALUE_INFINITE;
       }
 
+
       if (value > bestValue)
       {
           bestValue = value;
@@ -1119,7 +1121,10 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
+          else if (!cutNode && ttHit && moveCount == 1 && value < alpha)
+            tte->resetMove();
       }
+
 
       if (move != bestMove)
       {
