@@ -622,7 +622,7 @@ namespace {
             if (ttValue >= beta)
             {
                 if (pos.capture_or_promotion(ttMove))
-                    update_capture_stats(pos, ttMove, nullptr, 0, stat_bonus(depth));
+                    update_capture_stats(pos, ttMove, nullptr, 0, stat_bonus(depth + bool(ttValue > beta + KnightValueMg) * ONE_PLY));
                 else
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
