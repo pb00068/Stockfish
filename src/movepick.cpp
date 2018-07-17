@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  threat = MOVE_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -114,10 +115,14 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] / 16;
 
       else if (Type == QUIETS)
+      {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*contHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*contHistory[3])[pos.moved_piece(m)][to_sq(m)];
+          if (threat && to_sq(threat) != from_sq(m))
+        	  m.value += 8000;
+      }
 
       else // Type == EVASIONS
       {
@@ -145,6 +150,11 @@ Move MovePicker::select(Pred filter) {
           return move;
   }
   return move = MOVE_NONE;
+}
+
+void MovePicker::setThreat(Move m)
+{
+	threat = m;
 }
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It

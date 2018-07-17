@@ -127,6 +127,8 @@ public:
                                            Move*);
   Move next_move(bool skipQuiets = false);
 
+  void setThreat(Move m);
+
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
@@ -141,6 +143,7 @@ private:
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
+  Move threat;
   Square recaptureSquare;
   Value threshold;
   Depth depth;

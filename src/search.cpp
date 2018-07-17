@@ -588,7 +588,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->contHistory = thisThread->contHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->threatQR = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -784,6 +784,7 @@ namespace {
         }
     }
 
+
     // Step 10. ProbCut (~10 Elo)
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
@@ -814,6 +815,12 @@ namespace {
                 // If the qsearch held perform the regular search
                 if (value >= rbeta)
                     value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode);
+
+                if (value >= rbeta
+                	&& to_sq((ss-1)->currentMove) != to_sq(move)
+					&& type_of(pos.captured_piece()) >= ROOK
+					&& type_of(pos.piece_on(to_sq(move))) <= BISHOP)
+                      (ss-1)->threatQR = move;
 
                 pos.undo_move(move);
 
@@ -1068,6 +1075,20 @@ moves_loop: // When in check, search starts from here
       // updating best move, PV and TT.
       if (Threads.stop.load(std::memory_order_relaxed))
           return VALUE_ZERO;
+
+      if (ss->threatQR && depth > 4 && quietCount < 4)
+      {
+    	  //dbg_hit_on(true);
+    	  PieceType threatener = type_of(pos.moved_piece(ss->threatQR));
+    	  if (threatener <= KNIGHT
+    	   || threatener == KING
+		   || !(between_bb(from_sq(ss->threatQR), to_sq(ss->threatQR)) & pos.pieces())) // slider and way is free
+    	  {
+    		  mp.setThreat(ss->threatQR);
+    	  }
+    	  else
+    		  ss->threatQR = MOVE_NONE;
+      }
 
       if (rootNode)
       {
