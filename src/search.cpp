@@ -1158,9 +1158,17 @@ moves_loop: // When in check, search starts from here
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+        // Extra penalty for the first move in previous ply when it gets refuted
+        if ((ss-1)->moveCount == 1)
+        {
+        	if (!pos.captured_piece())
+        		update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+        	else if (prevSq != to_sq(bestMove)){
+        		PieceType capturing = type_of(pos.piece_on(prevSq));
+                PieceType captured = type_of(pos.captured_piece());
+                pos.this_thread()->captureHistory[capturing][prevSq][captured] << -stat_bonus(depth + 2 * ONE_PLY);
+        	}
+        }
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 * ONE_PLY || PvNode)
