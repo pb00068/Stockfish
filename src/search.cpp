@@ -1165,7 +1165,7 @@ moves_loop: // When in check, search starts from here
         		update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
         	else if (prevSq != to_sq(bestMove)){
                 PieceType captured = type_of(pos.captured_piece());
-                pos.this_thread()->captureHistory[pos.piece_on(prevSq)][prevSq][captured] << -stat_bonus(depth + 2 * ONE_PLY);
+                pos.this_thread()->captureHistory[pos.piece_on(prevSq)][prevSq][captured] << -stat_bonus(depth + ONE_PLY);
         	}
         }
     }
