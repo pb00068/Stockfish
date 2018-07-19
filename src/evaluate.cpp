@@ -176,6 +176,7 @@ namespace {
   constexpr Score TrappedRook        = S( 92,  0);
   constexpr Score WeakQueen          = S( 50, 10);
   constexpr Score WeakUnopposedPawn  = S(  5, 29);
+  constexpr Score MinorPin2BackRank  = S(  5, 10);
 
 #undef S
 
@@ -292,6 +293,7 @@ namespace {
     constexpr Direction Down = (Us == WHITE ? SOUTH : NORTH);
     constexpr Bitboard OutpostRanks = (Us == WHITE ? Rank4BB | Rank5BB | Rank6BB
                                                    : Rank5BB | Rank4BB | Rank3BB);
+
     const Square* pl = pos.squares<Pt>(Us);
 
     Bitboard b, bb;
@@ -308,7 +310,11 @@ namespace {
                          : pos.attacks_from<Pt>(s);
 
         if (pos.blockers_for_king(Us) & s)
+        {
             b &= LineBB[pos.square<KING>(Us)][s];
+            if ((Pt == BISHOP || Pt == KNIGHT) && relative_rank(Us, s) == RANK_1)
+            	score -= MinorPin2BackRank;
+        }
 
         attackedBy2[Us] |= attackedBy[Us][ALL_PIECES] & b;
         attackedBy[Us][Pt] |= b;
