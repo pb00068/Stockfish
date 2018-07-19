@@ -556,7 +556,7 @@ namespace {
         if (weak & attackedBy[Us][KING])
             score += ThreatByKing;
 
-        score += Hanging * popcount(weak & ~attackedBy[Them][ALL_PIECES]);
+        score += Hanging * popcount(weak & ( ~attackedBy[Them][ALL_PIECES] | (~attackedBy2[Them] & attackedBy2[Us] & attackedBy[Them][KING])));
 
         // Bonus for overload (non-pawn enemies attacked once or more and defended exactly once)
         b =  nonPawnEnemies
