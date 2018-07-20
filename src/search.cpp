@@ -852,8 +852,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers,
-									  ss->threatQ);
+                                      ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -959,6 +958,12 @@ moves_loop: // When in check, search starts from here
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, to_sq(move), Value(-29 * lmrDepth * lmrDepth)))
+                  continue;
+
+              if (   lmrDepth < 2
+               && ss->threatQ
+               &&  from_sq(move) !=   to_sq(ss->threatQ)
+               &&    to_sq(move) != from_sq(ss->threatQ))
                   continue;
           }
           else if (   !extension // (~20 Elo)
