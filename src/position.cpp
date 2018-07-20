@@ -1015,7 +1015,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+bool Position::see_ge(Move m, Square strikeBack, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1025,7 +1025,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   Bitboard stmAttackers;
   Square from = from_sq(m), to = to_sq(m);
-  PieceType nextVictim = type_of(piece_on(from));
+  PieceType nextVictim = type_of(piece_on(strikeBack != to ? strikeBack : from));
   Color us = color_of(piece_on(from));
   Color stm = ~us; // First consider opponent's move
   Value balance;   // Values of the pieces taken by us minus opponent's ones
@@ -1050,7 +1050,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard attackers = attackers_to(strikeBack, occupied) & occupied;
 
   while (true)
   {
@@ -1067,7 +1067,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' the possibly X-ray attackers behind it.
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = min_attacker<PAWN>(byTypeBB, strikeBack, stmAttackers, occupied, attackers);
 
       stm = ~stm; // Switch side to move
 
