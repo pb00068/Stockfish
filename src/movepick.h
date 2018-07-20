@@ -125,7 +125,8 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*);
+                                           Move*,
+										   Move);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -142,6 +143,7 @@ private:
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Move move;
+  Move threatQ;
   Square recaptureSquare;
   Value threshold;
   Depth depth;

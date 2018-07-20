@@ -19,8 +19,11 @@
 */
 
 #include <cassert>
+//#include <iostream>
 
 #include "movepick.h"
+//#include "uci.h"
+//#include "misc.h"
 
 namespace {
 
@@ -60,7 +63,7 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, Move threat)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
@@ -69,6 +72,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  threatQ = threat;
 }
 
 /// MovePicker constructor for quiescence search
@@ -176,7 +180,9 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
+    	               //if (threatQ && from_sq(move) != to_sq(threatQ))
+    	               // sync_cout << pos << UCI::move(threatQ, pos.is_chess960()) << " move " << UCI::move(move, pos.is_chess960()) << sync_endl;
+                       return pos.see_ge(move, threatQ && from_sq(move) != to_sq(threatQ) && to_sq(move) != from_sq(threatQ) ?  to_sq(threatQ) : to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
