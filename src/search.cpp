@@ -958,7 +958,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move,  ss->threatQ && from_sq(move) != to_sq(ss->threatQ) ?  to_sq(ss->threatQ) : to_sq(move), Value(-29 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, to_sq(move), Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
