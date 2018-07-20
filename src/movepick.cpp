@@ -19,10 +19,9 @@
 */
 
 #include <cassert>
-#include <iostream>
+
 #include "movepick.h"
 #include "misc.h"
-#include "uci.h"
 
 namespace {
 
@@ -62,15 +61,16 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, Move threat)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}, {killers[2], 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  threatQ = threat;
 }
 
 /// MovePicker constructor for quiescence search
@@ -178,16 +178,10 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-
-//    	               if (pos.see_ge(move, threatQ
-//                    		   && from_sq(move) != to_sq(threatQ)
-//							   && to_sq(move) != from_sq(threatQ)
-//							   && !(pos.check_squares(type_of(pos.moved_piece(move))) & to_sq(move))
-//							   ?  to_sq(threatQ) : to_sq(move), Value(-55 * (cur-1)->value / 1024)) !=
-//									   pos.see_ge(move, to_sq(move), Value(-55 * (cur-1)->value / 1024)))
-//    	            	   sync_cout << pos << UCI::move(threatQ, pos.is_chess960()) << " m: " << UCI::move(move, pos.is_chess960()) << sync_endl;
-    	               dbg_hit_on(refutations[3].move);
-
+    	               dbg_hit_on(threatQ
+                    		   && from_sq(move) != to_sq(threatQ)
+							   && to_sq(move) != from_sq(threatQ)
+							   && !(pos.check_squares(type_of(pos.moved_piece(move))) & to_sq(move)));
                        return pos.see_ge(move, to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
@@ -196,7 +190,6 @@ top:
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
-      --endMoves;
 
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
