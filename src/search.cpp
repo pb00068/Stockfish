@@ -962,7 +962,7 @@ moves_loop: // When in check, search starts from here
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move,  ss->threatQ && from_sq(move) != to_sq(ss->threatQ) && to_sq(move) != from_sq(ss->threatQ) ?  to_sq(ss->threatQ) : to_sq(move), -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, to_sq(move), -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 

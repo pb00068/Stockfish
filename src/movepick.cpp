@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -177,11 +178,11 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, threatQ
+    	               dbg_hit_on(threatQ
                     		   && from_sq(move) != to_sq(threatQ)
 							   && to_sq(move) != from_sq(threatQ)
-							   && !(pos.check_squares(type_of(pos.moved_piece(move))) & to_sq(move))
-							   ?  to_sq(threatQ) : to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
+							   && !(pos.check_squares(type_of(pos.moved_piece(move))) & to_sq(move)));
+                       return pos.see_ge(move, to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
