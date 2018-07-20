@@ -588,7 +588,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->continuationHistory = thisThread->continuationHistory[NO_PIECE][0].get();
-    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->threatQ = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = ss->captThreat = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -783,9 +783,8 @@ namespace {
                 return nullValue;
         }
         else if (is_ok((ss+1)->currentMove)
-       		 && pos.capture((ss+1)->currentMove)
-       		 && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) == QUEEN)
-            ss->threatQ = (ss+1)->currentMove;
+       		 && pos.capture((ss+1)->currentMove))
+           ss->captThreat = (ss+1)->currentMove;
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -819,16 +818,14 @@ namespace {
                 if (value >= rbeta)
                     value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode);
 
-                if (value >= rbeta
-                	&& to_sq((ss-1)->currentMove) != to_sq(move)
-					&& type_of(pos.captured_piece()) == QUEEN
-					&& type_of(pos.piece_on(to_sq(move))) != QUEEN)
-                		(ss-1)->threatQ = move;
-
                 pos.undo_move(move);
 
                 if (value >= rbeta)
+                {
+                	if (to_sq((ss-1)->currentMove) != to_sq(move))
+                	     (ss-1)->captThreat = move;
                     return value;
+                }
             }
     }
 
@@ -960,11 +957,13 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, to_sq(move), Value(-29 * lmrDepth * lmrDepth)))
                   continue;
 
-              if (   lmrDepth < 2
-               && ss->threatQ
-               &&  from_sq(move) !=   to_sq(ss->threatQ)
-               &&    to_sq(move) != from_sq(ss->threatQ))
+              if (  moveCount > 10
+               && lmrDepth <= 2
+               && ss->captThreat
+               &&  from_sq(move) != to_sq(ss->captThreat))
+              {
                   continue;
+              }
           }
           else if (   !extension // (~20 Elo)
                    && !pos.see_ge(move, to_sq(move), -PawnValueEg * (depth / ONE_PLY)))
