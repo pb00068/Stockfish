@@ -1479,6 +1479,10 @@ moves_loop: // When in check, search starts from here
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
+
+    if (is_ok((ss-1)->currentMove) && is_ok((ss-3)->currentMove))
+    	thisThread->counterPlanMoves[moveHash((ss-3)->currentMove)][moveHash((ss-1)->currentMove)] = move;
+
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 

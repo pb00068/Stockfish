@@ -60,8 +60,8 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, const CounterPlanMoveHistory* planh,  Move cm, Move* killers)
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), planhistory(planh),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
