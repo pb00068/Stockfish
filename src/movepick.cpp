@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "thread.h"
 
 namespace {
 
@@ -59,9 +60,8 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const PieceToHistory** ch, Move cm, Move* killers)
+           : pos(p), continuationHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
@@ -72,9 +72,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 }
 
 /// MovePicker constructor for quiescence search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Square rs)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), recaptureSquare(rs), depth(d) {
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const PieceToHistory** ch, Square rs)
+           : pos(p), continuationHistory(ch), recaptureSquare(rs), depth(d) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -87,8 +86,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
-           : pos(p), captureHistory(cph), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Value th)
+           : pos(p), threshold(th) {
 
   assert(!pos.checkers());
 
@@ -107,14 +106,16 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+  ButterflyHistory mainHistory = pos.this_thread()->mainHistory;
+  CapturePieceToHistory captureHistory = pos.this_thread()->captureHistory;
 
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-                   + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] / 16;
+                   + captureHistory[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] / 16;
 
       else if (Type == QUIETS)
-          m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
+          m.value =  mainHistory[pos.side_to_move()][from_to(m)]
                    + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)];
@@ -125,7 +126,7 @@ void MovePicker::score() {
               m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                        - Value(type_of(pos.moved_piece(m)));
           else
-              m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
+              m.value =  mainHistory[pos.side_to_move()][from_to(m)]
                        + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
