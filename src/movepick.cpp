@@ -183,11 +183,17 @@ top:
 
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
-      endMoves = std::end(refutations) - 1;
+      endMoves = std::end(refutations);
 
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
+          --endMoves;
+
+      // If the countermove2 is the same as a killer or countermove, skip it
+      if (   refutations[0].move == refutations[3].move
+          || refutations[1].move == refutations[3].move
+          || refutations[2].move == refutations[3].move)
           --endMoves;
 
       ++stage;
@@ -214,6 +220,7 @@ top:
       if (   !skipQuiets
           && select<Next>([&](){return   move != refutations[0]
                                       && move != refutations[1]
+                                      && move != refutations[3]
                                       && move != refutations[2];}))
           return move;
 
