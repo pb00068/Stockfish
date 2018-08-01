@@ -190,11 +190,13 @@ top:
           || refutations[1].move == refutations[2].move)
           --endMoves;
 
+      score<QUIETS>();
+
       ++stage;
       /* fallthrough */
 
   case REFUTATION:
-      if (select<Next>([&](){ return    move != MOVE_NONE
+      if (select<Best>([&](){ return    move != MOVE_NONE
                                     && !pos.capture(move)
                                     &&  pos.pseudo_legal(move); }))
           return move;
