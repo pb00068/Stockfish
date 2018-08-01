@@ -625,7 +625,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
-                if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+                if ((ss-1)->moveCount == 0 && !pos.captured_piece())
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
             }
             // Penalty for a quiet ttMove that fails low
@@ -965,8 +965,11 @@ moves_loop: // When in check, search starts from here
           continue;
       }
 
-      if (move == ttMove && captureOrPromotion)
-          ttCapture = true;
+      if (move == ttMove)
+      {
+          ttCapture = captureOrPromotion;
+          ss->moveCount--;
+      }
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1157,7 +1160,7 @@ moves_loop: // When in check, search starts from here
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+        if ((ss-1)->moveCount == 0 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
     }
     // Bonus for prior countermove that caused the fail low
