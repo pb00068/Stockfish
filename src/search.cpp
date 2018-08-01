@@ -1153,7 +1153,12 @@ moves_loop: // When in check, search starts from here
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
                                stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)));
-
+        else if (quietCount > 4 // 'bad' capture is bestmove, so it may be valuable also as a quiet move
+        	&& ss->killers[0] != move)
+		{
+			ss->killers[1] = ss->killers[0];
+			ss->killers[0] = move;
+		}
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
