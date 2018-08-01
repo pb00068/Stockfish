@@ -1471,21 +1471,23 @@ moves_loop: // When in check, search starts from here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
                           Move* quiets, int quietsCnt, int bonus) {
 
-    if (ss->killers[0] != move)
-    {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
-    }
-
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
+    bool specialQuiet = false;
     if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        specialQuiet = to_sq(move) == from_sq((ss-1)->currentMove);
+    }
+
+    if (ss->killers[0] != move && !specialQuiet)
+    {
+        ss->killers[1] = ss->killers[0];
+        ss->killers[0] = move;
     }
 
     // Decrease all the other played quiet moves
