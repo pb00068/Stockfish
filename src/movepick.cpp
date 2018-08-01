@@ -100,6 +100,14 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   stage += (ttMove == MOVE_NONE);
 }
 
+int MovePicker::quietScore(Move m)
+{
+	return  (*mainHistory)[pos.side_to_move()][from_to(m)]
+		   + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
+		   + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
+		   + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)];
+}
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -114,10 +122,7 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] / 16;
 
       else if (Type == QUIETS)
-          m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
-                   + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
-                   + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
-                   + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)];
+          m.value = quietScore(m.move);
 
       else // Type == EVASIONS
       {
@@ -189,6 +194,12 @@ top:
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
           --endMoves;
+      else if (quietScore(refutations[2].move) > refutations[0].move)
+      {
+    	  Move m = refutations[2].move;
+    	  refutations[2].move = refutations[0].move;
+    	  refutations[0].move = m;
+      }
 
       ++stage;
       /* fallthrough */
