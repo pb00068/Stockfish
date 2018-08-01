@@ -625,7 +625,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
-                if ((ss-1)->moveCount == 0 && !pos.captured_piece())
+                if ((ss-1)->moveCount <= 1 && !pos.captured_piece())
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
             }
             // Penalty for a quiet ttMove that fails low
@@ -995,7 +995,7 @@ moves_loop: // When in check, search starts from here
           else
           {
               // Decrease reduction if opponent's move count is high (~5 Elo)
-              if ((ss-1)->moveCount > 14)
+              if ((ss-1)->moveCount > 15)
                   r -= ONE_PLY;
 
               // Decrease reduction for exact PV nodes (~0 Elo)
@@ -1160,7 +1160,7 @@ moves_loop: // When in check, search starts from here
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 0 && !pos.captured_piece())
+        if ((ss-1)->moveCount <= 1 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
     }
     // Bonus for prior countermove that caused the fail low
