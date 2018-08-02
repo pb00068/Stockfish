@@ -163,6 +163,7 @@ namespace {
   constexpr Score KingProtector      = S(  6,  6);
   constexpr Score KnightOnQueen      = S( 21, 11);
   constexpr Score LongDiagonalBishop = S( 22,  0);
+  constexpr Score BishopRay          = S(  8,  1);
   constexpr Score MinorBehindPawn    = S( 16,  0);
   constexpr Score Overload           = S( 13,  6);
   constexpr Score PawnlessFlank      = S( 19, 84);
@@ -353,6 +354,10 @@ namespace {
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(Center & (attacks_bb<BISHOP>(s, pos.pieces(PAWN)) | s)))
                     score += LongDiagonalBishop;
+
+                if (!(b & kingRing[Them])
+                	&& (PseudoAttacks[BISHOP][s] & pos.square<KING>(Them)))
+                	score += BishopRay;
             }
 
             // An important Chess960 pattern: A cornered bishop blocked by a friendly
