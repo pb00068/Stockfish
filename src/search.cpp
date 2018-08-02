@@ -1160,11 +1160,6 @@ moves_loop: // When in check, search starts from here
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
     }
-    // Bonus for prior countermove that caused the fail low
-    else if (   (depth >= 3 * ONE_PLY || PvNode)
-             && !pos.captured_piece()
-             && is_ok((ss-1)->currentMove))
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
@@ -1480,7 +1475,7 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
-    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
+    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus >= 726 ? bonus * 3/2 : bonus);
 
     if (is_ok((ss-1)->currentMove))
     {
