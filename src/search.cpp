@@ -106,7 +106,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
+  void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus, Depth d);
   void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, int bonus);
 
   inline bool gives_check(const Position& pos, Move move) {
@@ -622,7 +622,7 @@ namespace {
             if (ttValue >= beta)
             {
                 if (!pos.capture_or_promotion(ttMove))
-                    update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                    update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth), DEPTH_ZERO);
 
                 // Extra penalty for a quiet TT move in previous ply when it gets refuted
                 if ((ss-1)->moveCount == 1 && !pos.captured_piece())
@@ -1152,7 +1152,7 @@ moves_loop: // When in check, search starts from here
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
-                               stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)));
+                               stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)), depth);
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
@@ -1464,7 +1464,7 @@ moves_loop: // When in check, search starts from here
   // update_quiet_stats() updates move sorting heuristics when a new quiet best move is found
 
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
-                          Move* quiets, int quietsCnt, int bonus) {
+                          Move* quiets, int quietsCnt, int bonus, Depth d) {
 
     if (ss->killers[0] != move)
     {
@@ -1475,7 +1475,7 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
-    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus >= 726 ? bonus * 3/2 : bonus);
+    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus + (d >= 4 * ONE_PLY ? stat_bonus(d - ONE_PLY) : 0));
 
     if (is_ok((ss-1)->currentMove))
     {
