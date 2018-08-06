@@ -185,10 +185,16 @@ top:
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
 
+
       // If the countermove is the same as a killer, skip it
-      if (   refutations[0].move == refutations[2].move
-          || refutations[1].move == refutations[2].move)
+      if (refutations[0].move == refutations[2].move)
           --endMoves;
+      else if (refutations[1].move == refutations[2].move)
+      {
+    	  refutations[1].move = refutations[0].move;
+    	  refutations[0].move = refutations[2].move;
+    	  --endMoves;
+      }
 
       ++stage;
       /* fallthrough */
