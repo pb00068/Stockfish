@@ -62,7 +62,7 @@ namespace {
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {killers[2], 0}, {cm, 0}}, depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -140,11 +140,19 @@ Move MovePicker::select(Pred filter) {
   {
       if (T == Best)
           std::swap(*cur, *std::max_element(cur, endMoves));
+      else
+    	  kIndex++;
 
       move = *cur++;
 
+      if (T == Best)
+      {
       if (move != ttMove && filter())
           return move;
+      }
+      else  if (filter())
+          return move;
+
   }
   return move = MOVE_NONE;
 }
@@ -184,25 +192,33 @@ top:
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
-      kIndex = 0;
-
-      // If the countermove is the same as a killer, skip it
-      if (   refutations[0].move == refutations[2].move
-          || refutations[1].move == refutations[2].move)
-          --endMoves;
+      kIndex =  0;
+      killerSkipped = -1;
 
       ++stage;
       /* fallthrough */
 
   case REFUTATION:
       if (select<Next>([&](){
-    	  bool ret =   move != MOVE_NONE
-                   && !pos.capture(move)
-                   &&  pos.pseudo_legal(move);
-    	  if (kIndex == 2 && (refutations[0].move == refutations[2].move || refutations[1].move == refutations[2].move))
-    		  ret = false;
-    	  kIndex++;
-    	  return ret;
+    	  if (kIndex == 3) // use 3rd killer only if one before was skipped
+    	  {
+    		  if (!killerSkipped)
+    			  return false;
+
+    		  // replace skipped with 3rd killer
+    		  refutations[killerSkipped - 1].move = move;
+    	  }
+    	  if (kIndex == 4 && (refutations[0].move == move || refutations[1].move == move)) // cm
+    		   return false;
+    	  else if (move != MOVE_NONE)
+    	  {
+    		if ( move != ttMove
+                && !pos.capture(move)
+                &&  pos.pseudo_legal(move))
+    			return true;
+    		killerSkipped = kIndex;
+    	  }
+    	  return false;
       }))
           return move;
       ++stage;
@@ -220,6 +236,7 @@ top:
   case QUIET:
       if (   !skipQuiets
           && select<Next>([&](){return   move != refutations[0]
+									  && move != ttMove
                                       && move != refutations[1]
                                       && move != refutations[2];}))
           return move;
@@ -268,7 +285,7 @@ top:
       /* fallthrough */
 
   case QCHECK:
-      return select<Next>(Any);
+      return select<Next>([&](){return move != ttMove;});
   }
 
   assert(false);
