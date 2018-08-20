@@ -311,7 +311,7 @@ void Thread::search() {
   beta = VALUE_INFINITE;
 
   if (mainThread)
-      mainThread->bestMoveChanges = 0, failedLow = false;
+      mainThread->bestMoveChanges = 0, failedLow = false, Threads.noProgressCycles = 0;
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
@@ -803,7 +803,7 @@ namespace {
         &&  depth >= 5 * ONE_PLY
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
+        Value rbeta = std::min(beta + 216 + 3 * Threads.noProgressCycles - 48 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
@@ -1077,6 +1077,15 @@ moves_loop: // When in check, search starts from here
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
+
+          if (moveCount == 1 && thisThread == Threads.main() && depth > 8 * ONE_PLY)
+		  {
+			 if (value == rm.score)
+				Threads.noProgressCycles++;
+			 else
+				Threads.noProgressCycles=0;
+		  }
+
 
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)
