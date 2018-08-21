@@ -1459,7 +1459,7 @@ moves_loop: // When in check, search starts from here
       Piece moved_piece = pos.moved_piece(move);
       PieceType captured = type_of(pos.piece_on(to_sq(move)));
 
-      if (pos.capture_or_promotion(move))
+      if (pos.capture_or_promotion(move) && !pos.see_ge(move, RookValueMg))
           captureHistory[moved_piece][to_sq(move)][captured] << bonus;
 
       // Decrease all the other played capture moves
