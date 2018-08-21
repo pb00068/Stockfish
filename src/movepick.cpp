@@ -239,7 +239,7 @@ top:
       return select<Best>(Any);
 
   case PROBCUT:
-      return select<Best>([&](){ return pos.see_ge(move, threshold); });
+      return select<Best>([&](){ return pos.see_ge(move, Value(threshold -55 * (cur-1)->value / 1024)); });
 
   case QCAPTURE:
       if (select<Best>([&](){ return   depth > DEPTH_QS_RECAPTURES
