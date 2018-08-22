@@ -702,6 +702,8 @@ namespace {
         }
     }
 
+    Square recap = SQUARE_NB;
+
     // Step 6. Static evaluation of the position
     if (inCheck)
     {
@@ -769,7 +771,15 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
+        if (nullValue < beta && is_ok((ss+1)->currentMove) && pos.captured_piece() && to_sq((ss-1)->currentMove) == from_sq((ss+1)->currentMove))
+        	recap = to_sq((ss-1)->currentMove);
+
+        //dbg_hit_on(recap != SQUARE_NB);
+
         pos.undo_null_move();
+
+        //if (recap != SQUARE_NB)
+        //       sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
 
         if (nullValue >= beta)
         {
@@ -853,6 +863,7 @@ moves_loop: // When in check, search starts from here
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
+									  recap,
                                       countermove,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
