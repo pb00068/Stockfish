@@ -771,15 +771,10 @@ namespace {
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
-        if (nullValue < beta && is_ok((ss+1)->currentMove) && pos.captured_piece() && to_sq((ss-1)->currentMove) == from_sq((ss+1)->currentMove))
-        	recap = to_sq((ss-1)->currentMove);
-
-        //dbg_hit_on(recap != SQUARE_NB);
+        if (nullValue < beta - 2 && is_ok((ss+1)->currentMove) && pos.captured_piece())
+        	recap = from_sq((ss+1)->currentMove);
 
         pos.undo_null_move();
-
-        //if (recap != SQUARE_NB)
-        //       sync_cout << pos << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
 
         if (nullValue >= beta)
         {
