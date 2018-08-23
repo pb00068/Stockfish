@@ -861,8 +861,6 @@ moves_loop: // When in check, search starts from here
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
     Move expectedPVAnswer = MOVE_NONE;
-    if (PvNode)
-    	(ss+1)->pv = nullptr;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -887,16 +885,9 @@ moves_loop: // When in check, search starts from here
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
-      if (PvNode)
-      {
-    	  if ((ss+1)->pv
-    		&& is_ok((ss+1)->pv[0])
-    	    && type_of(pos.moved_piece((ss+1)->pv[0])) >= BISHOP
-			&& type_of(pos.moved_piece((ss+1)->pv[0])) != KING)
-    		  expectedPVAnswer = (ss+1)->pv[0];
 
-          (ss+1)->pv = nullptr;
-      }
+      if (PvNode)
+  	    (ss+1)->pv = nullptr;
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
@@ -1139,7 +1130,14 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
+              {
                   update_pv(ss->pv, move, (ss+1)->pv);
+                  if ((ss+1)->pv
+                      && is_ok((ss+1)->pv[0])
+                      && type_of(pos.moved_piece((ss+1)->pv[0])) >= BISHOP
+                      && type_of(pos.moved_piece((ss+1)->pv[0])) != KING)
+                    expectedPVAnswer = (ss+1)->pv[0];
+              }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
