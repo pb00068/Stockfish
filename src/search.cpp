@@ -860,7 +860,7 @@ moves_loop: // When in check, search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
-    Bitboard pvReplyCrossingSquares = 0;
+    Move expectedPVAnswer = MOVE_NONE;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -941,13 +941,24 @@ moves_loop: // When in check, search starts from here
               // Move count based pruning (~30 Elo)
               if (moveCountPruning)
               {
-            	  if (!PvNode || !pvReplyCrossingSquares)
+            	  if (!PvNode)
             	  {
             		  skipQuiets = true;
             		  continue;
             	  }
-            	  else if ((pvReplyCrossingSquares & pos.pieces()) || !(pvReplyCrossingSquares & to_sq(move)))
-                      continue;
+            	  else
+            	  {
+                      bool skip = true;
+                      if (expectedPVAnswer)
+					  {
+                          Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
+                          if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
+                             skip = false;
+						   //sync_cout << pos << " pv move " << UCI::move(expectedPVAnswer, pos.is_chess960()) << " interfering " <<   UCI::move(move, pos.is_chess960()) << sync_endl;
+					  }
+            		  if (skip)
+            			  continue;
+            	  }
               }
 
               // Reduced depth of the next LMR search
@@ -1125,7 +1136,7 @@ moves_loop: // When in check, search starts from here
                       && is_ok((ss+1)->pv[0])
                       && type_of(pos.moved_piece((ss+1)->pv[0])) >= BISHOP
                       && type_of(pos.moved_piece((ss+1)->pv[0])) != KING)
-                	  pvReplyCrossingSquares = between_bb(from_sq((ss+1)->pv[0]), to_sq((ss+1)->pv[0]));
+                    expectedPVAnswer = (ss+1)->pv[0];
               }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
