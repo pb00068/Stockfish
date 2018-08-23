@@ -860,6 +860,7 @@ moves_loop: // When in check, search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
+    Move expectedPVAnswer = MOVE_NONE;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -885,7 +886,15 @@ moves_loop: // When in check, search starts from here
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
+      {
+    	  if ((ss+1)->pv
+    		&& is_ok((ss+1)->pv[0])
+    	    && type_of(pos.moved_piece((ss+1)->pv[0])) >= BISHOP
+			&& type_of(pos.moved_piece((ss+1)->pv[0])) != KING)
+    		  expectedPVAnswer = (ss+1)->pv[0];
+
           (ss+1)->pv = nullptr;
+      }
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
@@ -939,8 +948,24 @@ moves_loop: // When in check, search starts from here
               // Move count based pruning (~30 Elo)
               if (moveCountPruning)
               {
-                  skipQuiets = true;
-                  continue;
+            	  if (!PvNode)
+            	  {
+            		  skipQuiets = true;
+            		  continue;
+            	  }
+            	  else
+            	  {
+            		  bool skip = true;
+            		  if (expectedPVAnswer)
+					  {
+						  Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
+						  if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
+							  skip = false;
+						  // sync_cout << pos << " pv move " << UCI::move(expectedPVAnswer, pos.is_chess960()) << " interfering " <<   UCI::move(move, pos.is_chess960()) << sync_endl;
+					  }
+            		  if (skip)
+            			  continue;
+            	  }
               }
 
               // Reduced depth of the next LMR search
