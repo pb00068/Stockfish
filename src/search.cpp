@@ -954,7 +954,6 @@ moves_loop: // When in check, search starts from here
                           Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
                           if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
                              skip = false;
-						   //sync_cout << pos << " pv move " << UCI::move(expectedPVAnswer, pos.is_chess960()) << " interfering " <<   UCI::move(move, pos.is_chess960()) << sync_endl;
 					  }
             		  if (skip)
             			  continue;
@@ -1022,6 +1021,13 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for exact PV nodes (~0 Elo)
               if (pvExact)
                   r -= ONE_PLY;
+
+              if (expectedPVAnswer)
+			  {
+				   Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
+				   if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
+					  r -= 2 * ONE_PLY;
+			  }
 
               // Increase reduction if ttMove is a capture (~0 Elo)
               if (ttCapture)
