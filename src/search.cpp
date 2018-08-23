@@ -861,6 +861,8 @@ moves_loop: // When in check, search starts from here
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
     Move expectedPVAnswer = MOVE_NONE;
+    if (PvNode)
+    	(ss+1)->pv = nullptr;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -955,13 +957,13 @@ moves_loop: // When in check, search starts from here
             	  }
             	  else
             	  {
-            		  bool skip = true;
-            		  if (expectedPVAnswer)
+                      bool skip = true;
+                      if (expectedPVAnswer)
 					  {
-						  Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
-						  if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
-							  skip = false;
-						  // sync_cout << pos << " pv move " << UCI::move(expectedPVAnswer, pos.is_chess960()) << " interfering " <<   UCI::move(move, pos.is_chess960()) << sync_endl;
+                          Bitboard crossing = between_bb(from_sq(expectedPVAnswer), to_sq(expectedPVAnswer));
+                          if (!(crossing & pos.pieces()) && (crossing & to_sq(move)))
+                             skip = false;
+						   //sync_cout << pos << " pv move " << UCI::move(expectedPVAnswer, pos.is_chess960()) << " interfering " <<   UCI::move(move, pos.is_chess960()) << sync_endl;
 					  }
             		  if (skip)
             			  continue;
