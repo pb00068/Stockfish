@@ -40,7 +40,6 @@ constexpr int CounterMovePruneThreshold = 0;
 /// its own array of Stack objects, indexed by the current ply.
 
 struct Stack {
-  Move* pv;
   PieceToHistory* continuationHistory;
   int ply;
   Move currentMove;
@@ -50,6 +49,8 @@ struct Stack {
   int statScore;
   int moveCount;
 };
+
+typedef  std::vector <Move >::iterator tMoveIter;
 
 
 /// RootMove struct is used for moves at the root of the tree. For each root move

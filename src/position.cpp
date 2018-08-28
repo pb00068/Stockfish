@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -711,7 +712,8 @@ bool Position::gives_check(Move m) const {
 void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   assert(is_ok(m));
-  assert(&newSt != st);
+  if(&newSt == st)
+	  sync_cout << " sei schemo? " << sync_endl;
 
   thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
   Key k = st->key ^ Zobrist::side;

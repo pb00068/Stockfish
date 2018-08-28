@@ -102,9 +102,10 @@ namespace {
   template <NodeType NT>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
+  void pushback2PV(Position& pos, RootMove& rm, int &, bool);
+
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
-  void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
   void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, int bonus);
@@ -550,7 +551,7 @@ namespace {
     assert(!(PvNode && cutNode));
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
+    Move capturesSearched[32], quietsSearched[64];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -884,8 +885,6 @@ moves_loop: // When in check, search starts from here
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
-      if (PvNode)
-          (ss+1)->pv = nullptr;
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
@@ -1054,12 +1053,7 @@ moves_loop: // When in check, search starts from here
       // high (in the latter case search only if value < beta), otherwise let the
       // parent node fail low with value <= alpha and try another move.
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
-      {
-          (ss+1)->pv = pv;
-          (ss+1)->pv[0] = MOVE_NONE;
-
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
-      }
 
       // Step 18. Undo move
       pos.undo_move(move);
@@ -1085,10 +1079,19 @@ moves_loop: // When in check, search starts from here
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
 
-              assert((ss+1)->pv);
+              StateInfo st1;
 
-              for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
-                  rm.pv.push_back(*m);
+              Key okey = pos.key();
+              pos.do_move(move, st1);
+              bool debug = false;
+//              if (pos.key() == 7890113162190206205ULL)
+//              {
+//              sync_cout << "info doing   move " << UCI::move(rm.pv[0], pos.is_chess960()) << " poskey was " << okey << " is now " << pos.key() << sync_endl;
+//              debug = true;
+//              }
+              int d = 0;
+              pushback2PV(pos, rm, d, debug);
+
 
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
@@ -1110,9 +1113,6 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-
-              if (PvNode && !rootNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
@@ -1186,6 +1186,51 @@ moves_loop: // When in check, search starts from here
     return bestValue;
   }
 
+void  pushback2PV(Position& pos, RootMove& rm, int &d, bool debug)
+{
+
+	  bool ttHit = false;
+	  Move ttMove;
+	  if (++d < pos.this_thread()->selDepth)
+	  {
+	    TTEntry *tte = TT.probe(pos.key(), ttHit);
+	    ttMove = ttHit ? tte->move() : MOVE_NONE;
+	  }
+
+	  if (!ttHit  ||
+		  !ttMove ||
+		  !pos.pseudo_legal(ttMove) ||
+		  !pos.legal(ttMove))
+	  {
+		  if (debug)
+		   sync_cout << "info  key after last move " << pos.key() << sync_endl;
+		   tMoveIter iter  = rm.pv.end();
+		   while (--iter  != rm.pv.begin())
+		   {
+			   Key oldkey = pos.key();
+			   pos.undo_move(iter[0]);
+			   if (debug)
+			    sync_cout << "info  undoing move " << iter[0] << "  " << UCI::move(iter[0], pos.is_chess960()) << " poskey is  " << pos.key() << " was " << oldkey << sync_endl;
+		   }
+		   pos.undo_move(rm.pv[0]);
+		   if (debug)
+		   {
+		    sync_cout << "info undoing move " << UCI::move(rm.pv[0], pos.is_chess960()) << " poskey is  " << pos.key() << sync_endl;
+		    sync_cout << pos << sync_endl;
+		   }
+		   return;
+	  }
+
+	  StateInfo st2;
+	  if (debug)
+	   sync_cout << "info  doing   move " << ttMove << "  " << UCI::move(ttMove, pos.is_chess960()) << " poskey was " << pos.key() << sync_endl;
+	  pos.do_move(ttMove, st2);
+	  if (debug)
+	   sync_cout << "info  poskey after move " << pos.key() << sync_endl;
+
+	  rm.pv.push_back(ttMove);
+	  pushback2PV(pos, rm, d, debug);
+}
 
   // qsearch() is the quiescence search function, which is called by the main
   // search function with depth zero, or recursively with depth less than ONE_PLY.
@@ -1199,7 +1244,6 @@ moves_loop: // When in check, search starts from here
     assert(depth <= DEPTH_ZERO);
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1210,11 +1254,7 @@ moves_loop: // When in check, search starts from here
     int moveCount;
 
     if (PvNode)
-    {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
-        (ss+1)->pv = pv;
-        ss->pv[0] = MOVE_NONE;
-    }
 
     Thread* thisThread = pos.this_thread();
     (ss+1)->ply = ss->ply + 1;
@@ -1370,9 +1410,6 @@ moves_loop: // When in check, search starts from here
 
           if (value > alpha)
           {
-              if (PvNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
-
               if (PvNode && value < beta) // Update alpha here!
               {
                   alpha = value;
@@ -1426,16 +1463,6 @@ moves_loop: // When in check, search starts from here
     return  v == VALUE_NONE             ? VALUE_NONE
           : v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
           : v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
-  }
-
-
-  // update_pv() adds current move and appends child pv[]
-
-  void update_pv(Move* pv, Move move, Move* childPv) {
-
-    for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
-        *pv++ = *childPv++;
-    *pv = MOVE_NONE;
   }
 
 
