@@ -102,7 +102,7 @@ namespace {
   template <NodeType NT>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
-  void pushback2PV(Position& pos, RootMove& rm, int &, bool);
+  void pushback2PV(Position& pos, RootMove& rm, int &);
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
@@ -282,7 +282,7 @@ void MainThread::search() {
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
-  if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
+  if (bestThread->rootMoves[0].pv.size() > 1)
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
 
   std::cout << sync_endl;
@@ -1079,19 +1079,9 @@ moves_loop: // When in check, search starts from here
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
 
-              StateInfo st1;
-
-              Key okey = pos.key();
-              pos.do_move(move, st1);
-              bool debug = false;
-//              if (pos.key() == 7890113162190206205ULL)
-//              {
-//              sync_cout << "info doing   move " << UCI::move(rm.pv[0], pos.is_chess960()) << " poskey was " << okey << " is now " << pos.key() << sync_endl;
-//              debug = true;
-//              }
-              int d = 0;
-              pushback2PV(pos, rm, d, debug);
-
+              pos.do_move(move, st);
+              int ply=0;
+              pushback2PV(pos, rm, ply);
 
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
@@ -1186,12 +1176,11 @@ moves_loop: // When in check, search starts from here
     return bestValue;
   }
 
-void  pushback2PV(Position& pos, RootMove& rm, int &d, bool debug)
+void pushback2PV(Position& pos, RootMove& rm, int &ply)
 {
-
 	  bool ttHit = false;
 	  Move ttMove;
-	  if (++d < pos.this_thread()->selDepth)
+	  if (++ply < pos.this_thread()->selDepth)
 	  {
 	    TTEntry *tte = TT.probe(pos.key(), ttHit);
 	    ttMove = ttHit ? tte->move() : MOVE_NONE;
@@ -1202,34 +1191,17 @@ void  pushback2PV(Position& pos, RootMove& rm, int &d, bool debug)
 		  !pos.pseudo_legal(ttMove) ||
 		  !pos.legal(ttMove))
 	  {
-		  if (debug)
-		   sync_cout << "info  key after last move " << pos.key() << sync_endl;
-		   tMoveIter iter  = rm.pv.end();
-		   while (--iter  != rm.pv.begin())
-		   {
-			   Key oldkey = pos.key();
+		   for (moveIterator iter = rm.pv.end(); --iter != rm.pv.begin();)
 			   pos.undo_move(iter[0]);
-			   if (debug)
-			    sync_cout << "info  undoing move " << iter[0] << "  " << UCI::move(iter[0], pos.is_chess960()) << " poskey is  " << pos.key() << " was " << oldkey << sync_endl;
-		   }
 		   pos.undo_move(rm.pv[0]);
-		   if (debug)
-		   {
-		    sync_cout << "info undoing move " << UCI::move(rm.pv[0], pos.is_chess960()) << " poskey is  " << pos.key() << sync_endl;
-		    sync_cout << pos << sync_endl;
-		   }
 		   return;
 	  }
 
-	  StateInfo st2;
-	  if (debug)
-	   sync_cout << "info  doing   move " << ttMove << "  " << UCI::move(ttMove, pos.is_chess960()) << " poskey was " << pos.key() << sync_endl;
-	  pos.do_move(ttMove, st2);
-	  if (debug)
-	   sync_cout << "info  poskey after move " << pos.key() << sync_endl;
+	  StateInfo st;
+	  pos.do_move(ttMove, st);
 
 	  rm.pv.push_back(ttMove);
-	  pushback2PV(pos, rm, d, debug);
+	  pushback2PV(pos, rm, ply);
 }
 
   // qsearch() is the quiescence search function, which is called by the main
@@ -1650,36 +1622,6 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
   }
 
   return ss.str();
-}
-
-
-/// RootMove::extract_ponder_from_tt() is called in case we have no ponder move
-/// before exiting the search, for instance, in case we stop the search during a
-/// fail high at root. We try hard to have a ponder move to return to the GUI,
-/// otherwise in case of 'ponder on' we have nothing to think on.
-
-bool RootMove::extract_ponder_from_tt(Position& pos) {
-
-    StateInfo st;
-    bool ttHit;
-
-    assert(pv.size() == 1);
-
-    if (!pv[0])
-        return false;
-
-    pos.do_move(pv[0], st);
-    TTEntry* tte = TT.probe(pos.key(), ttHit);
-
-    if (ttHit)
-    {
-        Move m = tte->move(); // Local copy to be SMP safe
-        if (MoveList<LEGAL>(pos).contains(m))
-            pv.push_back(m);
-    }
-
-    pos.undo_move(pv[0]);
-    return pv.size() > 1;
 }
 
 void Tablebases::rank_root_moves(Position& pos, Search::RootMoves& rootMoves) {

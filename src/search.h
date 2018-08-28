@@ -50,7 +50,7 @@ struct Stack {
   int moveCount;
 };
 
-typedef  std::vector <Move >::iterator tMoveIter;
+typedef  std::vector <Move >::iterator moveIterator;
 
 
 /// RootMove struct is used for moves at the root of the tree. For each root move
