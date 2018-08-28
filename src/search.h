@@ -58,9 +58,9 @@ typedef  std::vector <Move >::iterator moveIterator;
 
 struct RootMove {
 
-  explicit RootMove(Move m) : pv(1, m) {}
-  bool extract_ponder_from_tt(Position& pos);
-  bool operator==(const Move& m) const { return pv[0] == m; }
+  explicit RootMove(Move m) : move(m) {}
+  Move extract_ponder_from_tt(Position& pos);
+  bool operator==(const Move& m) const { return move == m; }
   bool operator<(const RootMove& m) const { // Sort in descending order
     return m.score != score ? m.score < score
                             : m.previousScore < previousScore;
@@ -71,7 +71,7 @@ struct RootMove {
   int selDepth = 0;
   int tbRank;
   Value tbScore;
-  std::vector<Move> pv;
+  Move move;
 };
 
 typedef std::vector<RootMove> RootMoves;

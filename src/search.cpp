@@ -102,8 +102,6 @@ namespace {
   template <NodeType NT>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
-  void pushback2PV(Position& pos, RootMove& rm, int &);
-
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
@@ -245,7 +243,7 @@ void MainThread::search() {
   if (    Options["MultiPV"] == 1
       && !Limits.depth
       && !Skill(Options["Skill Level"]).enabled()
-      &&  rootMoves[0].pv[0] != MOVE_NONE)
+      &&  rootMoves[0].move != MOVE_NONE)
   {
       std::map<Move, int> votes;
       Value minScore = this->rootMoves[0].score;
@@ -254,21 +252,21 @@ void MainThread::search() {
       for (Thread* th: Threads)
       {
           minScore = std::min(minScore, th->rootMoves[0].score);
-          votes[th->rootMoves[0].pv[0]] = 0;
+          votes[th->rootMoves[0].move] = 0;
       }
 
       // Vote according to score and depth
       for (Thread* th : Threads)
-          votes[th->rootMoves[0].pv[0]] +=  int(th->rootMoves[0].score - minScore)
+          votes[th->rootMoves[0].move] +=  int(th->rootMoves[0].score - minScore)
                                           + int(th->completedDepth);
 
       // Select best thread
-      int bestVote = votes[this->rootMoves[0].pv[0]];
+      int bestVote = votes[this->rootMoves[0].move];
       for (Thread* th : Threads)
       {
-          if (votes[th->rootMoves[0].pv[0]] > bestVote)
+          if (votes[th->rootMoves[0].move] > bestVote)
           {
-              bestVote = votes[th->rootMoves[0].pv[0]];
+              bestVote = votes[th->rootMoves[0].move];
               bestThread = th;
           }
       }
@@ -280,10 +278,11 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+  sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].move, rootPos.is_chess960());
 
-  if (bestThread->rootMoves[0].pv.size() > 1)
-      std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+  Move ponder =  bestThread->rootMoves[0].extract_ponder_from_tt(rootPos);
+  if (ponder)
+      std::cout << " ponder " << UCI::move(ponder, rootPos.is_chess960());
 
   std::cout << sync_endl;
 }
@@ -455,8 +454,8 @@ void Thread::search() {
       if (!Threads.stop)
           completedDepth = rootDepth;
 
-      if (rootMoves[0].pv[0] != lastBestMove) {
-         lastBestMove = rootMoves[0].pv[0];
+      if (rootMoves[0].move != lastBestMove) {
+         lastBestMove = rootMoves[0].move;
          lastBestMoveDepth = rootDepth;
       }
 
@@ -622,7 +621,7 @@ namespace {
     posKey = pos.key() ^ Key(excludedMove << 16); // Isn't a very good hash
     tte = TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
+    ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].move
             : ttHit    ? tte->move() : MOVE_NONE;
 
     // At non-PV nodes we check for an early TT cutoff
@@ -1077,11 +1076,6 @@ moves_loop: // When in check, search starts from here
           {
               rm.score = value;
               rm.selDepth = thisThread->selDepth;
-              rm.pv.resize(1);
-
-              pos.do_move(move, st);
-              int ply=0;
-              pushback2PV(pos, rm, ply);
 
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
@@ -1175,34 +1169,6 @@ moves_loop: // When in check, search starts from here
 
     return bestValue;
   }
-
-void pushback2PV(Position& pos, RootMove& rm, int &ply)
-{
-	  bool ttHit = false;
-	  Move ttMove;
-	  if (++ply < pos.this_thread()->selDepth)
-	  {
-	    TTEntry *tte = TT.probe(pos.key(), ttHit);
-	    ttMove = ttHit ? tte->move() : MOVE_NONE;
-	  }
-
-	  if (!ttHit  ||
-		  !ttMove ||
-		  !pos.pseudo_legal(ttMove) ||
-		  !pos.legal(ttMove))
-	  {
-		   for (moveIterator iter = rm.pv.end(); --iter != rm.pv.begin();)
-			   pos.undo_move(iter[0]);
-		   pos.undo_move(rm.pv[0]);
-		   return;
-	  }
-
-	  StateInfo st;
-	  pos.do_move(ttMove, st);
-
-	  rm.pv.push_back(ttMove);
-	  pushback2PV(pos, rm, ply);
-}
 
   // qsearch() is the quiescence search function, which is called by the main
   // search function with depth zero, or recursively with depth less than ONE_PLY.
@@ -1527,7 +1493,7 @@ void pushback2PV(Position& pos, RootMove& rm, int &ply)
         if (rootMoves[i].score + push >= maxScore)
         {
             maxScore = rootMoves[i].score + push;
-            best = rootMoves[i].pv[0];
+            best = rootMoves[i].move;
         }
     }
 
@@ -1614,14 +1580,28 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
           ss << " hashfull " << TT.hashfull();
 
       ss << " tbhits "   << tbHits
-         << " time "     << elapsed
-         << " pv";
-
-      for (Move m : rootMoves[i].pv)
-          ss << " " << UCI::move(m, pos.is_chess960());
+         << " time "     << elapsed;
   }
 
   return ss.str();
+}
+
+Move RootMove::extract_ponder_from_tt(Position& pos) {
+    StateInfo st;
+    bool ttHit;
+    if (!move)
+        return MOVE_NONE;
+    pos.do_move(move, st);
+    TTEntry* tte = TT.probe(pos.key(), ttHit);
+    Move ponder = MOVE_NONE;
+    if (ttHit)
+    {
+        Move m = tte->move(); // Local copy to be SMP safe
+        if (MoveList<LEGAL>(pos).contains(m))
+        	ponder = m;
+    }
+    pos.undo_move(move);
+    return ponder;
 }
 
 void Tablebases::rank_root_moves(Position& pos, Search::RootMoves& rootMoves) {

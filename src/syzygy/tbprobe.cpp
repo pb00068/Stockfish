@@ -1483,7 +1483,7 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
     // Probe and rank each move
     for (auto& m : rootMoves)
     {
-        pos.do_move(m.pv[0], st);
+        pos.do_move(m.move, st);
 
         // Calculate dtz for the current move counting from the root position
         if (pos.rule50_count() == 0)
@@ -1506,7 +1506,7 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
             && MoveList<LEGAL>(pos).size() == 0)
             dtz = 1;
 
-        pos.undo_move(m.pv[0]);
+        pos.undo_move(m.move);
 
         if (result == FAIL)
             return false;
@@ -1548,11 +1548,11 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves) {
     // Probe and rank each move
     for (auto& m : rootMoves)
     {
-        pos.do_move(m.pv[0], st);
+        pos.do_move(m.move, st);
 
         WDLScore wdl = -probe_wdl(pos, &result);
 
-        pos.undo_move(m.pv[0]);
+        pos.undo_move(m.move);
 
         if (result == FAIL)
             return false;
