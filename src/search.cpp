@@ -853,6 +853,7 @@ namespace {
 
 moves_loop: // When in check, search starts from here
 
+
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
@@ -893,7 +894,15 @@ moves_loop: // When in check, search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      extension = DEPTH_ZERO;
+      // extend single evasion moves if subtree is'nt extended already
+      extension = inCheck
+    		  && !excludedMove
+			  && ss->moveCount == 1
+			  && !ttMove
+			  && depth <= thisThread->rootDepth - ss->ply
+			  && !mp.hasNextMoveInStage()
+			  ? ONE_PLY : DEPTH_ZERO;
+
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
@@ -911,6 +920,7 @@ moves_loop: // When in check, search starts from here
       if (    depth >= 8 * ONE_PLY
           &&  move == ttMove
           && !rootNode
+		  && !extension
           && !excludedMove // Recursive singular search is not allowed
           &&  ttValue != VALUE_NONE
           && (tte->bound() & BOUND_LOWER)
