@@ -894,6 +894,8 @@ moves_loop: // When in check, search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
+      captureOrPromotion = pos.capture_or_promotion(move);
+
       // extend single evasion moves if subtree is'nt extended already
       extension = inCheck
     		  && !excludedMove
@@ -901,9 +903,9 @@ moves_loop: // When in check, search starts from here
 			  && !ttMove
 			  && depth <= thisThread->rootDepth - ss->ply
 			  && !mp.hasNextMoveInStage()
+			  && !captureOrPromotion
 			  ? ONE_PLY : DEPTH_ZERO;
 
-      captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
