@@ -555,7 +555,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth newDepth;
     Value bestValue, value, ttValue, eval, maxValue, pureStaticEval;
     bool ttHit, inCheck, givesCheck, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
@@ -894,16 +894,19 @@ moves_loop: // When in check, search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
+      captureOrPromotion = pos.capture_or_promotion(move);
+
       // extend single evasion moves if subtree is'nt extended already
-      extension = inCheck
-    		  && !excludedMove
-			  && ss->moveCount == 1
-			  && !ttMove
-			  && depth <= thisThread->rootDepth - ss->ply
-			  && !mp.hasNextMoveInStage()
+      ss->extension = inCheck
+              && !excludedMove
+              && ss->moveCount == 1
+              && !ttMove
+              && !(ss-1)->extension
+              && !mp.hasNextMoveInStage()
+			  && !captureOrPromotion
 			  ? ONE_PLY : DEPTH_ZERO;
 
-      captureOrPromotion = pos.capture_or_promotion(move);
+
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
@@ -920,7 +923,7 @@ moves_loop: // When in check, search starts from here
       if (    depth >= 8 * ONE_PLY
           &&  move == ttMove
           && !rootNode
-		  && !extension
+		  && !ss->extension
           && !excludedMove // Recursive singular search is not allowed
           &&  ttValue != VALUE_NONE
           && (tte->bound() & BOUND_LOWER)
@@ -933,15 +936,15 @@ moves_loop: // When in check, search starts from here
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
-              extension = ONE_PLY;
+              ss->extension = ONE_PLY;
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning
                &&  pos.see_ge(move))
-          extension = ONE_PLY;
+          ss->extension = ONE_PLY;
 
       // Calculate new depth for this move
-      newDepth = depth - ONE_PLY + extension;
+      newDepth = depth - ONE_PLY + ss->extension;
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
@@ -978,7 +981,7 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (   !extension // (~20 Elo)
+          else if (   !ss->extension // (~20 Elo)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
