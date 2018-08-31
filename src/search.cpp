@@ -888,9 +888,10 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       // extend single evasion moves if subtree is'nt extended already
       extension = inCheck
-       && !excludedMove
        && !moveCount
        && !ttMove
+       && !excludedMove
+	   && (ss-1)->moveCount < 6
        && depth <= thisThread->rootDepth - ss->ply
        && !mp.hasNextMoveInStage()
        && !captureOrPromotion
