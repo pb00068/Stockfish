@@ -897,7 +897,7 @@ moves_loop: // When in check, search starts from here
 	   {
     	  Move nextEvasion = mp.next_move(false);
     	  if (nextEvasion)
-    		  mp.pushBack();
+             mp.pushBack();
     	  else extension = ONE_PLY;
 	   }
 
