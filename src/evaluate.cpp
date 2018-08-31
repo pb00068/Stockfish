@@ -184,7 +184,7 @@ namespace {
 
   public:
     Evaluation() = delete;
-    explicit Evaluation(const Position& p) : pos(p) {}
+    explicit Evaluation(const Position& p, Bitboard& sq) : pos(p) { squares = &sq; }
     Evaluation& operator=(const Evaluation&) = delete;
     Value value();
 
@@ -201,7 +201,7 @@ namespace {
     const Position& pos;
     Material::Entry* me;
     Pawns::Entry* pe;
-    Bitboard mobilityArea[COLOR_NB];
+    Bitboard mobilityArea[COLOR_NB], *squares;
     Score mobility[COLOR_NB] = { SCORE_ZERO, SCORE_ZERO };
 
     // attackedBy[color][piece type] is a bitboard representing all squares
@@ -392,9 +392,13 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
+            Bitboard queenPinners, sb;
+            sb = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
+            if (sb)
+            {
                 score -= WeakQueen;
+                *squares |= sb;
+            }
         }
     }
     if (T)
@@ -878,8 +882,8 @@ namespace {
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
 
-Value Eval::evaluate(const Position& pos) {
-  return Evaluation<NO_TRACE>(pos).value();
+Value Eval::evaluate(const Position& pos, Bitboard& squares) {
+  return Evaluation<NO_TRACE>(pos, squares).value();
 }
 
 
@@ -893,7 +897,8 @@ std::string Eval::trace(const Position& pos) {
 
   pos.this_thread()->contempt = SCORE_ZERO; // Reset any dynamic contempt
 
-  Value v = Evaluation<TRACE>(pos).value();
+  Bitboard b = 0;
+  Value v = Evaluation<TRACE>(pos, b).value();
 
   v = pos.side_to_move() == WHITE ? v : -v; // Trace scores are from white's point of view
 

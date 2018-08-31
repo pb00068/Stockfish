@@ -578,13 +578,15 @@ namespace {
     if (PvNode && thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
 
+    Bitboard goodClearances = inCheck ? 0 : pos.blockers_for_king(~us);
+
     if (!rootNode)
     {
         // Step 2. Check for aborted search and immediate draw
         if (   Threads.stop.load(std::memory_order_relaxed)
             || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) - 10 * ((ss-1)->statScore > 0)
+            return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos, goodClearances) - 10 * ((ss-1)->statScore > 0)
                                                     : VALUE_DRAW;
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -606,6 +608,9 @@ namespace {
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
+
+
+
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -714,7 +719,7 @@ namespace {
         // Never assume anything on values stored in TT
         ss->staticEval = eval = pureStaticEval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = pureStaticEval = evaluate(pos);
+            ss->staticEval = eval = pureStaticEval = evaluate(pos, goodClearances);
 
         // Can ttValue be used as a better position evaluation?
         if (    ttValue != VALUE_NONE
@@ -729,7 +734,7 @@ namespace {
             int bonus = p > 0 ? (-p - 2500) / 512 :
                         p < 0 ? (-p + 2500) / 512 : 0;
 
-            pureStaticEval = evaluate(pos);
+            pureStaticEval = evaluate(pos, goodClearances);
             ss->staticEval = eval = pureStaticEval + bonus;
         }
         else
@@ -965,10 +970,12 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (!(goodClearances & from_sq(move)) &&
+                  !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
+        		   && !(goodClearances & from_sq(move))
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
@@ -1214,6 +1221,7 @@ moves_loop: // When in check, search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool ttHit, inCheck, givesCheck, evasionPrunable;
     int moveCount;
+    Bitboard b =0;
 
     if (PvNode)
     {
@@ -1232,7 +1240,7 @@ moves_loop: // When in check, search starts from here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos, b) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1267,7 +1275,7 @@ moves_loop: // When in check, search starts from here
         {
             // Never assume anything on values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos);
+                ss->staticEval = bestValue = evaluate(pos, b);
 
             // Can ttValue be used as a better position evaluation?
             if (    ttValue != VALUE_NONE
@@ -1276,7 +1284,7 @@ moves_loop: // When in check, search starts from here
         }
         else
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, b)
                                              : -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         // Stand pat. Return immediately if static value is at least beta
