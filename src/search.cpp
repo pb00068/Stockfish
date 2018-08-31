@@ -885,6 +885,17 @@ moves_loop: // When in check, search starts from here
                                   thisThread->rootMoves.begin() + thisThread->pvLast, move))
           continue;
 
+      captureOrPromotion = pos.capture_or_promotion(move);
+      // extend single evasion moves if subtree is'nt extended already
+      extension = inCheck
+       && !excludedMove
+       && !moveCount
+       && !ttMove
+       && depth <= thisThread->rootDepth - ss->ply
+       && !mp.hasNextMoveInStage()
+       && !captureOrPromotion
+	       ? ONE_PLY : DEPTH_ZERO;
+
       ss->moveCount = ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
@@ -893,18 +904,6 @@ moves_loop: // When in check, search starts from here
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
-
-      captureOrPromotion = pos.capture_or_promotion(move);
-
-      // extend single evasion moves if subtree is'nt extended already
-      extension = inCheck
-    		  && !excludedMove
-			  && ss->moveCount == 1
-			  && !ttMove
-			  && depth <= thisThread->rootDepth - ss->ply
-			  && !mp.hasNextMoveInStage()
-			  && !captureOrPromotion
-			  ? ONE_PLY : DEPTH_ZERO;
 
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
