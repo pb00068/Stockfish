@@ -149,9 +149,9 @@ Move MovePicker::select(Pred filter) {
   return move = MOVE_NONE;
 }
 
-bool MovePicker::hasNextMoveInStage()
+void MovePicker::pushBack()
 {
-	return cur < endMoves;
+	cur--;
 }
 
 

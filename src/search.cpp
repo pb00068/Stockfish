@@ -887,15 +887,19 @@ moves_loop: // When in check, search starts from here
 
       captureOrPromotion = pos.capture_or_promotion(move);
       // extend single evasion moves if subtree is'nt extended already
-      extension = inCheck
+      extension = DEPTH_ZERO;
+      if (inCheck
        && !moveCount
-       && ttMove != move
        && !excludedMove
-	   && (ss-1)->moveCount < 3
+	   && (ss-1)->moveCount < 8
        && depth <= thisThread->rootDepth - ss->ply
-       && !mp.hasNextMoveInStage()
-       && !captureOrPromotion
-	       ? ONE_PLY : DEPTH_ZERO;
+       && !captureOrPromotion)
+	   {
+    	  Move nextEvasion = mp.next_move(false);
+    	  if (nextEvasion)
+    		  mp.pushBack();
+    	  else extension = ONE_PLY;
+	   }
 
       ss->moveCount = ++moveCount;
 
@@ -922,7 +926,7 @@ moves_loop: // When in check, search starts from here
       if (    depth >= 8 * ONE_PLY
           &&  move == ttMove
           && !rootNode
-		  && !extension
+          && !extension
           && !excludedMove // Recursive singular search is not allowed
           &&  ttValue != VALUE_NONE
           && (tte->bound() & BOUND_LOWER)
