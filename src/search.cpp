@@ -900,6 +900,7 @@ moves_loop: // When in check, search starts from here
       ss->extension = inCheck
               && !excludedMove
               && ss->moveCount == 1
+			  && (ss-1)->moveCount < 4
               && !ttMove
               && !(ss-1)->extension
               && !mp.hasNextMoveInStage()
