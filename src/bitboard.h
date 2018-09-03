@@ -236,8 +236,13 @@ inline Bitboard passed_pawn_mask(Color c, Square s) {
 /// straight or on a diagonal line.
 
 inline bool aligned(Square s1, Square s2, Square s3) {
-  return LineBB[s1][s2] & s3;
+
+  return (file_of(s1) == file_of(s2) && file_of(s2) == file_of(s3)) ||
+         (rank_of(s1) == rank_of(s2) && rank_of(s2) == rank_of(s3)) ||
+         (file_of(s1) - file_of(s2) == rank_of(s1) - rank_of(s2) && file_of(s2) - file_of(s3) == rank_of(s2) - rank_of(s3)) ||
+         (file_of(s1) - file_of(s2) == rank_of(s2) - rank_of(s1) && file_of(s2) - file_of(s3) == rank_of(s3) - rank_of(s2));
 }
+
 
 
 /// distance() functions return the distance between x and y, defined as the
