@@ -397,7 +397,8 @@ namespace {
             if (sb)
             {
                 score -= WeakQueen;
-                *squares |= sb;
+                if (pos.side_to_move() == Them)
+                	*squares |= sb;
             }
         }
     }
