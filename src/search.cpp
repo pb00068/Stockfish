@@ -970,14 +970,23 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!(goodClearances & from_sq(move)) &&
+              // don't prune if move might be a discovered attack against enemy queen
+              if ((!(goodClearances & from_sq(move)) || (pos.blockers_for_king(~us) & from_sq(move))) &&
                   !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (   !extension // (~20 Elo)
-        		   && !(goodClearances & from_sq(move))
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+          else if (   !extension) // (~20 Elo)
+          {
+        	if (goodClearances & from_sq(move))
+        	{
+        		if (givesCheck) // disco or double
+        			continue;
+        		else if (!pos.see_ge(move, -BishopValueEg * (depth / ONE_PLY)))
                   continue;
+        	}
+        	else if (!pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                  continue;
+          }
       }
 
       // Speculative prefetch as early as possible
