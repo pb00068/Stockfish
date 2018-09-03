@@ -909,7 +909,7 @@ moves_loop: // When in check, search starts from here
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       skipNonchecks =   depth < 16 * ONE_PLY
-              && moveCount + 4 >= FutilityMoveCounts[improving][depth / ONE_PLY];
+              && moveCount + 1 >= FutilityMoveCounts[improving][depth / ONE_PLY];
 
       // Step 13. Extensions (~70 Elo)
 
