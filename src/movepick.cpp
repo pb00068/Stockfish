@@ -200,6 +200,7 @@ top:
 		  move = cur->move;
 		  cur++, k++;
 		  if( move != MOVE_NONE
+			   && move != ttMove
                && !pos.capture(move)
                &&  pos.pseudo_legal(move)
 			   && (!killers_check[k-1] || pos.gives_check(move)))
