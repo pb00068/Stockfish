@@ -60,9 +60,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool* killch)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), killers_check{killch[0], killch[1], false} {
 
   assert(d > DEPTH_ZERO);
 
@@ -153,7 +153,7 @@ Move MovePicker::select(Pred filter) {
 /// returns a new pseudo legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
 Move MovePicker::next_move(bool skipQuiets) {
-
+  int k;
 top:
   switch (stage) {
 
@@ -194,10 +194,18 @@ top:
       /* fallthrough */
 
   case REFUTATION:
-      if (select<Next>([&](){ return    move != MOVE_NONE
-                                    && !pos.capture(move)
-                                    &&  pos.pseudo_legal(move); }))
-          return move;
+	  k=0;
+	  while (cur < endMoves)
+	  {
+		  move = cur->move;
+		  cur++, k++;
+		  if( move != MOVE_NONE
+               && !pos.capture(move)
+               &&  pos.pseudo_legal(move)
+			   && (!killers_check[k-1] || pos.gives_check(move)))
+			  return move;
+      }
+
       ++stage;
       /* fallthrough */
 

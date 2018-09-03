@@ -860,7 +860,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers,
+									  ss->killerChecks);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -1486,7 +1487,9 @@ moves_loop: // When in check, search starts from here
     if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
+        ss->killerChecks[1] = ss->killerChecks[0];
         ss->killers[0] = move;
+        ss->killerChecks[0] = pos.gives_check(move);
     }
 
     Color us = pos.side_to_move();
