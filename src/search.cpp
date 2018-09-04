@@ -555,7 +555,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth newDepth;
     Value bestValue, value, ttValue, eval, maxValue, pureStaticEval;
     bool ttHit, inCheck, givesCheck, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
@@ -887,15 +887,14 @@ moves_loop: // When in check, search starts from here
 
 
       // retire extension when to many evasions exist
-      extension = DEPTH_ZERO;
+      ss->extension = NO_EXTENSION;
       if (inCheck
        && !moveCount
-	   && depth < 7 * ONE_PLY
-	   && move != ttMove
+       && move != ttMove
        && !excludedMove
-       && depth > thisThread->rootDepth - ss->ply
-	   && mp.remainingMovesInStage() > 2)
-    	  extension = -ONE_PLY;
+       && (ss-1)->extension == CHECK_EXT
+       && mp.remainingMovesInStage() > 4)
+    	  ss->extension = RETIRE_EXT;
 
       ss->moveCount = ++moveCount;
 
@@ -935,15 +934,16 @@ moves_loop: // When in check, search starts from here
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
-              extension = ONE_PLY;
+              ss->extension = SINGULAR_EXT;
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning
                &&  pos.see_ge(move))
-          extension += ONE_PLY;
+          ss->extension = CHECK_EXT;
 
       // Calculate new depth for this move
-      newDepth = depth - ONE_PLY + extension;
+      newDepth = depth - ONE_PLY + (ss->extension != 0 ? (ss->extension > 0 ? ONE_PLY : -ONE_PLY) : DEPTH_ZERO);
+      dbg_hit_on(ss->extension < 0);
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
@@ -980,7 +980,7 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (   !extension // (~20 Elo)
+          else if (   ss->extension <= 0// (~20 Elo)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
