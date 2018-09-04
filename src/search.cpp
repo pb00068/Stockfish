@@ -1187,9 +1187,8 @@ moves_loop: // When in check, search starts from here
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, pureStaticEval);
-        if (depth > 5 * ONE_PLY && tte->move() && tte->move() != bestMove)
+        if (depth > 5 * ONE_PLY && ttHit && ttMove && ttMove != bestMove && !rootNode)
         {
-        	 ttMove = tte->move();
         	 movedPiece = pos.moved_piece(ttMove);
         	 int score  =  thisThread->mainHistory[us][from_to(ttMove)]
 							 + (*contHist[0])[movedPiece][to_sq(ttMove)]
