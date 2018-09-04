@@ -1195,7 +1195,8 @@ moves_loop: // When in check, search starts from here
 							 + (*contHist[0])[movedPiece][to_sq(ttMove)]
 							 + (*contHist[1])[movedPiece][to_sq(ttMove)]
 							 + (*contHist[3])[movedPiece][to_sq(ttMove)];
-			 if (score < 0)
+
+			 if (score < -14000)
 				 tte->resetMove();
         }
     }
