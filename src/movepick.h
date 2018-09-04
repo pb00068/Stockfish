@@ -128,7 +128,7 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
-  void pushBack();
+  int remainingMovesInStage();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
