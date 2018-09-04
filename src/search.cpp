@@ -894,7 +894,7 @@ moves_loop: // When in check, search starts from here
 	   && move != ttMove
        && !excludedMove
        && depth > thisThread->rootDepth - ss->ply
-	   && mp.remainingMovesInStage() > 4)
+	   && mp.remainingMovesInStage() > 2)
     	  extension = -ONE_PLY;
 
       ss->moveCount = ++moveCount;
