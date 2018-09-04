@@ -1182,10 +1182,23 @@ moves_loop: // When in check, search starts from here
         bestValue = std::min(bestValue, maxValue);
 
     if (!excludedMove)
+    {
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, pureStaticEval);
+        if (depth > 5 * ONE_PLY && tte->move() && tte->move() != bestMove)
+        {
+        	 ttMove = tte->move();
+        	 movedPiece = pos.moved_piece(ttMove);
+        	 int score  =  thisThread->mainHistory[us][from_to(ttMove)]
+							 + (*contHist[0])[movedPiece][to_sq(ttMove)]
+							 + (*contHist[1])[movedPiece][to_sq(ttMove)]
+							 + (*contHist[3])[movedPiece][to_sq(ttMove)];
+			 if (score < 0)
+				 tte->resetMove();
+        }
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
