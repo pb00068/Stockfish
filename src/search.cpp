@@ -943,7 +943,6 @@ moves_loop: // When in check, search starts from here
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + (ss->extension != 0 ? (ss->extension > 0 ? ONE_PLY : -ONE_PLY) : DEPTH_ZERO);
-      dbg_hit_on(ss->extension < 0);
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
