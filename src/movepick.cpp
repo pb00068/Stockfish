@@ -100,6 +100,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   stage += (ttMove == MOVE_NONE);
 }
 
+bool MovePicker::passedTTMove()
+{
+	return passedTTmove;
+}
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -143,7 +148,9 @@ Move MovePicker::select(Pred filter) {
 
       move = *cur++;
 
-      if (move != ttMove && filter())
+      if (move == ttMove)
+    	  passedTTmove = true;
+      else if  (filter())
           return move;
   }
   return move = MOVE_NONE;
@@ -207,6 +214,7 @@ top:
 
       score<QUIETS>();
       partial_insertion_sort(cur, endMoves, -4000 * depth / ONE_PLY);
+      passedTTmove = false;
       ++stage;
       /* fallthrough */
 

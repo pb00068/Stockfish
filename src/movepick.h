@@ -129,6 +129,8 @@ public:
                                            Move*);
   Move next_move(bool skipQuiets = false);
 
+  bool passedTTMove();
+
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
@@ -142,6 +144,7 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
+  bool passedTTmove;
   Move move;
   Square recaptureSquare;
   Value threshold;
