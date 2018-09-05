@@ -866,7 +866,7 @@ moves_loop: // When in check, search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
-    int singE = 0;
+    int singExtended = 0;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -915,13 +915,13 @@ moves_loop: // When in check, search starts from here
           && !excludedMove // Recursive singular search is not allowed
           &&  ttValue != VALUE_NONE
           && (tte->bound() & BOUND_LOWER)
-          &&  tte->depth() >= depth - 3 * ONE_PLY - 2 * tte->singExt() * ONE_PLY
+          &&  tte->depth() >= depth - 3 * ONE_PLY
           &&  pos.legal(move))
       {
-    	  if (tte->singExt()  && tte->depth() >= depth - 2 * ONE_PLY)
+    	  if (tte->singExt() && tte->depth() >= depth - 2 * ONE_PLY)
     	  {
     		  extension = ONE_PLY;
-    		  singE = 4;
+    		  singExtended = 4;
     	  }
     	  else
     	  {
@@ -934,7 +934,7 @@ moves_loop: // When in check, search starts from here
 			  {
 				  extension = ONE_PLY;
 				  tte->markSingularExtended();
-				  singE = 4;
+				  singExtended = 4;
 			  }
     	  }
       }
@@ -1198,7 +1198,7 @@ moves_loop: // When in check, search starts from here
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  depth, bestMove, pureStaticEval, singE);
+                  depth, bestMove, pureStaticEval, singExtended);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
