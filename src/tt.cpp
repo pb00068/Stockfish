@@ -30,7 +30,7 @@
 TranspositionTable TT; // Our global transposition table
 
 /// TTEntry::save saves a TTEntry
-void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
+void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev, int singE) {
 
   assert(d / ONE_PLY * ONE_PLY == d);
 
@@ -46,7 +46,7 @@ void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
       key16     = (uint16_t)(k >> 48);
       value16   = (int16_t)v;
       eval16    = (int16_t)ev;
-      genBound8 = (uint8_t)(TT.generation8 | b);
+      genBound8 = (uint8_t)(TT.generation8 | singE | b);
       depth8    = (int8_t)(d / ONE_PLY);
   }
 }

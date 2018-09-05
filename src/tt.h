@@ -41,8 +41,8 @@ struct TTEntry {
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)(depth8 * int(ONE_PLY)); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
-  bool  singE() const { return  genBound8 & 0x4; }
-  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev);
+  bool  singExt() const { return  genBound8 & 0x4; }
+  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, int SingE);
   void markSingularExtended();
 
 private:
