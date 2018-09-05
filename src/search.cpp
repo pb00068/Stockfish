@@ -918,16 +918,10 @@ moves_loop: // When in check, search starts from here
           &&  tte->depth() >= depth - 3 * ONE_PLY
           &&  pos.legal(move))
       {
-    	  if (tte->singExt() && tte->depth() >= depth - 2 * ONE_PLY)
-    	  {
-    		  extension = ONE_PLY;
-    		  singExtended = 4;
-    	  }
-    	  else
-    	  {
+
 			  Value rBeta = std::max(ttValue - 2 * depth / ONE_PLY, -VALUE_MATE);
 			  ss->excludedMove = move;
-			  value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode);
+			  value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2 - tte->singExt() * ONE_PLY, cutNode);
 			  ss->excludedMove = MOVE_NONE;
 
 			  if (value < rBeta)
@@ -936,7 +930,7 @@ moves_loop: // When in check, search starts from here
 				  tte->markSingularExtended();
 				  singExtended = 4;
 			  }
-    	  }
+
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning
