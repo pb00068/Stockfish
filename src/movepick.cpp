@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  passedTTmove = false;
 }
 
 /// MovePicker constructor for quiescence search
@@ -214,7 +215,6 @@ top:
 
       score<QUIETS>();
       partial_insertion_sort(cur, endMoves, -4000 * depth / ONE_PLY);
-      passedTTmove = false;
       ++stage;
       /* fallthrough */
 
