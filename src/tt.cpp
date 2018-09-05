@@ -51,6 +51,10 @@ void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
   }
 }
 
+void TTEntry::markSingularExtended() {
+	 genBound8 |= 4;
+}
+
 
 /// TranspositionTable::resize() sets the size of the transposition table,
 /// measured in megabytes. Transposition table consists of a power of 2 number
@@ -119,7 +123,7 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   for (int i = 0; i < ClusterSize; ++i)
       if (!tte[i].key16 || tte[i].key16 == key16)
       {
-          if ((tte[i].genBound8 & 0xFC) != generation8 && tte[i].key16)
+          if ((tte[i].genBound8 & 0xF8) != generation8 && tte[i].key16)
               tte[i].genBound8 = uint8_t(generation8 | tte[i].bound()); // Refresh
 
           return found = (bool)tte[i].key16, &tte[i];
@@ -129,11 +133,11 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   TTEntry* replace = tte;
   for (int i = 1; i < ClusterSize; ++i)
       // Due to our packed storage format for generation and its cyclic
-      // nature we add 259 (256 is the modulus plus 3 to keep the lowest
-      // two bound bits from affecting the result) to calculate the entry
+      // nature we add 131 (128 is the modulus plus 3 to keep the lowest
+      // 3 bound bits from affecting the result) to calculate the entry
       // age correctly even after generation8 overflows into the next cycle.
-      if (  replace->depth8 - ((259 + generation8 - replace->genBound8) & 0xFC) * 2
-          >   tte[i].depth8 - ((259 + generation8 -   tte[i].genBound8) & 0xFC) * 2)
+      if (  replace->depth8 - ((131 + generation8 - replace->genBound8) & 0xF8) * 2
+          >   tte[i].depth8 - ((131 + generation8 -   tte[i].genBound8) & 0xF8) * 2)
           replace = &tte[i];
 
   return found = false, replace;
@@ -150,7 +154,7 @@ int TranspositionTable::hashfull() const {
   {
       const TTEntry* tte = &table[i].entry[0];
       for (int j = 0; j < ClusterSize; j++)
-          if ((tte[j].genBound8 & 0xFC) == generation8)
+          if ((tte[j].genBound8 & 0xF8) == generation8)
               cnt++;
   }
   return cnt;

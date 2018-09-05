@@ -41,7 +41,9 @@ struct TTEntry {
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)(depth8 * int(ONE_PLY)); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
+  bool  singE() const { return  genBound8 & 0x4; }
   void save(Key k, Value v, Bound b, Depth d, Move m, Value ev);
+  void markSingularExtended();
 
 private:
   friend class TranspositionTable;
@@ -76,7 +78,7 @@ class TranspositionTable {
 
 public:
  ~TranspositionTable() { free(mem); }
-  void new_search() { generation8 += 4; } // Lower 2 bits are used by Bound
+  void new_search() { generation8 += 8; } // Lower 3 bits are used by other stuff
   TTEntry* probe(const Key key, bool& found) const;
   int hashfull() const;
   void resize(size_t mbSize);
