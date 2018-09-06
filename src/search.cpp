@@ -1186,10 +1186,12 @@ moves_loop: // When in check, search starts from here
         bestValue = std::min(bestValue, maxValue);
 
     if (!excludedMove)
+    {
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  depth + (goodSingular && bestMove == ttMove) ? ONE_PLY : DEPTH_ZERO, bestMove, pureStaticEval);
+                  depth + ((goodSingular && bestMove == ttMove) ? ONE_PLY : DEPTH_ZERO), bestMove, pureStaticEval);
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
