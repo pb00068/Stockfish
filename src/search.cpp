@@ -866,6 +866,7 @@ moves_loop: // When in check, search starts from here
     skipQuiets = false;
     ttCapture = false;
     pvExact = PvNode && ttHit && tte->bound() == BOUND_EXACT;
+    bool goodSingular = false;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -923,7 +924,10 @@ moves_loop: // When in check, search starts from here
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
+          {
               extension = ONE_PLY;
+              goodSingular = true;
+          }
       }
       else if (    givesCheck // Check extension (~2 Elo)
                && !moveCountPruning
@@ -1161,6 +1165,8 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
     else if (bestMove)
     {
+    	if (goodSingular && bestMove == ttMove)
+    		depth = depth + ONE_PLY;
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
