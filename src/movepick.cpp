@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  skipped = 0;
 }
 
 /// MovePicker constructor for quiescence search
@@ -149,6 +150,11 @@ Move MovePicker::select(Pred filter) {
   return move = MOVE_NONE;
 }
 
+int MovePicker::skippedQuiets()
+{
+	return skipped;
+}
+
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
@@ -217,6 +223,7 @@ top:
                                       && move != refutations[2];}))
           return move;
 
+      skipped = endMoves - cur;
       // Prepare the pointers to loop over the bad captures
       cur = moves;
       endMoves = endBadCaptures;
