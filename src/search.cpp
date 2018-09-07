@@ -785,8 +785,11 @@ namespace {
 
             if (thisThread->nmpMinPly
               || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY)
-              || (ss-2)->moveCount > 10) //zugzwang unlikely if we had plenty of moves at disposal
+			  || pos.count<PAWN>() >= 10  //zugzwang unlikely with many pawns on board
+              || (ss-2)->moveCount >= 10) //zugzwang unlikely if we had plenty of moves at disposal
                 return nullValue;
+
+            //dbg_hit_on(pos.count<PAWN>() > 10);
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
