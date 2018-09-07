@@ -128,7 +128,6 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
-  int skippedQuiets();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -142,7 +141,7 @@ private:
   const PieceToHistory** continuationHistory;
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
-  int stage, skipped;
+  int stage;
   Move move;
   Square recaptureSquare;
   Value threshold;

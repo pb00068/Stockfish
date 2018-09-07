@@ -783,9 +783,7 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (thisThread->nmpMinPly
-                || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY)
-                || (ss-2)->moveCount > 10) //zugzwang unlikely if we had plenty of moves at disposal
+            if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
                 return nullValue;
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
@@ -1175,12 +1173,10 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
     }
     // Bonus for prior countermove that caused the fail low
-    else if (depth >= 3 * ONE_PLY || PvNode)
-    {
-    	ss->moveCount += mp.skippedQuiets();
-        if (!pos.captured_piece() && is_ok((ss-1)->currentMove))
-           update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
-    }
+    else if (   (depth >= 3 * ONE_PLY || PvNode)
+             && !pos.captured_piece()
+             && is_ok((ss-1)->currentMove))
+        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
