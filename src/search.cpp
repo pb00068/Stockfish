@@ -58,6 +58,8 @@ using namespace Search;
 
 namespace {
 
+const int pvmoves2[] = { 3826, 3898, 2997, 4031, 3236, 3746, 2313, 3634, 576, 2072, 9, 1552, 576, 1032, 9, 29184, 576, 3233, 2924, 2130, 18, 2194, 32125};
+
   // Different node types, used as a template parameter
   enum NodeType { NonPV, PV };
 
@@ -540,6 +542,28 @@ namespace {
             return alpha;
     }
 
+
+    bool match = ss->ply ? true : false;
+			if (ss->ply && pos.this_thread()->nmpMinPly) {
+
+				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+					  match = false;
+					  break;
+					}
+
+				  }
+				  if (match && pos.this_thread()->nmpMinPly)
+						sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta <<
+						"nmc: " << ( !PvNode
+						        && (ss-1)->currentMove != MOVE_NULL
+						        && (ss-1)->statScore < 23200
+						        //&&  eval >= beta
+						        &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
+						        &&  pos.non_pawn_material(pos.side_to_move())
+						        && (ss->ply >= pos.this_thread()->nmpMinPly || pos.side_to_move() != pos.this_thread()->nmpColor)) << sync_endl;
+			}
+
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
         return qsearch<NT>(pos, ss, alpha, beta);
@@ -748,6 +772,7 @@ namespace {
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !rootNode
+    		&& (!thisThread->nmpMinPly)
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth, improving) >= beta
         &&  eval < VALUE_KNOWN_WIN) // Do not return unproven wins
@@ -784,16 +809,57 @@ namespace {
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
+            {
+            	bool match = ss->ply ? true : false;
+				if (ss->ply ) {
+
+					  for (int ply = 0; ply <= ss->ply-1; ply++) {
+						if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+						  match = false;
+						  break;
+						}
+
+					  }
+					  if (match && thisThread->nmpMinPly)
+					  {
+							sync_cout << pos << " info nm pruning at ply: " << ss->ply << sync_endl;
+					  }
+
+
+
+				}
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
+            Depth nd = depth-R;
+            bool match = ss->ply ? true : false;
+            if (ss->ply ) {
+
+				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+					  match = false;
+					  break;
+					}
+
+				  }
+				  if (match )
+				  {
+					  nd += 10 * ONE_PLY;
+						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << sync_endl;
+				  }
+
+
+
+			}
+
             // Do verification search at high depths, with null move pruning disabled
             // for us, until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
+            thisThread->nmpMinPly = ss->ply + 3 * (nd) / 4;
             thisThread->nmpColor = us;
 
-            Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+            Value v = search<NonPV>(pos, ss, beta-1, beta, nd, false);
 
             thisThread->nmpMinPly = 0;
 
@@ -807,6 +873,7 @@ namespace {
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
         &&  depth >= 5 * ONE_PLY
+		&& !thisThread->nmpMinPly
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
@@ -886,10 +953,10 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth / ONE_PLY
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+//          sync_cout << "info depth " << depth / ONE_PLY
+//                    << " currmove " << UCI::move(move, pos.is_chess960())
+//                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
 
@@ -935,6 +1002,7 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
+    		  && (!thisThread->nmpMinPly)
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
@@ -1005,6 +1073,9 @@ moves_loop: // When in check, search starts from here
           if ((ss-1)->moveCount > 15)
               r -= ONE_PLY;
 
+          if (thisThread->nmpMinPly && type_of(movedPiece) == PAWN)
+        	  r -= 3 * ONE_PLY;
+
           if (!captureOrPromotion)
           {
               // Decrease reduction for exact PV nodes (~0 Elo)
@@ -1048,6 +1119,8 @@ moves_loop: // When in check, search starts from here
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
+
+
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
@@ -1285,6 +1358,19 @@ moves_loop: // When in check, search starts from here
             if (!ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
+            bool match = ss->ply ? true : false;
+			if (ss->ply && thisThread->nmpMinPly) {
+
+				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+					  match = false;
+					  break;
+					}
+
+				  }
+				  if (match && thisThread->nmpMinPly)
+						sync_cout << pos << " info pruning at qs: " << ss->ply << sync_endl;
+			}
 
             return bestValue;
         }
@@ -1328,12 +1414,38 @@ moves_loop: // When in check, search starts from here
           if (futilityValue <= alpha)
           {
               bestValue = std::max(bestValue, futilityValue);
+              bool match = ss->ply ? true : false;
+       			if (ss->ply && thisThread->nmpMinPly) {
+
+       				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+       					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+       					  match = false;
+       					  break;
+       					}
+
+       				  }
+       				  if (match && thisThread->nmpMinPly)
+       						sync_cout << pos << " info pruning at qs-fut: " << ss->ply << sync_endl;
+       			}
               continue;
           }
 
           if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
+              bool match = ss->ply ? true : false;
+       			if (ss->ply && thisThread->nmpMinPly) {
+
+       				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+       					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+       					  match = false;
+       					  break;
+       					}
+
+       				  }
+       				  if (match && thisThread->nmpMinPly)
+       						sync_cout << pos << " info pruning at qs-fut2: " << ss->ply << sync_endl;
+       			}
               continue;
           }
       }
@@ -1347,7 +1459,22 @@ moves_loop: // When in check, search starts from here
       // Don't search moves with negative SEE values
       if (  (!inCheck || evasionPrunable)
           && !pos.see_ge(move))
+      {
+          bool match = ss->ply ? true : false;
+   			if (ss->ply && thisThread->nmpMinPly) {
+
+   				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+   					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+   					  match = false;
+   					  break;
+   					}
+
+   				  }
+   				  if (match && thisThread->nmpMinPly)
+   						sync_cout << pos << " info pruning at qs-negsee: " << ss->ply << sync_endl;
+   			}
           continue;
+      }
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
