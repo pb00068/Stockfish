@@ -57,7 +57,7 @@ using Eval::evaluate;
 using namespace Search;
 
 namespace {
-
+//3826
 const int pvmoves2[] = { 3826, 3898, 2997, 4031, 3236, 3746, 2313, 3634, 576, 2072, 9, 1552, 576, 1032, 9, 29184, 576, 3233, 2924, 2130, 18, 2194, 32125};
 
   // Different node types, used as a template parameter
@@ -543,26 +543,26 @@ namespace {
     }
 
 
-    bool match = ss->ply ? true : false;
-			if (ss->ply && pos.this_thread()->nmpMinPly) {
 
-				  for (int ply = 0; ply <= ss->ply-1; ply++) {
-					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-					  match = false;
-					  break;
-					}
-
-				  }
-				  if (match && pos.this_thread()->nmpMinPly)
-						sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta <<
-						"nmc: " << ( !PvNode
-						        && (ss-1)->currentMove != MOVE_NULL
-						        && (ss-1)->statScore < 23200
-						        //&&  eval >= beta
-						        &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
-						        &&  pos.non_pawn_material(pos.side_to_move())
-						        && (ss->ply >= pos.this_thread()->nmpMinPly || pos.side_to_move() != pos.this_thread()->nmpColor)) << sync_endl;
+	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
+		bool match = true;
+		  for (int ply = 0; ply <= ss->ply-2; ply++) {
+			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+			  match = false;
+			  break;
 			}
+
+		  }
+		  if (match && pos.this_thread()->nmpMinPly)
+				sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta <<
+				"nmc: " << ( !PvNode
+						&& (ss-1)->currentMove != MOVE_NULL
+						&& (ss-1)->statScore < 23200
+						//&&  eval >= beta
+						&&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
+						&&  pos.non_pawn_material(pos.side_to_move())
+						&& (ss->ply >= pos.this_thread()->nmpMinPly || pos.side_to_move() != pos.this_thread()->nmpColor)) << sync_endl;
+	}
 
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
@@ -811,9 +811,9 @@ namespace {
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
             {
             	bool match = ss->ply ? true : false;
-				if (ss->ply ) {
+				if (ss->ply > 11) {
 
-					  for (int ply = 0; ply <= ss->ply-1; ply++) {
+					  for (int ply = 0; ply <= ss->ply-2; ply++) {
 						if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
 						  match = false;
 						  break;
@@ -835,9 +835,9 @@ namespace {
 
             Depth nd = depth-R;
             bool match = ss->ply ? true : false;
-            if (ss->ply ) {
+            if (ss->ply > 6) {
 
-				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+				  for (int ply = 0; ply <= ss->ply-2; ply++) {
 					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
 					  match = false;
 					  break;
@@ -846,7 +846,7 @@ namespace {
 				  }
 				  if (match )
 				  {
-					  nd += 10 * ONE_PLY;
+					    nd += 10 * ONE_PLY;
 						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << sync_endl;
 				  }
 
@@ -1014,6 +1014,27 @@ moves_loop: // When in check, search starts from here
               if (moveCountPruning)
               {
                   skipQuiets = true;
+
+                  bool match = ss->ply ? true : false;
+					 if (ss->ply > 1 && thisThread->nmpMinPly) {
+						 int ply;
+						  for (ply = 0; ply <= ss->ply-2; ply++) {
+							if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+							  match = false;
+							  break;
+							}
+
+						  }
+						  if (match )
+						  {
+								sync_cout << pos << " info skipQuiets at ply: " << ss->ply << " s with d: " << depth << " last move " << (ss-1)->currentMove << " last match " << (ss - ss->ply + ply)->currentMove << sync_endl;
+								abort();
+						  }
+
+
+
+					}
+
                   continue;
               }
 
@@ -1305,7 +1326,21 @@ moves_loop: // When in check, search starts from here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
+    {
+    	if (ss->ply > 3  && thisThread->nmpMinPly) {
+		bool match = ss->ply ? true : false;
+		  for (int ply = 0; ply <= ss->ply-1; ply++) {
+			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+			  match = false;
+			  break;
+			}
+
+		  }
+		  if (match && thisThread->nmpMinPly)
+				sync_cout << pos << " info immediate draw detect at qs: " << ss->ply << sync_endl;
+    		}
         return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) : VALUE_DRAW;
+    }
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1326,7 +1361,21 @@ moves_loop: // When in check, search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
+    {
+    	if (ss->ply > 3  && thisThread->nmpMinPly) {
+			bool match = ss->ply ? true : false;
+			  for (int ply = 0; ply <= ss->ply-1; ply++) {
+				if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+				  match = false;
+				  break;
+				}
+
+			  }
+			  if (match && thisThread->nmpMinPly)
+					sync_cout << pos << " info tt0cutoff at qs: " << ss->ply << sync_endl;
+		}
         return ttValue;
+    }
 
     // Evaluate the position statically
     if (inCheck)
@@ -1358,9 +1407,9 @@ moves_loop: // When in check, search starts from here
             if (!ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
-            bool match = ss->ply ? true : false;
-			if (ss->ply && thisThread->nmpMinPly) {
 
+			if (ss->ply > 3  && thisThread->nmpMinPly) {
+				bool match = ss->ply ? true : false;
 				  for (int ply = 0; ply <= ss->ply-1; ply++) {
 					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
 					  match = false;
@@ -1414,10 +1463,10 @@ moves_loop: // When in check, search starts from here
           if (futilityValue <= alpha)
           {
               bestValue = std::max(bestValue, futilityValue);
-              bool match = ss->ply ? true : false;
-       			if (ss->ply && thisThread->nmpMinPly) {
 
-       				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+       			if (ss->ply > 3 && thisThread->nmpMinPly) {
+       				bool match = ss->ply ? true : false;
+       				  for (int ply = 0; ply <= ss->ply-2; ply++) {
        					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
        					  match = false;
        					  break;
@@ -1433,10 +1482,10 @@ moves_loop: // When in check, search starts from here
           if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
-              bool match = ss->ply ? true : false;
-       			if (ss->ply && thisThread->nmpMinPly) {
 
-       				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+       			if (ss->ply > 3 && thisThread->nmpMinPly) {
+       			      bool match = ss->ply ? true : false;
+       				  for (int ply = 0; ply <= ss->ply-2; ply++) {
        					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
        					  match = false;
        					  break;
@@ -1461,9 +1510,9 @@ moves_loop: // When in check, search starts from here
           && !pos.see_ge(move))
       {
           bool match = ss->ply ? true : false;
-   			if (ss->ply && thisThread->nmpMinPly) {
+   			if (ss->ply > 11 && thisThread->nmpMinPly) {
 
-   				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+   				  for (int ply = 0; ply <= ss->ply-2; ply++) {
    					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
    					  match = false;
    					  break;
