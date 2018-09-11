@@ -719,6 +719,8 @@ namespace {
         }
     }
 
+    bool mt = false;
+
     // Step 6. Static evaluation of the position
     if (inCheck)
     {
@@ -765,11 +767,12 @@ namespace {
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !rootNode
-    		&& (!thisThread->nmpMinPly)
+    	//	&& (!thisThread->nmpMinPly) // only 20 secs
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth, improving) >= beta
         &&  eval < VALUE_KNOWN_WIN) // Do not return unproven wins
         return eval;
+
 
     // Step 9. Null move search with verification search (~40 Elo)
     if (   !PvNode
@@ -801,6 +804,28 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
+//            Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
+//             MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
+//             Move bm = mp.next_move(false);
+//             if (bm && type_of(bm) == PROMOTION && rank_of(to_sq(bm)) == RANK_1)
+//             {
+//            	 bool mt = true;
+//				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+//					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+//					  mt = false;
+//					  break;
+//					}
+//
+//				  }
+//				  if (mt )
+//				  {
+//					 sync_cout << pos << "promotion possible but nmp-pruned!" << sync_endl;
+//									 abort();
+//				  }
+//             }
+
+
+
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
             {
@@ -811,20 +836,21 @@ namespace {
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
             Depth nd = depth-R;
-            bool match = ss->ply ? true : false;
-            if (ss->ply > 7) {
 
-				  for (int ply = 0; ply <= ss->ply-2; ply++) {
+            if (ss->ply > 7) {
+                  mt = true;
+				  for (int ply = 0; ply <= ss->ply-1; ply++) {
 					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-					  match = false;
+					  mt = false;
 					  break;
 					}
 
 				  }
-				  if (match )
+				  if (mt )
 				  {
-					    //nd += 10 * ONE_PLY;
-						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << sync_endl;
+					   //bool lastPasserPush =  (pos.pieces(PAWN) & to_sq((ss-2)->currentMove)) && !(pos.pieces() & forward_file_bb(us, to_sq((ss-2)->currentMove) + (us == WHITE ? NORTH : SOUTH)));
+					    nd += 8 * ONE_PLY;
+						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << " beforelastmove " << UCI::move((ss-2)->currentMove, false) << sync_endl;
 				  }
 
 
@@ -843,25 +869,8 @@ namespace {
             if (v >= beta)
                 return nullValue;
 
-            match = ss->ply ? true : false;
-			if (ss->ply > 2) {
-
-				  for (int ply = 0; ply <= ss->ply-2; ply++) {
-					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-					  match = false;
-					  break;
-					}
-
-				  }
-				  if (match )
-				  {
-						sync_cout << pos << " info zugzwang verification hit at ply: " << ss->ply << " s with d: " << nd << sync_endl;
-
-				  }
-
-
-
-			}
+		   if (mt )
+				sync_cout << pos << " info zugzwang verification hit at ply: " << ss->ply << " s with d: " << nd << sync_endl;
 
         }
     }
@@ -871,7 +880,7 @@ namespace {
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
         &&  depth >= 5 * ONE_PLY
-		&& !thisThread->nmpMinPly
+		&& !thisThread->nmpMinPly // with this enabled a minute faster
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
@@ -1000,7 +1009,7 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
-    		  && (!thisThread->nmpMinPly)
+    		  && (!thisThread->nmpMinPly) // noetig
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
@@ -1071,11 +1080,20 @@ moves_loop: // When in check, search starts from here
           if ((ss-1)->moveCount > 15)
               r -= ONE_PLY;
 
+          // Don't lmr to much along typical zugzwang lines
           if (thisThread->nmpMinPly && type_of(movedPiece) == PAWN && !(pos.pieces() & forward_file_bb(us, to_sq(move) + (us == WHITE ? NORTH : SOUTH))))
           {
-        	  r -= 3 * ONE_PLY;
-        	 // sync_cout << pos << " no reduction for move " << UCI::move(move , pos.is_chess960()) << sync_endl;
+        	  r -= 4 * ONE_PLY; // passed pawn push
+        	  //sync_cout << pos << " no reduction for move " << UCI::move(move , pos.is_chess960()) << sync_endl;
           }
+//          else if (thisThread->nmpMinPly
+//        		  && is_ok((ss-1)->currentMove)
+//                  && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == PAWN
+//                  && is_ok((ss-2)->currentMove)
+//				  && (ss-2)->currentMove == make_move(to_sq(move), from_sq(move)))
+//          {
+//          	  r -= 3 * ONE_PLY; // on zugzwang often we have bouncing pieces
+//          }
 
           if (!captureOrPromotion)
           {
@@ -1245,12 +1263,21 @@ moves_loop: // When in check, search starts from here
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+
+        if (mt)
+        	sync_cout << pos << " bestmove " << UCI::move(bestMove, pos.is_chess960()) << " after ver. hit!!!!" << sync_endl;
     }
     // Bonus for prior countermove that caused the fail low
-    else if (   (depth >= 3 * ONE_PLY || PvNode)
+    else
+    	{
+    	if (mt)
+    	   sync_cout << pos << " no bestmove found after ver. hit!!!!" << sync_endl;
+
+    	if (   (depth >= 3 * ONE_PLY || PvNode)
              && !pos.captured_piece()
              && is_ok((ss-1)->currentMove))
         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+    	}
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
