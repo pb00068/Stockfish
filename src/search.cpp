@@ -546,7 +546,7 @@ namespace {
 
 	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
 		bool match = true;
-		  for (int ply = 0; ply <= ss->ply-2; ply++) {
+		  for (int ply = 0; ply <= ss->ply-1; ply++) {
 			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
 			  match = false;
 			  break;
@@ -554,14 +554,7 @@ namespace {
 
 		  }
 		  if (match && pos.this_thread()->nmpMinPly)
-				sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta <<
-				"nmc: " << ( !PvNode
-						&& (ss-1)->currentMove != MOVE_NULL
-						&& (ss-1)->statScore < 23200
-						//&&  eval >= beta
-						&&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
-						&&  pos.non_pawn_material(pos.side_to_move())
-						&& (ss->ply >= pos.this_thread()->nmpMinPly || pos.side_to_move() != pos.this_thread()->nmpColor)) << sync_endl;
+				sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta  << sync_endl;
 	}
 
     // Dive into quiescence search when the depth reaches zero
@@ -808,26 +801,10 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
+
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
             {
-            	bool match = ss->ply ? true : false;
-				if (ss->ply > 11) {
 
-					  for (int ply = 0; ply <= ss->ply-2; ply++) {
-						if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-						  match = false;
-						  break;
-						}
-
-					  }
-					  if (match && thisThread->nmpMinPly)
-					  {
-							sync_cout << pos << " info nm pruning at ply: " << ss->ply << sync_endl;
-					  }
-
-
-
-				}
                 return nullValue;
             }
 
@@ -835,7 +812,7 @@ namespace {
 
             Depth nd = depth-R;
             bool match = ss->ply ? true : false;
-            if (ss->ply > 6) {
+            if (ss->ply > 7) {
 
 				  for (int ply = 0; ply <= ss->ply-2; ply++) {
 					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
@@ -846,7 +823,7 @@ namespace {
 				  }
 				  if (match )
 				  {
-					    nd += 10 * ONE_PLY;
+					    //nd += 10 * ONE_PLY;
 						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << sync_endl;
 				  }
 
@@ -865,6 +842,27 @@ namespace {
 
             if (v >= beta)
                 return nullValue;
+
+            match = ss->ply ? true : false;
+			if (ss->ply > 2) {
+
+				  for (int ply = 0; ply <= ss->ply-2; ply++) {
+					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+					  match = false;
+					  break;
+					}
+
+				  }
+				  if (match )
+				  {
+						sync_cout << pos << " info zugzwang verification hit at ply: " << ss->ply << " s with d: " << nd << sync_endl;
+
+				  }
+
+
+
+			}
+
         }
     }
 
@@ -1014,27 +1012,6 @@ moves_loop: // When in check, search starts from here
               if (moveCountPruning)
               {
                   skipQuiets = true;
-
-                  bool match = ss->ply ? true : false;
-					 if (ss->ply > 1 && thisThread->nmpMinPly) {
-						 int ply;
-						  for (ply = 0; ply <= ss->ply-2; ply++) {
-							if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-							  match = false;
-							  break;
-							}
-
-						  }
-						  if (match )
-						  {
-								sync_cout << pos << " info skipQuiets at ply: " << ss->ply << " s with d: " << depth << " last move " << (ss-1)->currentMove << " last match " << (ss - ss->ply + ply)->currentMove << sync_endl;
-								abort();
-						  }
-
-
-
-					}
-
                   continue;
               }
 
@@ -1094,8 +1071,11 @@ moves_loop: // When in check, search starts from here
           if ((ss-1)->moveCount > 15)
               r -= ONE_PLY;
 
-          if (thisThread->nmpMinPly && type_of(movedPiece) == PAWN)
+          if (thisThread->nmpMinPly && type_of(movedPiece) == PAWN && !(pos.pieces() & forward_file_bb(us, to_sq(move) + (us == WHITE ? NORTH : SOUTH))))
+          {
         	  r -= 3 * ONE_PLY;
+        	 // sync_cout << pos << " no reduction for move " << UCI::move(move , pos.is_chess960()) << sync_endl;
+          }
 
           if (!captureOrPromotion)
           {
@@ -1327,18 +1307,7 @@ moves_loop: // When in check, search starts from here
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
     {
-    	if (ss->ply > 3  && thisThread->nmpMinPly) {
-		bool match = ss->ply ? true : false;
-		  for (int ply = 0; ply <= ss->ply-1; ply++) {
-			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-			  match = false;
-			  break;
-			}
 
-		  }
-		  if (match && thisThread->nmpMinPly)
-				sync_cout << pos << " info immediate draw detect at qs: " << ss->ply << sync_endl;
-    		}
         return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) : VALUE_DRAW;
     }
 
@@ -1362,18 +1331,7 @@ moves_loop: // When in check, search starts from here
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
     {
-    	if (ss->ply > 3  && thisThread->nmpMinPly) {
-			bool match = ss->ply ? true : false;
-			  for (int ply = 0; ply <= ss->ply-1; ply++) {
-				if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-				  match = false;
-				  break;
-				}
 
-			  }
-			  if (match && thisThread->nmpMinPly)
-					sync_cout << pos << " info tt0cutoff at qs: " << ss->ply << sync_endl;
-		}
         return ttValue;
     }
 
@@ -1408,18 +1366,7 @@ moves_loop: // When in check, search starts from here
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
-			if (ss->ply > 3  && thisThread->nmpMinPly) {
-				bool match = ss->ply ? true : false;
-				  for (int ply = 0; ply <= ss->ply-1; ply++) {
-					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-					  match = false;
-					  break;
-					}
 
-				  }
-				  if (match && thisThread->nmpMinPly)
-						sync_cout << pos << " info pruning at qs: " << ss->ply << sync_endl;
-			}
 
             return bestValue;
         }
@@ -1464,18 +1411,7 @@ moves_loop: // When in check, search starts from here
           {
               bestValue = std::max(bestValue, futilityValue);
 
-       			if (ss->ply > 3 && thisThread->nmpMinPly) {
-       				bool match = ss->ply ? true : false;
-       				  for (int ply = 0; ply <= ss->ply-2; ply++) {
-       					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-       					  match = false;
-       					  break;
-       					}
 
-       				  }
-       				  if (match && thisThread->nmpMinPly)
-       						sync_cout << pos << " info pruning at qs-fut: " << ss->ply << sync_endl;
-       			}
               continue;
           }
 
@@ -1483,18 +1419,7 @@ moves_loop: // When in check, search starts from here
           {
               bestValue = std::max(bestValue, futilityBase);
 
-       			if (ss->ply > 3 && thisThread->nmpMinPly) {
-       			      bool match = ss->ply ? true : false;
-       				  for (int ply = 0; ply <= ss->ply-2; ply++) {
-       					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-       					  match = false;
-       					  break;
-       					}
 
-       				  }
-       				  if (match && thisThread->nmpMinPly)
-       						sync_cout << pos << " info pruning at qs-fut2: " << ss->ply << sync_endl;
-       			}
               continue;
           }
       }
@@ -1509,19 +1434,7 @@ moves_loop: // When in check, search starts from here
       if (  (!inCheck || evasionPrunable)
           && !pos.see_ge(move))
       {
-          bool match = ss->ply ? true : false;
-   			if (ss->ply > 11 && thisThread->nmpMinPly) {
 
-   				  for (int ply = 0; ply <= ss->ply-2; ply++) {
-   					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-   					  match = false;
-   					  break;
-   					}
-
-   				  }
-   				  if (match && thisThread->nmpMinPly)
-   						sync_cout << pos << " info pruning at qs-negsee: " << ss->ply << sync_endl;
-   			}
           continue;
       }
 

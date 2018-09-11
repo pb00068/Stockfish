@@ -406,7 +406,8 @@ inline void Position::remove_piece(Piece pc, Square s) {
   pieceList[pc][index[lastSquare]] = lastSquare;
   pieceList[pc][pieceCount[pc]] = SQ_NONE;
   pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
-  psq -= PSQT::psq[pc][s];
+ // if (type_of(pc) != QUEEN || color_of(pc) == BLACK)
+    psq -= PSQT::psq[pc][s];
 }
 
 inline void Position::move_piece(Piece pc, Square from, Square to) {
