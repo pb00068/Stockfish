@@ -394,8 +394,11 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
+          int consecutiveFailHigh = 0;
           while (true)
           {
+        	  if (consecutiveFailHigh == 2 && rootDepth > 40)
+        		  rootDepth /= 2;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -432,9 +435,13 @@ void Thread::search() {
                       failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
+                  consecutiveFailHigh=0;
               }
               else if (bestValue >= beta)
+              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  consecutiveFailHigh++;
+              }
               else
                   break;
 
