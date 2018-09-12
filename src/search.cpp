@@ -437,9 +437,9 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (rootDepth > selDepth + 5  && resets < 3)
+                  if (rootDepth > 12 && rootDepth > selDepth + 5  && resets < 3)
                   {
-                	  rootDepth = Depth(selDepth + 1);
+                	  completedDepth = rootDepth = (rootDepth + Depth(selDepth))/2;
                 	  resets++;
                   }
               }
