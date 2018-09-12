@@ -337,6 +337,7 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  int resets = 0;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -434,7 +435,15 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
+              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (rootDepth > selDepth + 5  && resets < 3)
+                  {
+                	  sync_cout << "info fail-high on rootdepth " << rootDepth << " reset it to seldepth: " << selDepth << sync_endl;
+                	  rootDepth = Depth(selDepth + 1);
+                	  resets++;
+                  }
+              }
               else
                   break;
 
