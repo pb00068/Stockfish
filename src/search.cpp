@@ -439,7 +439,6 @@ void Thread::search() {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (rootDepth > selDepth + 5  && resets < 3)
                   {
-                	  sync_cout << "info fail-high on rootdepth " << rootDepth << " reset it to seldepth: " << selDepth << sync_endl;
                 	  rootDepth = Depth(selDepth + 1);
                 	  resets++;
                   }
