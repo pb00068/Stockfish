@@ -337,7 +337,7 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
-  bool reduced = false;
+  int reducedCount = 0;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -398,8 +398,9 @@ void Thread::search() {
           int consecutiveFailHigh = 0;
           while (true)
           {
-        	  if (rootDepth > 25 && consecutiveFailHigh == 2 && !reduced)
-        		  rootDepth /= 2, reduced = true;
+        	  if (rootDepth > 10 && consecutiveFailHigh && reducedCount++ < 5)
+       			  completedDepth = rootDepth -= consecutiveFailHigh * ONE_PLY;
+
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
