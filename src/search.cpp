@@ -437,10 +437,22 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (rootDepth > 12 && rootDepth > selDepth + 5  && resets < 3)
+                  // fail-high handling
+                  if (resets < 4)
                   {
-                	  completedDepth = rootDepth = (rootDepth + Depth(selDepth))/2;
-                	  resets++;
+                     if (rootDepth > 14)
+                     {
+                	     if (rootDepth > selDepth + 5 )
+                	     {
+                            // at high rootDepth's step back if selDept is significantly lower
+                            completedDepth = rootDepth = (rootDepth + Depth(selDepth))/2;
+                	        resets++;
+                	     }
+                     }
+                     else {
+                	    resets++;
+                	    break; // at lower rootDepth's go direct to the next rootDepth
+                     }
                   }
               }
               else
