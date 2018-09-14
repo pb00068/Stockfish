@@ -434,7 +434,41 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
+              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  //dbg_hit_on((ss+1)->pv == nullptr);
+                  //sync_cout << "info hallp " << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+                  //dbg_hit_on((ss+1)->pv != nullptr);
+                  if (selDepth + 1 < rootDepth)
+                  sync_cout << "info got here gail jigh " << rootMoves.size() << "  " << rootMoves[0].pv[0] << sync_endl;
+                  if (selDepth + 1 < rootDepth && rootMoves[0].pv.size() < 200)
+                  {
+                	  sync_cout << "info  size of pv " << rootMoves[0].pv.size() << sync_endl;
+                  }
+                  if (selDepth + 1 < rootDepth && rootMoves[0].pv.size() >= 2)
+                  {
+                	  StateInfo st1, st2;
+                	  sync_cout << "kim i bis fdoher?" << sync_endl;
+                	  //sync_cout << "info is legal m1 " << (rootPos.pseudo_legal(rootMoves[0].pv[0]) && rootPos.legal(rootMoves[0].pv[0])) << sync_endl;
+                	 // if (!rootPos.pseudo_legal(rootMoves[0].pv[0]) || !rootPos.legal(rootMoves[0].pv[0]))
+                		//  abort();
+                	  rootPos.do_move(rootMoves[0].pv[0], st1);
+                	  sync_cout << "info is legal m2 " << (rootPos.pseudo_legal(rootMoves[0].pv[1]) && rootPos.legal(rootMoves[0].pv[1])) << sync_endl;
+                	  //if (!rootPos.pseudo_legal(rootMoves[0].pv[1]) || !rootPos.legal(rootMoves[0].pv[1]))
+                	   //              		  abort();
+                	  dbg_hit_on(true);
+                	  rootPos.do_move(rootMoves[0].pv[1], st2);
+                	  sync_cout << "info researching with depth: " << Depth(selDepth) << sync_endl;
+                	  bestValue = ::search<PV>(rootPos, ss+2, alpha, beta, Depth(selDepth), false);
+                	  sync_cout << "info have done a research !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << (bestValue >= beta) << sync_endl;
+                	 // abort();
+                	  if (bestValue >= beta)
+                	      beta = std::min(bestValue + delta, VALUE_INFINITE);
+
+                	  rootPos.undo_move(rootMoves[0].pv[1]);
+                	  rootPos.undo_move(rootMoves[0].pv[0]);
+                  }
+              }
               else
                   break;
 
@@ -458,6 +492,8 @@ void Thread::search() {
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
+
+      //sync_cout << "info bisch Du do?" << sync_endl;
 
       // Have we found a "mate in x"?
       if (   Limits.mate
@@ -1118,8 +1154,11 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
-
+              {
+				update_pv(ss->pv, move, (ss+1)->pv);
+				if (ss->ply > 1)
+				   update_pv((ss-1)->pv, (ss-1)->currentMove, ss->pv);
+			}
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
               else
