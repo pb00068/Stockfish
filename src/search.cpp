@@ -761,6 +761,7 @@ namespace {
         &&  ss->staticEval >= beta - 36 * depth / ONE_PLY + 225
         && !excludedMove
         &&  pos.non_pawn_material(us)
+		&& (!thisThread->nmpFirstPly || ss->ply % 2 == thisThread->nmpFirstPly % 2)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
@@ -770,12 +771,17 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
+        if (!thisThread->nmpFirstPly)
+        	thisThread->nmpFirstPly = ss->ply;
 
         pos.do_null_move(st);
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
         pos.undo_null_move();
+
+        if (thisThread->nmpFirstPly == ss->ply)
+        	thisThread->nmpFirstPly = 0;
 
         if (nullValue >= beta)
         {
