@@ -479,8 +479,6 @@ void Thread::search() {
          lastBestMoveDepth = rootDepth;
       }
 
-      //sync_cout << "info bisch Du do?" << sync_endl;
-
       // Have we found a "mate in x"?
       if (   Limits.mate
           && bestValue >= VALUE_MATE_IN_MAX_PLY
@@ -1247,17 +1245,9 @@ moves_loop: // When in check, search starts from here
     if (PvNode)
     {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
-//        if (debugg)
-//             sync_cout << "info survived qsearch init" << ((ss+1) == nullptr) << sync_endl;
         (ss+1)->pv = pv;
-//        if (debugg)
-//                    sync_cout << "info survived qsearch init" << (ss->pv == nullptr) << sync_endl;
         ss->pv[0] = MOVE_NONE;
     }
-
-//    if (debugg)
-//                sync_cout << "info survived qsearch init" << sync_endl;
-
 
     Thread* thisThread = pos.this_thread();
     (ss+1)->ply = ss->ply + 1;
@@ -1265,10 +1255,6 @@ moves_loop: // When in check, search starts from here
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     inCheck = pos.checkers();
     moveCount = 0;
-
-//    if (debugg)
-//                sync_cout << "info survived qsearch init2" << sync_endl;
-
 
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
