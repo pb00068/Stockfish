@@ -1139,11 +1139,8 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
-              {
-				update_pv(ss->pv, move, (ss+1)->pv);
-				//if (ss->ply > 1)
-				//   update_pv((ss-1)->pv, (ss-1)->currentMove, ss->pv);
-			}
+                  update_pv(ss->pv, move, (ss+1)->pv);
+
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
               else
@@ -1241,7 +1238,6 @@ moves_loop: // When in check, search starts from here
     bool ttHit, inCheck, givesCheck, evasionPrunable;
     int moveCount;
 
-
     if (PvNode)
     {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
@@ -1260,8 +1256,6 @@ moves_loop: // When in check, search starts from here
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
         return (ss->ply >= MAX_PLY && !inCheck) ? evaluate(pos) : VALUE_DRAW;
-
-
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
