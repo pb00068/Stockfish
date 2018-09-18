@@ -97,10 +97,10 @@ namespace {
   };
 
   template <NodeType NT>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, bool);
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
   template <NodeType NT>
-  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, bool debugg, Depth depth = DEPTH_ZERO);
+  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = DEPTH_ZERO);
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
@@ -396,7 +396,7 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
-              bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false, false);
+              bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -436,19 +436,18 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (selDepth + 2 < rootDepth && rootMoves[0].pv.size() >= 2)
+                  if (selDepth - 2 < rootDepth && rootMoves[0].pv.size() >= 2)
                   {
                 	  StateInfo st1, st2;
-
                 	  rootPos.do_move(rootMoves[0].pv[0], st1);
                 	  rootPos.do_move(rootMoves[0].pv[1], st2);
-                	  sync_cout << "info researching with depth: " << Depth(selDepth + 2) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << sync_endl;
+                	  //sync_cout << "info researching with depth: " << Depth(selDepth) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << sync_endl;
                 	  Move pv[MAX_PLY+1];
 
                 	  (ss+2)->pv = pv;
                 	  (ss+2)->pv[0] = MOVE_NONE;
-                	  bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(selDepth + 2), false, false);
-                	  sync_cout << "info have done a research" << (bestValue >= beta) << " bestv: " << bestValue << " seld: " << selDepth << sync_endl;
+                	  bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(selDepth), false);
+                	  //sync_cout << "info have done a research" << (bestValue >= beta) << " bestv: " << bestValue << " seld: " << selDepth << sync_endl;
                 	  if (bestValue >= beta)
                 	      beta = std::min(bestValue + delta, VALUE_INFINITE);
 
@@ -546,7 +545,7 @@ namespace {
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, bool debugg) {
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
 
     constexpr bool PvNode = NT == PV;
     const bool rootNode = PvNode && ss->ply == 0;
@@ -563,12 +562,10 @@ namespace {
             return alpha;
     }
 
-    if (debugg)
-    	sync_cout << "info survived draw-detection " << ss->ply <<  sync_endl;
 
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
-        return qsearch<NT>(pos, ss, alpha, beta, debugg);
+        return qsearch<NT>(pos, ss, alpha, beta);
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
@@ -632,9 +629,6 @@ namespace {
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
-
-    if (debugg)
-       	sync_cout << "info survived search init "<< ss->ply << sync_endl;
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -770,7 +764,7 @@ namespace {
     // Step 7. Razoring (~2 Elo)
     if (   depth < 2 * ONE_PLY
         && eval <= alpha - RazorMargin)
-        return qsearch<NT>(pos, ss, alpha, beta,debugg);
+        return qsearch<NT>(pos, ss, alpha, beta);
 
     improving =   ss->staticEval >= (ss-2)->staticEval
                || (ss-2)->staticEval == VALUE_NONE;
@@ -802,7 +796,7 @@ namespace {
 
         pos.do_null_move(st);
 
-        Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode, debugg);
+        Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
         pos.undo_null_move();
 
@@ -822,7 +816,7 @@ namespace {
             thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
             thisThread->nmpColor = us;
 
-            Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false, debugg);
+            Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
 
             thisThread->nmpMinPly = 0;
 
@@ -856,11 +850,11 @@ namespace {
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -rbeta, -rbeta+1, debugg);
+                value = -qsearch<NonPV>(pos, ss+1, -rbeta, -rbeta+1);
 
                 // If the qsearch held perform the regular search
                 if (value >= rbeta)
-                    value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode, debugg);
+                    value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode);
 
                 pos.undo_move(move);
 
@@ -873,7 +867,7 @@ namespace {
     if (    depth >= 8 * ONE_PLY
         && !ttMove)
     {
-        search<NT>(pos, ss, alpha, beta, depth - 7 * ONE_PLY, cutNode, debugg);
+        search<NT>(pos, ss, alpha, beta, depth - 7 * ONE_PLY, cutNode);
 
         tte = TT.probe(posKey, ttHit);
         ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
@@ -948,7 +942,7 @@ moves_loop: // When in check, search starts from here
       {
           Value rBeta = std::max(ttValue - 2 * depth / ONE_PLY, -VALUE_MATE);
           ss->excludedMove = move;
-          value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode, debugg);
+          value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode);
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
@@ -1022,10 +1016,6 @@ moves_loop: // When in check, search starts from here
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
-      if (debugg)
-                 sync_cout << "info survived domove in search"<< ss->ply << sync_endl;
-
-
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
@@ -1078,22 +1068,16 @@ moves_loop: // When in check, search starts from here
 
           Depth d = std::max(newDepth - std::max(r, DEPTH_ZERO), ONE_PLY);
 
-          if (debugg)
-                          sync_cout << "info survived call prep in search"<< ss->ply << sync_endl;
-
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, debugg);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
 
-      if (debugg && doFullDepthSearch)
-                      sync_cout << "info survived call prep  in search"<< ss->ply << sync_endl;
-
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode, debugg);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
@@ -1103,13 +1087,11 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
-          value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, debugg);
+          value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
       // Step 18. Undo move
       pos.undo_move(move);
-      if (debugg)
-            sync_cout << "info survived undomove in search"<< ss->ply << sync_endl;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1160,17 +1142,9 @@ moves_loop: // When in check, search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
               {
-            	  //if ( ss->pv == nullptr || (ss+1)->pv == nullptr)
-            	//	  sync_cout << "info ss-pv or ss+1-pv is null " << sync_endl;
-            	  if (debugg)
-            	      sync_cout << "info before update_pv in search"<< ss->ply << sync_endl;
-
 				update_pv(ss->pv, move, (ss+1)->pv);
 				//if (ss->ply > 1)
 				//   update_pv((ss-1)->pv, (ss-1)->currentMove, ss->pv);
-
-				 if (debugg)
-				   sync_cout << "info survived update_pv in search"<< ss->ply << sync_endl;
 			}
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
@@ -1184,10 +1158,6 @@ moves_loop: // When in check, search starts from here
           else if (PvNode && !rootNode && value == alpha)
         	  update_pv(ss->pv, move, (ss+1)->pv);
       }
-
-
-      if (debugg)
-          sync_cout << "info survived abetabmphase in search"<< ss->ply << sync_endl;
 
       if (move != bestMove)
       {
@@ -1254,7 +1224,7 @@ moves_loop: // When in check, search starts from here
   // qsearch() is the quiescence search function, which is called by the main
   // search function with depth zero, or recursively with depth less than ONE_PLY.
   template <NodeType NT>
-  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, bool debugg, Depth depth) {
+  Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     constexpr bool PvNode = NT == PV;
 
@@ -1327,9 +1297,6 @@ moves_loop: // When in check, search starts from here
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
         return ttValue;
-
-    if (debugg)
-           sync_cout << "info survived ttprobe in qsearch"<< ss->ply << sync_endl;
 
     // Evaluate the position statically
     if (inCheck)
@@ -1440,7 +1407,7 @@ moves_loop: // When in check, search starts from here
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
-      value = -qsearch<NT>(pos, ss+1, -beta, -alpha, debugg, depth - ONE_PLY);
+      value = -qsearch<NT>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
