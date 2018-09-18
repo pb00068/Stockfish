@@ -436,36 +436,19 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  //dbg_hit_on((ss+1)->pv == nullptr);
-                  //sync_cout << "info hallp " << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
-                  //dbg_hit_on((ss+1)->pv != nullptr);
-                  if (selDepth + 1 < rootDepth)
-                  sync_cout << "info got here gail jigh " << rootMoves.size() << "  " << rootMoves[0].pv[0] << sync_endl;
-                  if (selDepth + 1 < rootDepth && rootMoves[0].pv.size() < 200)
-                  {
-                	  sync_cout << "info  size of pv " << rootMoves[0].pv.size() << sync_endl;
-                  }
-                  if (selDepth + 1 < rootDepth && rootMoves[0].pv.size() >= 2)
+                  if (selDepth + 2 < rootDepth && rootMoves[0].pv.size() >= 2)
                   {
                 	  StateInfo st1, st2;
-                	  sync_cout << "kim i bis fdoher?" << sync_endl;
 
                 	  rootPos.do_move(rootMoves[0].pv[0], st1);
-                	  sync_cout << "info is legal m2 " << (rootPos.pseudo_legal(rootMoves[0].pv[1]) && rootPos.legal(rootMoves[0].pv[1])) << sync_endl;
-
-
                 	  rootPos.do_move(rootMoves[0].pv[1], st2);
-                	  sync_cout << "info researching with depth: " << Depth(selDepth) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << sync_endl;
-                	  sync_cout << "info ss :" << ss->ply << "  " << (ss+1)->ply << "  " << (ss+2)->ply <<sync_endl;
-
+                	  sync_cout << "info researching with depth: " << Depth(selDepth + 2) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << sync_endl;
                 	  Move pv[MAX_PLY+1];
 
                 	  (ss+2)->pv = pv;
-                	  sync_cout << "info ss+2.pv is null :" << ((ss+2)->pv == nullptr ) << sync_endl;
                 	  (ss+2)->pv[0] = MOVE_NONE;
-                	  bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(selDepth), false, false);
+                	  bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(selDepth + 2), false, false);
                 	  sync_cout << "info have done a research" << (bestValue >= beta) << " bestv: " << bestValue << " seld: " << selDepth << sync_endl;
-                	  abort();
                 	  if (bestValue >= beta)
                 	      beta = std::min(bestValue + delta, VALUE_INFINITE);
 
