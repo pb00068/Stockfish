@@ -439,7 +439,7 @@ void Thread::search() {
                   break;
 
               // do a fast verification search if selDepth is very low
-              if (selDepth < rootDepth + 1 && rootMoves[0].pv.size() >= 2)
+              if (selDepth < rootDepth && rootMoves[0].pv.size() >= 2)
               {
                   StateInfo st1, st2;
                   rootPos.do_move(rootMoves[0].pv[0], st1);
