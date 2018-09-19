@@ -307,7 +307,10 @@ void Thread::search() {
   for (int i = 4; i > 0; i--)
      (ss-i)->continuationHistory = &this->continuationHistory[NO_PIECE][0]; // Use as sentinel
   for (int ply=1; ply < MAX_PLY; ply++)
+  {
 	  (ss+ply)->ply = ply;
+	  (ss+ply)->pvStartIndex = (ss+ply-1)->pvStartIndex + MAX_PLY + 1 - ply;
+  }
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -552,7 +555,7 @@ namespace {
     assert(!(PvNode && cutNode));
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
+    Move capturesSearched[32], quietsSearched[64];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1062,7 +1065,7 @@ moves_loop: // When in check, search starts from here
       // parent node fail low with value <= alpha and try another move.
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
-          (ss+1)->pv = pv;
+          (ss+1)->pv = &thisThread->pv[ss->pvStartIndex];
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
@@ -1206,7 +1209,6 @@ moves_loop: // When in check, search starts from here
     assert(depth <= DEPTH_ZERO);
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1215,15 +1217,15 @@ moves_loop: // When in check, search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool ttHit, inCheck, givesCheck, evasionPrunable;
     int moveCount;
+    Thread* thisThread = pos.this_thread();
 
     if (PvNode)
     {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
-        (ss+1)->pv = pv;
+        (ss+1)->pv = &thisThread->pv[ss->pvStartIndex];
         ss->pv[0] = MOVE_NONE;
     }
 
-    Thread* thisThread = pos.this_thread();
     ss->currentMove = bestMove = MOVE_NONE;
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     inCheck = pos.checkers();

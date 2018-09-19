@@ -64,6 +64,7 @@ public:
   int selDepth, nmpMinPly;
   Color nmpColor;
   std::atomic<uint64_t> nodes, tbHits;
+  Move pv[(MAX_PLY + 1) * (MAX_PLY+2) / 2];
 
   Position rootPos;
   Search::RootMoves rootMoves;
