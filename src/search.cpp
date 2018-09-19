@@ -434,29 +434,37 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
-              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (selDepth - 2 < rootDepth && rootMoves[0].pv.size() >= 2)
-                  {
-                	  StateInfo st1, st2;
-                	  rootPos.do_move(rootMoves[0].pv[0], st1);
-                	  rootPos.do_move(rootMoves[0].pv[1], st2);
-                	  //sync_cout << "info researching with depth: " << Depth(selDepth) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << sync_endl;
-                	  Move pv[MAX_PLY+1];
-
-                	  (ss+2)->pv = pv;
-                	  (ss+2)->pv[0] = MOVE_NONE;
-                	  bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(selDepth), false);
-                	  //sync_cout << "info have done a research" << (bestValue >= beta) << " bestv: " << bestValue << " seld: " << selDepth << sync_endl;
-                	  if (bestValue >= beta)
-                	      beta = std::min(bestValue + delta, VALUE_INFINITE);
-
-                	  rootPos.undo_move(rootMoves[0].pv[1]);
-                	  rootPos.undo_move(rootMoves[0].pv[0]);
-                  }
-              }
               else
                   break;
+
+              // do a fast verification search if selDepth is very low
+              if (selDepth < rootDepth + 3 && rootMoves[0].pv.size() >= 2)
+              {
+                  StateInfo st1, st2;
+                  rootPos.do_move(rootMoves[0].pv[0], st1);
+                  rootPos.do_move(rootMoves[0].pv[1], st2);
+                  //sync_cout << "info researching with depth: " << Depth(selDepth) << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << " failLow =" << failedLow << sync_endl;
+                  Move pv[MAX_PLY+1];
+
+                 (ss+2)->pv = pv;
+                 (ss+2)->pv[0] = MOVE_NONE;
+                 Depth d = Depth(selDepth);
+                 selDepth = 0;
+                 bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, d , false);
+                 //sync_cout << "info have done a research bestv: " << bestValue << " seld: " << selDepth << sync_endl;
+
+				 if (bestValue <= alpha)
+				 {
+					 beta = (alpha + beta) / 2;
+					 alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+				 }
+                 else if (bestValue >= beta)
+	               beta = std::min(bestValue + delta, VALUE_INFINITE);
+
+                 rootPos.undo_move(rootMoves[0].pv[1]);
+                 rootPos.undo_move(rootMoves[0].pv[0]);
+              }
 
               delta += delta / 4 + 5;
 
@@ -559,7 +567,6 @@ namespace {
         if (alpha >= beta)
             return alpha;
     }
-
 
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
