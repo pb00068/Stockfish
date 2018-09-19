@@ -437,7 +437,7 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   // do a fast verification search if selDepth is very low
-                  if (selDepth - 3 < rootDepth  && rootMoves[0].pv.size() >= 2 && rootDepth > 5 * ONE_PLY)
+                  if (selDepth - 4 < rootDepth  && rootMoves[0].pv.size() >= 2)
                   {
                      StateInfo st1, st2;
                      rootPos.do_move(rootMoves[0].pv[0], st1);
@@ -446,7 +446,7 @@ void Thread::search() {
 
                      (ss+2)->pv = pv;
                      (ss+2)->pv[0] = MOVE_NONE;
-                     Depth d = std::min(std::max(Depth(selDepth), rootDepth - 4 * ONE_PLY), rootDepth - ONE_PLY);
+                     Depth d = std::min(std::max(Depth(selDepth + 2), rootDepth - 2 * ONE_PLY), rootDepth + ONE_PLY);
                      //sync_cout << "info selDepth " << selDepth << " researching with depth: " << d << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << " rootd: " << rootDepth<< sync_endl;
                      selDepth = 0;
                      bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, d, false);
@@ -461,7 +461,11 @@ void Thread::search() {
                         beta = b;
                      }
                      else if (bestValue <= alpha)
-                        alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                     {
+                         beta = (alpha + beta) / 2;
+                         alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                     }
+
                  }
               }
               else
