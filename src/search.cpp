@@ -306,10 +306,14 @@ void Thread::search() {
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
      (ss-i)->continuationHistory = &this->continuationHistory[NO_PIECE][0]; // Use as sentinel
+
+  int pvStartIndex =0;
+  (ss+1)->pv =  pv;
   for (int ply=1; ply < MAX_PLY; ply++)
   {
 	  (ss+ply)->ply = ply;
-	  (ss+ply)->pvStartIndex = (ss+ply-1)->pvStartIndex + MAX_PLY + 1 - ply;
+	  pvStartIndex += MAX_PLY + 1 - ply;
+	  (ss+ply+1)->pv = &pv[pvStartIndex];
   }
 
   bestValue = delta = alpha = -VALUE_INFINITE;
@@ -895,7 +899,7 @@ moves_loop: // When in check, search starts from here
                     << " currmove " << UCI::move(move, pos.is_chess960())
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
-          (ss+1)->pv = nullptr;
+          (ss+1)->pv[0] = MOVE_NONE;
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
@@ -1065,7 +1069,6 @@ moves_loop: // When in check, search starts from here
       // parent node fail low with value <= alpha and try another move.
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
-          (ss+1)->pv = &thisThread->pv[ss->pvStartIndex];
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
@@ -1094,8 +1097,6 @@ moves_loop: // When in check, search starts from here
               rm.score = value;
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
-
-              assert((ss+1)->pv);
 
               for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
                   rm.pv.push_back(*m);
@@ -1222,7 +1223,6 @@ moves_loop: // When in check, search starts from here
     if (PvNode)
     {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
-        (ss+1)->pv = &thisThread->pv[ss->pvStartIndex];
         ss->pv[0] = MOVE_NONE;
     }
 
