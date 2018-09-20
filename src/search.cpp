@@ -936,7 +936,7 @@ moves_loop: // When in check, search starts from here
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
           && pos.non_pawn_material(us)
-		  && !(thisThread->negSeePrunes[0] == move || thisThread->negSeePrunes[1] == move)
+          && !(thisThread->negSeePrunes[8] == move || thisThread->negSeePrunes[9] == move)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           if (   !captureOrPromotion
@@ -968,15 +968,31 @@ moves_loop: // When in check, search starts from here
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
               {
-            	  thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 10] = move;
+                  int i;
+                  for (i=0; i<8; i++)
+                  {
+                     if (thisThread->negSeePrunes[i] == move)
+                        break;
+                  }
+                  if (i==8)
+            	    thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 8] = move;
+
                   continue;
               }
           }
           else if (   !extension // (~20 Elo)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
           {
-        	      thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 10] = move;
-                  continue;
+              int i;
+              for (i=0; i<8; i++)
+              {
+                 if (thisThread->negSeePrunes[i] == move)
+                     break;
+              }
+              if (i==8)
+                 thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 8] = move;
+
+              continue;
           }
       }
 
@@ -1180,13 +1196,13 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
 
 
-        for (int i=2; i<10; i++)
+        for (int i=0; i<8; i++)
         	if (thisThread->negSeePrunes[i] == bestMove)
         	{
-        		 if (thisThread->negSeePrunes[i] != bestMove)
+        		 if (thisThread->negSeePrunes[8] != bestMove)
         		 {
-        			 thisThread->negSeePrunes[1] = thisThread->negSeePrunes[0];
-        			 thisThread->negSeePrunes[0] = bestMove;
+        			 thisThread->negSeePrunes[9] = thisThread->negSeePrunes[8];
+        			 thisThread->negSeePrunes[8] = bestMove;
         		 }
         		 break;
         	}
