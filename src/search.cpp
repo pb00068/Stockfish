@@ -936,6 +936,7 @@ moves_loop: // When in check, search starts from here
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
           && pos.non_pawn_material(us)
+		  && !(thisThread->negSeePrunes[0] == move || thisThread->negSeePrunes[1] == move)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           if (   !captureOrPromotion
@@ -966,11 +967,17 @@ moves_loop: // When in check, search starts from here
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              {
+            	  thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 10] = move;
                   continue;
+              }
           }
           else if (   !extension // (~20 Elo)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+          {
+        	      thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 10] = move;
                   continue;
+          }
       }
 
       // Speculative prefetch as early as possible
@@ -1171,6 +1178,18 @@ moves_loop: // When in check, search starts from here
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+
+
+        for (int i=2; i<10; i++)
+        	if (thisThread->negSeePrunes[i] == bestMove)
+        	{
+        		 if (thisThread->negSeePrunes[i] != bestMove)
+        		 {
+        			 thisThread->negSeePrunes[1] = thisThread->negSeePrunes[0];
+        			 thisThread->negSeePrunes[0] = bestMove;
+        		 }
+        		 break;
+        	}
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 * ONE_PLY || PvNode)

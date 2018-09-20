@@ -195,6 +195,9 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootDepth = th->completedDepth = DEPTH_ZERO;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
+      th->negSeePrunesCount=0;
+      for (int i=0;i<10;i++)
+    	  th->negSeePrunes[i] = MOVE_NONE;
   }
 
   setupStates->back() = tmp;
