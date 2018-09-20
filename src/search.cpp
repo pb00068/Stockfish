@@ -437,21 +437,20 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   // do a fast verification search if selDepth is very low
-                  if (selDepth - 4 < rootDepth  && rootMoves[0].pv.size() >= 2)
+                  if (selDepth - 2 < rootDepth)
                   {
-                     StateInfo st1, st2;
+                     StateInfo st1;
                      rootPos.do_move(rootMoves[0].pv[0], st1);
-                     rootPos.do_move(rootMoves[0].pv[1], st2);
+
                      Move pv[MAX_PLY+1];
 
-                     (ss+2)->pv = pv;
-                     (ss+2)->pv[0] = MOVE_NONE;
-                     Depth d = std::min(std::max(Depth(selDepth + 2), rootDepth - 2 * ONE_PLY), rootDepth + ONE_PLY);
+                     (ss+1)->pv = pv;
+                     (ss+1)->pv[0] = MOVE_NONE;
+                     Depth d = Depth(selDepth + 1);
                      //sync_cout << "info selDepth " << selDepth << " researching with depth: " << d << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << " rootd: " << rootDepth<< sync_endl;
                      selDepth = 0;
-                     bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, d, false);
+                     bestValue = -::search<PV>(rootPos, (ss+1), -beta, -alpha, d, false);
 
-                     rootPos.undo_move(rootMoves[0].pv[1]);
                      rootPos.undo_move(rootMoves[0].pv[0]);
                      //sync_cout << "info have done a research bestv: " << bestValue << " seld: " << selDepth << sync_endl;
                      if (bestValue >= beta)
