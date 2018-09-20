@@ -1163,7 +1163,7 @@ moves_loop: // When in check, search starts from here
     {
     	Depth d = depth;
     	if (PvNode && d == ONE_PLY && thisThread->selDepth > ss->ply + 1)
-    		d += ONE_PLY;
+    		d += (thisThread->selDepth - (ss->ply + 1)) * ONE_PLY;
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
