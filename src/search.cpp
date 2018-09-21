@@ -966,11 +966,12 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              if (lmrDepth > 0 && thisThread->mainHistory[us][from_to(move)] > 7000)
-            	  lmrDepth--;
+              int lim = -29;
+              if (thisThread->mainHistory[us][from_to(move)] > 7000)
+            	  lim = -60;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(lim * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
