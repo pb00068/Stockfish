@@ -105,6 +105,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
+  Depth getPvLen(Move* pv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
   void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, int bonus);
@@ -1162,12 +1163,13 @@ moves_loop: // When in check, search starts from here
     else if (bestMove)
     {
     	Depth d = depth;
-    	if (PvNode && d == ONE_PLY && thisThread->selDepth > ss->ply + 1)
-    		d += (thisThread->selDepth - (ss->ply + 1)) * ONE_PLY;
+    	if (PvNode && d == ONE_PLY && !rootNode)
+    		d = getPvLen(ss->pv);
+
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
-                               stat_bonus(d + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)));
+                               stat_bonus(d + (bestValue > beta + Value(170) ? ONE_PLY : DEPTH_ZERO)));
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(d + ONE_PLY));
 
@@ -1445,6 +1447,16 @@ moves_loop: // When in check, search starts from here
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
         *pv++ = *childPv++;
     *pv = MOVE_NONE;
+  }
+
+  Depth getPvLen(Move* pv) {
+	  Depth d = DEPTH_ZERO;
+	  while (*pv != MOVE_NONE)
+	  {
+		  d += ONE_PLY;
+		  pv++;
+	  }
+	  return d;
   }
 
 
