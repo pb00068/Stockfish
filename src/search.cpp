@@ -940,7 +940,7 @@ moves_loop: // When in check, search starts from here
       {
           if (   !captureOrPromotion
               && !givesCheck
-              && (!pos.dangerous_advanced_pawn_push(move) || pos.non_pawn_material() >= Value(5000)))
+              && (pos.non_pawn_material() >= Value(7000) || !pos.dangerous_advanced_pawn_push(move)))
           {
               // Move count based pruning (~30 Elo)
               if (moveCountPruning)
@@ -1319,7 +1319,7 @@ moves_loop: // When in check, search starts from here
       if (   !inCheck
           && !givesCheck
           &&  futilityBase > -VALUE_KNOWN_WIN
-          && !pos.dangerous_advanced_pawn_push(move))
+          && !pos.advanced_pawn_push(move))
       {
           assert(type_of(move) != ENPASSANT); // Due to !pos.advanced_pawn_push
 

@@ -121,6 +121,7 @@ public:
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
   bool gives_check(Move m) const;
+  bool advanced_pawn_push(Move m) const;
   bool dangerous_advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   Piece captured_piece() const;
@@ -313,6 +314,10 @@ inline bool Position::pawn_passed(Color c, Square s) const {
   return !(pieces(~c, PAWN) & passed_pawn_mask(c, s));
 }
 
+inline bool Position::advanced_pawn_push(Move m) const {
+  return   type_of(moved_piece(m)) == PAWN
+        && relative_rank(sideToMove, from_sq(m)) > RANK_4;
+}
 
 inline bool Position::dangerous_advanced_pawn_push(Move m) const {
   if (type_of(moved_piece(m)) != PAWN)
