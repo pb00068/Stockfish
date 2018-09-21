@@ -435,9 +435,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
                   // do a fast verification search along pv if it is rather short
-                  if (rootMoves[0].pv.size() >= 2 && rootMoves[0].pv.size() - 2 < rootDepth)
+                  if (rootMoves[0].pv.size() >= 2 && rootMoves[0].pv.size() + 1 < rootDepth)
                   {
                      StateInfo st1, st2;
                      rootPos.do_move(rootMoves[0].pv[0], st1);
@@ -454,6 +453,8 @@ void Thread::search() {
                      rootPos.undo_move(rootMoves[0].pv[1]);
                      rootPos.undo_move(rootMoves[0].pv[0]);
                  }
+                 else
+                	  beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
               else
                   break;
