@@ -436,35 +436,23 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  // do a fast verification search if selDepth is very low
-                  if (selDepth - 2 < rootDepth)
+                  // do a fast verification search along pv if it is rather short
+                  if (rootMoves[0].pv.size() >= 2 && rootMoves[0].pv.size() - 2 < rootDepth)
                   {
-                     StateInfo st1;
+                     StateInfo st1, st2;
                      rootPos.do_move(rootMoves[0].pv[0], st1);
+                     rootPos.do_move(rootMoves[0].pv[1], st2);
 
                      Move pv[MAX_PLY+1];
 
-                     (ss+1)->pv = pv;
-                     (ss+1)->pv[0] = MOVE_NONE;
-                     Depth d = Depth(selDepth + 1);
-                     //sync_cout << "info selDepth " << selDepth << " researching with depth: " << d << " bestv: " << bestValue << " a: " << alpha << " b: " << beta << " rootd: " << rootDepth<< sync_endl;
-                     selDepth = 0;
-                     bestValue = -::search<PV>(rootPos, (ss+1), -beta, -alpha, d, false);
-
+                     (ss+2)->pv = pv;
+                     (ss+2)->pv[0] = MOVE_NONE;
+                     bestValue = ::search<PV>(rootPos, (ss+2), alpha, beta, Depth(rootMoves[0].pv.size()), false);
+					 //sync_cout << "info have done a research" << (bestValue >= beta) << " bestv: " << bestValue << " seld: " << selDepth << sync_endl;
+					 if (bestValue >= beta) // hoping that the first 2 moves still hold, we slightly increase beta
+						  beta = std::min(bestValue + delta/2, VALUE_INFINITE);
+                     rootPos.undo_move(rootMoves[0].pv[1]);
                      rootPos.undo_move(rootMoves[0].pv[0]);
-                     //sync_cout << "info have done a research bestv: " << bestValue << " seld: " << selDepth << sync_endl;
-                     if (bestValue >= beta)
-                     {
-                        Value b = std::min(bestValue + delta, VALUE_INFINITE);
-                        alpha += b - beta;
-                        beta = b;
-                     }
-                     else if (bestValue <= alpha)
-                     {
-                         beta = (alpha + beta) / 2;
-                         alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                     }
-
                  }
               }
               else
