@@ -964,35 +964,27 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              // Prune moves with negative SEE (~10 Elo)
-              if ( !(thisThread->negSeePrunes[8] == move || thisThread->negSeePrunes[9] == move) && !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              int i;
+              for (i=0; i<6; i++)
               {
-                  int i;
-                  for (i=0; i<8; i++)
-                  {
-                     if (thisThread->negSeePrunes[i] == move)
-                        break;
-                  }
-                  if (i==8)
-            	    thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 8] = move;
-
-                  continue;
+                 if (thisThread->negseeBestMoves[i] == move)
+	               break;
               }
+              // Prune moves with negative SEE (~10 Elo)
+              if (i==6 && !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+                  continue;
           }
           else if (   !extension // (~20 Elo)
-        		   &&  !(thisThread->negSeePrunes[8] == move || thisThread->negSeePrunes[9] == move)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
           {
               int i;
-              for (i=0; i<8; i++)
+              for (i=0; i<6; i++)
               {
-                 if (thisThread->negSeePrunes[i] == move)
+                 if (thisThread->negseeBestMoves[i] == move)
                      break;
               }
-              if (i==8)
-                 thisThread->negSeePrunes[thisThread->negSeePrunesCount++ % 8] = move;
-
-              continue;
+              if (i==6)
+                 continue;
           }
       }
 
@@ -1196,16 +1188,15 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
 
 
-        for (int i=0; i<8; i++)
-        	if (thisThread->negSeePrunes[i] == bestMove)
-        	{
-        		 if (thisThread->negSeePrunes[8] != bestMove)
-        		 {
-        			 thisThread->negSeePrunes[9] = thisThread->negSeePrunes[8];
-        			 thisThread->negSeePrunes[8] = bestMove;
-        		 }
+        if (depth < 6 * ONE_PLY)
+        {
+          int i=0;
+          for (; i<6; i++)
+        	if (thisThread->negseeBestMoves[i] == bestMove)
         		 break;
-        	}
+          if (i==6 && !pos.see_ge(bestMove))
+        	thisThread->negseeBestMoves[thisThread->negSeeDistibutor++ % 6] = bestMove;
+        }
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 * ONE_PLY || PvNode)

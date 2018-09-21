@@ -73,8 +73,8 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
-  Move negSeePrunes[10]; // last 2 ones have special use, while the first 8 we use for tracking pruned moves
-  int negSeePrunesCount;
+  Move negseeBestMoves[6];
+  int negSeeDistibutor;
 };
 
 
