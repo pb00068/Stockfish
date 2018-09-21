@@ -967,8 +967,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               int lim = -29;
-              if (thisThread->mainHistory[us][from_to(move)] > 7000)
+            if (lmrDepth < 4 &&  (int16_t)(thisThread->mainHistory[us][from_to(move)] +
+    		   (*contHist[0])[movedPiece][to_sq(move)] +
+			   (*contHist[1])[movedPiece][to_sq(move)]) > 19000)
             	  lim = -60;
+
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, Value(lim * lmrDepth * lmrDepth)))
