@@ -964,8 +964,10 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              int i;
-              for (i=0; i<6; i++)
+              int i=0;
+              if (lmrDepth < 2 && (move == ss->killers[0] || move == ss->killers[1]))
+            	  i=8;
+              for (; i<6; i++)
               {
                  if (thisThread->negseeBestMoves[i] == move)
 	               break;
