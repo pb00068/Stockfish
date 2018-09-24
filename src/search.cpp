@@ -309,6 +309,8 @@ void Thread::search() {
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
+  for (int i=0;i<3;i++)
+     negseeBestMoves[i] = MOVE_NONE;
 
   if (mainThread)
       mainThread->bestMoveChanges = 0, failedLow = false;
@@ -967,25 +969,27 @@ moves_loop: // When in check, search starts from here
               int i=0;
               if (lmrDepth < 2 && (move == ss->killers[0] || move == ss->killers[1]))
             	  i=8;
-              for (; i<6; i++)
+              for (; i<3; i++)
               {
                  if (thisThread->negseeBestMoves[i] == move)
+                 {
 	               break;
+                 }
               }
               // Prune moves with negative SEE (~10 Elo)
-              if (i==6 && !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (i==3 && !pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
                    && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
           {
-              int i;
-              for (i=0; i<6; i++)
-              {
-                 if (thisThread->negseeBestMoves[i] == move)
-                     break;
-              }
-              if (i==6)
+//              int i;
+//              for (i=0; i<3; i++)
+//              {
+//                 if (thisThread->negseeBestMoves[i] == move)
+//                     break;
+//              }
+//              if (i==3)
                  continue;
           }
       }
@@ -1190,14 +1194,14 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
 
 
-        if (depth < 6 * ONE_PLY)
+        if (depth < 8 * ONE_PLY && !pos.capture_or_promotion(bestMove))
         {
           int i=0;
-          for (; i<6; i++)
+          for (; i<3; i++)
         	if (thisThread->negseeBestMoves[i] == bestMove)
         		 break;
-          if (i==6 && !pos.see_ge(bestMove))
-        	thisThread->negseeBestMoves[thisThread->negSeeDistibutor++ % 6] = bestMove;
+          if (i==3 && !pos.see_ge(bestMove))
+        	thisThread->negseeBestMoves[thisThread->negSeeDistibutor++ % 3] = bestMove;
         }
     }
     // Bonus for prior countermove that caused the fail low

@@ -73,7 +73,7 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
-  Move negseeBestMoves[6];
+  Move negseeBestMoves[3];
   int negSeeDistibutor;
 };
 

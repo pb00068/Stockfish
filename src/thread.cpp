@@ -196,8 +196,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
       th->negSeeDistibutor=0;
-      for (int i=0;i<6;i++)
-    	  th->negseeBestMoves[i] = MOVE_NONE;
+
   }
 
   setupStates->back() = tmp;
