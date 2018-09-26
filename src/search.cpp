@@ -544,18 +544,18 @@ namespace {
 
 
 
-	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
-		bool match = true;
-		  for (int ply = 0; ply <= ss->ply-1; ply++) {
-			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-			  match = false;
-			  break;
-			}
-
-		  }
-		  if (match && pos.this_thread()->nmpMinPly)
-				sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta  << sync_endl;
-	}
+//	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
+//		bool match = true;
+//		  for (int ply = 0; ply <= ss->ply-1; ply++) {
+//			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+//			  match = false;
+//			  break;
+//			}
+//
+//		  }
+//		  //if (match && pos.this_thread()->nmpMinPly)
+//		//		sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta  << sync_endl;
+//	}
 
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
@@ -836,6 +836,8 @@ namespace {
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
             Depth nd = depth-R;
+            thisThread->nmpMinPly = ss->ply + 3 * (nd) / 4;
+            thisThread->nmpColor = us;
 
             if (ss->ply > 7) {
                   mt = true;
@@ -849,18 +851,70 @@ namespace {
 				  if (mt )
 				  {
 					   //bool lastPasserPush =  (pos.pieces(PAWN) & to_sq((ss-2)->currentMove)) && !(pos.pieces() & forward_file_bb(us, to_sq((ss-2)->currentMove) + (us == WHITE ? NORTH : SOUTH)));
-					    nd += 8 * ONE_PLY;
+					    Pawns::Entry* pe = Pawns::probe(pos);
+					   if (pe != nullptr && popcount(pe->passedPawns[us]) <=3)
+					   {
+						Bitboard passed = pe->passedPawns[us];
+						while (passed) {
+							Square s = pop_lsb(&passed);
+							StateInfo s1;
+							//Move push = make_move(s, s );//+ (us == WHITE ? NORTH : SOUTH));
+							//pos.do_move(push, s1, false);
+							//sync_cout << pos << " before" << sync_endl;
+							pos.removePawn(s, s1);
+							//sync_cout << pos << " after selfeaten?" << sync_endl;
+
+							//sync_cout << pos << " after reput" << sync_endl;
+							//sync_cout << UCI::move(push, false)  << sync_endl;
+
+
+							 //ss->excludedMove = push;
+							 thisThread->nmpMinPly = ss->ply + 8;
+
+							 //sync_cout << "info search verify with excluded move " << UCI::move(push, false) << " current depth "<< depth << " at ply " << ss->ply << sync_endl;
+							 Move pv1[MAX_PLY+1];
+							 (ss)->pv = pv1;
+							 (ss)->pv[0] = MOVE_NONE;
+							 Value v = search<PV>(pos, ss, mated_in(0), mated_in(18), Depth(9), false);
+							 thisThread->nmpMinPly = 0;
+							 //ss->excludedMove = MOVE_NONE;
+
+							 sync_cout << "info search verify with removed pawn finished val: " << v <<  " " << UCI::value(v) << sync_endl;
+							 //if (true)
+							 if (v > mated_in(0) && v < mated_in(18))
+							 {
+								sync_cout << "info bingo" << sync_endl;
+								for (int i=0; pv1[i] != MOVE_NONE; i++)
+									sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
+
+
+								 //ss->excludedMove = push;
+								 thisThread->nmpMinPly = MAX_PLY;
+								 v = search<PV>(pos, ss, mated_in(0), mated_in(18), Depth(29), false);
+								 sync_cout << "info research mate val: " << v <<  " " << UCI::value(v) << sync_endl;
+								 thisThread->nmpMinPly = 0;
+								 for (int i=0; pv1[i] != MOVE_NONE; i++)
+								 	sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
+
+								 pos.undo_removePawn(s);
+
+								 //return pawn push as bestmove as all other lead to mate
+								 //return nullValue;
+								 nd = depth;
+								 thisThread->nmpMinPly = MAX_PLY;
+								break;
+							 }
+							 pos.undo_removePawn(s);
+
+						}
+
+					   }
+
 						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << " beforelastmove " << UCI::move((ss-2)->currentMove, false) << sync_endl;
 				  }
 
-
-
 			}
 
-            // Do verification search at high depths, with null move pruning disabled
-            // for us, until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (nd) / 4;
-            thisThread->nmpColor = us;
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, nd, false);
 

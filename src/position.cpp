@@ -104,10 +104,16 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
 
   os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
      << std::setfill('0') << std::setw(16) << pos.key()
-     << std::setfill(' ') << std::dec << "\nCheckers: ";
+     << std::setfill(' ') << std::dec << "\n  poskey raw " <<  pos.key() << "   Checkers: ";
 
   for (Bitboard b = pos.checkers(); b; )
       os << UCI::square(pop_lsb(&b)) << " ";
+
+  Pawns::Entry* pe = Pawns::probe(pos);
+  os << " pawns-key " << pe->key << "\n";
+
+  Material::Entry* me = Material::probe(pos);
+   os << " material-key " << me->key << "\n";
 
   if (    int(Tablebases::MaxCardinality) >= popcount(pos.pieces())
       && !pos.can_castle(ANY_CASTLING))
@@ -701,6 +707,37 @@ bool Position::gives_check(Move m) const {
       assert(false);
       return false;
   }
+}
+
+void Position::removePawn(Square s, StateInfo& newSt) {
+	assert(&newSt != st);
+	assert(type_of(piece_on(s)) == PAWN);
+
+	std::memcpy(&newSt, st, offsetof(StateInfo, key));
+	newSt.previous = st;
+	st = &newSt;
+
+	Key k = st->previous->key;
+	Piece captured = piece_on(s);
+	st->pawnKey ^= Zobrist::psq[captured][s];
+
+	k ^= Zobrist::psq[captured][s];
+
+	remove_piece(captured, s);
+	board[s] = NO_PIECE;
+	st->checkersBB = st->previous->checkersBB;
+	st->materialKey ^= Zobrist::psq[captured][pieceCount[captured]];
+	st->capturedPiece = captured;
+	st->key = k;
+}
+
+void Position::undo_removePawn(Square s) {
+  st = st->previous;
+  Piece pc = make_piece(sideToMove, PAWN);
+  put_piece(pc, s);
+  //Key k = st->key;
+  //k ^= Zobrist::psq[pc][s];
+
 }
 
 

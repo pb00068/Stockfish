@@ -132,6 +132,8 @@ public:
   // Doing and undoing moves
   void do_move(Move m, StateInfo& newSt);
   void do_move(Move m, StateInfo& newSt, bool givesCheck);
+  void removePawn(Square s, StateInfo& newSt);
+  void undo_removePawn(Square s);
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);
   void undo_null_move();
