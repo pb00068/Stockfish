@@ -542,6 +542,9 @@ namespace {
             return alpha;
     }
 
+   //if (pos.this_thread()->nmpMinPly == MAX_PLY) {
+   // 	sync_cout << "info ver-searching at ply " << ss->ply << " d: " << depth << " pmc: " << (ss-1)->moveCount << sync_endl;
+   // }
 
 
 //	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
@@ -841,67 +844,71 @@ namespace {
 
             if (ss->ply > 7) {
                   mt = true;
-				  for (int ply = 0; ply <= ss->ply-1; ply++) {
-					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-					  mt = false;
-					  break;
-					}
-
-				  }
+//				  for (int ply = 0; ply <= ss->ply-1; ply++) {
+//					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
+//					  mt = false;
+//					  break;
+//					}
+//
+//				  }
 				  if (mt )
 				  {
 					   //bool lastPasserPush =  (pos.pieces(PAWN) & to_sq((ss-2)->currentMove)) && !(pos.pieces() & forward_file_bb(us, to_sq((ss-2)->currentMove) + (us == WHITE ? NORTH : SOUTH)));
 					    Pawns::Entry* pe = Pawns::probe(pos);
-					   if (pe != nullptr && popcount(pe->passedPawns[us]) <=3)
+					   if (pe != nullptr && popcount(pe->passedPawns[us]) <=3 && us == BLACK)
 					   {
-						Bitboard passed = pe->passedPawns[us];
+						Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
 						while (passed) {
 							Square s = pop_lsb(&passed);
 							StateInfo s1;
 							//Move push = make_move(s, s );//+ (us == WHITE ? NORTH : SOUTH));
 							//pos.do_move(push, s1, false);
 							//sync_cout << pos << " before" << sync_endl;
-							pos.removePawn(s, s1);
-							//sync_cout << pos << " after selfeaten?" << sync_endl;
 
-							//sync_cout << pos << " after reput" << sync_endl;
-							//sync_cout << UCI::move(push, false)  << sync_endl;
 
 
 							 //ss->excludedMove = push;
-							 thisThread->nmpMinPly = ss->ply + 8;
+							 thisThread->nmpMinPly = MAX_PLY;
 
 							 //sync_cout << "info search verify with excluded move " << UCI::move(push, false) << " current depth "<< depth << " at ply " << ss->ply << sync_endl;
+							 sync_cout << pos << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << sync_endl;
+							 sync_cout << "info pos  ok " << pos.pos_is_ok() << sync_endl;
+							 pos.removePawn(s, s1);
+
+							sync_cout << "info pos  ok " << pos.pos_is_ok() << sync_endl;
+
+							 sync_cout << pos << sync_endl;
+
+//							 const Square ksq = pos.square<KING>(us);
+//							 if (ksq == SQ_F6) {
+//								 Move mov = make_move(SQ_F6,SQ_F7);
+//								 sync_cout << "info is legal " << (pos.pseudo_legal(mov) && pos.legal(mov)) << sync_endl;
+//							 }
+
 							 Move pv1[MAX_PLY+1];
 							 (ss)->pv = pv1;
 							 (ss)->pv[0] = MOVE_NONE;
-							 Value v = search<PV>(pos, ss, mated_in(0), mated_in(18), Depth(9), false);
+							 //(ss)->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
+							 //(ss-1)->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
+							 Value v = search<PV>(pos, ss, mated_in(0), mated_in(28), Depth(9), false);
 							 thisThread->nmpMinPly = 0;
 							 //ss->excludedMove = MOVE_NONE;
 
-							 sync_cout << "info search verify with removed pawn finished val: " << v <<  " " << UCI::value(v) << sync_endl;
+							 sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << " finished val: " << v <<  " " << UCI::value(v) << sync_endl;
 							 //if (true)
-							 if (v > mated_in(0) && v < mated_in(18))
+							 if (v > mated_in(0) && v < mated_in(28))
 							 {
 								sync_cout << "info bingo" << sync_endl;
 								for (int i=0; pv1[i] != MOVE_NONE; i++)
 									sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
-
-
-								 //ss->excludedMove = push;
-								 thisThread->nmpMinPly = MAX_PLY;
-								 v = search<PV>(pos, ss, mated_in(0), mated_in(18), Depth(29), false);
-								 sync_cout << "info research mate val: " << v <<  " " << UCI::value(v) << sync_endl;
-								 thisThread->nmpMinPly = 0;
-								 for (int i=0; pv1[i] != MOVE_NONE; i++)
-								 	sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
 
 								 pos.undo_removePawn(s);
 
 								 //return pawn push as bestmove as all other lead to mate
 								 //return nullValue;
 								 nd = depth;
-								 thisThread->nmpMinPly = MAX_PLY;
+								 thisThread->nmpMinPly = 0;
+								 return Value(-21);
 								break;
 							 }
 							 pos.undo_removePawn(s);

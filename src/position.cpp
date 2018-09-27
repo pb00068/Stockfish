@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -718,16 +719,59 @@ void Position::removePawn(Square s, StateInfo& newSt) {
 	st = &newSt;
 
 	Key k = st->previous->key;
-	Piece captured = piece_on(s);
-	st->pawnKey ^= Zobrist::psq[captured][s];
+	Piece pc = piece_on(s);
+	st->pawnKey ^= Zobrist::psq[pc][s];
 
-	k ^= Zobrist::psq[captured][s];
+	k ^= Zobrist::psq[pc][s];
 
-	remove_piece(captured, s);
+	//remove_piece(captured, s);
+
+	  byTypeBB[ALL_PIECES] ^= s;
+	  byTypeBB[type_of(pc)] ^= s;
+	  byColorBB[color_of(pc)] ^= s;
+
+	  //Square lastSquare = pieceList[pc][--pieceCount[pc]];
+
+	  int i=0;
+	  for (i=0; i<pieceCount[pc]; i++)
+	  	 	  {
+	  		  sync_cout << "piece at index " << i << " is at square " << pieceList[pc][i] << " it's  index is " << index[pieceList[pc][i]] << sync_endl;
+	  	 	  }
+
+	  i=0;
+	  for (; i<pieceCount[pc]; i++)
+	  {
+		  if (pieceList[pc][i] == s)
+			  break;
+	  }
+	  sync_cout << "info index is " << i << sync_endl;
+
+	  for (; i<pieceCount[pc] - 1; i++)
+	  {
+		  pieceList[pc][i] = pieceList[pc][i+1];
+		  index[pieceList[pc][i]] = i;
+		  sync_cout << "done shift at index " << i << sync_endl;
+	  }
+	  pieceList[pc][pieceCount[pc]] = SQ_NONE;
+	  pieceCount[pc]--;
+
+	  for (i=0; i<pieceCount[pc]; i++)
+	 	  {
+		  sync_cout << "piece at index " << i << " is at square " << pieceList[pc][i] << " it's  index is " << index[pieceList[pc][i]] << sync_endl;
+	 	  }
+
+	  //index[lastSquare] = index[s];
+	  //pieceList[pc][index[lastSquare]] = lastSquare;
+
+
+	  pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
+	  psq -= PSQT::psq[pc][s];
+
+
 	board[s] = NO_PIECE;
 	st->checkersBB = st->previous->checkersBB;
-	st->materialKey ^= Zobrist::psq[captured][pieceCount[captured]];
-	st->capturedPiece = captured;
+	st->materialKey ^= Zobrist::psq[pc][pieceCount[pc]];
+	st->capturedPiece = pc;
 	st->key = k;
 }
 
@@ -1285,7 +1329,7 @@ void Position::flip() {
 
 bool Position::pos_is_ok() const {
 
-  constexpr bool Fast = true; // Quick (default) or full check?
+  constexpr bool Fast = false; // Quick (default) or full check?
 
   if (   (sideToMove != WHITE && sideToMove != BLACK)
       || piece_on(square<KING>(WHITE)) != W_KING
