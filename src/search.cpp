@@ -542,11 +542,6 @@ namespace {
             return alpha;
     }
 
-   //if (pos.this_thread()->nmpMinPly == MAX_PLY) {
-   // 	sync_cout << "info ver-searching at ply " << ss->ply << " d: " << depth << " pmc: " << (ss-1)->moveCount << sync_endl;
-   // }
-
-
 //	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
 //		bool match = true;
 //		  for (int ply = 0; ply <= ss->ply-1; ply++) {
@@ -770,7 +765,6 @@ namespace {
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !rootNode
-    	//	&& (!thisThread->nmpMinPly) // only 20 secs
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth, improving) >= beta
         &&  eval < VALUE_KNOWN_WIN) // Do not return unproven wins
@@ -807,29 +801,6 @@ namespace {
             if (nullValue >= VALUE_MATE_IN_MAX_PLY)
                 nullValue = beta;
 
-//            Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
-//             MovePicker mp(pos, ttMove, rbeta - ss->staticEval, &thisThread->captureHistory);
-//             Move bm = mp.next_move(false);
-//             if (bm && type_of(bm) == PROMOTION && rank_of(to_sq(bm)) == RANK_1)
-//             {
-//            	 bool mt = true;
-//				  for (int ply = 0; ply <= ss->ply-1; ply++) {
-//					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-//					  mt = false;
-//					  break;
-//					}
-//
-//				  }
-//				  if (mt )
-//				  {
-//					 sync_cout << pos << "promotion possible but nmp-pruned!" << sync_endl;
-//									 abort();
-//				  }
-//             }
-
-
-
-
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 * ONE_PLY))
             {
 
@@ -842,86 +813,71 @@ namespace {
             thisThread->nmpMinPly = ss->ply + 3 * (nd) / 4;
             thisThread->nmpColor = us;
 
-            if (ss->ply > 7) {
-                  mt = true;
-//				  for (int ply = 0; ply <= ss->ply-1; ply++) {
-//					if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-//					  mt = false;
-//					  break;
-//					}
-//
-//				  }
-				  if (mt )
-				  {
-					   //bool lastPasserPush =  (pos.pieces(PAWN) & to_sq((ss-2)->currentMove)) && !(pos.pieces() & forward_file_bb(us, to_sq((ss-2)->currentMove) + (us == WHITE ? NORTH : SOUTH)));
-					    Pawns::Entry* pe = Pawns::probe(pos);
-					   if (pe != nullptr && popcount(pe->passedPawns[us]) <=3 && us == BLACK)
-					   {
-						Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
-						while (passed) {
-							Square s = pop_lsb(&passed);
-							StateInfo s1;
-							//Move push = make_move(s, s );//+ (us == WHITE ? NORTH : SOUTH));
-							//pos.do_move(push, s1, false);
-							//sync_cout << pos << " before" << sync_endl;
+
+	   //bool lastPasserPush =  (pos.pieces(PAWN) & to_sq((ss-2)->currentMove)) && !(pos.pieces() & forward_file_bb(us, to_sq((ss-2)->currentMove) + (us == WHITE ? NORTH : SOUTH)));
+		Pawns::Entry* pe = Pawns::probe(pos);
+	   if (pe != nullptr && popcount(pe->passedPawns[us]) <=3 && !inCheck)
+	   {
+		Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
+		while (passed) {
+			Square s = pop_lsb(&passed);
+			StateInfo s1;
+
+			if (file_of(s) > FILE_A)
+				continue;
+	//		                    Square promo = make_square(file_of(s), us == WHITE ? RANK_8 : RANK_1);
+	//							Move directPromotion = make_move(s, promo);
+	//							bool promotion_Will_be_Neutralized =  (pos.pieces(~us) & promo) || !pos.see_ge(directPromotion);
+	//							if (!promotion_Will_be_Neutralized)
+	//								continue;
 
 
+			 thisThread->nmpMinPly = MAX_PLY;
 
-							 //ss->excludedMove = push;
-							 thisThread->nmpMinPly = MAX_PLY;
 
-							 //sync_cout << "info search verify with excluded move " << UCI::move(push, false) << " current depth "<< depth << " at ply " << ss->ply << sync_endl;
-							 sync_cout << pos << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << sync_endl;
-							 sync_cout << "info pos  ok " << pos.pos_is_ok() << sync_endl;
-							 pos.removePawn(s, s1);
+			 //sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << sync_endl;
 
-							sync_cout << "info pos  ok " << pos.pos_is_ok() << sync_endl;
+			 pos.removePawn(s, s1);
 
-							 sync_cout << pos << sync_endl;
+			 Move pv1[MAX_PLY+1];
+			 (ss)->pv = pv1;
+			 (ss)->pv[0] = MOVE_NONE;
+			 Value v = search<PV>(pos, ss, mated_in(0), mated_in(28), Depth(9), false);
+			 thisThread->nmpMinPly = 0;
 
-//							 const Square ksq = pos.square<KING>(us);
-//							 if (ksq == SQ_F6) {
-//								 Move mov = make_move(SQ_F6,SQ_F7);
-//								 sync_cout << "info is legal " << (pos.pseudo_legal(mov) && pos.legal(mov)) << sync_endl;
-//							 }
 
-							 Move pv1[MAX_PLY+1];
-							 (ss)->pv = pv1;
-							 (ss)->pv[0] = MOVE_NONE;
-							 //(ss)->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
-							 //(ss-1)->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
-							 Value v = search<PV>(pos, ss, mated_in(0), mated_in(28), Depth(9), false);
-							 thisThread->nmpMinPly = 0;
-							 //ss->excludedMove = MOVE_NONE;
+			 if (v > mated_in(0) && v < mated_in(28))
+			 {
+				sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << " finished val: " << v <<  " " << UCI::value(v) << sync_endl;
+				sync_cout << "info bingo" << sync_endl;
+				for (int i=0; pv1[i] != MOVE_NONE; i++)
+					sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
 
-							 sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << " finished val: " << v <<  " " << UCI::value(v) << sync_endl;
-							 //if (true)
-							 if (v > mated_in(0) && v < mated_in(28))
-							 {
-								sync_cout << "info bingo" << sync_endl;
-								for (int i=0; pv1[i] != MOVE_NONE; i++)
-									sync_cout << "info " << UCI::move(pv1[i], false) << " " << sync_endl;
+				 pos.undo_removePawn(s);
 
-								 pos.undo_removePawn(s);
+				 nd = depth;
+				 thisThread->nmpMinPly = 0;
 
-								 //return pawn push as bestmove as all other lead to mate
-								 //return nullValue;
-								 nd = depth;
-								 thisThread->nmpMinPly = 0;
-								 return Value(-21);
-								break;
-							 }
-							 pos.undo_removePawn(s);
+	//									Rank promo = us == WHITE ? RANK_8 : RANK_1;
+	//										Move directPromotion = make_move(s,make_square(file_of(s), promo));
+	//										if (file_of(s) == FILE_A && pos.see_ge(directPromotion))
+	//										{
+	//											sync_cout << pos << " promotion on " << make_square(file_of(s), promo) << " has nonnegative see" << sync_endl;
+	//											abort();
+	//										}
 
-						}
 
-					   }
+				 //sync_cout << "info root move best score " << thisThread->rootMoves[0].score << sync_endl;
+				 //abort();
+				 return Value(thisThread->rootMoves[0].score * (thisThread->rootPos.side_to_move() != us ? 1 : -1) - 40);
+				break;
+			 }
+			 pos.undo_removePawn(s);
 
-						sync_cout << pos << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << " beforelastmove " << UCI::move((ss-2)->currentMove, false) << sync_endl;
-				  }
+			} // end processing of passed pawns
+		}
 
-			}
-
+		//sync_cout << " info zugzwang verification at ply: " << ss->ply << " s with d: " << nd << " beforelastmove " << UCI::move((ss-2)->currentMove, false) << sync_endl;
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, nd, false);
 
@@ -941,7 +897,6 @@ namespace {
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
         &&  depth >= 5 * ONE_PLY
-		&& !thisThread->nmpMinPly // with this enabled a minute faster
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value rbeta = std::min(beta + 216 - 48 * improving, VALUE_INFINITE);
@@ -1070,7 +1025,6 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Pruning at shallow depth (~170 Elo)
       if (  !rootNode
-    		  && (!thisThread->nmpMinPly) // noetig
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
@@ -1140,21 +1094,6 @@ moves_loop: // When in check, search starts from here
           // Decrease reduction if opponent's move count is high (~10 Elo)
           if ((ss-1)->moveCount > 15)
               r -= ONE_PLY;
-
-          // Don't lmr to much along typical zugzwang lines
-          if (thisThread->nmpMinPly && type_of(movedPiece) == PAWN && !(pos.pieces() & forward_file_bb(us, to_sq(move) + (us == WHITE ? NORTH : SOUTH))))
-          {
-        	  r -= 4 * ONE_PLY; // passed pawn push
-        	  //sync_cout << pos << " no reduction for move " << UCI::move(move , pos.is_chess960()) << sync_endl;
-          }
-//          else if (thisThread->nmpMinPly
-//        		  && is_ok((ss-1)->currentMove)
-//                  && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == PAWN
-//                  && is_ok((ss-2)->currentMove)
-//				  && (ss-2)->currentMove == make_move(to_sq(move), from_sq(move)))
-//          {
-//          	  r -= 3 * ONE_PLY; // on zugzwang often we have bouncing pieces
-//          }
 
           if (!captureOrPromotion)
           {
