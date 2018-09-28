@@ -61,7 +61,7 @@ public:
   Material::Table materialTable;
   Endgames endgames;
   size_t pvIdx, pvLast;
-  int selDepth, nmpMinPly;
+  int selDepth, nmpMinPly, zugzwangMates;
   Color nmpColor;
   std::atomic<uint64_t> nodes, tbHits;
 

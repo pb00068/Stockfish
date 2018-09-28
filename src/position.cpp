@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -105,16 +104,10 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
 
   os << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
      << std::setfill('0') << std::setw(16) << pos.key()
-     << std::setfill(' ') << std::dec << "\n  poskey raw " <<  pos.key() << "   Checkers: ";
+     << std::setfill(' ') << std::dec << "\nCheckers: ";
 
   for (Bitboard b = pos.checkers(); b; )
       os << UCI::square(pop_lsb(&b)) << " ";
-
-  Pawns::Entry* pe = Pawns::probe(pos);
-  os << " pawns-key " << pe->key << "\n";
-
-  Material::Entry* me = Material::probe(pos);
-   os << " material-key " << me->key << "\n";
 
   if (    int(Tablebases::MaxCardinality) >= popcount(pos.pieces())
       && !pos.can_castle(ANY_CASTLING))
@@ -710,20 +703,10 @@ bool Position::gives_check(Move m) const {
   }
 }
 
-/**
- * we are not in check and there are no pinned pieces (both sides)
- */
 void Position::removePawn(Square s, StateInfo& newSt) {
 	assert(&newSt != st);
 	assert(type_of(piece_on(s)) == PAWN);
 
-	if (&newSt == st)
-
-	{
-
-		sync_cout << "new stat = oldstate" << sync_endl;
-	   abort();
-	}
 	std::memcpy(&newSt, st, offsetof(StateInfo, key));
 	newSt.previous = st;
 	st = &newSt;
@@ -750,9 +733,6 @@ void Position::undo_removePawn(Square s) {
   st = st->previous;
   Piece pc = make_piece(sideToMove, PAWN);
   put_piece(pc, s);
-  //Key k = st->key;
-  //k ^= Zobrist::psq[pc][s];
-
 }
 
 
@@ -1307,10 +1287,7 @@ bool Position::pos_is_ok() const {
       || piece_on(square<KING>(BLACK)) != B_KING
       || (   ep_square() != SQ_NONE
           && relative_rank(sideToMove, ep_square()) != RANK_6))
-  {
-          	  sync_cout << "king fualt 1" << sync_endl;
-          	  abort();
-            }
+      assert(0 && "pos_is_ok: Default");
 
   if (Fast)
       return true;
@@ -1318,99 +1295,38 @@ bool Position::pos_is_ok() const {
   if (   pieceCount[W_KING] != 1
       || pieceCount[B_KING] != 1
       || attackers_to(square<KING>(~sideToMove)) & pieces(sideToMove))
-  {
-          	  sync_cout << "king failt" << sync_endl;
-          	  abort();
-            }
+      assert(0 && "pos_is_ok: Kings");
 
   if (   (pieces(PAWN) & (Rank1BB | Rank8BB))
       || pieceCount[W_PAWN] > 8
       || pieceCount[B_PAWN] > 8)
-	  abort();
+      assert(0 && "pos_is_ok: Pawns");
 
   if (   (pieces(WHITE) & pieces(BLACK))
       || (pieces(WHITE) | pieces(BLACK)) != pieces()
       || popcount(pieces(WHITE)) > 16
       || popcount(pieces(BLACK)) > 16)
-  {
-          	  sync_cout << "piece maximum" << sync_endl;
-          	  abort();
-            }
+      assert(0 && "pos_is_ok: Bitboards");
 
   for (PieceType p1 = PAWN; p1 <= KING; ++p1)
       for (PieceType p2 = PAWN; p2 <= KING; ++p2)
           if (p1 != p2 && (pieces(p1) & pieces(p2)))
-          {
-                  	  sync_cout << "piece types" << sync_endl;
-                  	  abort();
-                    }
+              assert(0 && "pos_is_ok: Bitboards");
 
   StateInfo si = *st;
   set_state(&si);
   if (std::memcmp(&si, st, sizeof(StateInfo)))
-  {
-	  if (st->key != si.key)
-          	  sync_cout << " keydiff "<< sync_endl;
-
-	  if (st->materialKey != si.materialKey)
-	           	  sync_cout << " materialKey "<< sync_endl;
-
-	  if (st->nonPawnMaterial[WHITE] != si.nonPawnMaterial[WHITE])
-	  	    sync_cout << " nonPawnMaterial[WHITE] "<< sync_endl;
-
-	  if (st->nonPawnMaterial[WHITE] != si.nonPawnMaterial[WHITE])
-	  	         sync_cout << " nonPawnMaterial[WHITE] "<< sync_endl;
-
-	  if (st->pawnKey != si.pawnKey)
-	  	        sync_cout << " pawnKey "<< sync_endl;
-
-	  if (st->checkersBB != si.checkersBB)
-	 	  	     	  sync_cout << " checkersBB "<< sync_endl;
-
-	  if (st->epSquare != si.epSquare)
-		  sync_cout << " epSquare "<< sync_endl;
-
-	  if (st->castlingRights != si.castlingRights)
-	 		  sync_cout << " castlingRights "<< sync_endl;
-
-	  if (st->pliesFromNull != si.pliesFromNull)
-	 		  sync_cout << " pliesFromNull "<< sync_endl;
-
-	  if (st->rule50 != si.rule50)
-	 	 		  sync_cout << " rule50 "<< sync_endl;
-
-	  if (st->capturedPiece != si.capturedPiece)
-	  	 	 		  sync_cout << " capturedPiece "<< sync_endl;
-
-	  if (st->blockersForKing[WHITE] != si.blockersForKing[WHITE])
-	 	  	 	 		  sync_cout << " blockersForKing[WHITE] "<< sync_endl;
-
-	  if (st->blockersForKing[BLACK] != si.blockersForKing[BLACK])
-	 	 	  	 	 		  sync_cout << " blockersForKing[BLACK] "<< sync_endl;
-
-	  if (st->pinners[WHITE] != si.pinners[WHITE])
-	 	 	  	 	 		  sync_cout << " pinners[WHITE] "<< sync_endl;
-
-	 if (st->pinners[BLACK] != si.pinners[BLACK])
-	 	 	 	sync_cout << " pinners[BLACK] "<< sync_endl;
-
-
-	  sync_cout << " mcompare diff " << std::memcmp(&si, st, sizeof(StateInfo)) << sync_endl;
-	  abort();
-  }
+      assert(0 && "pos_is_ok: State");
 
   for (Piece pc : Pieces)
   {
       if (   pieceCount[pc] != popcount(pieces(color_of(pc), type_of(pc)))
           || pieceCount[pc] != std::count(board, board + SQUARE_NB, pc))
-    	  abort();
+          assert(0 && "pos_is_ok: Pieces");
 
       for (int i = 0; i < pieceCount[pc]; ++i)
           if (board[pieceList[pc][i]] != pc || index[pieceList[pc][i]] != i)
-          {
-                  	  sync_cout << "piece count" << sync_endl;
-                  	  abort();
-                    }
+              assert(0 && "pos_is_ok: Index");
   }
 
   for (Color c = WHITE; c <= BLACK; ++c)
@@ -1422,10 +1338,7 @@ bool Position::pos_is_ok() const {
           if (   piece_on(castlingRookSquare[c | s]) != make_piece(c, ROOK)
               || castlingRightsMask[castlingRookSquare[c | s]] != (c | s)
               || (castlingRightsMask[square<KING>(c)] & (c | s)) != (c | s))
-          {
-        	  sync_cout << "castling" << sync_endl;
-        	  abort();
-          }
+              assert(0 && "pos_is_ok: Castling");
       }
 
   return true;
