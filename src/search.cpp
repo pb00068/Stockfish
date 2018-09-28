@@ -57,8 +57,6 @@ using Eval::evaluate;
 using namespace Search;
 
 namespace {
-//3826
-const int pvmoves2[] = { 3826, 3898, 2997, 4031, 3236, 3746, 2313, 3634, 576, 2072, 9, 1552, 576, 1032, 9, 29184, 576, 3233, 2924, 2130, 18, 2194, 32125};
 
   // Different node types, used as a template parameter
   enum NodeType { NonPV, PV };
@@ -547,19 +545,6 @@ namespace {
             return alpha;
     }
 
-//	if (pos.this_thread()->nmpMinPly  && ss->ply > 6) {
-//		bool match = true;
-//		  for (int ply = 0; ply <= ss->ply-1; ply++) {
-//			if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove) {
-//			  match = false;
-//			  break;
-//			}
-//
-//		  }
-//		  //if (match && pos.this_thread()->nmpMinPly)
-//		//		sync_cout << pos << " info searching along path at ply : " << ss->ply <<  " with d: " << depth << " alpha " << alpha << " beta "  << beta  << sync_endl;
-//	}
-
     // Dive into quiescence search when the depth reaches zero
     if (depth < ONE_PLY)
         return qsearch<NT>(pos, ss, alpha, beta);
@@ -722,8 +707,6 @@ namespace {
         }
     }
 
-    bool mt = false;
-
     // Step 6. Static evaluation of the position
     if (inCheck)
     {
@@ -814,14 +797,16 @@ namespace {
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
-
             thisThread->nmpColor = us;
-
-
-
-		   Pawns::Entry* pe = Pawns::probe(pos);
-		   if (depth > 12 * ONE_PLY && thisThread->zugzwangMates < 20 && pe != nullptr && popcount(pe->passedPawns[us]) <=2 && !inCheck)
-		   {
+		    Pawns::Entry* pe = Pawns::probe(pos);
+		    if (depth > 12 * ONE_PLY
+				   && thisThread->zugzwangMates < 20
+				   && pe != nullptr
+				   && popcount(pe->passedPawns[us]) <= 2
+				   && !inCheck
+				   && MoveList<LEGAL, KING>(pos).size() < 1 + bool(pos.blockers_for_king(us) & pos.pieces(~us))
+				   )
+		    {
 			  Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
 			  while (passed) {
 				Square s = pop_lsb(&passed);
@@ -833,7 +818,6 @@ namespace {
 
 				 thisThread->nmpMinPly = MAX_PLY;
 
-				 //sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << sync_endl;
 				 StateInfo s1;
 				 pos.removePawn(s, s1);
 
@@ -845,10 +829,10 @@ namespace {
 
 				 if (v > mated_in(0) && v < VALUE_MATED_IN_MAX_PLY)
 				 {
-					 //sync_cout << "info search verify with removed pawn at " << UCI::move(make_move(s,s), false) << " finished val: " << v <<  " " << UCI::value(v) << " d " << (depth-R) <<  sync_endl;
 					 thisThread->zugzwangMates++;
 					 pos.undo_removePawn(s);
 					 thisThread->nmpMinPly = 0;
+					 // Early return here with a low value, this will spotlight this variation
 					 return Value(thisThread->rootMoves[0].score * (thisThread->rootPos.side_to_move() != us ? 1 : -1) - 80);
 				 }
 				 pos.undo_removePawn(s);
@@ -856,7 +840,7 @@ namespace {
 				} // end processing of passed pawns
 			}
 
-		   thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
+		    thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
 
@@ -1239,20 +1223,12 @@ moves_loop: // When in check, search starts from here
         if ((ss-1)->moveCount == 1 && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
 
-        if (mt)
-        	sync_cout << pos << " bestmove " << UCI::move(bestMove, pos.is_chess960()) << " after ver. hit!!!!" << sync_endl;
     }
     // Bonus for prior countermove that caused the fail low
-    else
-    	{
-    	if (mt)
-    	   sync_cout << pos << " no bestmove found after ver. hit!!!!" << sync_endl;
-
-    	if (   (depth >= 3 * ONE_PLY || PvNode)
+    else if (   (depth >= 3 * ONE_PLY || PvNode)
              && !pos.captured_piece()
              && is_ok((ss-1)->currentMove))
         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
-    	}
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);

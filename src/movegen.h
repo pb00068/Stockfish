@@ -24,6 +24,7 @@
 #include <algorithm>
 
 #include "types.h"
+#include "position.h"
 
 class Position;
 
@@ -55,12 +56,22 @@ inline bool operator<(const ExtMove& f, const ExtMove& s) {
 template<GenType>
 ExtMove* generate(const Position& pos, ExtMove* moveList);
 
-/// The MoveList struct is a simple wrapper around generate(). It sometimes comes
+// The MoveList struct is a simple wrapper around generate(). It sometimes comes
 /// in handy to use this class instead of the low level generate() function.
-template<GenType T>
+template<GenType T, PieceType P = ALL_PIECES>
 struct MoveList {
 
-  explicit MoveList(const Position& pos) : last(generate<T>(pos, moveList)) {}
+  explicit MoveList(const Position& pos) : last(generate<T>(pos, moveList)) {
+
+    if (P != ALL_PIECES)
+    {
+        for (ExtMove* cur = moveList; cur != last; )
+            if (type_of(pos.piece_on(from_sq(cur->move))) != P)
+                *cur = (--last)->move;
+            else
+                ++cur;
+    }
+  }
   const ExtMove* begin() const { return moveList; }
   const ExtMove* end() const { return last; }
   size_t size() const { return last - moveList; }
@@ -71,5 +82,6 @@ struct MoveList {
 private:
   ExtMove moveList[MAX_MOVES], *last;
 };
+
 
 #endif // #ifndef MOVEGEN_H_INCLUDED
