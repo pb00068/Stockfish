@@ -803,7 +803,7 @@ namespace {
 				   && pe != nullptr
 				   && popcount(pe->passedPawns[us]) <= 2
 				   && !inCheck
-				   && MoveList<LEGAL, KING>(pos).size() < 1 + bool(pos.blockers_for_king(us) & pos.pieces(~us))
+				   && MoveList<LEGAL, KING>(pos).size() < 1 // + bool(pos.blockers_for_king(us) & pos.pieces(~us))
 				   )
 		    {
 			  Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
@@ -814,6 +814,8 @@ namespace {
 				bool promotion_Will_be_Neutralized =  (pos.pieces(~us) & promo) || !pos.see_ge(directPromotion);
 				if (!promotion_Will_be_Neutralized)
 					continue;
+				if (promo == pos.square<KING>(us))
+					continue; // 8/6pp/1K6/6P1/3N4/1N6/npn1P3/1k6 w - - 2 2
 
 				 thisThread->nmpMinPly = MAX_PLY;
 
