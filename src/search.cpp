@@ -58,6 +58,11 @@ using namespace Search;
 
 namespace {
 
+const int pvmoves2[] = {2065, 1, 1761, 3567, 2479, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3632, 2160, 537, 2950, 72, 1099, 656, 446, 512, 3985, 1610, 3105, 1057, 1121, 656, 2136, 16961, 705, 1, 1552, 74, 1067, 642, 2771, 137, 1227, 593, 3241, 1112, 723, 1561, 2666, 1624, 2722, 1568, 1232};
+                  // pv a5b3 a1b1 d4b5 h7h6 g5h6 g7h6 e2e4 h6h5 e4e5 h5h4 e5e6 h4h3 e6e7 h3h2 e7e8q h2h1q e8g6 h1a8 b6c7 a8a7 b5a7 a2b4 g6g1 b1a2 b3d2 c2a3 g1g8 a2a1 g8b3 b4c2 a7b5 a3b5 b3b5 c2a3 b5a4 b2b1n d2b1 a1b1 a4a3 b1c2 a3d6 c2c1 d6d3 c1b2 d3d2 b2b3 c7b6 b3a4 d2d3 a4b4 b6c6 b4a4 c6c5 a4a5 d3a3
+const int pvmoves1[] = {2065, 1, 1761, 3559, 2479, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3632, 2160, 537, 2950, 72, 1099, 656, 446, 512, 3985, 1610, 3105, 1057, 1121, 656, 2136, 16961, 705, 1, 1552, 74, 1067, 642, 2771, 137, 1227, 593, 3241, 1112, 723, 1561, 2666, 1624, 2722, 1568, 1232};
+                  // pv a5b3 a1b1 d4b5 h7h5 ...
+
   // Different node types, used as a template parameter
   enum NodeType { NonPV, PV };
 
@@ -438,7 +443,7 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (zugzwangMates > 5)
-                	  zugzwangMates-=5;
+                	  zugzwangMates-=100;
               }
               else
                   break;
@@ -796,47 +801,90 @@ namespace {
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
+            //sync_cout << pos << " ver search with depth " << depth-R << sync_endl;
+
             thisThread->nmpColor = us;
-		    Pawns::Entry* pe = Pawns::probe(pos);
-		    if (depth > 12 * ONE_PLY
+		    Pawns::Entry* pe;
+		    if ( depth > 12 * ONE_PLY
+		    	   && !inCheck
+				   && abs(thisThread->rootMoves[0].score) < 4800
 				   && thisThread->zugzwangMates < 20
-				   && pe != nullptr
+				   && (pe = Pawns::probe(pos)) != nullptr
+				   && popcount(pe->passedPawns[us])
 				   && popcount(pe->passedPawns[us]) <= 2
-				   && !inCheck
+				   && popcount(pos.pieces()) <= 12
 				   && MoveList<LEGAL, KING>(pos).size() < 1 // + bool(pos.blockers_for_king(us) & pos.pieces(~us))
 				   )
 		    {
+
+//		    	 if (ss->ply >= 3) {
+//					bool match = true;
+//					  for (int ply = 0; ply <= ss->ply-1; ply++) {
+//						if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove &&
+//							pvmoves1[ply] != (ss - ss->ply + ply)->currentMove	) {
+//						  match = false;
+//						  break;
+//						}
+//
+//					  }
+//					  if (match)
+//							sync_cout << pos << " info ver searching along path at ply : " << ss->ply <<  " with d: " << depth-R << " alpha " << alpha << " beta "  << beta  << " nmply " << pos.this_thread()->nmpMinPly << sync_endl;
+//				}
+
+		      bool oneOpponentPasser = popcount(pe->passedPawns[~us]) == 1 &&
+		    	   !(pos.pieces() & forward_file_bb(~us, lsb(pe->passedPawns[~us])));
 			  Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
 			  while (passed) {
 				Square s = pop_lsb(&passed);
+
 				Square promo = make_square(file_of(s), us == WHITE ? RANK_8 : RANK_1);
+				if ((pos.pieces() & between_bb(promo, s)) || promo == pos.square<KING>(us)) // king can't move
+					continue; // passer blocked
 				Move directPromotion = make_move(s, promo);
-				bool promotion_Will_be_Neutralized =  (pos.pieces(~us) & promo) || !pos.see_ge(directPromotion);
-				if (!promotion_Will_be_Neutralized)
+				bool killPromo =  (pos.pieces(~us) & promo) || !pos.see_ge(directPromotion); // opponent controls promotion-square
+				if (!killPromo && !oneOpponentPasser)
 					continue;
-				if (promo == pos.square<KING>(us))
-					continue; // 8/6pp/1K6/6P1/3N4/1N6/npn1P3/1k6 w - - 2 2
+
+				StateInfo s1,s2,s3;
+				Square p2, p3 = SQ_NONE;
+				if (oneOpponentPasser && !killPromo)
+				{
+					Rank r1 = relative_rank(~us, rank_of(lsb(pe->passedPawns[~us])));
+					Rank r2 = relative_rank( us, rank_of(s));
+					if (r2 > r1)
+						continue; // if our passed is more advanced we will promote earlier and probably defend with success
+					if (pawn_attack_span(us, s) & pos.pieces(~us, PAWN)) { // pseudo passed pawn: will be passed after levers
+						p2 = lsb(pawn_attack_span(us, s) & pos.pieces(~us, PAWN));
+						Bitboard removeLevers = forward_file_bb(~us, p2) & pos.pieces( us, PAWN);
+						if (removeLevers)
+						{
+						   p3 = lsb(removeLevers);
+						   pos.removePawn(p2, s2);
+						   pos.removePawn(p3, s3);
+						}
+					}
+				}
 
 				 thisThread->nmpMinPly = MAX_PLY;
-
-				 StateInfo s1;
 				 pos.removePawn(s, s1);
-
 				 Move pv1[MAX_PLY+1];
 				 (ss)->pv = pv1;
 				 (ss)->pv[0] = MOVE_NONE;
-				 Value v = search<PV>(pos, ss, mated_in(0), VALUE_MATED_IN_MAX_PLY, depth - 4 * ONE_PLY , false);
-				 thisThread->nmpMinPly = 0;
+				 Depth nd = (oneOpponentPasser && !killPromo) ? depth - R - 2 * ONE_PLY : depth - 4 * ONE_PLY;
+				 Value v = search<PV>(pos, ss, mated_in(0), VALUE_MATED_IN_MAX_PLY, nd , false);
+
+				 pos.undo_removePawn(s, us);
+				 if (p3 != SQ_NONE) // reput the lever pawns
+					 pos.undo_removePawn(p3, us), pos.undo_removePawn(p2, ~us);
 
 				 if (v > mated_in(0) && v < VALUE_MATED_IN_MAX_PLY)
 				 {
+					 //sync_cout << pos << "info mate " << UCI::value(v) << " detected with depth " << nd << " !  at score " << thisThread->rootMoves[0].score << sync_endl;
 					 thisThread->zugzwangMates++;
-					 pos.undo_removePawn(s);
 					 thisThread->nmpMinPly = 0;
-					 // Early return here with a low value, this will spotlight this variation
+					 // Early return here with a low value, this will spotlight this promising variation
 					 return Value(thisThread->rootMoves[0].score * (thisThread->rootPos.side_to_move() != us ? 1 : -1) - 80);
 				 }
-				 pos.undo_removePawn(s);
 
 				} // end processing of passed pawns
 			}
@@ -936,10 +984,10 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
-//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-//          sync_cout << "info depth " << depth / ONE_PLY
-//                    << " currmove " << UCI::move(move, pos.is_chess960())
-//                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+          sync_cout << "info depth " << depth / ONE_PLY
+                    << " currmove " << UCI::move(move, pos.is_chess960())
+                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
 

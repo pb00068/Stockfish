@@ -729,9 +729,9 @@ void Position::removePawn(Square s, StateInfo& newSt) {
 	st->key = k;
 }
 
-void Position::undo_removePawn(Square s) {
+void Position::undo_removePawn(Square s, Color c) {
   st = st->previous;
-  Piece pc = make_piece(sideToMove, PAWN);
+  Piece pc = make_piece(c, PAWN);
   put_piece(pc, s);
 }
 
