@@ -798,6 +798,9 @@ namespace {
 
             if (v >= beta)
                 return nullValue;
+
+            if (v < alpha - 30)
+                return v; // previous move seems very strong
         }
     }
 
