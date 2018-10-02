@@ -58,11 +58,6 @@ using namespace Search;
 
 namespace {
 
-const int pvmoves2[] = {2065, 1, 1761, 3567, 2479, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3632, 2160, 537, 2950, 72, 1099, 656, 446, 512, 3985, 1610, 3105, 1057, 1121, 656, 2136, 16961, 705, 1, 1552, 74, 1067, 642, 2771, 137, 1227, 593, 3241, 1112, 723, 1561, 2666, 1624, 2722, 1568, 1232};
-                  // pv a5b3 a1b1 d4b5 h7h6 g5h6 g7h6 e2e4 h6h5 e4e5 h5h4 e5e6 h4h3 e6e7 h3h2 e7e8q h2h1q e8g6 h1a8 b6c7 a8a7 b5a7 a2b4 g6g1 b1a2 b3d2 c2a3 g1g8 a2a1 g8b3 b4c2 a7b5 a3b5 b3b5 c2a3 b5a4 b2b1n d2b1 a1b1 a4a3 b1c2 a3d6 c2c1 d6d3 c1b2 d3d2 b2b3 c7b6 b3a4 d2d3 a4b4 b6c6 b4a4 c6c5 a4a5 d3a3
-const int pvmoves1[] = {2065, 1, 1761, 3559, 2479, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3632, 2160, 537, 2950, 72, 1099, 656, 446, 512, 3985, 1610, 3105, 1057, 1121, 656, 2136, 16961, 705, 1, 1552, 74, 1067, 642, 2771, 137, 1227, 593, 3241, 1112, 723, 1561, 2666, 1624, 2722, 1568, 1232};
-                  // pv a5b3 a1b1 d4b5 h7h5 ...
-
   // Different node types, used as a template parameter
   enum NodeType { NonPV, PV };
 
@@ -801,7 +796,6 @@ namespace {
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
-            //sync_cout << pos << " ver search with depth " << depth-R << sync_endl;
 
             thisThread->nmpColor = us;
 		    Pawns::Entry* pe;
@@ -816,21 +810,6 @@ namespace {
 				   && MoveList<LEGAL, KING>(pos).size() < 1 // + bool(pos.blockers_for_king(us) & pos.pieces(~us))
 				   )
 		    {
-
-//		    	 if (ss->ply >= 3) {
-//					bool match = true;
-//					  for (int ply = 0; ply <= ss->ply-1; ply++) {
-//						if (pvmoves2[ply] != (ss - ss->ply + ply)->currentMove &&
-//							pvmoves1[ply] != (ss - ss->ply + ply)->currentMove	) {
-//						  match = false;
-//						  break;
-//						}
-//
-//					  }
-//					  if (match)
-//							sync_cout << pos << " info ver searching along path at ply : " << ss->ply <<  " with d: " << depth-R << " alpha " << alpha << " beta "  << beta  << " nmply " << pos.this_thread()->nmpMinPly << sync_endl;
-//				}
-
 		      bool oneOpponentPasser = popcount(pe->passedPawns[~us]) == 1 &&
 		    	   !(pos.pieces() & forward_file_bb(~us, lsb(pe->passedPawns[~us])));
 			  Bitboard passed = pe->passedPawns[us] & ~pos.blockers_for_king(us) &  ~pos.blockers_for_king(~us);
