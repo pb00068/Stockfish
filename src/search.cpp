@@ -801,8 +801,9 @@ namespace {
         	       && (pe = Pawns::probe(pos)) != nullptr
         	       && popcount(pe->passedPawns[us])
         	       && popcount(pe->passedPawns[us]) <= 2
-        	       && popcount(pos.pieces()) <= 12
-        	       && MoveList<LEGAL, KING>(pos).size() < 1) // + bool(pos.blockers_for_king(us) & pos.pieces(~us))
+                   && popcount(pos.pieces(us)) <= 7
+        	       && popcount(pos.pieces())   <= 12
+        	       && MoveList<LEGAL, KING>(pos).size() < 1)
             {
                 bool oneOpponentPasser = popcount(pe->passedPawns[~us]) == 1 &&
                                         !(pos.pieces() & forward_file_bb(~us, lsb(pe->passedPawns[~us])));
