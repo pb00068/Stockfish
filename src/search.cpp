@@ -435,11 +435,7 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
-              {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (zugzwangMates > 5)
-                      zugzwangMates-=100;
-              }
               else
                   break;
 
@@ -796,8 +792,7 @@ namespace {
             Pawns::Entry* pe;
             if ( depth > 12 * ONE_PLY
                    && !inCheck
-        	       && abs(thisThread->rootMoves[0].score) < 4800
-         	       && thisThread->zugzwangMates < 20
+         	       && thisThread->zugzwangMates < 1000000
         	       && (pe = Pawns::probe(pos)) != nullptr
         	       && popcount(pe->passedPawns[us])
         	       && popcount(pe->passedPawns[us]) <= 2
@@ -1175,6 +1170,9 @@ moves_loop: // When in check, search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+
+              if (moveCount == 1 && thisThread->zugzwangMates > 100 && static_cast<MainThread*>(thisThread)->bestMoveChanges < 2)
+            	  thisThread->zugzwangMates = 1000000; // give up
           }
           else
               // All other moves but the PV are set to the lowest value: this
