@@ -561,6 +561,8 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
+	Square evadeSquare = SQ_NONE;
+
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -1000,6 +1002,9 @@ moves_loop: // When in check, search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
+		  if(captureOrPromotion && from_sq(move)==evadeSquare)
+			  r -= ONE_PLY;
+
           // Decrease reduction if opponent's move count is high (~10 Elo)
           if ((ss-1)->moveCount > 15)
               r -= ONE_PLY;
@@ -1021,9 +1026,13 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
-                  r -= 2 * ONE_PLY;
+			  else if (type_of(move) == NORMAL
+				  && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+			  {
+				  evadeSquare = from_sq(move);
+				  r -= 2 * ONE_PLY;
+			  }
+                  
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
