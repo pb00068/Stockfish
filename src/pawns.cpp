@@ -32,9 +32,10 @@ namespace {
   #define S(mg, eg) make_score(mg, eg)
 
   // Pawn penalties
-  constexpr Score Backward = S( 9, 24);
-  constexpr Score Doubled  = S(11, 56);
-  constexpr Score Isolated = S( 5, 15);
+  constexpr Score Backward    = S( 9, 24);
+  constexpr Score Doubled     = S( 8, 42);
+  constexpr Score WideDoubled = S( 3, 14);
+  constexpr Score Isolated    = S( 5, 15);
 
   // Connected pawn bonus by opposed, phalanx, #support and rank
   Score Connected[2][2][3][RANK_NB];
@@ -71,7 +72,7 @@ namespace {
     constexpr Color     Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Direction Up   = (Us == WHITE ? NORTH : SOUTH);
 
-    Bitboard b, neighbours, stoppers, doubled, supported, phalanx;
+    Bitboard b, neighbours, stoppers, adjacentDoubled, supported, phalanx;
     Bitboard lever, leverPush;
     Square s;
     bool opposed, backward;
@@ -103,7 +104,10 @@ namespace {
         stoppers   = theirPawns & passed_pawn_mask(Us, s);
         lever      = theirPawns & PawnAttacks[Us][s];
         leverPush  = theirPawns & PawnAttacks[Us][s + Up];
-        doubled    = ourPawns   & (s - Up);
+        adjacentDoubled = ourPawns   & (s - Up);
+        if (!adjacentDoubled && more_than_one(ourPawns & f))
+        	score -= WideDoubled; // will be called for both doubled pawns when not adjacent
+
         neighbours = ourPawns   & adjacent_files_bb(f);
         phalanx    = neighbours & rank_bb(s);
         supported  = neighbours & rank_bb(s - Up);
@@ -141,8 +145,9 @@ namespace {
         else if (backward)
             score -= Backward, e->weakUnopposed[Us] += !opposed;
 
-        if (doubled && !supported)
+        if (adjacentDoubled && !supported)
             score -= Doubled;
+
     }
 
     return score;
