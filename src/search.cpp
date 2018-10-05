@@ -801,10 +801,6 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        else if (is_ok((ss+1)->currentMove)
-                 && pos.capture((ss+1)->currentMove)
-                 && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) >= KNIGHT)
-             evadeSquare = to_sq((ss+1)->currentMove);
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -837,6 +833,22 @@ namespace {
                 // If the qsearch held perform the regular search
                 if (value >= rbeta)
                     value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, depth - 4 * ONE_PLY, !cutNode);
+
+                Move m = (ss+1)->currentMove;
+                if (value < rbeta
+                         && is_ok(m)
+                         && to_sq(m) != to_sq(move)
+                         && pos.capture(m)
+                         && type_of(pos.piece_on(to_sq(m))) >= KNIGHT
+						 && type_of(m) == NORMAL
+						 && pos.legal(m))
+                {
+                	StateInfo s1;
+                	pos.do_move(m, s1);
+                	if(!pos.see_ge(make_move(to_sq(m), from_sq(m))))
+						evadeSquare = to_sq(m);
+                	pos.undo_move(m);
+                }
 
                 pos.undo_move(move);
 
