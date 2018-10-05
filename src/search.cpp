@@ -801,6 +801,10 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
+        else if (is_ok((ss+1)->currentMove)
+                 && pos.capture((ss+1)->currentMove)
+                 && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) >= KNIGHT)
+             evadeSquare = to_sq((ss+1)->currentMove);
     }
 
     // Step 10. ProbCut (~10 Elo)
@@ -1002,7 +1006,7 @@ moves_loop: // When in check, search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
-		  if(captureOrPromotion && from_sq(move)==evadeSquare)
+		  if(captureOrPromotion && from_sq(move) == evadeSquare)
 			  r -= ONE_PLY;
 
           // Decrease reduction if opponent's move count is high (~10 Elo)
@@ -1026,8 +1030,8 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-			  else if (type_of(move) == NORMAL
-				  && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+			  else if (evadeSquare == from_sq(move) || ( type_of(move) == NORMAL
+				  && !pos.see_ge(make_move(to_sq(move), from_sq(move)))))
 			  {
 				  evadeSquare = from_sq(move);
 				  r -= 2 * ONE_PLY;
