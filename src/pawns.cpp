@@ -33,7 +33,7 @@ namespace {
 
   // Pawn penalties
   constexpr Score Backward    = S( 9, 24);
-  constexpr Score Doubled     = S( 8, 42);
+  constexpr Score Doubled     = S(10, 54);
   constexpr Score WideDoubled = S( 3, 14);
   constexpr Score Isolated    = S( 5, 15);
 
@@ -104,13 +104,15 @@ namespace {
         stoppers   = theirPawns & passed_pawn_mask(Us, s);
         lever      = theirPawns & PawnAttacks[Us][s];
         leverPush  = theirPawns & PawnAttacks[Us][s + Up];
-        adjacentDoubled = ourPawns   & (s - Up);
-        if (!adjacentDoubled && more_than_one(ourPawns & f))
-        	score -= WideDoubled; // will be called for both doubled pawns when not adjacent
-
         neighbours = ourPawns   & adjacent_files_bb(f);
         phalanx    = neighbours & rank_bb(s);
         supported  = neighbours & rank_bb(s - Up);
+
+        adjacentDoubled = ourPawns & (s - Up);
+        if (adjacentDoubled && !supported)
+            score -= Doubled;
+        else if (!adjacentDoubled && !supported && more_than_one(ourPawns & f))
+		    score -= WideDoubled; // might be called for both doubled pawns
 
         // A pawn is backward when it is behind all pawns of the same color
         // on the adjacent files and cannot be safely advanced.
@@ -144,9 +146,6 @@ namespace {
 
         else if (backward)
             score -= Backward, e->weakUnopposed[Us] += !opposed;
-
-        if (adjacentDoubled && !supported)
-            score -= Doubled;
 
     }
 
