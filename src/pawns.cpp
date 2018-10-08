@@ -20,7 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
+//#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
@@ -171,12 +171,12 @@ namespace {
 		  {
 			  if (z==3)
 			  {
-				//e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
+				e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
 				if (~c == Us)
 					  score =-TwoVsOne;
 				  else
 					  score +-TwoVsOne;
-				  //sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
+				 // sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
 			  }
 			  z = 0; // closed
 		  }
@@ -193,7 +193,7 @@ namespace {
 		  {
 			  if (z==3)
 			  {
-			    //e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
+			    e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
 			    if (~c == Us)
 					  score =-TwoVsOne;
 				  else
@@ -205,7 +205,7 @@ namespace {
 		  c = ~c;
 	  }
 	  if (z==3) {
-		  //e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[FILE_G];
+		  e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[FILE_G];
 		  if (~c == Us)
 			  score =-TwoVsOne;
 		  else
@@ -257,7 +257,7 @@ Entry* probe(const Position& pos) {
   e->key = key;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
-  //e->two_vs_one[WHITE] = e->two_vs_one[BLACK] = 0;
+  e->two_vs_one[WHITE] = e->two_vs_one[BLACK] = 0;
   e->openFiles = popcount(e->semiopenFiles[WHITE] & e->semiopenFiles[BLACK]);
   if (e->openFiles >= 3)
   {
