@@ -914,6 +914,7 @@ moves_loop: // When in check, search starts from here
           &&  ttValue != VALUE_NONE
           && (tte->bound() & BOUND_LOWER)
           &&  tte->depth() >= depth - 3 * ONE_PLY
+		  &&  (ss-1)->moveCount + (ss-2)->moveCount <= 10
           &&  pos.legal(move))
       {
           Value rBeta = std::max(ttValue - 2 * depth / ONE_PLY, -VALUE_MATE);
