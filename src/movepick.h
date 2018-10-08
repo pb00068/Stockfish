@@ -128,6 +128,8 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
+  int getStage();
+  bool fewMoves();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
