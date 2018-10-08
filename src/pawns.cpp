@@ -36,7 +36,7 @@ namespace {
   constexpr Score Backward = S( 9, 24);
   constexpr Score Doubled  = S(11, 56);
   constexpr Score Isolated = S( 5, 15);
-  constexpr Score TwoVsOne = S( 5, 15);
+  constexpr Score TwoVsOne = S( 2, 20);
 
   // Connected pawn bonus by opposed, phalanx, #support and rank
   Score Connected[2][2][3][RANK_NB];
@@ -162,22 +162,31 @@ namespace {
 		  File f = File(i);
 		  if ((e->passedPawns[c] | e->passedPawns[~c]) & FileBB[f])
 		  {
-			  z=-1;
+			  z=0;
 			  continue;
 		  }
 		  bool b1 = e->semiopen_file( c, f);
 		  bool b2 = e->semiopen_file(~c, f);
 		  if (!b1 && !b2)
+		  {
+			  if (z==3)
+			  {
+				//e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
+				if (~c == Us)
+					  score =-TwoVsOne;
+				  else
+					  score +-TwoVsOne;
+				  //sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
+			  }
 			  z = 0; // closed
+		  }
 		  else if (b1 != b2) // semiopen
 		  {
 			  if (b1 && !b2)
 			  {
 				 if (popcount(pos.pieces(~c, PAWN) & FileBB[i]) == 1)
 			        z++;
-				 else z=-1;
-			    //if (z==2)
-			      //sync_cout << "info pop " << popcount(pos.pieces(~c, PAWN) & FileBB[i]) << sync_endl;
+				 else z=0;
 			  }
 		  }
 		  else // empty, open
@@ -202,6 +211,7 @@ namespace {
 		  else
 			  score +-TwoVsOne;
 		  //sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
+
 	  }
 	  return score;
   }
