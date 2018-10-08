@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
@@ -35,6 +36,7 @@ namespace {
   constexpr Score Backward = S( 9, 24);
   constexpr Score Doubled  = S(11, 56);
   constexpr Score Isolated = S( 5, 15);
+  constexpr Score TwoVsOne = S( 5, 15);
 
   // Connected pawn bonus by opposed, phalanx, #support and rank
   Score Connected[2][2][3][RANK_NB];
@@ -148,6 +150,62 @@ namespace {
     return score;
   }
 
+  template<Color Us>
+  Score evaluate2V1(const Position& pos, Pawns::Entry* e)
+  {
+	  Score score = SCORE_ZERO;
+
+	  int z = 0;
+	  Color c = Us;
+	  for (int i=0; i < 8; i++)
+	  {
+		  File f = File(i);
+		  if ((e->passedPawns[c] | e->passedPawns[~c]) & FileBB[f])
+		  {
+			  z=-1;
+			  continue;
+		  }
+		  bool b1 = e->semiopen_file( c, f);
+		  bool b2 = e->semiopen_file(~c, f);
+		  if (!b1 && !b2)
+			  z = 0; // closed
+		  else if (b1 != b2) // semiopen
+		  {
+			  if (b1 && !b2)
+			  {
+				 if (popcount(pos.pieces(~c, PAWN) & FileBB[i]) == 1)
+			        z++;
+				 else z=-1;
+			    //if (z==2)
+			      //sync_cout << "info pop " << popcount(pos.pieces(~c, PAWN) & FileBB[i]) << sync_endl;
+			  }
+		  }
+		  else // empty, open
+		  {
+			  if (z==3)
+			  {
+			    //e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[i-2];
+			    if (~c == Us)
+					  score =-TwoVsOne;
+				  else
+					  score +-TwoVsOne;
+				  //sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
+			  }
+			  z = 0;
+		  }
+		  c = ~c;
+	  }
+	  if (z==3) {
+		  //e->two_vs_one[~c] |=  pos.pieces(~c, PAWN) & FileBB[FILE_G];
+		  if (~c == Us)
+			  score =-TwoVsOne;
+		  else
+			  score +-TwoVsOne;
+		  //sync_cout << pos << " bitb" << Bitboards::pretty(e->two_vs_one[~c]) << " us: " << Us << " c: " << c << sync_endl;
+	  }
+	  return score;
+  }
+
 } // namespace
 
 namespace Pawns {
@@ -189,7 +247,14 @@ Entry* probe(const Position& pos) {
   e->key = key;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
+  //e->two_vs_one[WHITE] = e->two_vs_one[BLACK] = 0;
   e->openFiles = popcount(e->semiopenFiles[WHITE] & e->semiopenFiles[BLACK]);
+  if (e->openFiles >= 3)
+  {
+  	  e->scores[WHITE] += evaluate2V1<WHITE>(pos, e);
+  	  e->scores[BLACK] += evaluate2V1<BLACK>(pos, e);
+  }
+
   e->asymmetry = popcount(  (e->passedPawns[WHITE]   | e->passedPawns[BLACK])
                           | (e->semiopenFiles[WHITE] ^ e->semiopenFiles[BLACK]));
 
