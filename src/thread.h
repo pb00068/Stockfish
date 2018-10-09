@@ -61,7 +61,7 @@ public:
   Material::Table materialTable;
   Endgames endgames;
   size_t pvIdx, pvLast;
-  int selDepth, nmpMinPly, zugzwangMates;
+  int selDepth, nmpMinPly, zugzwangMates, vetoPly;
   Color nmpColor;
   std::atomic<uint64_t> nodes, tbHits;
 
@@ -73,6 +73,7 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
+  Piece vetoPiece;
 };
 
 
