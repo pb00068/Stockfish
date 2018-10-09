@@ -1214,8 +1214,10 @@ moves_loop: // When in check, search starts from here
                   ss->statScore = 0;
                   if (!PvNode
                 	&& depth > 6 * ONE_PLY
+					&& !inCheck
 					&& thisThread->zugzwangMates < 20
 					&& make_move(to_sq((ss-2)->currentMove), from_sq((ss-2)->currentMove)) == move
+					&& alpha > VALUE_MATED_IN_MAX_PLY
 					//&& thisThread->rootMoves[0].pv[0] != (ss-ss->ply)->currentMove
 					&& MoveList<LEGAL, KING>(pos).size() == 0)
                   {
@@ -1229,11 +1231,11 @@ moves_loop: // When in check, search starts from here
                 		  pos.do_move(m, s);
                 		  Value v = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, ONE_PLY, true);
                 		  pos.undo_move(m);
-                		  if (v < VALUE_MATED_IN_MAX_PLY)
+                		  if (v < VALUE_MATED_IN_MAX_PLY) // movedPiece must babysit a square and is bouncing
                 			  matecount++;
                 		  if (matecount > 2)
                 		  {
-							  sync_cout << pos << " info mates found return low " << sync_endl;
+							  //sync_cout << pos << " info mates found return low " << sync_endl;
 							  thisThread->zugzwangMates++;
 							  return Value(thisThread->rootMoves[0].score * (thisThread->rootPos.side_to_move() != us ? 1 : -1) - 80);
 						  }
