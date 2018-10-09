@@ -977,15 +977,6 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
 
-
-      if (thisThread->vetoPiece == movedPiece)
-      {
-    	  if (ss->ply < thisThread->vetoPly - 6)
-    		  thisThread->vetoPiece = NO_PIECE;
-    	  else if (ss->ply < thisThread->vetoPly)
-    		  continue;
-      }
-
       givesCheck = gives_check(pos, move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
@@ -1221,11 +1212,33 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (!PvNode && depth > 6 * ONE_PLY && make_move(to_sq((ss-2)->currentMove), from_sq((ss-2)->currentMove)) == move && MoveList<LEGAL, KING>(pos).size() < 1)
+                  if (!PvNode
+                	&& depth > 6 * ONE_PLY
+					&& thisThread->zugzwangMates < 20
+					&& make_move(to_sq((ss-2)->currentMove), from_sq((ss-2)->currentMove)) == move
+					//&& thisThread->rootMoves[0].pv[0] != (ss-ss->ply)->currentMove
+					&& MoveList<LEGAL, KING>(pos).size() == 0)
                   {
-                	  //veto to move this piece for the next 6 plies
-                	  thisThread->vetoPiece = movedPiece;
-                	  thisThread->vetoPly = ss->ply + 6;
+                	  int matecount=0;
+                	  Move m;
+                	  while ((m = mp.next_move(false)) != MOVE_NONE)
+                	  {
+                		  if (pos.moved_piece(m) != movedPiece || !pos.legal(m))
+                			  continue;
+                		  StateInfo s;
+                		  pos.do_move(m, s);
+                		  Value v = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, ONE_PLY, true);
+                		  pos.undo_move(m);
+                		  if (v < VALUE_MATED_IN_MAX_PLY)
+                			  matecount++;
+                		  if (matecount > 2)
+                		  {
+							  sync_cout << pos << " info mates found return low " << sync_endl;
+							  thisThread->zugzwangMates++;
+							  return Value(thisThread->rootMoves[0].score * (thisThread->rootPos.side_to_move() != us ? 1 : -1) - 80);
+						  }
+                		  //sync_cout << pos << " v for move : " << UCI::move(m, false) << " is " << v << sync_endl;
+                	  }
                   }
                   break;
               }
