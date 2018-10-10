@@ -309,6 +309,7 @@ void Thread::search() {
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
+  noProgressCycles = 0;
 
   if (mainThread)
       mainThread->bestMoveChanges = 0, failedLow = false;
@@ -996,6 +997,7 @@ moves_loop: // When in check, search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
+		  &&  (thisThread->noProgressCycles < 8 || ss->ply >= 3)
           && (!captureOrPromotion || moveCountPruning))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
@@ -1082,6 +1084,15 @@ moves_loop: // When in check, search starts from here
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
+
+          if (moveCount == 1 && depth > 10 * ONE_PLY)
+          {
+              if (value == rm.score)
+                thisThread->noProgressCycles++;
+              else
+                thisThread->noProgressCycles=0;
+          }
+
 
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)
