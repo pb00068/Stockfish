@@ -35,8 +35,8 @@ namespace {
   // Pawn penalties
   constexpr Score Backward = S( 9, 24);
   constexpr Score Doubled  = S(11, 56);
-  constexpr Score Isolated = S( 5, 15);
-  constexpr Score TwoVsOne = S( 2, 20);
+  constexpr Score Isolated = S( 5, 14);
+  constexpr Score TwoVsOne = S( 0, 14);
 
   // Connected pawn bonus by opposed, phalanx, #support and rank
   Score Connected[2][2][3][RANK_NB];
