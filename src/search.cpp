@@ -997,7 +997,7 @@ moves_loop: // When in check, search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-		  &&  (thisThread->noProgressCycles < 8 || ss->ply >= 3)
+		  &&  (thisThread->noProgressCycles < 100 || ss->ply >= 3)
           && (!captureOrPromotion || moveCountPruning))
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
@@ -1085,10 +1085,10 @@ moves_loop: // When in check, search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
-          if (moveCount == 1 && depth > 10 * ONE_PLY)
+          if (moveCount == 1)
           {
               if (value == rm.score)
-                thisThread->noProgressCycles++;
+                thisThread->noProgressCycles += depth / ONE_PLY;
               else
                 thisThread->noProgressCycles=0;
           }
