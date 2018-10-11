@@ -1187,7 +1187,7 @@ moves_loop: // When in check, search starts from here
     if (!excludedMove)
     {
     	if (mateCount && (ss-1)->currentMove != MOVE_NULL)
-    		pureStaticEval-= Value(mateCount * 10);
+    		pureStaticEval-= Value(bestMove ? mateCount * 10 : 10);
 
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
