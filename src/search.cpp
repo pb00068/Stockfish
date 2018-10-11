@@ -928,6 +928,10 @@ moves_loop: // When in check, search starts from here
                && !moveCountPruning
                &&  pos.see_ge(move))
           extension = ONE_PLY;
+      else if (mateCount >= 2
+    		  && mateCount == moveCount - 1
+			  && !excludedMove)
+    	  extension = ONE_PLY; // either this move also get mated (then extension don't hurts) or this is one of the very few escapes
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
@@ -1185,16 +1189,10 @@ moves_loop: // When in check, search starts from here
         bestValue = std::min(bestValue, maxValue);
 
     if (!excludedMove)
-    {
-    	if (mateCount && (ss-1)->currentMove != MOVE_NULL)
-    		pureStaticEval-= Value(mateCount * 40);
-
-
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, pureStaticEval);
-    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
