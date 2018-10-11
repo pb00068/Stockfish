@@ -560,13 +560,13 @@ namespace {
     bool ttHit, inCheck, givesCheck, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, skipQuiets, ttCapture, pvExact;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, mateCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
     Color us = pos.side_to_move();
-    moveCount = captureCount = quietCount = ss->moveCount = 0;
+    moveCount = captureCount = quietCount = mateCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
 
@@ -1130,6 +1130,10 @@ moves_loop: // When in check, search starts from here
           }
       }
 
+      if (value < VALUE_MATED_IN_MAX_PLY && alpha > - 2 * QueenValueMg)
+         mateCount++;
+
+
       if (move != bestMove)
       {
           if (captureOrPromotion && captureCount < 32)
@@ -1181,10 +1185,15 @@ moves_loop: // When in check, search starts from here
         bestValue = std::min(bestValue, maxValue);
 
     if (!excludedMove)
+    {
+    	if (mateCount && (ss-1)->currentMove != MOVE_NULL)
+    		pureStaticEval-= Value(mateCount * 10);
+
         tte->save(posKey, value_to_tt(bestValue, ss->ply),
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, pureStaticEval);
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
