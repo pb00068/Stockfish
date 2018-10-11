@@ -930,6 +930,7 @@ moves_loop: // When in check, search starts from here
           extension = ONE_PLY;
       else if (mateCount >= 2
     		  && mateCount == moveCount - 1
+	          &&  eval >= beta - 120
 			  && !excludedMove)
     	  extension = ONE_PLY; // either this move also get mated (then extension don't hurts) or this is one of the very few escapes
 
