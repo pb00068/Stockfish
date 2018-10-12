@@ -72,7 +72,7 @@ namespace {
   }
 
   // Futility and reductions lookup tables, initialized at startup
-  int FutilityMoveCounts[2][16]; // [improving][depth]
+  int FutilityMoveCounts[3][16]; // [normal/improving/stable][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
@@ -165,8 +165,9 @@ void Search::init() {
 
   for (int d = 0; d < 16; ++d)
   {
-      FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
+      FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.76));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
+      FutilityMoveCounts[2][d] = int(2.4 + 0.74 * pow(d, 1.80));
   }
 }
 
@@ -897,8 +898,9 @@ moves_loop: // When in check, search starts from here
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
+      int index = improving ? 1 : (depth > 5 * ONE_PLY && ttHit && !ttMove) ? 2 : 0;
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount + bool(depth > 5 * ONE_PLY && ttHit && !ttMove) >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount >= FutilityMoveCounts[index][depth / ONE_PLY];
 
       // Step 13. Extensions (~70 Elo)
 
