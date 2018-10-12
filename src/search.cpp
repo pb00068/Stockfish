@@ -841,8 +841,10 @@ namespace {
 
     // Step 11. Internal iterative deepening (~2 Elo)
     if (    depth >= 8 * ONE_PLY
-        && !ttMove)
+        && !ttMove
+		&& (cutNode || depth <= 14 * ONE_PLY))
     {
+
         search<NT>(pos, ss, alpha, beta, depth - 7 * ONE_PLY, cutNode);
 
         tte = TT.probe(posKey, ttHit);
