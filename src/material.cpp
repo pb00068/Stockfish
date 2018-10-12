@@ -39,7 +39,7 @@ namespace {
     {  32,  255, -62                    }, // Knight      OUR PIECES
     {   0,  104,   4,    0              }, // Bishop
     { -26,   -2,  47,   105,  -208      }, // Rook
-    {-189,   24, 117,   133,  -134, -6  }  // Queen
+    { -79,   24, 117,   133,  -154, -6  }  // Queen
   };
 
   constexpr int QuadraticTheirs[][PIECE_TYPE_NB] = {
@@ -50,7 +50,7 @@ namespace {
     {   9,   63,   0                    }, // Knight      OUR PIECES
     {  59,   65,  42,     0             }, // Bishop
     {  46,   39,  24,   -24,    0       }, // Rook
-    {  97,  100, -42,   137,  268,    0 }  // Queen
+    {  97,  100, -20,   137,  218,    0 }  // Queen
   };
 
   // Endgame evaluation and scaling functions are accessed directly and not through
@@ -104,6 +104,15 @@ namespace {
                 + QuadraticTheirs[pt1][pt2] * pieceCount[Them][pt2];
 
         bonus += pieceCount[Us][pt1] * v;
+    }
+
+    // Queen vs. 3 minors slightly favours the minors
+    if (pieceCount[Us][QUEEN] == 1 && pieceCount[Them][QUEEN] == 0)
+    {
+        int n = pieceCount[Them][KNIGHT] - pieceCount[Us][KNIGHT];
+        int b = pieceCount[Them][BISHOP] - pieceCount[Us][BISHOP];
+        if ((n == 2 && b == 1) || (n == 1 && b == 2))
+        	bonus -= 44 * 16;
     }
 
     return bonus;
