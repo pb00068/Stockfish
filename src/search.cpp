@@ -165,9 +165,10 @@ void Search::init() {
 
   for (int d = 0; d < 16; ++d)
   {
-      FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.76));
+      FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.79));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
-      FutilityMoveCounts[2][d] = int(2.4 + 0.74 * pow(d, 1.80));
+      FutilityMoveCounts[2][d] = int(2.3 + 0.77 * pow(d, 1.70));
+      //sync_cout << "n " << FutilityMoveCounts[0][d] << " st " << FutilityMoveCounts[2][d] << " imp " << FutilityMoveCounts[1][d] << " d " << d << sync_endl;
   }
 }
 
@@ -898,7 +899,7 @@ moves_loop: // When in check, search starts from here
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
-      int index = improving ? 1 : (depth > 5 * ONE_PLY && ttHit && !ttMove) ? 2 : 0;
+      int index = improving ? 1 : (ttHit && !ttMove) ? 2 : 0;
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[index][depth / ONE_PLY];
 
