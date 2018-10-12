@@ -439,6 +439,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
+            	  if (mainThread && rootDepth < 14 * ONE_PLY)
+            		  break;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
