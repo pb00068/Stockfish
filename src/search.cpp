@@ -613,6 +613,7 @@ namespace {
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
+    ss->fh=false;
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -1121,7 +1122,10 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
+              {
                   update_pv(ss->pv, move, (ss+1)->pv);
+                  ss->fh = value >= beta;
+              }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
@@ -1135,7 +1139,8 @@ moves_loop: // When in check, search starts from here
           else if (PvNode && !rootNode && value == alpha)
           {
               update_pv(ss->pv, move, (ss+1)->pv);
-              bestMove = move;
+              if ((ss+1)->fh)
+                bestMove = move;
           }
       }
 
