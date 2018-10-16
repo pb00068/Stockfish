@@ -309,6 +309,7 @@ void Thread::search() {
   double timeReduction = 1.0;
   Color us = rootPos.side_to_move();
   bool failedLow;
+  int oldSelDepth;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
@@ -380,9 +381,6 @@ void Thread::search() {
                       break;
           }
 
-          // Reset UCI info selDepth for each depth and each PV line
-          selDepth = 0;
-
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
@@ -403,6 +401,8 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
+        	  oldSelDepth = selDepth;
+        	  selDepth = 0;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -446,6 +446,11 @@ void Thread::search() {
                   break;
 
               delta += delta / 4 + 5;
+              if (mainThread
+               && rootDepth > 17 * ONE_PLY
+			   && selDepth    < rootDepth - 3 * ONE_PLY
+			   && oldSelDepth < rootDepth - 3 * ONE_PLY)
+            	    rootDepth = Depth(selDepth) + ONE_PLY;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
