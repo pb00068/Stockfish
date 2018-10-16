@@ -447,9 +447,9 @@ void Thread::search() {
 
               delta += delta / 4 + 5;
               if (mainThread
-               && rootDepth > 17 * ONE_PLY
+               && rootDepth > 16 * ONE_PLY
 			   && selDepth    < rootDepth - 3 * ONE_PLY
-			   && oldSelDepth < rootDepth - 3 * ONE_PLY)
+			   && oldSelDepth > selDepth)
             	    rootDepth = Depth(selDepth) + ONE_PLY;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
