@@ -302,7 +302,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, alpha, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -431,7 +431,7 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta = (alpha + beta) / 2;
+            	  beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
@@ -441,7 +441,7 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+            	  beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
 
@@ -1124,7 +1124,7 @@ moves_loop: // When in check, search starts from here
               if (PvNode && !rootNode) // Update pv even in fail-high case
               {
                   update_pv(ss->pv, move, (ss+1)->pv);
-                  ss->fh = value >= beta;
+                  ss->fh = ss->ply % 2 == 0 && value >= thisThread->beta;
               }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
@@ -1390,7 +1390,10 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               if (PvNode) // Update pv even in fail-high case
+              {
                   update_pv(ss->pv, move, (ss+1)->pv);
+                  ss->fh = ss->ply % 2 == 0 && value >= thisThread->beta;
+              }
 
               if (PvNode && value < beta) // Update alpha here!
               {
