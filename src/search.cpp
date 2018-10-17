@@ -441,7 +441,13 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+              {
+            	  // check if we just had a bestMoveChange (mainThread->bestMoveChanges > 1)
+            	  if (!pvIdx && rootMoves.size() > 1 && rootMoves[1].score != -VALUE_INFINITE)
+            		  beta = std::min(bestValue + 2 * delta, VALUE_INFINITE);
+            	  else
+            		  beta = std::min(bestValue + delta, VALUE_INFINITE);
+              }
               else
                   break;
 
