@@ -444,10 +444,11 @@ void Thread::search() {
               {
             	  // check if we just had a (unexpected) bestMoveChange
             	  if (!pvIdx
+            		   && mainThread
                        && rootMoves.size() > 1
                        && rootMoves[1].score != -VALUE_INFINITE
                        && mainThread->bestMoveChanges > 1.0
-					   && mainThread->bestMoveChanges < 1.3)
+                       && mainThread->bestMoveChanges < 1.3)
             	  {
             		  alpha = (alpha + beta) / 2;
             		  beta = std::min(bestValue + 3 * delta, VALUE_INFINITE);
