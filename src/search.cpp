@@ -308,7 +308,7 @@ void Thread::search() {
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
   double timeReduction = 1.0;
   Color us = rootPos.side_to_move();
-  bool failedLow;
+  bool failedLow, failedHigh;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
@@ -318,7 +318,7 @@ void Thread::search() {
   beta = VALUE_INFINITE;
 
   if (mainThread)
-      mainThread->bestMoveChanges = 0, failedLow = false;
+      mainThread->bestMoveChanges = 0, failedLow = false, failedHigh = false;
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
@@ -359,7 +359,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= 0.517, failedLow = false;
+          mainThread->bestMoveChanges *= 0.517;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -402,10 +402,11 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          int failedHighCnt = 0;
+
+          int conseqFails = 0; // tracks consecutive fail's in the same direction (high/low)
           while (true)
           {
-              adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
+              adjustedDepth = std::max(ONE_PLY, rootDepth - conseqFails * ONE_PLY);
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -436,11 +437,15 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  failedHighCnt = 0;
 
                   if (mainThread)
                   {
+                	  if (failedHigh)
+                		  conseqFails = 0;
+                	  else
+                		  ++conseqFails;
                       failedLow = true;
+                      failedHigh = false;
                       Threads.stopOnPonderhit = false;
                   }
               }
@@ -448,7 +453,15 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (mainThread)
-                	 ++failedHighCnt;
+                  {
+                	  if (failedLow)
+						  conseqFails = 0;
+					  else
+						  ++conseqFails;
+                	  failedHigh = true;
+                	  failedLow = false;
+                  }
+
               }
               else
                   break;
