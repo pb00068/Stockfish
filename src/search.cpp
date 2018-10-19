@@ -308,7 +308,7 @@ void Thread::search() {
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
   double timeReduction = 1.0;
   Color us = rootPos.side_to_move();
-  bool failedLow, failedHigh;
+  bool failedLow;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
@@ -318,7 +318,7 @@ void Thread::search() {
   beta = VALUE_INFINITE;
 
   if (mainThread)
-      mainThread->bestMoveChanges = 0, failedLow = false, failedHigh = false;
+      mainThread->bestMoveChanges = 0, failedLow = false;
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
@@ -403,10 +403,10 @@ void Thread::search() {
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
 
-          int conseqFails = 0; // tracks consecutive fail's in the same direction (high/low)
+          int conseqFails = 0; // tracks consecutive fail's (high/low)
           while (true)
           {
-              adjustedDepth = std::max(ONE_PLY, rootDepth - conseqFails * ONE_PLY);
+              adjustedDepth = std::max(ONE_PLY, rootDepth - conseqFails * ONE_PLY - bool(adjustedDepth > 30 * ONE_PLY) * conseqFails * ONE_PLY);
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -440,12 +440,8 @@ void Thread::search() {
 
                   if (mainThread)
                   {
-                	  if (failedHigh)
-                		  conseqFails = 0;
-                	  else
-                		  ++conseqFails;
+                      ++conseqFails;
                       failedLow = true;
-                      failedHigh = false;
                       Threads.stopOnPonderhit = false;
                   }
               }
@@ -454,14 +450,9 @@ void Thread::search() {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (mainThread)
                   {
-                	  if (failedLow)
-						  conseqFails = 0;
-					  else
-						  ++conseqFails;
-                	  failedHigh = true;
+                      ++conseqFails;
                 	  failedLow = false;
                   }
-
               }
               else
                   break;
