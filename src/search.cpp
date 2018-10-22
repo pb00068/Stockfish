@@ -1132,7 +1132,7 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-          else if (PvNode && !rootNode && value == alpha)
+          else if (PvNode && !rootNode)
               update_pv(ss->pv, move, (ss+1)->pv);
       }
 
