@@ -381,8 +381,6 @@ void Thread::search() {
                       break;
           }
 
-          // Reset UCI info selDepth for each depth and each PV line
-          selDepth = 0;
 
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
@@ -405,6 +403,7 @@ void Thread::search() {
           int failedHighCnt = 0;
           while (true)
           {
+        	  selDepth = 0;
         	  adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
@@ -436,10 +435,10 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  failedHighCnt = 0;
 
                   if (mainThread)
                   {
-                      failedHighCnt = 0;
                       failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
@@ -447,7 +446,7 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (mainThread)
+                  if (mainThread || (rootMoves[pvIdx].score != VALUE_DRAW && selDepth + 2 * ONE_PLY < adjustedDepth))
                 	  ++failedHighCnt;
               }
               else
