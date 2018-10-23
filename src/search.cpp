@@ -294,19 +294,27 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
-void playtrough(Position& pos, std::vector<Move> pv)
+void playtrough(Position& pos, std::vector<Move> pv, size_t i)
 {
-
-	  {
-		   for (moveIterator iter = pv.end(); --iter != pv.begin();)
-			   pos.undo_move(iter[0]);
-		   pos.undo_move(rm.pv[0]);
-		   return;
-	  }
-	  StateInfo st;
-	  pos.do_move(ttMove, st);
-	  rm.pv.push_back(ttMove);
-	  pushback2PV(pos, rm, ply);
+      if (i < pv.size())
+      {
+    	  if (i < pv.size() - 1 && !pos.see_ge(pv[i], Value(-2000))) // abort when there's a Queen sacrifice in middle of the pv
+    	  //if (i == pv.size() - 1 && !pos.see_ge(pv[i], Value(-200)))
+    	  {
+    		  sync_cout << "info about loosing queen material with pv move : " << i << "  " << UCI::move(pv[i], false) << sync_endl;
+    		  abort();
+    	  }
+    	  StateInfo st;
+    	  pos.do_move(pv[i], st);
+    	  playtrough(pos, pv, ++i);
+      }
+      else
+      {
+	  for (moveIterator iter = pv.end(); --iter != pv.begin();)
+	  		pos.undo_move(iter[0]);
+	    pos.undo_move(pv[0]);
+      }
+	  return;
 }
 
 /// Thread::search() is the main iterative deepening loop. It calls search()
@@ -441,7 +449,7 @@ void Thread::search() {
                   && Time.elapsed() > 3000)
               {
                   sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
-                  playtrough(rootPos, rootMoves[0].pv);
+                  playtrough(rootPos, rootMoves[0].pv, 0);
               }
 
               // In case of failing low/high increase aspiration window and
