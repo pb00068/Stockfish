@@ -460,9 +460,9 @@ void Thread::search() {
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
 
-          if (adjustedDepth < rootDepth && multiPV == 1)
+          if (adjustedDepth < rootDepth && multiPV == 1 && adjustedDepth > 18 * ONE_PLY)
           {
-        	  rootDepth = std::max(rootDepth - ONE_PLY, resumeDepth + ONE_PLY);
+        	  rootDepth = std::max((adjustedDepth + rootDepth) / 2, resumeDepth + ONE_PLY);
         	  resumeDepth = rootDepth + ONE_PLY;
           }
 
