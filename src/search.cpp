@@ -462,7 +462,7 @@ void Thread::search() {
 
           if (adjustedDepth < rootDepth && multiPV == 1)
           {
-        	  rootDepth = std::max((adjustedDepth + rootDepth) / 2, resumeDepth + ONE_PLY);
+        	  rootDepth = std::max(rootDepth - ONE_PLY, resumeDepth + ONE_PLY);
         	  resumeDepth = rootDepth + ONE_PLY;
           }
 
