@@ -73,6 +73,7 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
+  Value DynamicPieceValue[PIECE_NB];
 };
 
 

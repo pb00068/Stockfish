@@ -175,7 +175,10 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
   }
+
 }
+
+
 
 
 /// Search::clear() resets search state to its initial value
@@ -319,6 +322,17 @@ void Thread::search() {
 
   if (mainThread)
       mainThread->bestMoveChanges = 0, failedLow = false;
+
+
+    DynamicPieceValue[W_KNIGHT] = (KnightValueMg + DynamicPieceValue[W_KNIGHT]) / 2;
+    DynamicPieceValue[W_BISHOP] = (BishopValueMg + DynamicPieceValue[W_BISHOP]) / 2;
+    DynamicPieceValue[W_ROOK]   = (RookValueMg   + DynamicPieceValue[W_ROOK  ]) / 2;
+    DynamicPieceValue[W_QUEEN]  = (QueenValueMg  + DynamicPieceValue[W_QUEEN ]) / 2;
+    DynamicPieceValue[B_KNIGHT] = (KnightValueMg + DynamicPieceValue[B_KNIGHT]) / 2;
+    DynamicPieceValue[B_BISHOP] = (BishopValueMg + DynamicPieceValue[B_BISHOP]) / 2;
+    DynamicPieceValue[B_ROOK]   = (RookValueMg   + DynamicPieceValue[B_ROOK  ]) / 2;
+    DynamicPieceValue[B_QUEEN]  = (QueenValueMg  + DynamicPieceValue[B_QUEEN ]) / 2;
+
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
@@ -1468,17 +1482,24 @@ moves_loop: // When in check, search starts from here
 
       CapturePieceToHistory& captureHistory =  pos.this_thread()->captureHistory;
       Piece moved_piece = pos.moved_piece(move);
-      PieceType captured = type_of(pos.piece_on(to_sq(move)));
+      Piece capturedPiece = pos.piece_on(to_sq(move));
+      PieceType captured = type_of(capturedPiece);
 
       if (pos.capture_or_promotion(move))
           captureHistory[moved_piece][to_sq(move)][captured] << bonus;
+
+      if (captured > PAWN)
+    	  pos.this_thread()->DynamicPieceValue[capturedPiece]+=1;
 
       // Decrease all the other played capture moves
       for (int i = 0; i < captureCnt; ++i)
       {
           moved_piece = pos.moved_piece(captures[i]);
-          captured = type_of(pos.piece_on(to_sq(captures[i])));
+          capturedPiece = pos.piece_on(to_sq(captures[i]));
+          captured = type_of(capturedPiece);
           captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
+          if (captured > PAWN && pos.this_thread()->DynamicPieceValue[capturedPiece] > 300)
+              pos.this_thread()->DynamicPieceValue[capturedPiece]-=1;
       }
   }
 

@@ -66,6 +66,17 @@ void Thread::clear() {
           h->fill(0);
 
   continuationHistory[NO_PIECE][0]->fill(Search::CounterMovePruneThreshold - 1);
+
+  DynamicPieceValue[W_PAWN]   = PawnValueMg;
+  DynamicPieceValue[W_KNIGHT] = KnightValueMg;
+  DynamicPieceValue[W_BISHOP] = BishopValueMg;
+  DynamicPieceValue[W_ROOK]   = RookValueMg;
+  DynamicPieceValue[W_QUEEN]  = QueenValueMg;
+  DynamicPieceValue[B_PAWN]   = PawnValueMg;
+  DynamicPieceValue[B_KNIGHT] = KnightValueMg;
+  DynamicPieceValue[B_BISHOP] = BishopValueMg;
+  DynamicPieceValue[B_ROOK]   = RookValueMg;
+  DynamicPieceValue[B_QUEEN]  = QueenValueMg;
 }
 
 /// Thread::start_searching() wakes up the thread that will start the search
