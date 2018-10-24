@@ -1039,7 +1039,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   // Now assume the worst possible result: that the opponent can
   // capture our piece for free.
-  balance -= this_thread()->DynamicPieceValue[nextVictim];
+  balance -= this_thread()->DynamicPieceValue[piece_on(from)];
 
   // If it is enough (like in PxQ) then return immediately. Note that
   // in case nextVictim == KING we always return here, this is ok
@@ -1078,7 +1078,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       //
       assert(balance < VALUE_ZERO);
 
-      balance = -balance - 1 - this_thread()->DynamicPieceValue[nextVictim];
+      balance = -balance - 1 - this_thread()->DynamicPieceValue[stm ? nextVictim : nextVictim + PIECE_TYPE_NB];
 
       // If balance is still non-negative after giving away nextVictim then we
       // win. The only thing to be careful about it is that we should revert
