@@ -406,6 +406,9 @@ void Thread::search() {
           while (true)
           {
         	  adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
+        	  if (!mainThread && Threads.mainFh.load(std::memory_order_relaxed) && beta < Threads.mainBeta.load(std::memory_order_relaxed))
+        		  beta = Value(Threads.mainBeta.load(std::memory_order_relaxed));
+
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -442,16 +445,25 @@ void Thread::search() {
                       failedHighCnt = 0;
                       failedLow = true;
                       Threads.stopOnPonderhit = false;
+                      Threads.mainFh = false;
                   }
               }
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (mainThread)
+                  {
                 	  ++failedHighCnt;
+                	  Threads.mainFh = true;
+                	  Threads.mainBeta = beta;
+                  }
               }
               else
+              {
+            	  if (mainThread)
+            		  Threads.mainFh = false;
                   break;
+              }
 
               delta += delta / 4 + 5;
 

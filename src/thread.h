@@ -105,7 +105,9 @@ struct ThreadPool : public std::vector<Thread*> {
   uint64_t nodes_searched() const { return accumulate(&Thread::nodes); }
   uint64_t tb_hits()        const { return accumulate(&Thread::tbHits); }
 
-  std::atomic_bool stop, ponder, stopOnPonderhit;
+  std::atomic_bool stop, ponder, stopOnPonderhit, mainFh;
+
+  std::atomic_int mainBeta;
 
 private:
   StateListPtr setupStates;
