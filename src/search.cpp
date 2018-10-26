@@ -406,8 +406,13 @@ void Thread::search() {
           while (true)
           {
         	  adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
-        	  if (!mainThread && Threads.mainFh.load(std::memory_order_relaxed) && beta < Threads.mainBeta.load(std::memory_order_relaxed))
-        		  beta = Value(Threads.mainBeta.load(std::memory_order_relaxed));
+        	  if (!mainThread && Threads.mainFh.load(std::memory_order_relaxed))
+        	  {
+        		  Value b = Threads.mainBeta.load(std::memory_order_relaxed);
+        		  if (b > beta)
+        			  beta = (b + beta) / 2;
+        	  }
+
 
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
