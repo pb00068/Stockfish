@@ -343,6 +343,7 @@ void Thread::search() {
   // In evaluate.cpp the evaluation is from the white point of view
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
+  bool canStepBack = true;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
@@ -402,10 +403,10 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          int failedHighCnt = 0;
+          int stepBacks = 0;
           while (true)
           {
-        	  adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
+        	  adjustedDepth = std::max(ONE_PLY, rootDepth - stepBacks * ONE_PLY);
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -439,7 +440,7 @@ void Thread::search() {
 
                   if (mainThread)
                   {
-                      failedHighCnt = 0;
+                      stepBacks = 0;
                       failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
@@ -447,11 +448,20 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (mainThread)
-                	  ++failedHighCnt;
+                  if (mainThread && canStepBack)
+                	  ++stepBacks;
               }
               else
+              {
+            	  if (adjustedDepth < rootDepth)
+            	  {
+            		  rootDepth -= ONE_PLY; // finally resolve on original root depth
+            		  canStepBack = false;
+            	  }
+            	  else
+            		  canStepBack = true;
                   break;
+              }
 
               delta += delta / 4 + 5;
 
