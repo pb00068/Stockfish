@@ -298,10 +298,10 @@ void playtrough(Position& pos, std::vector<Move> pv, size_t i)
 {
       if (i < pv.size())
       {
-    	  if (i < pv.size() - 1 && !pos.see_ge(pv[i], Value(-2000))) // abort when there's a Queen sacrifice in middle of the pv
-    	  //if (i == pv.size() - 1 && !pos.see_ge(pv[i], Value(-200)))
+    	  if ((i < pv.size() - 1 && !pos.see_ge(pv[i], Value(-2000)))  // abort when there's a Queen sacrifice in middle of the pv
+    	      || (i == pv.size() - 1 && !pos.see_ge(pv[i], Value(-200))))
     	  {
-    		  sync_cout << "info about loosing queen material with pv move : " << i << "  " << UCI::move(pv[i], false) << sync_endl;
+    		  sync_cout << "info about loosing material with pv move : " << i << "  " << UCI::move(pv[i], false) << sync_endl;
     		  abort();
     	  }
     	  StateInfo st;
@@ -1157,7 +1157,10 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-          else if (PvNode && !rootNode && value == alpha)
+          // A new move which raises bestValue yet doesn't raise alpha.
+          // At a pv node with no best move we must save this move as
+          // pv move to avoid being left without a pv move at all.
+          else if (PvNode && !rootNode && !bestMove)
               update_pv(ss->pv, move, (ss+1)->pv);
       }
 
