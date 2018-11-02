@@ -450,7 +450,13 @@ void Thread::search() {
                 	  ++failedHighCnt;
               }
               else
+              {
+            	  if (adjustedDepth < rootDepth
+					&& adjustedDepth + 2 * ONE_PLY >= rootDepth
+					&& (!Limits.depth || rootDepth / ONE_PLY < Limits.depth - ONE_PLY))
+            		  rootDepth += ONE_PLY;
                   break;
+              }
 
               delta += delta / 4 + 5;
 
