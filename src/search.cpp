@@ -344,11 +344,13 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  Depth increment = ONE_PLY;
   // Iterative deepening loop until requested to stop or the target depth is reached
-  while (   (rootDepth += ONE_PLY) < DEPTH_MAX
+  while (   (rootDepth += increment) < DEPTH_MAX
          && !Threads.stop
          && !(Limits.depth && mainThread && rootDepth / ONE_PLY > Limits.depth))
   {
+	  increment = ONE_PLY;
       // Distribute search depths across the helper threads
       if (idx > 0)
       {
@@ -451,10 +453,10 @@ void Thread::search() {
               }
               else
               {
-            	  if (adjustedDepth < rootDepth
-					&& adjustedDepth + 2 * ONE_PLY >= rootDepth
-					&& (!Limits.depth || rootDepth / ONE_PLY < Limits.depth - ONE_PLY))
-            		  rootDepth += ONE_PLY;
+                 if (adjustedDepth < rootDepth
+                  && adjustedDepth + 2 * ONE_PLY >= rootDepth
+                  && (!Limits.depth || rootDepth / ONE_PLY < Limits.depth - ONE_PLY))
+                     increment = 2 * ONE_PLY;
                   break;
               }
 
