@@ -344,6 +344,7 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  Depth alreadyResDepth = rootDepth;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -406,6 +407,7 @@ void Thread::search() {
           while (true)
           {
               Depth adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY - failedLow * ONE_PLY);
+              adjustedDepth = std::max(adjustedDepth, alreadyResDepth + ONE_PLY);
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -440,7 +442,8 @@ void Thread::search() {
                   if (mainThread)
                   {
                       failedHighCnt = 0;
-                      failedLowCnt++;
+                      if (adjustedDepth > 10 * ONE_PLY)
+                    	  failedLowCnt++;
                       failedLow = true;
                       Threads.stopOnPonderhit = false;
                   }
@@ -457,7 +460,10 @@ void Thread::search() {
               else
               {
             	  if (failedLowCnt)
-            		  rootDepth = adjustedDepth;
+            	  {
+            	      alreadyResDepth = std::max(adjustedDepth, alreadyResDepth);
+            	      rootDepth = alreadyResDepth;
+            	  }
                   break;
               }
 
