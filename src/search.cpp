@@ -447,7 +447,11 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (mainThread)
+                  {
+                	  if (failedHighCnt)
+                		  delta += delta / 4 + 5;
                 	  ++failedHighCnt;
+                  }
               }
               else
                   break;
