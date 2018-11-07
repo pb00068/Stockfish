@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstring>   // For std::memset
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -172,7 +173,7 @@ namespace {
   constexpr Score ThreatByRank       = S( 16,  3);
   constexpr Score ThreatBySafePawn   = S(173,102);
   constexpr Score TrappedRook        = S( 96,  5);
-  constexpr Score WeakQueen          = S( 50, 10);
+  constexpr Score WeakQueen          = S( 10,  2);
   constexpr Score WeakUnopposedPawn  = S( 15, 19);
 
 #undef S
@@ -391,9 +392,17 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
-                score -= WeakQueen;
+            Bitboard queenPinners, blocker = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, Them);
+            if (blocker)
+            {
+                score -= WeakQueen * 5;
+                if (queenPinners && (blocker & pos.pieces(Them)))
+                {
+                     bool pinnerDefended = queenPinners & attackedBy[Them][ALL_PIECES]; // N.B.: if Us == White we lack of black Queen attacks info
+                     if (!pinnerDefended) // discovered attack most likely harmless or even loosing (back draft)
+                        score += WeakQueen * (Us == WHITE && pos.count<QUEEN>(Them) ? 3 : 5);
+                }
+            }
         }
     }
     if (T)
@@ -829,8 +838,10 @@ namespace {
     // Pieces should be evaluated first (populate attack tables)
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
             + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
-            + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
-            + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
+            + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >();
+
+    score +=  pieces<WHITE, QUEEN >();
+    score -=  pieces<BLACK, QUEEN >();
 
     score += mobility[WHITE] - mobility[BLACK];
 
