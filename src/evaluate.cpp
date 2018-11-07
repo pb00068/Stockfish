@@ -396,7 +396,7 @@ namespace {
             {
                 score -= WeakQueen * 4;
                 if (!(blocker & pos.pieces(PAWN)) || file_of(lsb(blocker)) != file_of(s))
-                	score -= WeakQueen * 2; // even more penalty when blocker is'nt pawn on the same file
+                	score -= WeakQueen * 3; // even more penalty when blocker is'nt pawn on the same file
             }
         }
     }
