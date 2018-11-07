@@ -394,7 +394,7 @@ namespace {
             Bitboard queenPinners, blocker = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
             if (blocker)
             {
-                score -= WeakQueen * 4;
+                score -= WeakQueen * 5;
                 if (!(blocker & pos.pieces(PAWN)) || file_of(lsb(blocker)) != file_of(s))
                 	score -= WeakQueen * 3; // even more penalty when blocker is'nt pawn on the same file
             }
