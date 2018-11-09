@@ -943,11 +943,25 @@ moves_loop: // When in check, search starts from here
                &&  pos.see_ge(move))
           extension = ONE_PLY;
 
-      // Extension for king moves that change castling rights
+      // Extension for moves that change castling rights
       if (   pos.can_castle(us)
-          && type_of(movedPiece) == KING
           && depth < 12 * ONE_PLY)
-          extension = ONE_PLY;
+      {
+          if (type_of(movedPiece) == KING)
+        	  extension = ONE_PLY;
+          else if (type_of(movedPiece) == ROOK && relative_rank(us, from_sq(move)) == RANK_1)
+          {
+        	  int loosingRight;
+        	  loosingRight  = file_of(from_sq(move)) == FILE_A ? (us == WHITE ? WHITE_OOO : BLACK_OOO) : NO_CASTLING;
+        	  loosingRight |= file_of(from_sq(move)) == FILE_H ? (us == WHITE ? WHITE_OO  : BLACK_OO ) : NO_CASTLING;
+        	  if (pos.can_castle((CastlingRight)loosingRight))
+        	  {
+        		  int cr = pos.can_castle(us);
+        		  if (!(cr & (cr - 1)))
+        		     extension = ONE_PLY; // loosing last castling right
+        	  }
+          }
+      }
 
       // Calculate new depth for this move
       newDepth = depth - ONE_PLY + extension;
