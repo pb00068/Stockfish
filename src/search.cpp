@@ -446,8 +446,7 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-            	  // having bestValue > beta and few failHighs is a hint that we can aim for more
-            	  Value improving = bestValue > beta && failHhits < 2000 ? delta * 4 : VALUE_ZERO;
+            	  Value improving = failHhits > 4000 ? delta * 4 : VALUE_ZERO;
                   beta = std::min(bestValue + delta + improving, VALUE_INFINITE);
                   if (mainThread)
                 	  ++failedHighCnt;
@@ -1273,7 +1272,7 @@ moves_loop: // When in check, search starts from here
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
     {
-    	if (ttValue >= thisThread->beta)
+    	if (ttValue > thisThread->beta)
     		thisThread->failHhits++;
         return ttValue;
     }
@@ -1309,8 +1308,8 @@ moves_loop: // When in check, search starts from here
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
-            if (bestValue >= thisThread->beta)
-                		thisThread->failHhits++;
+            if (bestValue > thisThread->beta)
+                thisThread->failHhits++;
 
             return bestValue;
         }
@@ -1412,8 +1411,8 @@ moves_loop: // When in check, search starts from here
               }
               else // Fail high
               {
-            	  if (value >= thisThread->beta)
-            	         thisThread->failHhits++;
+            	  if (value > thisThread->beta)
+            	       thisThread->failHhits++;
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
                             ttDepth, move, ss->staticEval);
 
