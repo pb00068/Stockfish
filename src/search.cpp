@@ -302,7 +302,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, alpha, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -405,6 +405,7 @@ void Thread::search() {
           while (true)
           {
               Depth adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
+              failHhits=0;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -445,7 +446,9 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+            	  // having bestValue > beta and few failHighs is a hint that we can aim for more
+            	  Value improving = bestValue > beta && failHhits < 2000 ? delta * 4 : VALUE_ZERO;
+                  beta = std::min(bestValue + delta + improving, VALUE_INFINITE);
                   if (mainThread)
                 	  ++failedHighCnt;
               }
@@ -1269,7 +1272,11 @@ moves_loop: // When in check, search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
+    {
+    	if (ttValue >= thisThread->beta)
+    		thisThread->failHhits++;
         return ttValue;
+    }
 
     // Evaluate the position statically
     if (inCheck)
@@ -1301,6 +1308,9 @@ moves_loop: // When in check, search starts from here
             if (!ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
+
+            if (bestValue >= thisThread->beta)
+                		thisThread->failHhits++;
 
             return bestValue;
         }
@@ -1402,6 +1412,8 @@ moves_loop: // When in check, search starts from here
               }
               else // Fail high
               {
+            	  if (value >= thisThread->beta)
+            	         thisThread->failHhits++;
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
                             ttDepth, move, ss->staticEval);
 
