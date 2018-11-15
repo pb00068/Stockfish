@@ -472,7 +472,7 @@ namespace {
          	Bitboard backRankCheckPoints = unsafeChecks & RankBB[relative_rank(Us, RANK_1)] & ~attackedBy[Us][KING] & (attackedBy2[Them] | attackedBy[Them][QUEEN]);
          	if (backRankCheckPoints)
          	{
-         		kingDanger += 100;
+         		kingDanger += 80;
          		//sync_cout << pos << " side " << Us << Bitboards::pretty(backRankCheckPoints) << sync_endl;
          	}
          }
@@ -489,7 +489,7 @@ namespace {
                      - 873 * !pos.count<QUEEN>(Them)
                      -   6 * mg_value(score) / 8
                      +       mg_value(mobility[Them] - mobility[Us])
-                     -   20;
+                     -   35;
 
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
