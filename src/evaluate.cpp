@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -466,13 +467,21 @@ namespace {
         else
             unsafeChecks |= b;
 
+        if (relative_rank(Us, ksq) == RANK_1)
+         {
+         	Bitboard backRankCheckPoints = unsafeChecks & RankBB[relative_rank(Us, RANK_1)] & ~attackedBy[Us][KING] & (attackedBy2[Them] | attackedBy[Them][QUEEN]);
+         	if (backRankCheckPoints)
+         	{
+         		kingDanger += 160;
+         		//sync_cout << pos << " side " << Us << Bitboards::pretty(backRankCheckPoints) << sync_endl;
+         	}
+         }
+
         // Unsafe or occupied checking squares will also be considered, as long as
         // the square is in the attacker's mobility area.
         unsafeChecks &= mobilityArea[Them];
 
-        if ((unsafeChecks & relative_rank(Us, RANK_1) & (attackedBy2[Them] | attackedBy[Them][QUEEN]))
-             && relative_rank(Us, ksq) == RANK_1)
-        	kingDanger += 30;
+
 
         kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                      +  69 * kingAttacksCount[Them]
@@ -482,7 +491,7 @@ namespace {
                      - 873 * !pos.count<QUEEN>(Them)
                      -   6 * mg_value(score) / 8
                      +       mg_value(mobility[Them] - mobility[Us])
-                     -   40;
+                     -   30;
 
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
