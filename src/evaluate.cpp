@@ -470,6 +470,10 @@ namespace {
         // the square is in the attacker's mobility area.
         unsafeChecks &= mobilityArea[Them];
 
+        if ((unsafeChecks & relative_rank(Us, RANK_1) & (attackedBy2[Them] | attackedBy[Them][QUEEN]))
+             && relative_rank(Us, ksq) == RANK_1)
+        	kingDanger += 30;
+
         kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                      +  69 * kingAttacksCount[Them]
                      + 185 * popcount(kingRing[Us] & weak)
@@ -478,7 +482,7 @@ namespace {
                      - 873 * !pos.count<QUEEN>(Them)
                      -   6 * mg_value(score) / 8
                      +       mg_value(mobility[Them] - mobility[Us])
-                     -   30;
+                     -   40;
 
         // Transform the kingDanger units into a Score, and subtract it from the evaluation
         if (kingDanger > 0)
