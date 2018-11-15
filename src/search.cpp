@@ -344,6 +344,7 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  int failedHighCnt;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -389,7 +390,7 @@ void Thread::search() {
               Value previousScore = rootMoves[pvIdx].previousScore;
               delta = Value(20);
               alpha = std::max(previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(previousScore + delta, VALUE_INFINITE);
+              beta  = std::min(previousScore + delta + Value(failedHighCnt * 10), VALUE_INFINITE);
 
               // Adjust contempt based on root move's previousScore (dynamic contempt)
               int dct = ct + 88 * previousScore / (abs(previousScore) + 200);
@@ -401,7 +402,7 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          int failedHighCnt = 0;
+          failedHighCnt = 0;
           while (true)
           {
               Depth adjustedDepth = rootDepth;
@@ -447,7 +448,7 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta  + int( (int)delta * sqrt(failedHighCnt) / 2.0), VALUE_INFINITE);
+                  beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
