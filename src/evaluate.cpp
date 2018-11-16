@@ -169,8 +169,9 @@ namespace {
   constexpr Score ThreatByRank       = S( 16,  3);
   constexpr Score ThreatBySafePawn   = S(173,102);
   constexpr Score TrappedRook        = S( 96,  5);
-  constexpr Score WeakQueen          = S( 50, 10);
+  constexpr Score WeakQueen          = S( 46,  8);
   constexpr Score WeakUnopposedPawn  = S( 15, 19);
+  constexpr Score Disco              = S(  3,  3);
 
 #undef S
 
@@ -323,6 +324,9 @@ namespace {
         }
 
         int mob = popcount(b & mobilityArea[Us]);
+
+        if ((pinnedOnQueen[Them] & s))
+        	score += Disco * mob;
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
