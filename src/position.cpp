@@ -1013,27 +1013,15 @@ Key Position::key_after(Move m) const {
 
 bool Position::discoversEnemyQueen(Move m) const
 {
-
 	Color us = sideToMove;
 	if (!count<QUEEN>(~us))
 		return false;
 
 	Square qsq = square<QUEEN>(~us);
 	Bitboard occupied = pieces() ^ from_sq(m);
-	if (attacks_bb<QUEEN>(qsq, occupied)  & to_sq(m))
-      return false; // avoid stupid false positives (see was negative, so often the queen simply evades by taking on to_sq(m))
-
     Bitboard attackers = (attacks_bb<BISHOP>(qsq, occupied) & pieces(us, BISHOP))
                        | (attacks_bb<ROOK  >(qsq, occupied) & pieces(us, ROOK  ));
-	if (attackers && (attackers ^ from_sq(m)))
-    {
-	     if  ((attacks_bb<BISHOP>(qsq, pieces()) & pieces(us, BISHOP))
-           || (attacks_bb<ROOK  >(qsq, pieces()) & pieces(us, ROOK  )))
-           return false;
-
-	     return true;
-	}
-	return false;
+	return attackers && (attackers ^ from_sq(m)) && !(attacks_bb<QUEEN>(qsq, occupied) & to_sq(m));
 }
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the

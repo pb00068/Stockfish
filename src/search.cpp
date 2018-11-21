@@ -1325,6 +1325,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       to_sq((ss-1)->currentMove));
 
+    int captureCount = 0;
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
     {
@@ -1369,9 +1370,11 @@ moves_loop: // When in check, search starts from here
       if (  (!inCheck || evasionPrunable)
     	  && !(givesCheck && (pos.blockers_for_king(~us) & from_sq(move)))
           && !pos.see_ge(move)
-          && !pos.discoversEnemyQueen(move))
+          && (captureCount || !pos.discoversEnemyQueen(move)))
           continue;
 
+      if (pos.capture(move))
+    	  captureCount++;
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
