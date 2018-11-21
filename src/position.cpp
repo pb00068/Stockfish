@@ -1021,18 +1021,17 @@ bool Position::discoversEnemyQueen(Move m) const
 	Square qsq = square<QUEEN>(~us);
 	Bitboard occupied = pieces() ^ from_sq(m);
 	if (attacks_bb<QUEEN>(qsq, occupied)  & to_sq(m))
-		return false; // avoid stupid false positives (see was negative, so often the queen simply evades by taking on to_sq(m))
+      return false; // avoid stupid false positives (see was negative, so often the queen simply evades by taking on to_sq(m))
 
-	Bitboard attackers = (attacks_bb<BISHOP>(qsq, occupied) & pieces(us, BISHOP))
+    Bitboard attackers = (attacks_bb<BISHOP>(qsq, occupied) & pieces(us, BISHOP))
                        | (attacks_bb<ROOK  >(qsq, occupied) & pieces(us, ROOK  ));
 	if (attackers && (attackers ^ from_sq(m)))
-	{
+    {
+	     if  ((attacks_bb<BISHOP>(qsq, pieces()) & pieces(us, BISHOP))
+           || (attacks_bb<ROOK  >(qsq, pieces()) & pieces(us, ROOK  )))
+           return false;
 
-		 if  ((attacks_bb<BISHOP>(qsq, pieces()) & pieces(us, BISHOP))
-		   || (attacks_bb<ROOK  >(qsq, pieces()) & pieces(us, ROOK  )))
-			 return false;
-
-		 return true;
+	     return true;
 	}
 	return false;
 }

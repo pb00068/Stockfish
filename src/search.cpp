@@ -1369,7 +1369,7 @@ moves_loop: // When in check, search starts from here
       if (  (!inCheck || evasionPrunable)
     	  && !(givesCheck && (pos.blockers_for_king(~us) & from_sq(move)))
           && !pos.see_ge(move)
-		  && !pos.discoversEnemyQueen(move))
+          && !pos.discoversEnemyQueen(move))
           continue;
 
 
