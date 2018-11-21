@@ -1365,7 +1365,7 @@ moves_loop: // When in check, search starts from here
 
       // Don't search moves with negative SEE values
       if (  (!inCheck || evasionPrunable)
-    	  && !(givesCheck && (pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)))
+          && !(givesCheck && (pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)))
           && !pos.see_ge(move))
           continue;
 
