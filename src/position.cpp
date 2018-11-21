@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1010,6 +1011,31 @@ Key Position::key_after(Move m) const {
   return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 }
 
+bool Position::discoversEnemyQueen(Move m) const
+{
+
+	Color us = sideToMove;
+	if (!count<QUEEN>(~us))
+		return false;
+
+	Square qsq = square<QUEEN>(~us);
+	Bitboard occupied = pieces() ^ from_sq(m);
+	if (attacks_bb<QUEEN>(qsq, occupied)  & to_sq(m))
+		return false; // avoid stupid false positives (see was negative, so often the queen simply evades by taking on to_sq(m))
+
+	Bitboard attackers = (attacks_bb<BISHOP>(qsq, occupied) & pieces(us, BISHOP))
+                       | (attacks_bb<ROOK  >(qsq, occupied) & pieces(us, ROOK  ));
+	if (attackers && (attackers ^ from_sq(m)))
+	{
+
+		 if  ((attacks_bb<BISHOP>(qsq, pieces()) & pieces(us, BISHOP))
+		   || (attacks_bb<ROOK  >(qsq, pieces()) & pieces(us, ROOK  )))
+			 return false;
+
+		 return true;
+	}
+	return false;
+}
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given threshold. We'll use an

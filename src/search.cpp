@@ -1353,17 +1353,21 @@ moves_loop: // When in check, search starts from here
           }
       }
 
+
       // Detect non-capture evasions that are candidates to be pruned
       evasionPrunable =    inCheck
                        &&  (depth != DEPTH_ZERO || moveCount > 2)
                        &&  bestValue > VALUE_MATED_IN_MAX_PLY
                        && !pos.capture(move);
 
-      // Don't search moves with negative SEE values
+      Color us = pos.side_to_move();
+      // Don't search moves with negative SEE values unless they discover an attack to enemy king/queen
       if (  (!inCheck || evasionPrunable)
-    	  && !(givesCheck && (pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)))
-          && !pos.see_ge(move))
+    	  && !(givesCheck && (pos.blockers_for_king(~us) & from_sq(move)))
+          && !pos.see_ge(move)
+		  && !pos.discoversEnemyQueen(move))
           continue;
+
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
