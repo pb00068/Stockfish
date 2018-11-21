@@ -987,11 +987,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (pos.movePrunable(move, Value(-29 * lmrDepth * lmrDepth), false))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && pos.movePrunable(move, -PawnValueEg * (depth / ONE_PLY), givesCheck))
                   continue;
       }
 
@@ -1364,12 +1364,9 @@ moves_loop: // When in check, search starts from here
                        &&  bestValue > VALUE_MATED_IN_MAX_PLY
                        && !pos.capture(move);
 
-      Color us = pos.side_to_move();
       // Don't search moves with negative SEE values unless they discover an attack to enemy king/queen
       if (  (!inCheck || evasionPrunable)
-    	  && !(givesCheck && (pos.blockers_for_king(~us) & from_sq(move)))
-          && !pos.see_ge(move)
-          && !pos.discoversEnemyQueen(move))
+          && pos.movePrunable(move, VALUE_ZERO, givesCheck))
           continue;
 
 
