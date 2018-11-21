@@ -153,7 +153,6 @@ public:
   bool is_draw(int ply) const;
   bool has_game_cycle(int ply) const;
   bool has_repeated() const;
-  bool movePrunable(Move m, Value threshold, bool givesCheck) const;
   int rule50_count() const;
   Score psq_score() const;
   Value non_pawn_material(Color c) const;

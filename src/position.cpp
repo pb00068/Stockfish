@@ -24,7 +24,6 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1011,35 +1010,6 @@ Key Position::key_after(Move m) const {
   return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 }
 
-bool Position::movePrunable(Move m, Value threshold, bool givesCheck) const
-{
-	Color us = sideToMove;
-	if (givesCheck && (blockers_for_king(~us) & from_sq(m)))
-		return false;
-
-	if (see_ge(m, threshold))
-	    return false;
-
-	if (!count<QUEEN>(~us))
-		return true;
-
-	Square qsq = square<QUEEN>(~us);
-	Bitboard occupied = pieces() ^ from_sq(m);
-	if (attacks_bb<QUEEN>(qsq, occupied)  & to_sq(m))
-      return true; // see was negative, so probably the queen simply evades by taking on to_sq(m))
-
-    Bitboard attackers = (attacks_bb<BISHOP>(qsq, occupied) & pieces(us, BISHOP))
-                       | (attacks_bb<ROOK  >(qsq, occupied) & pieces(us, ROOK  ));
-	if (attackers && (attackers ^ from_sq(m)))
-    {
-	     if  ((attacks_bb<BISHOP>(qsq, pieces()) & pieces(us, BISHOP))
-           || (attacks_bb<ROOK  >(qsq, pieces()) & pieces(us, ROOK  )))
-           return true;
-
-	     return false;
-	}
-	return true;
-}
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given threshold. We'll use an
