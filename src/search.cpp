@@ -393,7 +393,7 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               Value previousScore = rootMoves[pvIdx].previousScore;
-              delta = Value(20 + 4 * skips - idx ? 4 * SkipSize[i] : 0);
+              delta = Value(20 + (4 * skips) - (idx ? 4 * SkipSize[i] : 0));
               alpha = std::max(previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(previousScore + delta, VALUE_INFINITE);
 
@@ -505,8 +505,8 @@ void Thread::search() {
 
               // If the bestMove is stable over several iterations, reduce time accordingly
               timeReduction = 1.0;
-              for (int i : {3, 4, 5})
-                  if (lastBestMoveDepth * i < completedDepth)
+              for (int j : {3, 4, 5})
+                  if (lastBestMoveDepth * j < completedDepth)
                      timeReduction *= 1.25;
 
               // Use part of the gained time from a previous stable move for the current move
