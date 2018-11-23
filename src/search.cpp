@@ -469,6 +469,7 @@ void Thread::search() {
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
+      skips = 0;
 
       if (!Threads.stop)
           completedDepth = rootDepth;
