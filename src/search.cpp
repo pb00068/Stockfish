@@ -358,7 +358,8 @@ void Thread::search() {
           if (((rootDepth / ONE_PLY + SkipPhase[i]) / SkipSize[i]) % 2)
               continue;  // Retry with an incremented rootDepth
       }
-      else if (rootDepth > 4 * ONE_PLY
+      else if (Limits.use_time_management()
+    	&&  rootDepth > 4 * ONE_PLY
     	&& (rootDepth / ONE_PLY) % 2
 		&& !failedHighCnt
 		&& Time.elapsed() < Time.optimum() * 3/4)
