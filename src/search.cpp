@@ -344,6 +344,7 @@ void Thread::search() {
   // In evaluate.cpp the evaluation is from the white point of view
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
+  int failedHighCnt = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
@@ -357,6 +358,12 @@ void Thread::search() {
           if (((rootDepth / ONE_PLY + SkipPhase[i]) / SkipSize[i]) % 2)
               continue;  // Retry with an incremented rootDepth
       }
+      else if (rootDepth > 4 * ONE_PLY
+    	&& (rootDepth / ONE_PLY) % 2
+		&& !failedHighCnt
+		&& Time.elapsed() < Time.optimum() * 3/4)
+    	  continue; // directly increase root depth by 2, if we have plenty time to resolve next iterative deepening-cycle
+
 
       // Age out PV variability metric
       if (mainThread)
@@ -402,7 +409,7 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          int failedHighCnt = 0;
+          failedHighCnt = 0;
           while (true)
           {
               Depth adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
