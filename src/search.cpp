@@ -352,9 +352,10 @@ void Thread::search() {
          && !(Limits.depth && mainThread && rootDepth / ONE_PLY > Limits.depth))
   {
       // Distribute search depths across the helper threads
+	  int i = 0;
       if (idx > 0)
       {
-          int i = (idx - 1) % 20;
+    	  i = (idx - 1) % 20;
           if (((rootDepth / ONE_PLY + SkipPhase[i]) / SkipSize[i]) % 2)
           {
         	  skips++;
@@ -392,7 +393,7 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               Value previousScore = rootMoves[pvIdx].previousScore;
-              delta = Value(20 + 3 * skips);
+              delta = Value(20 + 4 * skips - idx ? 4 * SkipSize[i] : 0);
               alpha = std::max(previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(previousScore + delta, VALUE_INFINITE);
 
