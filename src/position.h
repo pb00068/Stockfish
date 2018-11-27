@@ -137,7 +137,7 @@ public:
   void undo_null_move();
 
   // Static Exchange Evaluation
-  bool see_ge(Move m, Value threshold = VALUE_ZERO) const;
+  bool see_ge(Move m, Value threshold = VALUE_ZERO);
 
   // Accessing hash keys
   Key key() const;
@@ -191,6 +191,8 @@ private:
   Thread* thisThread;
   StateInfo* st;
   bool chess960;
+  Move lastSeeMove;
+  Bitboard attacksSee;
 };
 
 namespace PSQT {
