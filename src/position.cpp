@@ -317,7 +317,7 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
   chess960 = isChess960;
   thisThread = th;
   set_state(st);
-  attacksSee = DarkSquares;
+  attacksSee = 0;
   lastSeeMove = MOVE_NONE;
 
   assert(pos_is_ok());
