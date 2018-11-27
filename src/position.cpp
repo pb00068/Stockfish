@@ -1050,7 +1050,7 @@ bool Position::see_ge(Move m, Bitboard& attackers, Value threshold) const {
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
- // if (attackers != DarkSquares)
+  if (attackers == DarkSquares)
 	  attackers = attackers_to(to, occupied) & occupied;
 
   while (true)
