@@ -1054,7 +1054,6 @@ bool Position::see_ge(Move m, Value threshold) {
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers;
 
-  dbg_hit_on(m == lastSeeMove);
   if (m == lastSeeMove)
 	  attackers = attacksSee;
   else
