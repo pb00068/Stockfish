@@ -66,6 +66,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   assert(d > DEPTH_ZERO);
 
+  b0= DarkSquares;
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
@@ -78,6 +79,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   assert(d <= DEPTH_ZERO);
 
+  b0=0;
   stage = pos.checkers() ? EVASION_TT : QSEARCH_TT;
   ttMove =    ttm
            && pos.pseudo_legal(ttm)
@@ -91,12 +93,13 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
            : pos(p), captureHistory(cph), threshold(th) {
 
   assert(!pos.checkers());
+  b0=0;
 
   stage = PROBCUT_TT;
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, b0, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -176,7 +179,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
+                       return pos.see_ge(move, b0, Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
@@ -239,7 +242,7 @@ top:
       return select<Best>(Any);
 
   case PROBCUT:
-      return select<Best>([&](){ return pos.see_ge(move, threshold); });
+      return select<Best>([&](){ return pos.see_ge(move, b0, threshold); });
 
   case QCAPTURE:
       if (select<Best>([&](){ return   depth > DEPTH_QS_RECAPTURES

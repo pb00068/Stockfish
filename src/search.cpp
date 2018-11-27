@@ -927,6 +927,7 @@ moves_loop: // When in check, search starts from here
       // then that move is singular and should be extended. To verify this we do
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin then we will extend the ttMove.
+      Bitboard att = DarkSquares;
       if (    depth >= 8 * ONE_PLY
           &&  move == ttMove
           && !rootNode
@@ -945,7 +946,7 @@ moves_loop: // When in check, search starts from here
               extension = ONE_PLY;
       }
       else if (    givesCheck // Check extension (~2 Elo)
-               &&  pos.see_ge(move))
+               &&  pos.see_ge(move, att))
           extension = ONE_PLY;
 
       else if (   pos.can_castle(us) // Extension for king moves that change castling rights
@@ -987,11 +988,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, att, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, att, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 
@@ -1041,9 +1042,12 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
-                  r -= 2 * ONE_PLY;
+              else if (    type_of(move) == NORMAL)
+              {
+            	  Bitboard b0 = DarkSquares;
+                  if (!pos.see_ge(make_move(to_sq(move), from_sq(move)), b0))
+                     r -= 2 * ONE_PLY;
+              }
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1333,6 +1337,7 @@ moves_loop: // When in check, search starts from here
       givesCheck = gives_check(pos, move);
 
       moveCount++;
+      Bitboard att = DarkSquares;
 
       // Futility pruning
       if (   !inCheck
@@ -1350,7 +1355,7 @@ moves_loop: // When in check, search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, att, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1365,7 +1370,7 @@ moves_loop: // When in check, search starts from here
 
       // Don't search moves with negative SEE values
       if (  (!inCheck || evasionPrunable)
-          && !pos.see_ge(move))
+          && !pos.see_ge(move, att))
           continue;
 
       // Speculative prefetch as early as possible

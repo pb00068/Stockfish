@@ -147,6 +147,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  Bitboard b0;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
