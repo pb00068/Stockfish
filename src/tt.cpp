@@ -43,13 +43,13 @@ void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
       || d / ONE_PLY > depth8 - 4
       || b == BOUND_EXACT)
   {
+	  int8_t newd = d / ONE_PLY;
+	  if (newd > depth8 || (k >> 48) != key16)
+     	  depth8 = newd;
       key16     = (uint16_t)(k >> 48);
       value16   = (int16_t)v;
       eval16    = (int16_t)ev;
       genBound8 = (uint8_t)(TT.generation8 | b);
-      int8_t newd = d / ONE_PLY;
-      if (newd > depth8 || (k >> 48) != key16)
-    	  depth8 = newd;
   }
 }
 
