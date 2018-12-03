@@ -303,7 +303,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, alpha, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -1148,6 +1148,10 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
+          else if ((ss->ply == 1 || ss->ply == 3)
+        		  && moveCount > 1
+        		  && value <= -thisThread->beta)
+        	  break;
       }
 
       if (move != bestMove)
