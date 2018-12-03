@@ -1149,7 +1149,6 @@ moves_loop: // When in check, search starts from here
               }
           }
           else if (ss->ply == 1
-        		  && moveCount > 1
         		  && value <= -thisThread->beta)
         	  break;
       }
