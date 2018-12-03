@@ -1148,9 +1148,6 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-          else if (ss->ply == 1
-        		  && value <= -thisThread->beta)
-        	  break;
       }
 
       if (move != bestMove)
@@ -1161,6 +1158,12 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
+
+      if (ss->ply == 1
+            && moveCount > 4
+            && value <= -thisThread->beta
+			&& value <= alpha)
+           break;
     }
 
     // The following condition would detect a stop only after move loop has been
