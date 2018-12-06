@@ -1159,10 +1159,14 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
+      // abort immediately if we fail low with second move too on a PV search
+      // assuming this will lead to a fail high in aspiration search anyway
       if (ss->ply == 1
-            && moveCount > 4
-            && value <= -thisThread->beta
-			&& value <= alpha)
+             && moveCount == 2
+             && bestValue <= -thisThread->beta
+             && depth >= thisThread->rootDepth - ONE_PLY
+      		 && bestValue <= alpha
+			 && beta > alpha+1)
            break;
     }
 
