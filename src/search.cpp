@@ -1156,6 +1156,9 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
+
+      if (rootNode && moveCount > 6 && bestValue < alpha)
+    	  break;
     }
 
     // The following condition would detect a stop only after move loop has been
