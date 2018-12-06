@@ -1162,7 +1162,7 @@ moves_loop: // When in check, search starts from here
       // abort immediately if we fail low with second move too on a PV search
       // assuming this will lead to a fail high in aspiration search anyway
       if (ss->ply == 1
-             && moveCount == 2
+             && moveCount == 6
              && bestValue <= -thisThread->beta
              && depth >= thisThread->rootDepth - ONE_PLY
       		 && bestValue <= alpha
