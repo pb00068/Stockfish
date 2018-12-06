@@ -903,6 +903,12 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
+      if (rootNode && moveCount > 4
+        && bestValue < alpha
+		&& !pos.see_ge(move)
+        && alpha > VALUE_MATED_IN_MAX_PLY)
+    	  continue;
+
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
                     << " currmove " << UCI::move(move, pos.is_chess960())
@@ -1157,10 +1163,7 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-      if (rootNode && moveCount > 10
-        && bestValue < alpha
-        && alpha > VALUE_MATED_IN_MAX_PLY)
-    	  break;
+
     }
 
     // The following condition would detect a stop only after move loop has been
