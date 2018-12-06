@@ -1157,7 +1157,9 @@ moves_loop: // When in check, search starts from here
               quietsSearched[quietCount++] = move;
       }
 
-      if (rootNode && moveCount > 6 && bestValue < alpha)
+      if (rootNode && moveCount > 10
+        && bestValue < alpha
+        && alpha > VALUE_MATED_IN_MAX_PLY)
     	  break;
     }
 
