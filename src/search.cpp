@@ -901,14 +901,11 @@ moves_loop: // When in check, search starts from here
                                   thisThread->rootMoves.begin() + thisThread->pvLast, move))
           continue;
 
-      movedPiece = pos.moved_piece(move);
-
       if (rootNode
     	&& moveCount > 6
         && bestValue < alpha
-		&& alpha > VALUE_MATED_IN_MAX_PLY
-		&& ((*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
-		 &&	(*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold))
+        && thisThread->mainHistory[us][from_to(move)] < -5000
+		&& alpha > VALUE_MATED_IN_MAX_PLY)
     	  break;
 
       ss->moveCount = ++moveCount;
@@ -923,6 +920,7 @@ moves_loop: // When in check, search starts from here
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
       givesCheck = gives_check(pos, move);
+      movedPiece = pos.moved_piece(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
