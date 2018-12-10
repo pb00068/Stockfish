@@ -153,6 +153,7 @@ void ThreadPool::clear() {
   main()->previousScore = VALUE_INFINITE;
   main()->previousTimeReduction = 1.0;
 
+
   before = bbefore = NO_PIECE;
 }
 
