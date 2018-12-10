@@ -113,7 +113,7 @@ void Thread::idle_loop() {
 
       lk.unlock();
 
-      search();
+      search( Threads.before, Threads.bfSq, Threads.bbefore, Threads.bbfSq);
   }
 }
 
@@ -152,6 +152,8 @@ void ThreadPool::clear() {
   main()->callsCnt = 0;
   main()->previousScore = VALUE_INFINITE;
   main()->previousTimeReduction = 1.0;
+
+  before = bbefore = NO_PIECE;
 }
 
 /// ThreadPool::start_thinking() wakes up main thread waiting in idle_loop() and

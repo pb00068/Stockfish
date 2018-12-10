@@ -51,7 +51,7 @@ class Thread {
 public:
   explicit Thread(size_t);
   virtual ~Thread();
-  virtual void search();
+  virtual void search(Piece, Square, Piece, Square);
   void clear();
   void idle_loop();
   void start_searching();
@@ -82,7 +82,7 @@ struct MainThread : public Thread {
 
   using Thread::Thread;
 
-  void search() override;
+  void search(Piece before, Square bfSq, Piece bbefore, Square bbfSq) override;
   void check_time();
 
   double bestMoveChanges, previousTimeReduction;
@@ -106,6 +106,9 @@ struct ThreadPool : public std::vector<Thread*> {
   uint64_t tb_hits()        const { return accumulate(&Thread::tbHits); }
 
   std::atomic_bool stop, ponder, stopOnPonderhit;
+
+  Piece before, bbefore;
+  Square bfSq, bbfSq;
 
 private:
   StateListPtr setupStates;

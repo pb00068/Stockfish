@@ -48,11 +48,11 @@ namespace {
   // or the starting position ("startpos") and then makes the moves given in the
   // following move list ("moves").
 
-  void position(Position& pos, istringstream& is, StateListPtr& states) {
+  void position(Position& pos, istringstream& is, StateListPtr& states, Piece* before, Square* bfSq, Piece* bbefore, Square* bbfSq ) {
 
     Move m;
     string token, fen;
-
+    *before = *bbefore = NO_PIECE;
     is >> token;
 
     if (token == "startpos")
@@ -73,6 +73,10 @@ namespace {
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
         states->emplace_back();
+        *bbefore = *before;
+        *bbfSq = *bfSq;
+        *before = pos.moved_piece(m);
+        *bfSq = to_sq(m);
         pos.do_move(m, states->back());
     }
   }
@@ -163,7 +167,7 @@ namespace {
             nodes += Threads.nodes_searched();
         }
         else if (token == "setoption")  setoption(is);
-        else if (token == "position")   position(pos, is, states);
+        else if (token == "position")   position(pos, is, states,  &Threads.before, &Threads.bfSq, &Threads.bbefore, &Threads.bbfSq);
         else if (token == "ucinewgame") Search::clear();
     }
 
@@ -227,7 +231,7 @@ void UCI::loop(int argc, char* argv[]) {
 
       else if (token == "setoption")  setoption(is);
       else if (token == "go")         go(pos, is, states);
-      else if (token == "position")   position(pos, is, states);
+      else if (token == "position")   position(pos, is, states, &Threads.before, &Threads.bfSq, &Threads.bbefore, &Threads.bbfSq);
       else if (token == "ucinewgame") Search::clear();
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
 

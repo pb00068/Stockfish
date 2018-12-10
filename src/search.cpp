@@ -194,7 +194,7 @@ void Search::clear() {
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
 
-void MainThread::search() {
+void MainThread::search(Piece before, Square bfSq, Piece bbefore, Square bbfSq) {
 
   if (Limits.perft)
   {
@@ -220,7 +220,7 @@ void MainThread::search() {
           if (th != this)
               th->start_searching();
 
-      Thread::search(); // Let's start searching!
+      Thread::search(before, bfSq, bbefore, bbfSq); // Let's start searching!
   }
 
   // When we reach the maximum depth, we can arrive here without a raise of
@@ -300,7 +300,7 @@ void MainThread::search() {
 /// repeatedly with increasing depth until the allocated thinking time has been
 /// consumed, the user stops the search, or the maximum search depth is reached.
 
-void Thread::search() {
+void Thread::search(Piece before, Square bfSq, Piece bbefore, Square bbfSq) {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
   Value bestValue, alpha, beta, delta;
@@ -314,6 +314,11 @@ void Thread::search() {
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
      (ss-i)->continuationHistory = &this->continuationHistory[NO_PIECE][0]; // Use as sentinel
+
+  if (before)
+	  (ss-1)->continuationHistory =  &this->continuationHistory[before][bfSq];
+  if (bbefore)
+	  (ss-2)->continuationHistory =  &this->continuationHistory[bbefore][bbfSq];
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
