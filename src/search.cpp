@@ -901,13 +901,17 @@ moves_loop: // When in check, search starts from here
                                   thisThread->rootMoves.begin() + thisThread->pvLast, move))
           continue;
 
-      ss->moveCount = ++moveCount;
+      movedPiece = pos.moved_piece(move);
 
-      if (rootNode && moveCount > 4
+      if (rootNode
+    	&& moveCount > 6
         && bestValue < alpha
-		&& !pos.see_ge(move)
-        && alpha > VALUE_MATED_IN_MAX_PLY)
-    	  continue;
+		&& alpha > VALUE_MATED_IN_MAX_PLY
+		&& ((*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
+		 &&	(*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold))
+    	  break;
+
+      ss->moveCount = ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
@@ -918,7 +922,6 @@ moves_loop: // When in check, search starts from here
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
-      movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
