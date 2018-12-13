@@ -52,7 +52,8 @@ public:
 
     entry += bonus - entry * abs(bonus) / D;
 
-    if (oldEntry < -abs(bonus) && entry > 0)
+    if ((oldEntry < -abs(bonus) && entry > 0) ||
+    	(oldEntry >  abs(bonus) && entry < 0))
     	entry = 0;
 
     assert(abs(entry) <= D);
