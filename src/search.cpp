@@ -504,7 +504,7 @@ void Thread::search() {
                      timeReduction *= 1.25;
 
               if (rootMoves[0].pvCaptures >= 4)
-            	  timeReduction *= 0.75;
+            	  timeReduction *= 0.80;
 
               // Use part of the gained time from a previous stable move for the current move
               double bestMoveInstability = 1.0 + mainThread->bestMoveChanges;
