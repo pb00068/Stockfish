@@ -1181,18 +1181,18 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
     else if (bestMove)
     {
+    	int bonus = stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO));
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
-            update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
-                               stat_bonus(depth + (bestValue > beta + PawnValueMg ? ONE_PLY : DEPTH_ZERO)));
+            update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
 
-        update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
+        update_capture_stats(pos, bestMove, capturesSearched, captureCount, bonus);
 
         // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
         if (   (ss-1)->moveCount == 1
             || ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0]))
             if (!pos.captured_piece())
-                update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+                update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -bonus);
 
     }
     // Bonus for prior countermove that caused the fail low
