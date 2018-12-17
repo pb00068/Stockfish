@@ -494,7 +494,7 @@ void Thread::search() {
           && !Threads.stop
           && !Threads.stopOnPonderhit)
           {
-              double fallingEval = (293 + 119 * failedLow + 8 * rootMoves[0].pvCaptures + 6 * (mainThread->previousScore - bestValue)) / 581.0;
+              double fallingEval = (294 + 119 * failedLow + 8 * rootMoves[0].pvCaptures + 6 * (mainThread->previousScore - bestValue)) / 581.0;
               fallingEval        = std::max(0.5, std::min(1.5, fallingEval));
 
               // If the bestMove is stable over several iterations, reduce time accordingly
