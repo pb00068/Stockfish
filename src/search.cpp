@@ -111,7 +111,7 @@ namespace {
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
-  void update_pv(Move* pv, Move move, Move* childPv);
+  void update_pv(PvMove* pv, Move move, PvMove* childPv, bool isCapture);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, Move* quiets, int quietsCnt, int bonus);
   void update_capture_stats(const Position& pos, Move move, Move* captures, int captureCnt, int bonus);
@@ -303,7 +303,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
-  Move  pv[MAX_PLY+1];
+  PvMove  pv[MAX_PLY+1];
   Value bestValue, alpha, beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
@@ -494,7 +494,7 @@ void Thread::search() {
           && !Threads.stop
           && !Threads.stopOnPonderhit)
           {
-              double fallingEval = (306 + 119 * failedLow + 6 * (mainThread->previousScore - bestValue)) / 581.0;
+              double fallingEval = (294 + 119 * failedLow + 8 * rootMoves[0].pvCaptures + 6 * (mainThread->previousScore - bestValue)) / 581.0;
               fallingEval        = std::max(0.5, std::min(1.5, fallingEval));
 
               // If the bestMove is stable over several iterations, reduce time accordingly
@@ -565,7 +565,8 @@ namespace {
     assert(!(PvNode && cutNode));
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
+    PvMove pv[MAX_PLY+1];
+    Move capturesSearched[32], quietsSearched[64];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1082,7 +1083,8 @@ moves_loop: // When in check, search starts from here
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
           (ss+1)->pv = pv;
-          (ss+1)->pv[0] = MOVE_NONE;
+          (ss+1)->pv[0].move = MOVE_NONE;
+          (ss+1)->pv[0].isCapture = 0;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
@@ -1110,11 +1112,15 @@ moves_loop: // When in check, search starts from here
               rm.score = value;
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
+              rm.pvCaptures = 0;
 
               assert((ss+1)->pv);
 
-              for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
-                  rm.pv.push_back(*m);
+              for (PvMove* m = (ss+1)->pv; m->move != MOVE_NONE; ++m)
+              {
+                  rm.pv.push_back(m->move);
+                  rm.pvCaptures += m->isCapture;
+              }
 
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
@@ -1138,7 +1144,7 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
+                  update_pv(ss->pv, move, (ss+1)->pv, pos.capture(move));
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;
@@ -1228,7 +1234,7 @@ moves_loop: // When in check, search starts from here
     assert(depth <= DEPTH_ZERO);
     assert(depth / ONE_PLY * ONE_PLY == depth);
 
-    Move pv[MAX_PLY+1];
+    PvMove pv[MAX_PLY+1];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1242,7 +1248,8 @@ moves_loop: // When in check, search starts from here
     {
         oldAlpha = alpha; // To flag BOUND_EXACT when eval above alpha and no available moves
         (ss+1)->pv = pv;
-        ss->pv[0] = MOVE_NONE;
+        ss->pv[0].move = MOVE_NONE;
+        ss->pv[0].isCapture = 0;
     }
 
     Thread* thisThread = pos.this_thread();
@@ -1402,7 +1409,7 @@ moves_loop: // When in check, search starts from here
               bestMove = move;
 
               if (PvNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
+                  update_pv(ss->pv, move, (ss+1)->pv, pos.capture(move));
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
@@ -1455,11 +1462,19 @@ moves_loop: // When in check, search starts from here
 
   // update_pv() adds current move and appends child pv[]
 
-  void update_pv(Move* pv, Move move, Move* childPv) {
+  void update_pv(PvMove* pv, Move move, PvMove* childPv, bool isCapture) {
 
-    for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
-        *pv++ = *childPv++;
-    *pv = MOVE_NONE;
+	pv->move = move;
+	pv->isCapture = isCapture;
+    for (pv++; childPv && childPv->move != MOVE_NONE; )
+    {
+        pv->move = childPv->move;
+        pv->isCapture = childPv->isCapture;
+        pv++;
+        childPv++;
+    }
+    pv->move = MOVE_NONE;
+    pv->isCapture = 0;
   }
 
 

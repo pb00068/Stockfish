@@ -127,6 +127,11 @@ enum MoveType {
   CASTLING  = 3 << 14
 };
 
+struct PvMove {
+  Move move;
+  int isCapture;
+};
+
 enum Color {
   WHITE, BLACK, COLOR_NB = 2
 };

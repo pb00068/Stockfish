@@ -40,7 +40,7 @@ constexpr int CounterMovePruneThreshold = 0;
 /// its own array of Stack objects, indexed by the current ply.
 
 struct Stack {
-  Move* pv;
+  PvMove* pv;
   PieceToHistory* continuationHistory;
   int ply;
   Move currentMove;
@@ -72,6 +72,7 @@ struct RootMove {
   int tbRank;
   Value tbScore;
   std::vector<Move> pv;
+  int pvCaptures = 0;
 };
 
 typedef std::vector<RootMove> RootMoves;
