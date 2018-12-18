@@ -267,7 +267,7 @@ void MainThread::search() {
       // Vote according to score and depth
       auto square = [](int64_t x) { return x * x; };
       for (Thread* th : Threads)
-          votes[th->rootMoves[0].pv[0]] += 200 + (square(th->rootMoves[0].score - minScore + 1)
+          votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].outOfBounds ? 0 : 200) + (square(th->rootMoves[0].score - minScore + 1)
                                                   * int64_t(th->completedDepth));
 
       // Select best thread
@@ -1111,6 +1111,7 @@ moves_loop: // When in check, search starts from here
               rm.score = value;
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
+              rm.outOfBounds = value <= alpha || value >= beta;
 
               assert((ss+1)->pv);
 
