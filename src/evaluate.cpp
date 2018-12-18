@@ -319,6 +319,12 @@ namespace {
 
         int mob = popcount(b & mobilityArea[Us]);
 
+        if (Pt == QUEEN)
+        {
+        	if (mob && mob <= 4 && ((FileBB[FILE_A] | FileBB[FILE_H]) & s))
+        		mob = std::max(0, mob - 2);
+        }
+
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
         if (Pt == BISHOP || Pt == KNIGHT)
