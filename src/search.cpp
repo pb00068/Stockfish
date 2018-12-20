@@ -1509,7 +1509,7 @@ moves_loop: // When in check, search starts from here
     	ss->killers[2] = ss->killers[1], ss->killerHits[2] = ss->killerHits[1];
         ss->killers[1] = ss->killers[0], ss->killerHits[1] = ss->killerHits[0];
         ss->killers[0] = move;
-        ss->killerHits[0] =  move == ss->killers[2] ? ss->killerHits[2] : 1;
+        ss->killerHits[0] =  move == ss->killers[2] ? ss->killerHits[2] + 1 : 1;
     }
     else ss->killerHits[0]++;
 
