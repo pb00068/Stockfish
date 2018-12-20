@@ -660,7 +660,11 @@ namespace {
                 if (   (ss-1)->moveCount == 1
                     || ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0]))
                     if (!pos.captured_piece())
+                    {
                         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+                        if ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0])
+                        	(ss-1)->killerHits[0]--;
+                    }
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
@@ -878,6 +882,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
+    	countermove = ss->killers[2];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
@@ -1195,7 +1201,11 @@ moves_loop: // When in check, search starts from here
         if (   (ss-1)->moveCount == 1
             || ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0]))
             if (!pos.captured_piece())
+            {
                 update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+                if ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0])
+                    (ss-1)->killerHits[0]--;
+            }
 
     }
     // Bonus for prior countermove that caused the fail low
