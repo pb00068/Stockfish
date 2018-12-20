@@ -621,6 +621,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
+    (ss+2)->killerHits[0] = (ss+2)->killerHits[1] = (ss+2)->killerHits[2] = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -882,8 +883,8 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
-    	countermove = ss->killers[2];
+    //if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
+    //	countermove = ss->killers[2];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
