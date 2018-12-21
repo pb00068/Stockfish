@@ -659,12 +659,10 @@ namespace {
 
                 // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
                 if (   (ss-1)->moveCount == 1
-                    || ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0]))
+                    || ((ss-1)->currentMove == (ss-1)->killers[(ss-1)->killerIdx] && (ss-1)->killers[(ss-1)->killerIdx]))
                     if (!pos.captured_piece())
                     {
                         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
-                        if ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0])
-                        	(ss-1)->killerHits[0]--;
                     }
             }
             // Penalty for a quiet ttMove that fails low
@@ -883,15 +881,20 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
-       countermove = ss->killers[2];
 
+    Move killers[2];
+    killers[0] = ss->killers[ss->killerIdx];
+    int idx2 = (ss->killerIdx + 1) % 3, idx3 = (ss->killerIdx + 2) % 3;
+    if (ss->killerHits[idx3] > ss->killerHits[idx2])
+       killers[1] = ss->killers[idx3];
+    else
+       killers[1] = ss->killers[idx2];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, ss->killers[2] != ss->killers[0] && ss->killerHits[2] > ss->killerHits[1]);
+									  killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
     skipQuiets = false;
@@ -1201,12 +1204,10 @@ moves_loop: // When in check, search starts from here
 
         // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
         if (   (ss-1)->moveCount == 1
-            || ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0]))
+            || ((ss-1)->currentMove == (ss-1)->killers[(ss-1)->killerIdx] && (ss-1)->killers[(ss-1)->killerIdx]))
             if (!pos.captured_piece())
             {
                 update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
-                if ((ss-1)->currentMove == (ss-1)->killers[0] && (ss-1)->killers[0])
-                    (ss-1)->killerHits[0]--;
             }
 
     }
@@ -1516,17 +1517,31 @@ moves_loop: // When in check, search starts from here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
                           Move* quiets, int quietsCnt, int bonus) {
 
-	if (move == ss->killers[1] && ss->killerHits[1]+ 2 < ss->killerHits[0])
+	if (move == ss->killers[0]) {
+		ss->killerHits[0]++;
+		ss->killerIdx=0;
+	}
+	else if (move == ss->killers[1]) {
 		ss->killerHits[1]++;
-	else if (move != ss->killers[0])
+		ss->killerIdx=1;
+	}
+	else if (move == ss->killers[2]) {
+		ss->killerHits[2]++;
+		ss->killerIdx=2;
+	}
+	else
     {
-		ss->killerHits[0] = move == ss->killers[2] ? ss->killerHits[2] + 1 : 1;
-    	ss->killers[2] = ss->killers[1], ss->killerHits[2] = ss->killerHits[1];
-        ss->killers[1] = ss->killers[0], ss->killerHits[1] = ss->killerHits[0];
-        ss->killers[0] = move;
-        ss->killerHits[0] +=  move == ss->killers[2] ? ss->killerHits[2] : 0;
+		int i = 0;
+        if (ss->killers[0] && (ss->killerHits[1] < ss->killerHits[0] || ss->killerIdx == 0) )
+        {
+        	i = 1;
+        	if (ss->killerIdx != 2 && ss->killers[1] && (ss->killerHits[1] < ss->killerHits[2] || ss->killerIdx == 1) )
+        		i = 2;
+        }
+        ss->killers[i] = move;
+        ss->killerHits[i] = 1;
+        ss->killerIdx=i;
     }
-    else ss->killerHits[0]++;
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
