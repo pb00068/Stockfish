@@ -883,8 +883,9 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    //if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
-    //	countermove = ss->killers[2];
+    if (ss->killerHits[2] > 1 && (countermove == ss->killers[0] || countermove == ss->killers[1]))
+       countermove = ss->killers[2];
+
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
@@ -1515,12 +1516,15 @@ moves_loop: // When in check, search starts from here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
                           Move* quiets, int quietsCnt, int bonus) {
 
-    if (ss->killers[0] != move)
+	if (move == ss->killers[1] && ss->killerHits[1] + 2 < ss->killerHits[0])
+		ss->killerHits[1]++;
+	else if (move != ss->killers[0])
     {
+		ss->killerHits[0] = move == ss->killers[2] ? ss->killerHits[2] + 1 : 1;
     	ss->killers[2] = ss->killers[1], ss->killerHits[2] = ss->killerHits[1];
         ss->killers[1] = ss->killers[0], ss->killerHits[1] = ss->killerHits[0];
         ss->killers[0] = move;
-        ss->killerHits[0] =  move == ss->killers[2] ? ss->killerHits[2] + 1 : 1;
+        ss->killerHits[0] +=  move == ss->killers[2] ? ss->killerHits[2] : 0;
     }
     else ss->killerHits[0]++;
 
