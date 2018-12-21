@@ -1516,7 +1516,7 @@ moves_loop: // When in check, search starts from here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move,
                           Move* quiets, int quietsCnt, int bonus) {
 
-	if (move == ss->killers[1] && ss->killerHits[1] + 2 < ss->killerHits[0])
+	if (move == ss->killers[1] && ss->killerHits[1]+ 2 < ss->killerHits[0])
 		ss->killerHits[1]++;
 	else if (move != ss->killers[0])
     {
