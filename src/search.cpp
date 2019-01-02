@@ -540,6 +540,20 @@ void Thread::search() {
 
 namespace {
 
+  void handlePreviousPly (const Position& pos, Stack* ss, Square prevSq, Depth d)
+  {
+	  // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
+	  if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
+		  && !pos.captured_piece())
+			  update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(d + ONE_PLY));
+
+	  if ((ss-1)->currentMove == (ss-1)->killers[0])
+	  {
+		  (ss-1)->killers[0] = (ss-1)->killers[1];
+		  (ss-1)->killers[1] = (ss-1)->currentMove;
+	  }
+  }
+
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
@@ -660,10 +674,7 @@ namespace {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
-                // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
-                if (    ((ss-1)->moveCount == 1 || (ss-1)->currentMove == (ss-1)->killers[0])
-                     && !pos.captured_piece())
-                        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
+                handlePreviousPly(pos, ss, prevSq, depth);
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
@@ -1194,11 +1205,7 @@ moves_loop: // When in check, search starts from here
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + ONE_PLY));
 
-        // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
-        if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
-            && !pos.captured_piece())
-                update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + ONE_PLY));
-
+        handlePreviousPly(pos, ss, prevSq, depth);
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 * ONE_PLY || PvNode)
@@ -1218,6 +1225,8 @@ moves_loop: // When in check, search starts from here
 
     return bestValue;
   }
+
+
 
 
   // qsearch() is the quiescence search function, which is called by the main
