@@ -549,8 +549,12 @@ namespace {
 
 	  if ((ss-1)->currentMove == (ss-1)->killers[0])
 	  {
-		  (ss-1)->killers[0] = (ss-1)->killers[1];
-		  (ss-1)->killers[1] = MOVE_NONE;
+		  if ((ss-1)->killerRefutedCnt++ >= 2)
+		  {
+			  (ss-1)->killers[0] = (ss-1)->killers[1];
+			  (ss-1)->killers[1] = MOVE_NONE;
+			  (ss-1)->killerRefutedCnt=0;
+		  }
 	  }
   }
 
@@ -639,6 +643,7 @@ namespace {
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->continuationHistory = &thisThread->continuationHistory[NO_PIECE][0];
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killerRefutedCnt=0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1518,6 +1523,7 @@ moves_loop: // When in check, search starts from here
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
+        ss->killerRefutedCnt=0;
     }
 
     Color us = pos.side_to_move();
