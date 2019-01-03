@@ -550,7 +550,7 @@ namespace {
 	  if ((ss-1)->currentMove == (ss-1)->killers[0])
 	  {
 		  (ss-1)->killers[0] = (ss-1)->killers[1];
-		  (ss-1)->killers[1] = (ss-1)->currentMove;
+		  (ss-1)->killers[1] = MOVE_NONE;
 	  }
   }
 
