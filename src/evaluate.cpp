@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -171,6 +172,7 @@ namespace {
   constexpr Score TrappedRook        = S( 96,  4);
   constexpr Score WeakQueen          = S( 49, 15);
   constexpr Score WeakUnopposedPawn  = S( 12, 23);
+  constexpr Score InactiveBishop     = S( 50, 50);
 
 #undef S
 
@@ -345,6 +347,16 @@ namespace {
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
                     score += LongDiagonalBishop;
+
+                if (!mob && !(pos.blockers_for_king(Us) & s))
+                {
+                	if ((b & pos.pieces(Us, PAWN)) != b)
+                		b = attacks_bb<BISHOP>(s, pos.pieces(Them) | pos.pieces(Us, PAWN));
+                	if (b & pe->pushablePawns[Us])
+                	{}
+                	else if (!(b & mobilityArea[Us]))
+                		score -= InactiveBishop;
+                }
             }
 
             // An important Chess960 pattern: A cornered bishop blocked by a friendly
