@@ -57,13 +57,14 @@ constexpr Piece Pieces[] = { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING
 
 template<int Pt>
 PieceType min_attacker(const Bitboard* byTypeBB, Square to, Bitboard stmAttackers,
-                       Bitboard& occupied, Bitboard& attackers) {
+                       Bitboard& occupied, Bitboard& attackers, Square& from) {
 
   Bitboard b = stmAttackers & byTypeBB[Pt];
   if (!b)
-      return min_attacker<Pt + 1>(byTypeBB, to, stmAttackers, occupied, attackers);
+      return min_attacker<Pt + 1>(byTypeBB, to, stmAttackers, occupied, attackers, from);
 
-  occupied ^= lsb(b); // Remove the attacker from occupied
+  from = lsb(b);
+  occupied ^= from;
 
   // Add any X-ray attack behind the just removed piece. For instance with
   // rooks in a8 and a7 attacking a1, after removing a7 we add rook in a8.
@@ -81,7 +82,7 @@ PieceType min_attacker(const Bitboard* byTypeBB, Square to, Bitboard stmAttacker
 }
 
 template<>
-PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&) {
+PieceType min_attacker<KING>(const Bitboard*, Square, Bitboard, Bitboard&, Bitboard&, Square&) {
   return KING; // No need to update bitboards: it is the last cycle
 }
 
@@ -1076,10 +1077,15 @@ bool Position::see_ge(Move m, Value threshold) const {
   {
       stmAttackers = attackers & pieces(stm);
 
-      // Don't allow pinned pieces to attack (except the king) as long as
-      // any pinners are on their original square.
+      // Don't allow pinned pieces to attack as long
+      // as any pinner is on it's original square.
       if (st->pinners[~stm] & occupied)
           stmAttackers &= ~st->blockersForKing[stm];
+
+      if ((st->blockersForKing[stm] & from)
+           && type_of(piece_on(from)) != PAWN  // pawns often move along the pinning line
+           && type_of(piece_on(from)) != KING) // king-moves are often either illegal or not discovering at all
+             stmAttackers &= pieces(stm, KING);
 
       // If stm has no more attackers then give up: stm loses
       if (!stmAttackers)
@@ -1087,7 +1093,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' the possibly X-ray attackers behind it.
-      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+      nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers, from);
 
       stm = ~stm; // Switch side to move
 
