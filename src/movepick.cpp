@@ -84,7 +84,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, bool givesCheck, const CapturePieceToHistory* cph)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
            : pos(p), captureHistory(cph), threshold(th) {
 
   assert(!pos.checkers());
@@ -93,7 +93,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, bool givesCheck, c
   ttMove =   ttm
           && pos.pseudo_legal(ttm)
           && pos.capture(ttm)
-          && pos.see_ge(ttm, givesCheck, threshold) ? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -173,7 +173,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(move, false, Value(-55 * (cur-1)->value / 1024)) ?
+                       return pos.see_ge(move, Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
@@ -236,7 +236,7 @@ top:
       return select<Best>([](){ return true; });
 
   case PROBCUT:
-      return select<Best>([&](){ return pos.see_ge(move, false, threshold); });
+      return select<Best>([&](){ return pos.see_ge(move, threshold); });
 
   case QCAPTURE:
       if (select<Best>([&](){ return   depth > DEPTH_QS_RECAPTURES
