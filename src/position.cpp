@@ -23,6 +23,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -1035,7 +1036,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+bool Position::see_ge(Move m, bool givesCheck, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1072,8 +1073,9 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
 
-  if (blockers_for_king(stm) & from)
+  if (givesCheck && (blockers_for_king(stm) & from))
 	  attackers = attackers & (pieces(us) | square<KING>(stm));
+
 
   while (true)
   {
