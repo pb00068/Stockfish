@@ -23,7 +23,6 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -356,8 +355,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK], si->disco_sniper[BLACK]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE], si->disco_sniper[WHITE]);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -494,10 +493,10 @@ const string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& disco_sniper) const {
 
   Bitboard blockers = 0;
-  pinners = 0;
+  pinners = disco_sniper = 0;
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
   Bitboard snipers = (  (PseudoAttacks[  ROOK][s] & pieces(QUEEN, ROOK))
@@ -514,6 +513,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         blockers |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
+        else
+        	disco_sniper |= sniperSq;
     }
   }
   return blockers;
@@ -1071,11 +1072,26 @@ bool Position::see_ge(Move m, bool givesCheck, Value threshold) const {
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
-  Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard attackers;
 
   if (givesCheck && (blockers_for_king(stm) & from))
-	  attackers = attackers & (pieces(us) | square<KING>(stm));
-
+  {
+	  to = lsb(disco_sniper(us));
+	  attackers = attackers_to(to, occupied) & occupied;
+	  if (!attackers)
+	  {
+		  to = to_sq(m);
+		  attackers = attackers_to(to, occupied) & occupied & (pieces(us) | square<KING>(stm));
+	  }
+	  else {
+		  balance += PieceValue[MG][nextVictim];
+		  nextVictim = type_of(piece_on(to));
+		  balance -= PieceValue[MG][nextVictim];
+		  if (balance >= VALUE_ZERO)
+		        return true;
+	  }
+  }
+  else attackers = attackers_to(to, occupied) & occupied;
 
   while (true)
   {
