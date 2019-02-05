@@ -834,7 +834,7 @@ namespace {
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
-        while (  (move = mp.next_move()) != MOVE_NONE
+        while (  (move = mp.next_move(SQ_NONE)) != MOVE_NONE
                && probCutCount < 3)
             if (move != excludedMove && pos.legal(move))
             {
@@ -890,7 +890,8 @@ moves_loop: // When in check, search starts from here
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     bool checkQueenEnPrise = true;
-    while ((move = mp.next_move(skipQuiets)) != MOVE_NONE)
+    Square strikeBack = SQ_NONE;
+    while ((move = mp.next_move(strikeBack, skipQuiets)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -918,8 +919,12 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
-      Square strikeBack = to_sq(move);
-      if (checkQueenEnPrise && !givesCheck && !captureOrPromotion && type_of(movedPiece) != QUEEN) {
+      strikeBack = to_sq(move);
+      if (checkQueenEnPrise
+    		  && !givesCheck
+			  && (!captureOrPromotion || type_of(pos.piece_on(to_sq(move))) != QUEEN)
+			  && type_of(movedPiece) != QUEEN
+			  && pos.legal(move)) {
     	  Bitboard ourQueens = pos.pieces(us, QUEEN);
     	  checkQueenEnPrise = false;
     	  while (ourQueens)
@@ -930,8 +935,8 @@ moves_loop: // When in check, search starts from here
 			 {
 				 // if our Queen is defended, then exclude attacks from opponent queen
 				 if (b & pos.pieces(us))
-					 b ^= pos.pieces(~us, QUEEN);
-				 if (b)
+					 b = ~pos.pieces(~us, QUEEN);
+				 if (b  & pos.pieces(~us))
 				 {
 					 strikeBack = s;
 					 checkQueenEnPrise = true;
@@ -1363,7 +1368,7 @@ moves_loop: // When in check, search starts from here
                                       to_sq((ss-1)->currentMove));
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move()) != MOVE_NONE)
+    while ((move = mp.next_move(SQ_NONE)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
