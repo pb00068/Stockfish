@@ -919,17 +919,25 @@ moves_loop: // When in check, search starts from here
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
       Square strikeBack = to_sq(move);
-      if (checkQueenEnPrise && type_of(movedPiece) != QUEEN) {
+      if (checkQueenEnPrise && !givesCheck && !captureOrPromotion && type_of(movedPiece) != QUEEN) {
     	  Bitboard ourQueens = pos.pieces(us, QUEEN);
     	  checkQueenEnPrise = false;
     	  while (ourQueens)
 		  {
 			 Square s = pop_lsb(&ourQueens);
-			 if (pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & pos.pieces(~us) & ~pos.blockers_for_king(~us))
+			 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
+			 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
 			 {
-				 strikeBack = s;
-				 checkQueenEnPrise = true;
-				 break;
+				 // if our Queen is defended, then exclude attacks from opponent queen
+				 if (b & pos.pieces(us))
+					 b ^= pos.pieces(~us, QUEEN);
+				 if (b)
+				 {
+					 strikeBack = s;
+					 checkQueenEnPrise = true;
+					 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+					 break;
+				 }
 			 }
 		  }
       }
