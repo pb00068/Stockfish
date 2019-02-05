@@ -1073,7 +1073,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard attackers = attackers_to(to, occupied) & occupied;
 
   if (blockers_for_king(stm) & from)
-	  attackers = (attackers & pieces(us)) | square<KING>(stm);
+	  attackers = attackers & (pieces(us) | square<KING>(stm));
 
   while (true)
   {
