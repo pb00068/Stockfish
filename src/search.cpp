@@ -972,8 +972,6 @@ moves_loop: // When in check, search starts from here
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
-
-
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))
@@ -1000,51 +998,52 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-			  if (checkQueenEnPrise
-					  && lmrDepth < 5
-					  && !cutNode
-					  && type_of(movedPiece) != QUEEN
-					  && type_of(movedPiece) != KING
-					  && pos.count<QUEEN>(us)==1
-					  && pos.legal(move)) {
+              if (checkQueenEnPrise
+                  && lmrDepth < 3
+                  && !cutNode
+                  && type_of(movedPiece) != QUEEN
+                  && type_of(movedPiece) != KING
+                  && pos.count<QUEEN>(us)==1
+                  && pos.legal(move))
+              {
+                 Bitboard occupied = (pos.pieces() ^ from_sq(move)) | to_sq(move);
+                 checkQueenEnPrise = false;
+                 if (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & pos.pieces(~us, QUEEN)))
+                 {
+                  // filter out knight-moves that threatens queen
+                 }
+                 else if (type_of(movedPiece) == BISHOP && (attacks_bb<BISHOP>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
+                 {
+                  // filter out bishop-moves that threatens queen
+                 }
+                 else if (type_of(movedPiece) == ROOK && (attacks_bb<ROOK>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
+                 {
+                  // filter out rook-moves that threatens queen
+                 }
+                 else
+                 {
+                     Square s = pos.square<QUEEN>(us);
+                     Bitboard b = pos.attackers_to(s, occupied) & ~pos.blockers_for_king(~us);
+                     if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
+                     {
+                         if (type_of(movedPiece) == KNIGHT)
+                            b |= PseudoAttacks[KNIGHT][to_sq(move)];
+                         else if (type_of(movedPiece) == BISHOP)
+                            b |= attacks_bb<BISHOP>(to_sq(move), occupied);
+                         else if (type_of(movedPiece) == ROOK)
+                            b |= attacks_bb<ROOK>(to_sq(move), occupied);
 
-				  Bitboard occupied = (pos.pieces() ^ from_sq(move)) | to_sq(move);
-				  checkQueenEnPrise = false;
-				  if (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & pos.pieces(~us, QUEEN)))
-				  {
-					  // filter out knight-moves that threatens queen
-				  }
-				  else if (type_of(movedPiece) == BISHOP && (attacks_bb<BISHOP>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
-				  {
-					  // filter out bishop-moves that threatens queen
-				  }
-				  else if (type_of(movedPiece) == ROOK && (attacks_bb<ROOK>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
-				  {
-					  // filter out rook-moves that threatens queen
-				  }
-				  else
-				  {
-					 Square s = pos.square<QUEEN>(us);
-					 Bitboard b = pos.attackers_to(s, occupied) & ~pos.blockers_for_king(~us);
-					 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
-					 {
-						 if (type_of(movedPiece) == KNIGHT)
-							b |= PseudoAttacks[KNIGHT][to_sq(move)];
-						 else if (type_of(movedPiece) == BISHOP)
-						    b |= attacks_bb<BISHOP>(to_sq(move), occupied);
-						 else if (type_of(movedPiece) == ROOK)
-						 	b |= attacks_bb<ROOK>(to_sq(move), occupied);
-
-						 if (b & pos.pieces(us))
-							 b &= ~pos.pieces(~us, QUEEN);
-						 if (b & pos.pieces(~us)) // our Queen is en prise
-						 {
-							 checkQueenEnPrise = true;
-							 continue;
-						 }
-					 }
-				  }
-			  }
+                         if (b & pos.pieces(us))
+                             b &= ~pos.pieces(~us, QUEEN);
+                         if (b & pos.pieces(~us)) // our Queen is en prise
+                         {
+                             checkQueenEnPrise = true;
+                             dbg_hit_on(true);
+                             continue;
+                         }
+                     }
+                 }
+              }
 
               // Prune moves with negative SEE (~10 Elo)
               if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
