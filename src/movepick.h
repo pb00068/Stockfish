@@ -127,7 +127,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            Move*);
-  Move next_move(Square sb, bool skipQuiets = false);
+  Move next_move(bool skipQuiets = false);
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

@@ -890,8 +890,7 @@ moves_loop: // When in check, search starts from here
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     bool checkQueenEnPrise = true;
-    Square strikeBack = SQ_NONE;
-    while ((move = mp.next_move(strikeBack, skipQuiets)) != MOVE_NONE)
+    while ((move = mp.next_move(skipQuiets)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
@@ -919,33 +918,6 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
-      strikeBack = to_sq(move);
-      if (checkQueenEnPrise
-    		  && !givesCheck
-			  && (!captureOrPromotion || type_of(pos.piece_on(to_sq(move))) != QUEEN)
-			  && type_of(movedPiece) != QUEEN
-			  && pos.legal(move)) {
-    	  Bitboard ourQueens = pos.pieces(us, QUEEN);
-    	  checkQueenEnPrise = false;
-    	  while (ourQueens)
-		  {
-			 Square s = pop_lsb(&ourQueens);
-			 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
-			 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
-			 {
-				 // if our Queen is defended, then exclude attacks from opponent queen
-				 if (b & pos.pieces(us))
-					 b = ~pos.pieces(~us, QUEEN);
-				 if (b  & pos.pieces(~us))
-				 {
-					 strikeBack = s;
-					 checkQueenEnPrise = true;
-					 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
-					 break;
-				 }
-			 }
-		  }
-      }
 
       moveCountPruning =   depth < 16 * ONE_PLY
                         && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
@@ -985,7 +957,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.blockers_for_king(~us) & from_sq(move) || pos.see_ge(move, strikeBack)))
+               && (pos.blockers_for_king(~us) & from_sq(move) || pos.see_ge(move, to_sq(move))))
           extension = ONE_PLY;
 
       // Castling extension
@@ -1000,6 +972,33 @@ moves_loop: // When in check, search starts from here
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
+    	  Square strikeBack = to_sq(move);
+		   if (checkQueenEnPrise
+				  && !cutNode
+				  && !givesCheck
+				  && (!captureOrPromotion || type_of(pos.piece_on(to_sq(move))) != QUEEN)
+				  && type_of(movedPiece) != QUEEN
+				  && pos.count<QUEEN>(us)==1
+				  && pos.legal(move)) {
+
+			 checkQueenEnPrise = false;
+			 Square s = pos.square<QUEEN>(us);
+			 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
+			 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
+			 {
+				 // if our Queen is defended, then exclude attacks from opponent queen
+				 if (b & pos.pieces(us))
+					 b = ~pos.pieces(~us, QUEEN);
+				 if (b  & pos.pieces(~us))
+				 {
+					 strikeBack = s;
+					 checkQueenEnPrise = true;
+					 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+					 break;
+				 }
+			 }
+
+		   }
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))

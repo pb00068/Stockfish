@@ -19,11 +19,8 @@
 */
 
 #include <cassert>
-#include <iostream>
-#include "movepick.h"
-#include "uci.h"
-#include "misc.h"
 
+#include "movepick.h"
 
 namespace {
 
@@ -152,7 +149,7 @@ Move MovePicker::select(Pred filter) {
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
-Move MovePicker::next_move(Square strikeBack, bool skipQuiets) {
+Move MovePicker::next_move(bool skipQuiets) {
 
 top:
   switch (stage) {
@@ -176,7 +173,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                  return pos.see_ge(move, strikeBack != SQ_NONE && strikeBack != from_sq(move) && type_of(pos.piece_on(strikeBack)) == QUEEN ? strikeBack : to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
+                       return pos.see_ge(move, to_sq(move), Value(-55 * (cur-1)->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = move, false); }))
           return move;
