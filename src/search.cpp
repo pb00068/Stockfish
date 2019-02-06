@@ -1004,24 +1004,32 @@ moves_loop: // When in check, search starts from here
 			  if (checkQueenEnPrise
 					  && !cutNode
 					  && type_of(movedPiece) != QUEEN
+					  && type_of(movedPiece) != KING
 					  && pos.count<QUEEN>(us)==1
 					  && pos.legal(move)) {
 
-				 checkQueenEnPrise = false;
-				 Square s = pos.square<QUEEN>(us);
-				 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
-				 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
-				 {
-					 // if our Queen is defended, then exclude attacks from opponent queen
-					 if (b & pos.pieces(us))
-						 b = ~pos.pieces(~us, QUEEN);
-					 if (b  & pos.pieces(~us))
+				  if (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & pos.pieces(~us, QUEEN)))
+				  {
+					  // filter out knight-moves that threatens queen
+				  }
+				  else
+				  {
+					 checkQueenEnPrise = false;
+					 Square s = pos.square<QUEEN>(us);
+					 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
+					 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
 					 {
-						 strikeBack = s;
-						 checkQueenEnPrise = true;
-						 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+						 // if our Queen is defended, then exclude attacks from opponent queen
+						 if (b & pos.pieces(us))
+							 b = ~pos.pieces(~us, QUEEN);
+						 if (b  & pos.pieces(~us))
+						 {
+							 strikeBack = s;
+							 checkQueenEnPrise = true;
+							 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+						 }
 					 }
-				 }
+				  }
 			  }
 
               // Prune moves with negative SEE (~10 Elo)
