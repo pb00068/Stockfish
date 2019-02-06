@@ -1008,32 +1008,46 @@ moves_loop: // When in check, search starts from here
 					  && pos.count<QUEEN>(us)==1
 					  && pos.legal(move)) {
 
+				  Bitboard occupied = (pos.pieces() ^ from_sq(move)) | to_sq(move);
 				  if (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & pos.pieces(~us, QUEEN)))
 				  {
 					  // filter out knight-moves that threatens queen
+				  }
+				  else if (type_of(movedPiece) == BISHOP && (attacks_bb<BISHOP>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
+				  {
+					  // filter out bishop-moves that threatens queen
+				  }
+				  else if (type_of(movedPiece) == ROOK && (attacks_bb<ROOK>(to_sq(move), occupied) & pos.pieces(~us, QUEEN)))
+				  {
+					  // filter out rook-moves that threatens queen
 				  }
 				  else
 				  {
 					 checkQueenEnPrise = false;
 					 Square s = pos.square<QUEEN>(us);
-					 Bitboard b = pos.attackers_to(s, (pos.pieces() ^ from_sq(move)) | to_sq(move)) & ~pos.blockers_for_king(~us);
+					 Bitboard b = pos.attackers_to(s, occupied) & ~pos.blockers_for_king(~us);
 					 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
 					 {
-						 // if our Queen is defended, then exclude attacks from opponent queen
+						 if (type_of(movedPiece) == KNIGHT)
+							b |= PseudoAttacks[KNIGHT][to_sq(move)];
+						 else if (type_of(movedPiece) == BISHOP)
+						    b |= attacks_bb<BISHOP>(to_sq(move), occupied);
+						 else if (type_of(movedPiece) == ROOK)
+						 	b |= attacks_bb<ROOK>(to_sq(move), occupied);
+
 						 if (b & pos.pieces(us))
-							 b = ~pos.pieces(~us, QUEEN);
+							 b &= ~pos.pieces(~us, QUEEN);
 						 if (b  & pos.pieces(~us))
 						 {
 							 strikeBack = s;
 							 checkQueenEnPrise = true;
-							 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
 						 }
 					 }
 				  }
 			  }
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, strikeBack, Value((checkQueenEnPrise ? -40 : -29) * lmrDepth * lmrDepth)))
+              if (strikeBack != to_sq(move) && !pos.see_ge(move, strikeBack, Value((checkQueenEnPrise ? -34 : -29) * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
