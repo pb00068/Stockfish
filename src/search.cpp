@@ -834,7 +834,7 @@ namespace {
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
-        while (  (move = mp.next_move(SQ_NONE)) != MOVE_NONE
+        while (  (move = mp.next_move()) != MOVE_NONE
                && probCutCount < 3)
             if (move != excludedMove && pos.legal(move))
             {
@@ -994,11 +994,10 @@ moves_loop: // When in check, search starts from here
 					 strikeBack = s;
 					 checkQueenEnPrise = true;
 					 //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
-					 break;
 				 }
 			 }
+		  }
 
-		   }
           if (   !captureOrPromotion
               && !givesCheck
               && !pos.advanced_pawn_push(move))
@@ -1367,7 +1366,7 @@ moves_loop: // When in check, search starts from here
                                       to_sq((ss-1)->currentMove));
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    while ((move = mp.next_move(SQ_NONE)) != MOVE_NONE)
+    while ((move = mp.next_move()) != MOVE_NONE)
     {
       assert(is_ok(move));
 
