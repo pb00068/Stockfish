@@ -957,7 +957,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.blockers_for_king(~us) & from_sq(move) || pos.see_ge(move, to_sq(move))))
+               && (pos.blockers_for_king(~us) & from_sq(move) || pos.see_ge(move)))
           extension = ONE_PLY;
 
       // Castling extension
@@ -1000,8 +1000,8 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                   continue;
 
-              Square strikeBack = to_sq(move);
 			  if (checkQueenEnPrise
+					  && lmrDepth < 5
 					  && !cutNode
 					  && type_of(movedPiece) != QUEEN
 					  && type_of(movedPiece) != KING
@@ -1009,6 +1009,7 @@ moves_loop: // When in check, search starts from here
 					  && pos.legal(move)) {
 
 				  Bitboard occupied = (pos.pieces() ^ from_sq(move)) | to_sq(move);
+				  checkQueenEnPrise = false;
 				  if (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & pos.pieces(~us, QUEEN)))
 				  {
 					  // filter out knight-moves that threatens queen
@@ -1023,7 +1024,6 @@ moves_loop: // When in check, search starts from here
 				  }
 				  else
 				  {
-					 checkQueenEnPrise = false;
 					 Square s = pos.square<QUEEN>(us);
 					 Bitboard b = pos.attackers_to(s, occupied) & ~pos.blockers_for_king(~us);
 					 if ((b & pos.pieces(~us)) && ((b & pos.pieces(~us)) ^ to_sq(move)))
@@ -1037,21 +1037,21 @@ moves_loop: // When in check, search starts from here
 
 						 if (b & pos.pieces(us))
 							 b &= ~pos.pieces(~us, QUEEN);
-						 if (b  & pos.pieces(~us))
+						 if (b & pos.pieces(~us)) // our Queen is en prise
 						 {
-							 strikeBack = s;
 							 checkQueenEnPrise = true;
+							 continue;
 						 }
 					 }
 				  }
 			  }
 
               // Prune moves with negative SEE (~10 Elo)
-              if (strikeBack != to_sq(move) && !pos.see_ge(move, strikeBack, Value((checkQueenEnPrise ? -34 : -29) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-29 * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (   !extension // (~20 Elo)
-                   && !pos.see_ge(move, to_sq(move), -PawnValueEg * (depth / ONE_PLY)))
+                   && !pos.see_ge(move, -PawnValueEg * (depth / ONE_PLY)))
                   continue;
       }
 
@@ -1102,7 +1102,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), from_sq(move)))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1412,7 +1412,7 @@ moves_loop: // When in check, search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, to_sq(move), VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1427,7 +1427,7 @@ moves_loop: // When in check, search starts from here
 
       // Don't search moves with negative SEE values
       if (  (!inCheck || evasionPrunable)
-          && !pos.see_ge(move, to_sq(move)))
+          && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible
