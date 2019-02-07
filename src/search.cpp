@@ -1008,9 +1008,10 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               if (checkQueenEnPrise
-                      && lmrDepth < 6
+                      && lmrDepth < 3
                       && type_of(movedPiece) != QUEEN
                       && type_of(movedPiece) != KING
+                      && !cutNode
                       && pos.count<QUEEN>(us)==1)
               {
 
