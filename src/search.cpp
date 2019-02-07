@@ -916,6 +916,13 @@ moves_loop: // When in check, search starts from here
 
       extension = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
+
+      if (captureOrPromotion
+           && checkQueenEnPrise
+           && type_of(pos.piece_on(to_sq(move))) == QUEEN)
+          checkQueenEnPrise = false;
+
+
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
 
@@ -1001,14 +1008,13 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               if (checkQueenEnPrise
-                      && lmrDepth < 5
+                      && lmrDepth < 6
                       && type_of(movedPiece) != QUEEN
                       && type_of(movedPiece) != KING
                       && pos.count<QUEEN>(us)==1)
               {
 
-                  Bitboard occupied = (pos.pieces() ^ from_sq(move)) | to_sq(move);
-                  Bitboard bb = 0;
+                  Bitboard bb = 0, occupied = pos.pieces() ^ from_sq(move) ^ to_sq(move);
                   if (pos.pieces(~us, QUEEN))
                   {
                       switch (type_of(movedPiece))
@@ -1025,7 +1031,7 @@ moves_loop: // When in check, search starts from here
                                           // filter out rook-moves that threatens queen
                                           checkQueenEnPrise = false;
                                       break;
-                           case PAWN:
+                           default: // filter out pawn-moves that threatens queen
                                   bb |= to_sq(move);
                                   bb = (us == WHITE) ? pawn_attacks_bb<WHITE>(bb) : pawn_attacks_bb<BLACK>(bb);
                                   if (bb & pos.pieces(~us, QUEEN))
@@ -1041,10 +1047,11 @@ moves_loop: // When in check, search starts from here
                      {
                          if (b & pos.pieces(us)) // our Queen is defended
                              b &= ~pos.pieces(~us, QUEEN); // then remove enemy Queen as attacker
-                         else if ( (type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & s))
+                         else if ((b & pos.pieces(~us, QUEEN)) &&
+                                  ((type_of(movedPiece) == KNIGHT && (PseudoAttacks[KNIGHT][to_sq(move)] & s))
                                 || (type_of(movedPiece) == BISHOP && (attacks_bb<BISHOP>(to_sq(move), occupied) & s))
                                 || (type_of(movedPiece) == ROOK   && (attacks_bb<ROOK>(to_sq(move), occupied) & s))
-                                || (type_of(movedPiece) == PAWN   && (bb & s)))
+                                || (type_of(movedPiece) == PAWN   && (bb & s))))
                              b &= ~pos.pieces(~us, QUEEN); // move defends our queen: remove enemy Queen as attacker
 
                          if (b & pos.pieces(~us)) // our Queen is en prise
