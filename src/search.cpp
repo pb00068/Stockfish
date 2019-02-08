@@ -175,6 +175,9 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.74 * pow(d, 1.78));
       FutilityMoveCounts[1][d] = int(5.0 + 1.00 * pow(d, 2.00));
   }
+
+  Bitboard b = 0;
+  sync_cout << more_than_one(b) << sync_endl;
 }
 
 
