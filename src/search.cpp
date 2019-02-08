@@ -412,6 +412,8 @@ void Thread::search() {
           while (true)
           {
               Depth adjustedDepth = std::max(ONE_PLY, rootDepth - failedHighCnt * ONE_PLY);
+              if (mainThread)
+                  mainThread->hadbestMoveChange = false;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -452,9 +454,9 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  if (mainThread)
-                      failedHighCnt += bestValue >= beta + 15 ? 2 : 1;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (mainThread)
+                      failedHighCnt += 1 + (mainThread->hadbestMoveChange && adjustedDepth > 14 * ONE_PLY) ? 2 : 0;
               }
               else
                   break;
@@ -1130,7 +1132,10 @@ moves_loop: // When in check, search starts from here
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
+              {
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+                  static_cast<MainThread*>(thisThread)->hadbestMoveChange=true;
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this
