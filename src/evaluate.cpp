@@ -462,8 +462,8 @@ namespace {
     else
         unsafeChecks |= b;
 
-    if (kingDanger || more_than_one(unsafeChecks))
-        kingDanger += 200 * popcount(pos.pinners(Them));
+    if (kingDanger || bool(unsafeChecks))
+        kingDanger += 100 * popcount(pos.pinners(Them));
 
     // Unsafe or occupied checking squares will also be considered, as long as
     // the square is in the attacker's mobility area.
