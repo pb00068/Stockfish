@@ -462,9 +462,6 @@ namespace {
     else
         unsafeChecks |= b;
 
-    if (kingDanger || bool(unsafeChecks))
-        kingDanger += 100 * popcount(pos.pinners(Them));
-
     // Unsafe or occupied checking squares will also be considered, as long as
     // the square is in the attacker's mobility area.
     unsafeChecks &= mobilityArea[Them];
@@ -480,7 +477,7 @@ namespace {
                  +  69 * kingAttacksCount[Them]
                  + 185 * popcount(kingRing[Us] & weak)
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
-                 + 150 * popcount(pos.blockers_for_king(Us) | unsafeChecks)
+                 + 130 * popcount(pos.blockers_for_king(Us) | pos.pinners(Them) | unsafeChecks)
                  - 873 * !pos.count<QUEEN>(Them)
                  -   6 * mg_value(score) / 8
                  +       mg_value(mobility[Them] - mobility[Us])
