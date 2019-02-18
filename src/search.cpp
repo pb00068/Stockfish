@@ -347,18 +347,21 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  uint64_t lastIterNodes = 0;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
          && !(Limits.depth && mainThread && rootDepth / ONE_PLY > Limits.depth))
   {
-      // Distribute search depths across the helper threads
-      if (idx > 0)
+      // helper threads skip certain rootDepths as long the search-tree is small
+      if (idx > 0 && nodes - lastIterNodes < 70000)
       {
           int i = (idx - 1) % 20;
           if (((rootDepth / ONE_PLY + SkipPhase[i]) / SkipSize[i]) % 2)
               continue;  // Retry with an incremented rootDepth
       }
+
+      lastIterNodes = nodes;
 
       // Age out PV variability metric
       if (mainThread)
