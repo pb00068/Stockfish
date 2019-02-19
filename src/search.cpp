@@ -1496,7 +1496,8 @@ moves_loop: // When in check, search starts from here
       {
           moved_piece = pos.moved_piece(captures[i]);
           captured = type_of(pos.piece_on(to_sq(captures[i])));
-          captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
+          if (captureHistory[moved_piece][to_sq(captures[i])][captured] > 0)
+              captureHistory[moved_piece][to_sq(captures[i])][captured] << -bonus;
       }
   }
 
