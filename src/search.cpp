@@ -1124,8 +1124,6 @@ moves_loop: // When in check, search starts from here
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
                   ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
-              else if (value < alpha)
-                  thisThread->alpha = (2 * thisThread->alpha + value - 2) / 3;
           }
           else
           {
@@ -1133,7 +1131,7 @@ moves_loop: // When in check, search starts from here
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
-              if (value < alpha)
+              if (value < alpha && moveCount < 4)
                   thisThread->alpha = thisThread->alpha - 1;
           }
       }
