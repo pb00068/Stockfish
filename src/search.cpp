@@ -346,6 +346,8 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
+  int failLowLevel = 0;
+
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -370,7 +372,6 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
-      bool previousHadFailedLow = failedLow;
       failedLow=false;
 
       // MultiPV loop. We perform a full root search for each PV line
@@ -392,7 +393,7 @@ void Thread::search() {
           {
               Value previousScore = rootMoves[pvIdx].previousScore;
               delta = Value(20);
-              alpha = std::max(previousScore - delta - previousHadFailedLow * Value(10) ,-VALUE_INFINITE);
+              alpha = std::max(previousScore - Value(19 + failLowLevel),-VALUE_INFINITE);
               beta  = std::min(previousScore + delta, VALUE_INFINITE);
 
               // Adjust contempt based on root move's previousScore (dynamic contempt)
@@ -439,10 +440,11 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  failedLow = true;
+                  failLowLevel+=2;
 
                   if (mainThread)
                   {
+                      failedLow = true;
                       failedHighCnt = 0;
                       mainThread->stopOnPonderhit = false;
                   }
@@ -452,6 +454,8 @@ void Thread::search() {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   if (mainThread)
                       ++failedHighCnt;
+                  if (failLowLevel)
+                      failLowLevel--;
               }
               else
                   break;
