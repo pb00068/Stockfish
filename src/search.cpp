@@ -361,7 +361,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= 0.517, failedLow = false;
+          mainThread->bestMoveChanges *= 0.517;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -370,6 +370,8 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
+      bool previousHadFailedLow = failedLow;
+      failedLow=false;
 
       // MultiPV loop. We perform a full root search for each PV line
       for (pvIdx = 0; pvIdx < multiPV && !Threads.stop; ++pvIdx)
@@ -390,7 +392,7 @@ void Thread::search() {
           {
               Value previousScore = rootMoves[pvIdx].previousScore;
               delta = Value(20);
-              alpha = std::max(previousScore - delta,-VALUE_INFINITE);
+              alpha = std::max(previousScore - delta - previousHadFailedLow * Value(10) ,-VALUE_INFINITE);
               beta  = std::min(previousScore + delta, VALUE_INFINITE);
 
               // Adjust contempt based on root move's previousScore (dynamic contempt)
@@ -437,11 +439,11 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  failedLow = true;
 
                   if (mainThread)
                   {
                       failedHighCnt = 0;
-                      failedLow = true;
                       mainThread->stopOnPonderhit = false;
                   }
               }
