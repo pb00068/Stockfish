@@ -899,6 +899,7 @@ moves_loop: // When in check, search starts from here
                                   thisThread->rootMoves.begin() + thisThread->pvLast, move))
           continue;
 
+
       ss->moveCount = ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
@@ -912,6 +913,16 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = gives_check(pos, move);
+
+      if (rootNode
+          && !bestMove
+          && moveCount > 10
+          && !captureOrPromotion
+          && !givesCheck
+          && alpha > Value(60)
+          && thisThread->mainHistory[us][from_to(move)] < 0)
+          continue;
+
 
       // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
       moveCountPruning = depth < 16 * ONE_PLY
@@ -1131,9 +1142,7 @@ moves_loop: // When in check, search starts from here
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
-              if (moveCount > 10 && alpha > Value(60))
-                  // we had to high expectations: hardly a remaining move will raise alpha
-                  break; // break and research with lower alpha
+
           }
       }
 
