@@ -881,6 +881,7 @@ moves_loop: // When in check, search starts from here
 
     moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    Move firstMove = MOVE_NONE;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1008,6 +1009,9 @@ moves_loop: // When in check, search starts from here
           ss->moveCount = --moveCount;
           continue;
       }
+
+      if (moveCount == 1)
+          firstMove = move;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1209,7 +1213,7 @@ moves_loop: // When in check, search starts from here
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  depth, bestMove, pureStaticEval);
+                  depth, bestMove ? bestMove : firstMove, pureStaticEval);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
