@@ -871,11 +871,16 @@ moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory, nullptr, (ss-4)->continuationHistory };
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move seqMove1 = thisThread->movSeqHistory[((ss-1)->currentMove * (ss-2)->currentMove) / 65536];
+    Move seqMove2 = thisThread->movSeqHistory[((ss-1)->currentMove + (ss-2)->currentMove) / 65536];
+    if (seqMove1 != seqMove2)
+        seqMove1 = MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
+                                      seqMove1,
                                       ss->killers);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
 
@@ -1518,6 +1523,13 @@ moves_loop: // When in check, search starts from here
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+
+        if (is_ok((ss-2)->currentMove))
+        {
+            thisThread->movSeqHistory[((ss-1)->currentMove * (ss-2)->currentMove) / 65536] = move;
+            thisThread->movSeqHistory[((ss-1)->currentMove + (ss-2)->currentMove) / 65536] = move;;
+
+        }
     }
 
     // Decrease all the other played quiet moves
