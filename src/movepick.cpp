@@ -183,15 +183,17 @@ top:
       endMoves = std::end(refutations);
 
 
-      if (   refutations[0].move == refutations[2].move
-          || refutations[1].move == refutations[2].move)
-          --endMoves;
-
-
       if (   refutations[0].move == refutations[3].move
           || refutations[1].move == refutations[3].move
           || refutations[2].move == refutations[3].move)
+          --endMoves;
+
+      if (   refutations[0].move == refutations[2].move
+          || refutations[1].move == refutations[2].move)
+      {
             --endMoves;
+            refutations[2].move = refutations[3].move; // close the gap
+      }
 
       ++stage;
       /* fallthrough */
