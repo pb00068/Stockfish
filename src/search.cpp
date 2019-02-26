@@ -448,8 +448,7 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (idx % 2 == 0
-                      && (mainThread || failedHighCnt || ss->moveCount > 4))
+                  if (failedHighCnt || ss->moveCount > 3)
                       ++failedHighCnt;
               }
               else
