@@ -74,7 +74,7 @@ void Thread::start_searching() {
 
   std::lock_guard<Mutex> lk(mutex);
   searching = true;
-  behind = false;
+  backward = false;
   cv.notify_one(); // Wake up the thread in idle_loop()
 }
 

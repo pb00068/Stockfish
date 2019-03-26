@@ -398,7 +398,7 @@ void Thread::search() {
               // If search has been stopped, we break immediately. Sorting is
               // safe because RootMoves is still valid, although it refers to
               // the previous iteration.
-              if (Threads.stop || behind)
+              if (Threads.stop || backward)
                   break;
 
               // When failing high/low give some update (without cluttering
@@ -443,7 +443,7 @@ void Thread::search() {
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
 
-          if (behind)
+          if (backward)
               break;
       }
 
@@ -462,10 +462,7 @@ void Thread::search() {
           Threads.stop = true;
 
       if (!mainThread)
-      {
-          behind = false;
           continue;
-      }
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
@@ -615,7 +612,7 @@ namespace {
     posKey = pos.key() ^ Key(excludedMove << 16); // Isn't a very good hash
     tte = TT.probe(posKey, ttHit);
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
+    ttMove =  rootNode && (!ttHit || !thisThread->backward) ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = (ttHit && tte->is_pv()) || (PvNode && depth > 4 * ONE_PLY);
 
@@ -1091,6 +1088,7 @@ moves_loop: // When in check, search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
+          thisThread->backward = false;
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)
           {
@@ -1106,30 +1104,29 @@ moves_loop: // When in check, search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1)
-              {
-                  if ( thisThread == Threads.main())
+              if (moveCount > 1 && thisThread == Threads.main())
                      ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
-                  else
-                  {
-                      int d = 0;
-                      for (Thread* th : Threads)
-                           if (th != thisThread)
-                               d +=  th->completedDepth.load(std::memory_order_relaxed);
-                      d = d / (Threads.size() - 1); // average completed depth
-                      if (depth < d)
-                      {
-                          thisThread->behind = true;
-                          return value_draw(depth, pos.this_thread());
-                      }
-                  }
-              }
           }
           else
+          {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              if (thisThread != Threads.main())
+              {
+                  int d = 0;
+                  for (Thread* th : Threads)
+                     if (th != thisThread)
+                         d +=  th->completedDepth.load(std::memory_order_relaxed);
+                  d = d / (Threads.size() - 1); // average completed depth
+                  if (depth < d)
+                  {
+                      thisThread->backward = true;
+                      return value_draw(depth, pos.this_thread());
+                  }
+              }
+          }
       }
 
       if (value > bestValue)

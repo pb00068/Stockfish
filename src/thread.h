@@ -74,7 +74,7 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
-  bool behind; // set when thread is behind in rootDepth
+  bool backward; // set when thread is behind in rootDepth
 };
 
 
