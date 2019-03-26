@@ -264,7 +264,10 @@ void MainThread::search() {
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
-      sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+  {
+      Depth d = bestThread->completedDepth * ONE_PLY;
+      sync_cout << UCI::pv(bestThread->rootPos, d, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+  }
 
   sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -395,7 +398,7 @@ void Thread::search() {
               // If search has been stopped, we break immediately. Sorting is
               // safe because RootMoves is still valid, although it refers to
               // the previous iteration.
-              if (Threads.stop)
+              if (Threads.stop || behind)
                   break;
 
               // When failing high/low give some update (without cluttering
@@ -439,6 +442,9 @@ void Thread::search() {
           if (    mainThread
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+
+          if (behind)
+              break;
       }
 
       if (!Threads.stop)
@@ -456,7 +462,10 @@ void Thread::search() {
           Threads.stop = true;
 
       if (!mainThread)
+      {
+          behind = false;
           continue;
+      }
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
@@ -1097,8 +1106,24 @@ moves_loop: // When in check, search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
-                  ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+              if (moveCount > 1)
+              {
+                  if ( thisThread == Threads.main())
+                     ++static_cast<MainThread*>(thisThread)->bestMoveChanges;
+                  else
+                  {
+                      int d = 0;
+                      for (Thread* th : Threads)
+                           if (th != thisThread)
+                               d +=  th->completedDepth.load(std::memory_order_relaxed);
+                      d = d / (Threads.size() - 1); // average completed depth
+                      if (depth < d)
+                      {
+                          thisThread->behind = true;
+                          return value_draw(depth, pos.this_thread());
+                      }
+                  }
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this

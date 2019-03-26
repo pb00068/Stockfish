@@ -74,6 +74,7 @@ void Thread::start_searching() {
 
   std::lock_guard<Mutex> lk(mutex);
   searching = true;
+  behind = false;
   cv.notify_one(); // Wake up the thread in idle_loop()
 }
 
@@ -191,8 +192,8 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
   for (Thread* th : *this)
   {
-      th->nodes = th->tbHits = th->nmpMinPly = 0;
-      th->rootDepth = th->completedDepth = DEPTH_ZERO;
+      th->nodes = th->tbHits = th->nmpMinPly = th->completedDepth = 0;
+      th->rootDepth = DEPTH_ZERO;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
   }

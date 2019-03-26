@@ -67,12 +67,14 @@ public:
 
   Position rootPos;
   Search::RootMoves rootMoves;
-  Depth rootDepth, completedDepth;
+  Depth rootDepth;
+  std::atomic_int completedDepth;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
+  bool behind; // set when thread is behind in rootDepth
 };
 
 
