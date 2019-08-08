@@ -1222,6 +1222,13 @@ moves_loop: // When in check, search starts from here
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
+              if (value >= beta
+                   && !PvNode
+                   && is_ok((ss-1)->currentMove)
+                   && (between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove))
+                   && pos.see_ge(move, PawnValueMg))
+
+                  pos.setSeeDestroy(between_bb(from_sq(move), to_sq(move)), movedPiece, from_sq(move));
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
                   alpha = value;

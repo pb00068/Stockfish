@@ -97,6 +97,7 @@ public:
   template<PieceType Pt> const Square* squares(Color c) const;
   template<PieceType Pt> Square square(Color c) const;
   bool is_on_semiopen_file(Color c, Square s) const;
+  void setSeeDestroy(Bitboard bb, Piece p, Square sq);
 
   // Castling
   int castling_rights(Color c) const;
@@ -195,6 +196,9 @@ private:
   Thread* thisThread;
   StateInfo* st;
   bool chess960;
+  Bitboard seeDestroyBB;
+  Piece seeDestroyPiece;
+  Square seeDestroySq;
 };
 
 namespace PSQT {
@@ -393,6 +397,12 @@ inline Piece Position::captured_piece() const {
 
 inline Thread* Position::this_thread() const {
   return thisThread;
+}
+
+inline void Position::setSeeDestroy(Bitboard bb, Piece p, Square sq) {
+    seeDestroyBB = bb;
+    seeDestroyPiece = p;
+    seeDestroySq = sq;
 }
 
 inline void Position::put_piece(Piece pc, Square s) {

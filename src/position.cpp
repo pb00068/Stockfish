@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1052,6 +1053,15 @@ bool Position::see_ge(Move m, Value threshold) const {
   // Only deal with normal moves, assume others pass a simple see
   if (type_of(m) != NORMAL)
       return VALUE_ZERO >= threshold;
+
+  if (threshold <= VALUE_ZERO &&
+          seeDestroyPiece &&
+      (((seeDestroyBB & pieces()) ^ from_sq(m)) == 0) &&
+      (seeDestroyBB & to_sq(m)) == 0 &&
+       piece_on(seeDestroySq) == seeDestroyPiece)
+  {
+      return false;
+  }
 
   Bitboard stmAttackers;
   Square from = from_sq(m), to = to_sq(m);
