@@ -93,7 +93,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   ttMove =   ttm
           && pos.capture(ttm)
           && pos.pseudo_legal(ttm)
-          && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
+          && pos.see_ge(ttm, true, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -174,7 +174,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
+                       return pos.see_ge(*cur, true, Value(-55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
@@ -241,7 +241,7 @@ top:
       return select<Best>([](){ return true; });
 
   case PROBCUT:
-      return select<Best>([&](){ return pos.see_ge(*cur, threshold); });
+      return select<Best>([&](){ return pos.see_ge(*cur, true, threshold); });
 
   case QCAPTURE:
       if (select<Best>([&](){ return   depth > DEPTH_QS_RECAPTURES

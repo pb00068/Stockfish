@@ -1046,7 +1046,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+bool Position::see_ge(Move m, bool allowshortcut, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1054,12 +1054,13 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (type_of(m) != NORMAL)
       return VALUE_ZERO >= threshold;
 
-  if (threshold <= VALUE_ZERO &&
-          seeDestroyPiece &&
+  if (allowshortcut &&          seeDestroyPiece &&
       (((seeDestroyBB & pieces()) ^ from_sq(m)) == 0) &&
       (seeDestroyBB & to_sq(m)) == 0 &&
        piece_on(seeDestroySq) == seeDestroyPiece)
   {
+      //dbg_hit_on(true);
+      //sync_cout << *this << UCI::move(m, is_chess960()) << " destroyPiece: " <<seeDestroyPiece << " sq: " <<  seeDestroySq << "  bb\n" << Bitboards::pretty(seeDestroyBB | seeDestroySq) << sync_endl;
       return false;
   }
 

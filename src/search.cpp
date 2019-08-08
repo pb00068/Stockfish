@@ -986,7 +986,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move)))
+               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move, false)))
           extension = ONE_PLY;
 
       // Castling extension
@@ -1106,7 +1106,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(make_move(to_sq(move), from_sq(move))))
+                       && !pos.see_ge(make_move(to_sq(move), from_sq(move)), false))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1224,6 +1224,7 @@ moves_loop: // When in check, search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
               if (value >= beta
                    && !PvNode
+                   && captureOrPromotion
                    && is_ok((ss-1)->currentMove)
                    && (between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove))
                    && pos.see_ge(move, PawnValueMg))
@@ -1460,7 +1461,7 @@ moves_loop: // When in check, search starts from here
       // Don't search moves with negative SEE values
       if (  (!inCheck || evasionPrunable)
           && (!givesCheck || !(pos.blockers_for_king(~pos.side_to_move()) & from_sq(move)))
-          && !pos.see_ge(move))
+          && !pos.see_ge(move, false))
           continue;
 
       // Speculative prefetch as early as possible
