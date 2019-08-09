@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -437,9 +438,17 @@ namespace {
     knightChecks = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
 
     if (knightChecks & safe)
+    {
         kingDanger += KnightSafeCheck;
+        if (knightChecks && !(attackedBy[Us][KING] & ~pos.pieces(Us)))
+            kingDanger += KnightSafeCheck;
+    }
     else
+    {
         unsafeChecks |= knightChecks;
+        if (knightChecks && !(attackedBy[Us][KING] & ~pos.pieces(Us)))
+            kingDanger += KnightSafeCheck / 4;
+    }
 
     // Unsafe or occupied checking squares will also be considered, as long as
     // the square is in the attacker's mobility area.
@@ -463,6 +472,8 @@ namespace {
                  +       mg_value(mobility[Them] - mobility[Us])
                  +   5 * kingFlankAttacks * kingFlankAttacks / 16
                  -   7;
+
+
 
     // Transform the kingDanger units into a Score, and subtract it from the evaluation
     if (kingDanger > 100)
