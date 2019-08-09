@@ -85,7 +85,7 @@ namespace {
   constexpr int QueenSafeCheck  = 780;
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
-  constexpr int KnightSafeCheck = 790;
+  constexpr int KnightSafeCheck = 700;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -441,13 +441,13 @@ namespace {
     {
         kingDanger += KnightSafeCheck;
         if (knightChecks && !(attackedBy[Us][KING] & ~pos.pieces(Us)))
-            kingDanger += KnightSafeCheck;
+            kingDanger += KnightSafeCheck / 2;
     }
     else
     {
         unsafeChecks |= knightChecks;
         if (knightChecks && !(attackedBy[Us][KING] & ~pos.pieces(Us)))
-            kingDanger += KnightSafeCheck / 4;
+            kingDanger += KnightSafeCheck / 8;
     }
 
     // Unsafe or occupied checking squares will also be considered, as long as
