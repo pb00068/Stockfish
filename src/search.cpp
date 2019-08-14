@@ -595,13 +595,13 @@ namespace {
     bool ttHit, ttPv, inCheck, givesCheck, improving, doLMR;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, singularLMR;
+    int moveCount, captureCount, quietCount, singularLMR, goodCaptureCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
     Color us = pos.side_to_move();
-    moveCount = captureCount = quietCount = singularLMR = ss->moveCount = 0;
+    moveCount = captureCount = goodCaptureCount = quietCount = singularLMR = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
 
@@ -1015,7 +1015,7 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth / ONE_PLY);
+          moveCountPruning = moveCount + goodCaptureCount / 2 >= futility_move_count(improving, depth / ONE_PLY);
 
           if (   !captureOrPromotion
               && !givesCheck
@@ -1237,7 +1237,11 @@ moves_loop: // When in check, search starts from here
       if (move != bestMove)
       {
           if (captureOrPromotion && captureCount < 32)
+          {
               capturesSearched[captureCount++] = move;
+              if (quietCount < 4)
+                  goodCaptureCount++;
+          }
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
