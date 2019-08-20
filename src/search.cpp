@@ -1016,14 +1016,17 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth / ONE_PLY);
+          moveCountPruning = moveCount  >= futility_move_count(improving, depth / ONE_PLY);
 
           if (   !captureOrPromotion
               && !givesCheck
               && (!pos.advanced_pawn_push(move) || pos.non_pawn_material(~us) > BishopValueMg))
           {
               // Move count based pruning
-              if (moveCountPruning && (type_of(movedPiece) != PAWN || file_of(to_sq(move)) != FILE_H || relative_rank(pos.side_to_move(), RANK_3) != rank_of(to_sq(move))))
+              if (moveCountPruning && (depth <= 2 * ONE_PLY
+                                       || type_of(movedPiece) != PAWN
+                                       || (file_of(from_sq(move)) != FILE_H &&  file_of(from_sq(move)) != FILE_A)
+                                       || relative_rank(pos.side_to_move(), RANK_2) != rank_of(from_sq(move))))
                   continue;
 
               // Reduced depth of the next LMR search
@@ -1216,7 +1219,6 @@ moves_loop: // When in check, search starts from here
       if (value > bestValue)
       {
           bestValue = value;
-
           if (value > alpha)
           {
               bestMove = move;
