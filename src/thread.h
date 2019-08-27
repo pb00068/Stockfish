@@ -73,6 +73,9 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory;
   Score contempt;
+  int lastContPly;
+  Piece lastContPiece;
+  Square lastContSquare;
 };
 
 

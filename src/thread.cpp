@@ -75,6 +75,9 @@ void Thread::clear() {
           h->fill(0);
 
   continuationHistory[NO_PIECE][0]->fill(Search::CounterMovePruneThreshold - 1);
+  lastContPly = 0;
+  lastContPiece = NO_PIECE;
+  lastContSquare = SQ_NONE;
 }
 
 /// Thread::start_searching() wakes up the thread that will start the search

@@ -1154,7 +1154,10 @@ moves_loop: // When in check, search starts from here
       {
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
-          if (doLMR && !captureOrPromotion)
+          if (doLMR && !captureOrPromotion
+                  && (thisThread->lastContPly    != ss->ply
+                  ||  thisThread->lastContSquare != to_sq(move)
+                  ||  thisThread->lastContPiece  != movedPiece))
           {
               int bonus = value > alpha ?  stat_bonus(newDepth)
                                         : -stat_bonus(newDepth);
@@ -1162,7 +1165,7 @@ moves_loop: // When in check, search starts from here
               if (move == ss->killers[0])
                   bonus += bonus / 4;
 
-              update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
+                update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
       }
 
@@ -1287,7 +1290,12 @@ moves_loop: // When in check, search starts from here
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 * ONE_PLY || PvNode)
              && !pos.captured_piece())
+    {
         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+        thisThread->lastContPiece = pos.piece_on(prevSq);
+        thisThread->lastContPly = (ss-1)->ply;
+        thisThread->lastContSquare = prevSq;
+    }
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
