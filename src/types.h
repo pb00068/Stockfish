@@ -276,6 +276,18 @@ inline Value mg_value(Score s) {
   return Value(mg.s);
 }
 
+inline int16_t scorevalue(Score s) {
+    union { uint16_t u; int16_t s; } mg = { uint16_t(unsigned(s)) };
+    union { uint16_t u; int16_t s; } eg = { uint16_t(unsigned(s + 0x8000) >> 16) };
+    return mg.s + eg.s;
+}
+
+inline Score halfScore(Score s) {
+    union { uint16_t u; int16_t s; } mg = { uint16_t(unsigned(s)) };
+    union { uint16_t u; int16_t s; } eg = { uint16_t(unsigned(s + 0x8000) >> 16) };
+    return make_score(mg.s / 2, eg.s /2);
+}
+
 #define ENABLE_BASE_OPERATORS_ON(T)                                \
 constexpr T operator+(T d1, T d2) { return T(int(d1) + int(d2)); } \
 constexpr T operator-(T d1, T d2) { return T(int(d1) - int(d2)); } \

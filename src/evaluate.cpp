@@ -809,8 +809,14 @@ namespace {
 
     score +=  king<   WHITE>() - king<   BLACK>()
             + threats<WHITE>() - threats<BLACK>()
-            + passed< WHITE>() - passed< BLACK>()
             + space<  WHITE>() - space<  BLACK>();
+
+    Score pas = passed< WHITE>() - passed< BLACK>();
+    if ( (scorevalue(score) >  1500 && scorevalue(pas) < -300) ||
+         (scorevalue(score) < -1500 && scorevalue(pas) >  300))
+        score += halfScore(pas);
+    else
+        score += pas;
 
     score += initiative(eg_value(score));
 
