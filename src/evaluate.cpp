@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -86,7 +85,7 @@ namespace {
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
-  constexpr int PawnSafeCheck   = 350;
+  constexpr int PawnPushDiscoCheck = 150;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -386,7 +385,7 @@ namespace {
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
 
     Bitboard weak, b1, b2, safe, unsafeChecks = 0;
-    Bitboard rookChecks, queenChecks, bishopChecks, knightChecks, pawnchecks;
+    Bitboard rookChecks, queenChecks, bishopChecks, knightChecks;
     int kingDanger = 0;
     const Square ksq = pos.square<KING>(Us);
 
@@ -445,17 +444,16 @@ namespace {
     else
         unsafeChecks |= knightChecks;
 
-    if (kingDanger)
-    {
-       b1 = shift<Down>(pos.pieces(Them, PAWN)) & ~pos.pieces() & PawnAttacks[Us][ksq];
-       if (b1 & safe)
-       {
-           //sync_cout << pos << "\n Pawnchecks \n" << Bitboards::pretty(pawnchecks) << " \npawn_attacks_to_king\n " << Bitboards::pretty(PawnAttacks[Us][ksq]) << sync_endl;
-           kingDanger += PawnSafeCheck;
-       }
-       else unsafeChecks |= b1;
-    }
 
+    if (kingDanger || unsafeChecks)
+    {
+        b1 = pos.blockers_for_king(Us) & pos.pieces(Them, PAWN);
+        if (b1
+         && (shift<Down>(b1) & ~pos.pieces())
+         && file_of(ksq) != file_of(lsb(b1))
+         && distance(ksq, lsb(b1)) > 1)
+           kingDanger += kingDanger ? 4 * PawnPushDiscoCheck : PawnPushDiscoCheck;
+    }
 
     // Find the squares that opponent attacks in our king flank, and the squares
     // which are attacked twice in that flank.
@@ -470,7 +468,7 @@ namespace {
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -  35 * bool(attackedBy[Us][BISHOP] & attackedBy[Us][KING])
                  + 148 * popcount(unsafeChecks)
-                 +  98 * popcount(pos.blockers_for_king(Us))
+                 +  58 * popcount(pos.blockers_for_king(Us))
                  - 873 * !pos.count<QUEEN>(Them)
                  -   6 * mg_value(score) / 8
                  +       mg_value(mobility[Them] - mobility[Us])
