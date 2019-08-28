@@ -85,7 +85,7 @@ namespace {
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
-  constexpr int PawnPushDiscoCheck = 150;
+  constexpr int PawnPushDiscoCheck = 75;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -468,7 +468,7 @@ namespace {
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -  35 * bool(attackedBy[Us][BISHOP] & attackedBy[Us][KING])
                  + 148 * popcount(unsafeChecks)
-                 +  58 * popcount(pos.blockers_for_king(Us))
+                 +  90 * popcount(pos.blockers_for_king(Us))
                  - 873 * !pos.count<QUEEN>(Them)
                  -   6 * mg_value(score) / 8
                  +       mg_value(mobility[Them] - mobility[Us])
