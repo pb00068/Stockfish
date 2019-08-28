@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -85,6 +86,7 @@ namespace {
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
+  constexpr int PawnSafeCheck   = 250;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -379,11 +381,12 @@ namespace {
   Score Evaluation<T>::king() const {
 
     constexpr Color    Them = (Us == WHITE ? BLACK : WHITE);
+    constexpr Direction Down = (Us == WHITE ? SOUTH : NORTH);
     constexpr Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
 
     Bitboard weak, b1, b2, safe, unsafeChecks = 0;
-    Bitboard rookChecks, queenChecks, bishopChecks, knightChecks;
+    Bitboard rookChecks, queenChecks, bishopChecks, knightChecks, pawnchecks;
     int kingDanger = 0;
     const Square ksq = pos.square<KING>(Us);
 
@@ -401,6 +404,14 @@ namespace {
 
     b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
     b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+
+    pawnchecks = shift<Down>(pos.pieces(Them, PAWN)) & ~pos.pieces() & PawnAttacks[Us][ksq];
+    if (pawnchecks & safe)
+    {
+        //sync_cout << pos << "\n Pawnchecks \n" << Bitboards::pretty(pawnchecks) << " \npawn_attacks_to_king\n " << Bitboards::pretty(pawn_attacks_bb<Us>(unsafeChecks | ksq)) << sync_endl;
+        kingDanger += PawnSafeCheck;
+    }
+    else unsafeChecks |= pawnchecks;
 
     // Enemy rooks checks
     rookChecks = b1 & safe & attackedBy[Them][ROOK];
