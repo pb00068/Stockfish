@@ -86,7 +86,7 @@ namespace {
   constexpr int RookSafeCheck   = 1080;
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
-  constexpr int PawnSafeCheck   = 250;
+  constexpr int PawnSafeCheck   = 350;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -405,13 +405,6 @@ namespace {
     b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
     b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
 
-    pawnchecks = shift<Down>(pos.pieces(Them, PAWN)) & ~pos.pieces() & PawnAttacks[Us][ksq];
-    if (pawnchecks & safe)
-    {
-        //sync_cout << pos << "\n Pawnchecks \n" << Bitboards::pretty(pawnchecks) << " \npawn_attacks_to_king\n " << Bitboards::pretty(pawn_attacks_bb<Us>(unsafeChecks | ksq)) << sync_endl;
-        kingDanger += PawnSafeCheck;
-    }
-    else unsafeChecks |= pawnchecks;
 
     // Enemy rooks checks
     rookChecks = b1 & safe & attackedBy[Them][ROOK];
@@ -451,6 +444,18 @@ namespace {
         kingDanger += KnightSafeCheck;
     else
         unsafeChecks |= knightChecks;
+
+    if (kingDanger)
+    {
+       b1 = shift<Down>(pos.pieces(Them, PAWN)) & ~pos.pieces() & PawnAttacks[Us][ksq];
+       if (b1 & safe)
+       {
+           //sync_cout << pos << "\n Pawnchecks \n" << Bitboards::pretty(pawnchecks) << " \npawn_attacks_to_king\n " << Bitboards::pretty(PawnAttacks[Us][ksq]) << sync_endl;
+           kingDanger += PawnSafeCheck;
+       }
+       else unsafeChecks |= b1;
+    }
+
 
     // Find the squares that opponent attacks in our king flank, and the squares
     // which are attacked twice in that flank.
