@@ -86,8 +86,6 @@ namespace {
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
 
-  constexpr int FreezedKing = 200;
-
 #define S(mg, eg) make_score(mg, eg)
 
   // MobilityBonus[PieceType-2][attacked] contains bonuses for middle and end game,
@@ -461,10 +459,8 @@ namespace {
                  -   6 * mg_value(score) / 8
                  +       mg_value(mobility[Them] - mobility[Us])
                  +   5 * kingFlankAttacks * kingFlankAttacks / 16
+                 +  70 * !bool(attackedBy[Us][KING] & ~attackedBy[Them][ALL_PIECES]) // king surrounded by attacked squares
                  -   7;
-
-    if (! (attackedBy[Us][KING] & ~(pos.pieces(Us, PAWN) | attackedBy[Them][ALL_PIECES] ))) // king-mobility zero
-        kingDanger += FreezedKing + ((bool) knightChecks) * FreezedKing;
 
     // Transform the kingDanger units into a Score, and subtract it from the evaluation
     if (kingDanger > 100)
