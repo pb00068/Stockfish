@@ -86,7 +86,7 @@ namespace {
   constexpr int BishopSafeCheck = 635;
   constexpr int KnightSafeCheck = 790;
 
-  constexpr int FreezedKing = 100;
+  constexpr int FreezedKing = 200;
 
 #define S(mg, eg) make_score(mg, eg)
 
@@ -463,7 +463,7 @@ namespace {
                  +   5 * kingFlankAttacks * kingFlankAttacks / 16
                  -   7;
 
-    if (! (attackedBy[Us][KING] & ~(pos.pieces(Us) | attackedBy[Them][ALL_PIECES] ))) // king-mobility zero
+    if (! (attackedBy[Us][KING] & ~(pos.pieces(Us, PAWN) | attackedBy[Them][ALL_PIECES] ))) // king-mobility zero
         kingDanger += FreezedKing + ((bool) knightChecks) * FreezedKing;
 
     // Transform the kingDanger units into a Score, and subtract it from the evaluation
