@@ -142,7 +142,7 @@ namespace {
   constexpr Score RookOnPawn         = S( 10, 32);
   constexpr Score SliderOnQueen      = S( 59, 18);
   constexpr Score ThreatByKing       = S( 24, 89);
-  constexpr Score ThreatByPawnPush   = S( 38, 31);
+  constexpr Score ThreatByPawnPush   = S( 42, 34);
   constexpr Score ThreatByRank       = S( 13,  0);
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
@@ -558,14 +558,13 @@ namespace {
 
     // Bonus for safe pawn threats on the next move
     b = pawn_attacks_bb<Us>(b) & nonPawnEnemies;
-    score += ThreatByPawnPush * popcount(b);
+    score += ThreatByPawnPush * popcount(b) * popcount(b);
+
 
     // Bonus for threats on the next moves against enemy queen
     if (pos.count<QUEEN>(Them) == 1)
     {
         Square s = pos.square<QUEEN>(Them);
-        if (b & s)
-            score += ThreatByPawnPush;
         safe = mobilityArea[Us] & ~stronglyProtected;
 
         b = attackedBy[Us][KNIGHT] & pos.attacks_from<KNIGHT>(s);
