@@ -118,8 +118,8 @@ void MovePicker::score() {
                    + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)] / 2;
-          if (m.value < 0 && type_of(pos.moved_piece(m)) == KING)
-              m.value/=4;
+          if (m.value < -8000 && type_of(pos.moved_piece(m)) == KING)
+              m.value = -8000;
       }
 
       else // Type == EVASIONS
