@@ -565,7 +565,7 @@ namespace {
     {
         Square s = pos.square<QUEEN>(Them);
         if (b & s)
-            score += ThreatByPawnPush;
+            score += ThreatByPawnPush * 2;
         safe = mobilityArea[Us] & ~stronglyProtected;
 
         b = attackedBy[Us][KNIGHT] & pos.attacks_from<KNIGHT>(s);
