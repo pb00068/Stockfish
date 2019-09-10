@@ -135,7 +135,11 @@ namespace {
   int myHangMM = 90, myHangEE = 40;
   Score Hanging            = S( myHangM, myHangE);
   Score HangingPiece       = S( myHangMM, myHangEE);
-  TUNE(SetRange(30, 90), myHangM, SetRange(15, 40), myHangE, SetRange(15, 110), myHangMM, SetRange(15, 110), myHangEE);
+  void initTune() {
+      Hanging            = S( myHangM, myHangE);
+     HangingPiece       = S( myHangMM, myHangEE);
+  }
+  TUNE(SetRange(30, 90), myHangM, SetRange(15, 40), myHangE, SetRange(15, 110), myHangMM, SetRange(15, 110), myHangEE, initTune);
   constexpr Score KingProtector      = S(  7,  8);
   constexpr Score KnightOnQueen      = S( 16, 12);
   constexpr Score LongDiagonalBishop = S( 45,  0);
