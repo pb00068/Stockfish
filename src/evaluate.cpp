@@ -131,11 +131,11 @@ namespace {
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
 
-  int myHangM = 69, myHangE = 36;
+  int myHangM = 60, myHangE = 30;
   int myHangMM = 90, myHangEE = 40;
-  constexpr Score Hanging            = S( myHangM, myHangE);
-  constexpr Score HangingPiece       = S( myHangMM, myHangEE);
-  TUNE(SetRange(30, 90), myHangM, SetRange(15, 40), myHangE, SetRange(30, 110), myHangMM, SetRange(30, 110), myHangEE);
+  Score Hanging            = S( myHangM, myHangE);
+  Score HangingPiece       = S( myHangMM, myHangEE);
+  TUNE(SetRange(30, 90), myHangM, SetRange(15, 40), myHangE, SetRange(15, 110), myHangMM, SetRange(15, 110), myHangEE);
   constexpr Score KingProtector      = S(  7,  8);
   constexpr Score KnightOnQueen      = S( 16, 12);
   constexpr Score LongDiagonalBishop = S( 45,  0);
