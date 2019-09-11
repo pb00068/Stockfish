@@ -130,8 +130,8 @@ namespace {
   constexpr Score BishopPawns        = S(  3,  7);
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
-  constexpr Score Hanging            = S( 52, 40);
-  constexpr Score HangingPiece       = S( 60, 50);
+  constexpr Score Hanging            = S( 42, 33);
+  constexpr Score HangingPiece       = S(120,100);
   constexpr Score KingProtector      = S(  7,  8);
   constexpr Score KnightOnQueen      = S( 16, 12);
   constexpr Score LongDiagonalBishop = S( 45,  0);
@@ -530,13 +530,13 @@ namespace {
         if (weak & attackedBy[Us][KING])
             score += ThreatByKing;
 
-         b =  ~attackedBy[Them][ALL_PIECES]
+        b =  ~attackedBy[Them][ALL_PIECES]
            | (nonPawnEnemies & attackedBy2[Us]);
+        score += Hanging * popcount(weak & b);
 
-        score += Hanging * popcount(b & weak);
-
-        if ((b & weak) && Us == pos.side_to_move()) // null-moves are pretty rare nowadays, so here a sideToMove dependency seems to be justified
+        if (((weak & b) && Us == pos.side_to_move()) || more_than_one(weak & b) ) // null-moves are pretty rare nowadays, so here a sideToMove dependency seems to be justified
             score += HangingPiece * popcount(nonPawnEnemies & attackedBy[Us][ALL_PIECES] & ~attackedBy[Them][ALL_PIECES]);
+
     }
 
     // Bonus for restricting their piece moves
