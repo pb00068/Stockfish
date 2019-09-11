@@ -1150,7 +1150,7 @@ moves_loop: // When in check, search starts from here
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
-          doFullDepthSearch = (value > alpha && ((d != newDepth && !escapeCapture) || d < newDepth - ONE_PLY)), doLMR = true;
+          doFullDepthSearch = (value > alpha && d != newDepth), doLMR = true;
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1, doLMR = false;
@@ -1158,8 +1158,8 @@ moves_loop: // When in check, search starts from here
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
       {
-          if (escapeCapture)
-              newDepth = newDepth - ONE_PLY;
+          if (escapeCapture && !extension && newDepth < 10 * ONE_PLY)
+              newDepth = newDepth + ONE_PLY;
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
           if (doLMR && !captureOrPromotion)
