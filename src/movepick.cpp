@@ -105,26 +105,17 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  int i=0, sum=0;
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
-      {
           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)] / 2;
-          sum+=m.value;
-          i++;
-          if ((pos.get_stateInfo()->checkSquares[type_of(pos.moved_piece(m))] & to_sq(m)))
-              m.value += abs(sum/i);
-      }
-
-
       else // Type == EVASIONS
       {
           if (pos.capture(m))
@@ -221,11 +212,11 @@ top:
       /* fallthrough */
 
   case QUIET:
-      if (   !skipQuiets
-          && select<Next>([&](){return   *cur != refutations[0].move
+      if ( select<Next>([&](){return   *cur != refutations[0].move
                                       && *cur != refutations[1].move
                                       && *cur != refutations[2].move;}))
-          return *(cur - 1);
+          if (!skipQuiets || ((pos.get_stateInfo()->checkSquares[type_of(pos.piece_on(from_sq(cur->move)))] & to_sq(cur->move))))
+              return *(cur - 1);
 
       // Prepare the pointers to loop over the bad captures
       cur = moves;
