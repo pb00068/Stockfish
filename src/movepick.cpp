@@ -215,7 +215,7 @@ top:
       if ( select<Next>([&](){return   *cur != refutations[0].move
                                       && *cur != refutations[1].move
                                       && *cur != refutations[2].move;}))
-          if (!skipQuiets || ((pos.get_stateInfo()->checkSquares[type_of(pos.piece_on(from_sq(cur->move)))] & to_sq(cur->move))))
+          if (!skipQuiets || ((pos.get_stateInfo()->checkSquares[type_of(pos.piece_on(from_sq((cur-1)->move)))] & to_sq((cur-1)->move))))
               return *(cur - 1);
 
       // Prepare the pointers to loop over the bad captures
