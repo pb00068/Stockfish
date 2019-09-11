@@ -161,6 +161,7 @@ public:
   Score psq_score() const;
   Value non_pawn_material(Color c) const;
   Value non_pawn_material() const;
+  StateInfo* get_stateInfo() const;
 
   // Position consistency check, for debugging
   bool pos_is_ok() const;
@@ -270,6 +271,10 @@ inline bool Position::is_on_semiopen_file(Color c, Square s) const {
 
 inline bool Position::can_castle(CastlingRights cr) const {
   return st->castlingRights & cr;
+}
+
+inline StateInfo* Position::get_stateInfo() const {
+    return st;
 }
 
 inline int Position::castling_rights(Color c) const {
