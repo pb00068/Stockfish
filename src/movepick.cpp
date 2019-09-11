@@ -105,6 +105,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
+  int i=0, sum=0;
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
@@ -117,9 +118,10 @@ void MovePicker::score() {
                    + (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    + (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)] / 2;
-          if (m.value == 0 && (pos.get_stateInfo()->checkSquares[type_of(pos.moved_piece(m))] & to_sq(m)))
-              m.value = 4000;
-
+          sum+=m.value;
+          i++;
+          if ((pos.get_stateInfo()->checkSquares[type_of(pos.moved_piece(m))] & to_sq(m)))
+              m.value += abs(sum/i);
       }
 
 
