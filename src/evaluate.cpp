@@ -110,7 +110,7 @@ namespace {
   // no (friendly) pawn on the rook file.
   constexpr Score RookOnFile[] = { S(18, 7), S(44, 20) };
 
-  constexpr Score RookOnQueenFile[] = { S(8, 2), S(21, 8) };
+  constexpr Score RookOnQueenFile[] = { S(9, 3), S(17, 5) };
 
   // ThreatByMinor/ByRook[attacked PieceType] contains bonuses according to
   // which piece type attacks which one. Attacks on lesser pieces which are
