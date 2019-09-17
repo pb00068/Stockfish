@@ -110,7 +110,7 @@ namespace {
   // no (friendly) pawn on the rook file.
   constexpr Score RookOnFile[] = { S(18, 7), S(44, 20) };
 
-  constexpr Score RookOnQueenFile[] = { S(8, 2), S(21, 8) };
+  constexpr Score RookOnQueenFile[] = { S(8, 3), S(21, 8) };
 
   // ThreatByMinor/ByRook[attacked PieceType] contains bonuses according to
   // which piece type attacks which one. Attacks on lesser pieces which are
@@ -350,7 +350,7 @@ namespace {
 
             // Bonus for rook on the same file as a queen
             if (file_bb(s) & pos.pieces(Them, QUEEN))
-                score += RookOnQueenFile[bool(pos.is_on_semiopen_file(Us, s))];
+                score += RookOnQueenFile[bool(pos.is_on_semiopen_file(Us, s) || pos.is_on_semiopen_file(Them, s))];
 
             // Bonus for rook on an open or semi-open file
             if (pos.is_on_semiopen_file(Us, s))
