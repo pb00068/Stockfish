@@ -1072,19 +1072,26 @@ moves_loop: // When in check, search starts from here
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[movedPiece][to_sq(move)];
 
+      doLMR = (    depth >= 3 * ONE_PLY
+              &&  moveCount > 1 + 2 * rootNode
+              && (!rootNode || thisThread->best_move_count(move) == 0)
+              && (  !captureOrPromotion
+                  || moveCountPruning
+                  || ss->staticEval + PieceValue[EG][type_of(move) == ENPASSANT ? W_PAWN : pos.piece_on(to_sq(move))] <= alpha
+                  || cutNode));
+
+
+      bool badMove = !captureOrPromotion && !cutNode && doLMR && !pos.see_ge(move);
+
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
+
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
-      if (    depth >= 3 * ONE_PLY
-          &&  moveCount > 1 + 2 * rootNode
-          && (!rootNode || thisThread->best_move_count(move) == 0)
-          && (  !captureOrPromotion
-              || moveCountPruning
-              || ss->staticEval + PieceValue[EG][pos.captured_piece()] <= alpha
-              || cutNode))
+      if (doLMR)
       {
+
           Depth r = reduction(improving, depth, moveCount);
 
           // Reduction if other threads are searching this position.
@@ -1115,8 +1122,8 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)) && !pos.see_ge(move))
+              else if ( badMove && type_of(move) == NORMAL
+                       && !pos.see_ge(reverse_move(move)))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
