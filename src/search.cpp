@@ -1116,7 +1116,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
+                       && !pos.see_ge(reverse_move(move)) && !pos.see_ge(move))
                   r -= 2 * ONE_PLY;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
