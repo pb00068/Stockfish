@@ -1117,7 +1117,7 @@ moves_loop: // When in check, search starts from here
               // hence break make_move(). (~5 Elo)
               else if (    type_of(move) == NORMAL
                        && !pos.see_ge(reverse_move(move)))
-                  r -= 2 * ONE_PLY + givesCheck * ONE_PLY;
+                  r -= ONE_PLY + givesCheck * ONE_PLY;
 
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
