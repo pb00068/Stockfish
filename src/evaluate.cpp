@@ -133,8 +133,8 @@ namespace {
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
   constexpr Score KingProtector      = S(  7,  8);
-  constexpr Score KnightOnQueen      = S( 16, 12);
-  constexpr Score RoyalFork          = S( 0, 0);
+  constexpr Score KnightOnQueen      = S( 12,  9);
+  constexpr Score HeavyFork          = S( 10,  8);
   constexpr Score LongDiagonalBishop = S( 45,  0);
   constexpr Score MinorBehindPawn    = S( 18,  3);
   constexpr Score Outpost            = S( 16,  5);
@@ -555,20 +555,16 @@ namespace {
     if (pos.count<QUEEN>(Them) == 1)
     {
         Square s = pos.square<QUEEN>(Them);
-        safe = mobilityArea[Us] & ~stronglyProtected;
+        safe = mobilityArea[Us] & ~stronglyProtected & ~attackedBy[Them][KING];
 
         b = attackedBy[Us][KNIGHT] & pos.attacks_from<KNIGHT>(s) & safe;
 
         while (b) {
             Square sq = pop_lsb(&b);
             score += KnightOnQueen;
-            if (PseudoAttacks[KNIGHT][sq] & pos.pieces(Them, KING, ROOK))
-            {
-                score += RoyalFork;
-                sync_cout << pos << " us " << Us << " " <<Bitboards::pretty(mobilityArea[Us]) <<  Bitboards::pretty(PseudoAttacks[KNIGHT][sq] & pos.pieces(Them, KING, ROOK)) << sync_endl;
-            }
+            if ((~attackedBy[Them][ALL_PIECES] & sq) && (PseudoAttacks[KNIGHT][sq] & pos.pieces(Them, KING, ROOK)))
+                score += HeavyFork;
         }
-
 
 
         b =  (attackedBy[Us][BISHOP] & pos.attacks_from<BISHOP>(s))
