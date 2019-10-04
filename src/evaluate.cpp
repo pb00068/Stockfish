@@ -553,9 +553,11 @@ namespace {
     if (pos.count<QUEEN>(Them) == 1)
     {
         Square s = pos.square<QUEEN>(Them);
-        safe = mobilityArea[Us] & ~stronglyProtected & ~attackedBy[Them][KING];
+        safe = mobilityArea[Us] & ~stronglyProtected;
 
         b = attackedBy[Us][KNIGHT] & pos.attacks_from<KNIGHT>(s);
+        if ((b & safe) && !pos.castling_rights(Them))
+                safe&= ~attackedBy[Them][KING];
 
         score += KnightOnQueen * popcount(b & safe);
 
