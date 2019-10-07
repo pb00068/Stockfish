@@ -132,7 +132,8 @@ namespace {
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
   constexpr Score KingProtector      = S(  7,  8);
-  constexpr Score KnightOnQueen      = S(  8,  6);
+  constexpr Score KnightOnQueen1     = S( 12,  9);
+  constexpr Score KnightOnQueen2     = S(  8,  6);
   constexpr Score LongDiagonalBishop = S( 45,  0);
   constexpr Score MinorBehindPawn    = S( 18,  3);
   constexpr Score Outpost            = S( 16,  5);
@@ -559,8 +560,8 @@ namespace {
 
         if (b & safe)
         {
-            score += KnightOnQueen * popcount(b & safe);
-            score += KnightOnQueen * popcount(b & safe & ~attackedBy[Them][ALL_PIECES]);
+            score += KnightOnQueen1 * popcount(b & safe);
+            score += KnightOnQueen2 * popcount(b & safe & ~attackedBy[Them][ALL_PIECES]);
         }
 
         b =  (attackedBy[Us][BISHOP] & pos.attacks_from<BISHOP>(s))
