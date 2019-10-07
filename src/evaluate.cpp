@@ -560,7 +560,7 @@ namespace {
         if (b & safe)
         {
             score += KnightOnQueen * popcount(b & safe);
-            score += KnightOnQueen * popcount(b & safe & ~attackedBy[Them][KING]);
+            score += KnightOnQueen * popcount(b & safe & ~attackedBy[Them][ALL_PIECES]);
         }
 
         b =  (attackedBy[Us][BISHOP] & pos.attacks_from<BISHOP>(s))
