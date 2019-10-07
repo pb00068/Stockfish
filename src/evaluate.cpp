@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -319,8 +320,8 @@ namespace {
                 score -= BishopPawns * pos.pawns_on_same_color_squares(Us, s)
                                      * (1 + popcount(blocked & CenterFiles));
 
-                // Bonus for bishop on a long diagonal which can "see" both center squares
-                if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
+                // Bonus for bishop on a long diagonal which can "see" both center squares or enemy rooks
+                if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & (Center | pos.pieces(Them, ROOK))))
                     score += LongDiagonalBishop;
             }
 
@@ -531,7 +532,7 @@ namespace {
     score += RestrictedPiece * popcount(b);
 
     // Protected or unattacked squares
-    safe = ~attackedBy[Them][ALL_PIECES] | attackedBy[Us][PAWN] | attackedBy2[Us];
+    safe = ~attackedBy[Them][ALL_PIECES] | attackedBy[Us][ALL_PIECES];
 
     // Bonus for attacking enemy pieces with our relatively safe pawns
     b = pos.pieces(Us, PAWN) & safe;
