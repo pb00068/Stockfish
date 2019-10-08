@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -146,6 +147,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
+  constexpr Score BishopThreatRooks  = S( 20, 15);
 
 #undef S
 
@@ -204,6 +206,8 @@ namespace {
     // a white knight on g5 and black's king is on g8, this white knight adds 2
     // to kingAttacksCount[WHITE].
     int kingAttacksCount[COLOR_NB];
+
+    Bitboard rookDiagonal [COLOR_NB];
   };
 
 
@@ -246,7 +250,7 @@ namespace {
         kingRing[Us] |= shift<EAST>(kingRing[Us]);
 
     kingAttackersCount[Them] = popcount(kingRing[Us] & pe->pawn_attacks(Them));
-    kingAttacksCount[Them] = kingAttackersWeight[Them] = 0;
+    kingAttacksCount[Them] = kingAttackersWeight[Them] = rookDiagonal[Them]=0;
 
     // Remove from kingRing[] the squares defended by two pawns
     kingRing[Us] &= ~dblAttackByPawn;
@@ -355,6 +359,21 @@ namespace {
                 File kf = file_of(pos.square<KING>(Us));
                 if ((kf < FILE_E) == (file_of(s) < kf))
                     score -= TrappedRook * (1 + !pos.castling_rights(Us));
+            }
+
+            if (pos.count<ROOK>(Us) == 2 && attackedBy[Them][BISHOP])
+            {
+                if (rookDiagonal[Us])
+                {
+                    rookDiagonal[Us] &= attacks_bb<BISHOP>( s, pos.pieces() ^ pos.pieces(Us, ROOK)) | s;
+                    if (popcount(rookDiagonal[Us]) > 2)
+                    {
+                        if (attackedBy[Them][BISHOP] & rookDiagonal[Us] & ~attackedBy[Us][ALL_PIECES] & ~pos.pieces(Them))
+                            score -= BishopThreatRooks;
+                    }
+                }
+                else
+                    rookDiagonal[Us] = attacks_bb<BISHOP>( s, pos.pieces() ^ pos.pieces(Us, ROOK)) | s;
             }
         }
 
@@ -564,6 +583,8 @@ namespace {
 
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]);
     }
+
+
 
     if (T)
         Trace::add(THREAT, Us, score);
@@ -801,8 +822,9 @@ namespace {
     // Pieces should be evaluated first (populate attack tables)
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
             + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
-            + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
             + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
+    score +=  pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >();
+
 
     score += mobility[WHITE] - mobility[BLACK];
 
