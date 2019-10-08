@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -146,6 +147,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
+  constexpr Score RookBishopExchange = S( 25, 20);
 
 #undef S
 
@@ -428,7 +430,15 @@ namespace {
                   & ~queenChecks;
 
     if (bishopChecks)
+    {
         kingDanger += BishopSafeCheck;
+        while (bishopChecks)
+        {
+            Square s= pop_lsb(&bishopChecks);
+            if (pos.attacks_from(BISHOP, s) & pos.pieces(Us, ROOK))
+                score -= RookBishopExchange;
+        }
+    }
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
 
