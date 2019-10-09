@@ -432,7 +432,7 @@ namespace {
     {
         kingDanger += BishopSafeCheck;
         if (pos.attacks_from(BISHOP, lsb(bishopChecks)) & pos.pieces(Us, ROOK))
-            kingDanger += BishopSafeCheck/2;
+            kingDanger += BishopSafeCheck / 2;
     }
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
