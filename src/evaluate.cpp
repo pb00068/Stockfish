@@ -145,7 +145,7 @@ namespace {
   constexpr Score ThreatByKing       = S( 24, 89);
   constexpr Score ThreatByPawnPush   = S( 48, 39);
   constexpr Score ThreatBySafePawn   = S(173, 94);
-  constexpr Score ThreatByBishopCheck= S( 10, 10);
+  constexpr Score ThreatByBishopCheck= S( 15, 15);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
 
@@ -432,7 +432,7 @@ namespace {
     if (bishopChecks)
     {
         kingDanger += BishopSafeCheck;
-        if (pos.attacks_from(BISHOP, lsb(bishopChecks)) & pos.pieces(Us, ROOK))
+        if (pos.attacks_from(BISHOP, lsb(bishopChecks)) & pos.pieces(Us, ROOK) & ~attackedBy[Them][BISHOP])
             score -= ThreatByBishopCheck;
     }
     else
