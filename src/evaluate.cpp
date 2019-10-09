@@ -84,7 +84,7 @@ namespace {
   // Penalties for enemy's safe checks
   constexpr int QueenSafeCheck  = 780;
   constexpr int RookSafeCheck   = 1080;
-  constexpr int BishopSafeCheck = 635;
+  constexpr int BishopSafeCheck = 630;
   constexpr int KnightSafeCheck = 790;
 
 #define S(mg, eg) make_score(mg, eg)
@@ -147,7 +147,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
-  constexpr Score RookBishopExchange = S( 25, 20);
+  constexpr Score RookBishopExchange = S( 45, 30);
 
 #undef S
 
@@ -432,12 +432,8 @@ namespace {
     if (bishopChecks)
     {
         kingDanger += BishopSafeCheck;
-        while (bishopChecks)
-        {
-            Square s= pop_lsb(&bishopChecks);
-            if (pos.attacks_from(BISHOP, s) & pos.pieces(Us, ROOK))
-                score -= RookBishopExchange;
-        }
+        if (pos.attacks_from(BISHOP, lsb(bishopChecks)) & pos.pieces(Us, ROOK))
+             score -= RookBishopExchange;
     }
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
