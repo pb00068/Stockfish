@@ -145,7 +145,7 @@ namespace {
   constexpr Score ThreatByKing       = S( 24, 89);
   constexpr Score ThreatByPawnPush   = S( 48, 39);
   constexpr Score ThreatBySafePawn   = S(173, 94);
-  constexpr Score ThreatByBishopCheck= S( 45, 45);
+  constexpr Score ThreatByBishopCheck= S( 12,  8);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
 
@@ -426,17 +426,17 @@ namespace {
     // which we can't give a queen check, because queen checks are more valuable.
     bishopChecks =  b2
                   & attackedBy[Them][BISHOP]
-                  & safe
                   & ~queenChecks;
 
-    if (bishopChecks)
-    {
+    if (bishopChecks & safe)
         kingDanger += BishopSafeCheck;
-        if (pos.side_to_move() == Them && (pos.attacks_from(BISHOP, lsb(bishopChecks)) & pos.pieces(Us, ROOK) & ~attackedBy[Them][BISHOP]))
-            score -= ThreatByBishopCheck;
-    }
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
+
+    if (bishopChecks
+     && pos.side_to_move() == Them
+     && (pos.pieces(Us, ROOK) & ~attackedBy[Them][BISHOP] & pos.attacks_from(BISHOP, lsb(bishopChecks))))
+        score -= ThreatByBishopCheck;
 
     // Enemy knights checks
     knightChecks = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
