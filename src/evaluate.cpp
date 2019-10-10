@@ -351,10 +351,10 @@ namespace {
                 score += RookOnFile[pos.is_on_semiopen_file(Them, s)];
 
             Color sqColor = (DarkSquares & s) ? BLACK : WHITE;
-            if (pos.is_BishopOnColor(sqColor, Them))
+            Color sqKColor = (DarkSquares & pos.square<KING>(Us)) ? BLACK : WHITE;
+            if (sqColor == sqKColor && (pos.pieces(Them, BISHOP) & ((DarkSquares & s) ? DarkSquares : ~DarkSquares)))
             {
-                Color sqKColor = (DarkSquares & pos.square<KING>(Us)) ? BLACK : WHITE;
-                if (sqColor == sqKColor && (pos.attacks_from(BISHOP, pos.square<KING>(Us)) & s))
+                if ((pos.attacks_from(BISHOP, pos.square<KING>(Us)) & s))
                     score -= RookOnKingDialogal;
             }
 
