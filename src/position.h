@@ -153,6 +153,7 @@ public:
   Color side_to_move() const;
   int game_ply() const;
   bool is_chess960() const;
+  bool is_BishopOnColor(Color squarecolor, Color pieceColor) const;
   Thread* this_thread() const;
   bool is_draw(int ply) const;
   bool has_game_cycle(int ply) const;
@@ -195,6 +196,7 @@ private:
   Thread* thisThread;
   StateInfo* st;
   bool chess960;
+  bool bishopOnColor[COLOR_NB][COLOR_NB];
 };
 
 namespace PSQT {
@@ -376,6 +378,10 @@ inline bool Position::is_chess960() const {
   return chess960;
 }
 
+inline bool Position::is_BishopOnColor(Color squarecolor, Color pieceColor) const {
+    return bishopOnColor[squarecolor][pieceColor];
+}
+
 inline bool Position::capture_or_promotion(Move m) const {
   assert(is_ok(m));
   return type_of(m) != NORMAL ? type_of(m) != CASTLING : !empty(to_sq(m));
@@ -405,6 +411,9 @@ inline void Position::put_piece(Piece pc, Square s) {
   pieceList[pc][index[s]] = s;
   pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
   psq += PSQT::psq[pc][s];
+  if (type_of(pc) == BISHOP )
+    bishopOnColor[bool(DarkSquares & s) ? BLACK : WHITE][color_of(pc)] = true;
+
 }
 
 inline void Position::remove_piece(Piece pc, Square s) {
@@ -423,6 +432,8 @@ inline void Position::remove_piece(Piece pc, Square s) {
   pieceList[pc][pieceCount[pc]] = SQ_NONE;
   pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
   psq -= PSQT::psq[pc][s];
+  if (type_of(pc) == BISHOP)
+      bishopOnColor[bool(DarkSquares & s) ? BLACK : WHITE][color_of(pc)] = bool(byTypeBB[type_of(pc)] & byColorBB[color_of(pc)] & (bool(DarkSquares & s) ? DarkSquares : ~DarkSquares ));
 }
 
 inline void Position::move_piece(Piece pc, Square from, Square to) {

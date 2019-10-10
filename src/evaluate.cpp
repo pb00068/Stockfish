@@ -140,6 +140,7 @@ namespace {
   constexpr Score PawnlessFlank      = S( 17, 95);
   constexpr Score RestrictedPiece    = S(  7,  7);
   constexpr Score RookOnQueenFile    = S(  7,  6);
+  constexpr Score RookOnKingDialogal = S(  7,  6);
   constexpr Score SliderOnQueen      = S( 59, 18);
   constexpr Score ThreatByKing       = S( 24, 89);
   constexpr Score ThreatByPawnPush   = S( 48, 39);
@@ -348,6 +349,14 @@ namespace {
             // Bonus for rook on an open or semi-open file
             if (pos.is_on_semiopen_file(Us, s))
                 score += RookOnFile[pos.is_on_semiopen_file(Them, s)];
+
+            Color sqColor = (DarkSquares & s) ? BLACK : WHITE;
+            if (pos.is_BishopOnColor(sqColor, Them))
+            {
+                Color sqKColor = (DarkSquares & pos.square<KING>(Us)) ? BLACK : WHITE;
+                if (sqColor == sqKColor && (pos.attacks_from(BISHOP, pos.square<KING>(Us)) & s))
+                    score -= RookOnKingDialogal;
+            }
 
             // Penalty when trapped by the king, even more if the king cannot castle
             else if (mob <= 3)
