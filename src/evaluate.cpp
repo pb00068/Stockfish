@@ -434,7 +434,6 @@ namespace {
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
 
     if (bishopChecks
-     && pos.side_to_move() == Them
      && (pos.pieces(Us, ROOK) & ~attackedBy[Them][BISHOP] & pos.attacks_from(BISHOP, lsb(bishopChecks))))
         score -= ThreatByBishopCheck;
 
