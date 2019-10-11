@@ -66,6 +66,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  escapeSq = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -80,6 +81,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
           && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  escapeSq = SQ_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -110,12 +112,15 @@ void MovePicker::score() {
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
-      else if (Type == QUIETS)
+      else if (Type == QUIETS) {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
+          if (m.value < 0 && escapeSq != SQ_NONE && from_sq(m) == escapeSq)
+              m.value = 100;
+      }
 
       else // Type == EVASIONS
       {

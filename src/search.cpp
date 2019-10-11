@@ -1178,8 +1178,18 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
+      if (move == ttMove
+         && value < alpha
+         && type_of(move) == NORMAL
+         && type_of(movedPiece) != PAWN
+         && !pos.see_ge(reverse_move(move)))
+          mp.escapeSq = from_sq(move);
+
       // Step 18. Undo move
       pos.undo_move(move);
+
+      //if (move == ttMove && mp.escapeSq != SQ_NONE)
+      //   sync_cout << pos << UCI::move(ttMove, pos.is_chess960()) << sync_endl;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 

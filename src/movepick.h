@@ -129,6 +129,8 @@ public:
                                            Move*);
   Move next_move(bool skipQuiets = false);
 
+  Square escapeSq;
+
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
