@@ -83,7 +83,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
           && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  escapeSq = SQ_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -134,8 +133,9 @@ void MovePicker::score() {
 
   if (Type == QUIETS && escapeSq != SQ_NONE)
       for (auto& m : *this)
-          if (from_sq(m) == escapeSq)
-              m.value += 15000;
+          if (from_sq(m) == escapeSq) {
+              m.value += 4 * int(PieceValue[MG][pos.moved_piece(m)]);
+          }
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
