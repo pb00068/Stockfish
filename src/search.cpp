@@ -1178,10 +1178,8 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
-      if (move == ttMove
+      if ((!quietCount || move == ttMove) //quiete move not scored yet
          && newDepth < 4
-         && tte->depth() < 4
-         && !captureOrPromotion
          && value < alpha
          && type_of(move) == NORMAL
          && !pos.see_ge(reverse_move(move)))

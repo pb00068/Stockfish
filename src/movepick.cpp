@@ -19,6 +19,7 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include "movepick.h"
 #include "misc.h"
@@ -134,7 +135,7 @@ void MovePicker::score() {
   if (Type == QUIETS && escapeSq != SQ_NONE)
       for (auto& m : *this)
           if (from_sq(m) == escapeSq)
-                m.value += int(PieceValue[MG][pos.moved_piece(m)]);
+              m.value += 15000;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
