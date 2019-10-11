@@ -1179,6 +1179,7 @@ moves_loop: // When in check, search starts from here
       }
 
       if (move == ttMove
+         && newDepth < 5
          && value < alpha
          && type_of(move) == NORMAL
          && type_of(movedPiece) != PAWN
