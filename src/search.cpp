@@ -1179,10 +1179,11 @@ moves_loop: // When in check, search starts from here
       }
 
       if (move == ttMove
-         && newDepth < 3
+         && newDepth < 4
+         && tte->depth() < 4
+         && !captureOrPromotion
          && value < alpha
          && type_of(move) == NORMAL
-         && type_of(movedPiece) != PAWN
          && !pos.see_ge(reverse_move(move)))
           mp.escapeSq = from_sq(move);
 

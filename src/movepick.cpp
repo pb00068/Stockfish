@@ -133,8 +133,8 @@ void MovePicker::score() {
 
   if (Type == QUIETS && escapeSq != SQ_NONE)
       for (auto& m : *this)
-          if (m.value < 0 && from_sq(m) == escapeSq)
-                m.value += 2 * int(PieceValue[MG][pos.moved_piece(m)]);
+          if (from_sq(m) == escapeSq)
+                m.value += int(PieceValue[MG][pos.moved_piece(m)]);
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
