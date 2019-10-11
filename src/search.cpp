@@ -1178,18 +1178,21 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
-      if (((!quietCount && move != ttMove) || (move == ttMove && tte->depth() < 3)) //quiet moves not scored yet
-         && newDepth < 2
-         && value < alpha
+      if (mp.escapeSq == SQ_NONE //quiet moves not scored yet
+         && depth < 3
+         && value <= alpha
+         && !captureOrPromotion
+         && type_of(movedPiece) != PAWN
          && type_of(move) == NORMAL
-         && !pos.see_ge(reverse_move(move)))
+         && (move != ttMove || tte->depth() < 3)
+         && !pos.see_ge(reverse_move(move), KnightValueMg - BishopValueMg))
           mp.escapeSq = from_sq(move);
 
       // Step 18. Undo move
       pos.undo_move(move);
 
-      //if (move == ttMove && mp.escapeSq != SQ_NONE)
-      //   sync_cout << pos << UCI::move(ttMove, pos.is_chess960()) << sync_endl;
+      //if (from_sq(move) == mp.escapeSq)
+       //  sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
