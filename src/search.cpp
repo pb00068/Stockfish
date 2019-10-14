@@ -1054,13 +1054,15 @@ moves_loop: // When in check, search starts from here
           else if (  !(givesCheck && extension))
 		{
 		  Bitboard b = (pos.blockers_for_king(us) & (pos.pieces(~us) ^ pos.pieces(~us, PAWN)));
-		  int threshold = -199;
-		  if (b & to_sq(move))
-			  threshold = -230; // kicking out the disco-check threatening piece might be good
-		  else if (b)
-			  threshold = -160; // ignoring the disco-check threatening piece might be worser
+		  Value threshold = Value(-199);
+		  if (b)
+		  {
+			  threshold = -Value(-190); // ignoring the disco-check threatening piece might be worser
+			  if (b & to_sq(move))
+		     	  threshold = Value(-210); // kicking out the disco-check threatening piece might be good
+		  }
 
-		  if (!pos.see_ge(move, Value(threshold) * depth)) // (~20 Elo)
+		  if (!pos.see_ge(move, threshold * depth)) // (~20 Elo)
 			continue;
 		}
       }
