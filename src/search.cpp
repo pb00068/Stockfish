@@ -1051,9 +1051,18 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-(31 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (  !(givesCheck && extension)
-                   && !pos.see_ge(move, Value(-199) * depth)) // (~20 Elo)
-                  continue;
+          else if (  !(givesCheck && extension))
+          {
+        	  Bitboard b = (pos.blockers_for_king(us) & (pos.pieces(~us) ^ pos.pieces(~us, PAWN)));
+        	  int threshold = -199;
+        	  if (b & to_sq(move))
+        		  threshold = -230; // kicking out the disco-check threatening piece might be good
+        	  else if (b)
+        		  threshold = -160; // ignoring the disco-check threatening piece might be worser
+
+        	  if (!pos.see_ge(move, Value(threshold) * depth)) // (~20 Elo)
+				continue;
+          }
       }
 
       // Speculative prefetch as early as possible
