@@ -594,7 +594,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
-    bool ttHit, ttPv, inCheck, givesCheck, improving, doLMR, priorCapture;
+    bool ttHit, ttPv, inCheck, givesCheck, improving, doLMR, bigChange;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, singularLMR;
@@ -602,7 +602,8 @@ namespace {
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
-    priorCapture = pos.captured_piece();
+    bigChange = bool(pos.captured_piece()) ||
+    		(is_ok((ss-1)->currentMove) && (type_of((ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING));
     Color us = pos.side_to_move();
     moveCount = captureCount = quietCount = singularLMR = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
@@ -682,7 +683,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply
-                if ((ss-1)->moveCount <= 2 && !priorCapture)
+                if ((ss-1)->moveCount <= 2 && !bigChange)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
             }
             // Penalty for a quiet ttMove that fails low
@@ -867,7 +868,7 @@ namespace {
                 probCutCount++;
 
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[inCheck][priorCapture][pos.moved_piece(move)][to_sq(move)];
+                ss->continuationHistory = &thisThread->continuationHistory[inCheck][bigChange][pos.moved_piece(move)][to_sq(move)];
 
                 assert(depth >= 5);
 
@@ -1068,7 +1069,7 @@ moves_loop: // When in check, search starts from here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[inCheck][priorCapture][movedPiece][to_sq(move)];
+      ss->continuationHistory = &thisThread->continuationHistory[inCheck][bigChange][movedPiece][to_sq(move)];
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1281,13 +1282,13 @@ moves_loop: // When in check, search starts from here
 
         // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
         if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
-            && !priorCapture)
+            && !bigChange)
                 update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
 
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
-             && !priorCapture)
+             && !bigChange)
         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
 
     if (PvNode)
@@ -1323,7 +1324,7 @@ moves_loop: // When in check, search starts from here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool ttHit, pvHit, inCheck, givesCheck, evasionPrunable, priorCapture;
+    bool ttHit, pvHit, inCheck, givesCheck, evasionPrunable, bigChange;
     int moveCount;
 
     if (PvNode)
@@ -1337,7 +1338,8 @@ moves_loop: // When in check, search starts from here
     (ss+1)->ply = ss->ply + 1;
     bestMove = MOVE_NONE;
     inCheck = pos.checkers();
-    priorCapture = pos.captured_piece();
+    bigChange = bool(pos.captured_piece()) ||
+    		(is_ok((ss-1)->currentMove) && (type_of((ss-1)->currentMove) == CASTLING || type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING));
     moveCount = 0;
 
     // Check for an immediate draw or maximum ply reached
@@ -1475,7 +1477,7 @@ moves_loop: // When in check, search starts from here
       }
 
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[inCheck][priorCapture][pos.moved_piece(move)][to_sq(move)];
+      ss->continuationHistory = &thisThread->continuationHistory[inCheck][bigChange][pos.moved_piece(move)][to_sq(move)];
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
