@@ -992,17 +992,10 @@ moves_loop: // When in check, search starts from here
       }
 
       // Check extension (~2 Elo)
-      else if (givesCheck)
-
-      {
-          if (pos.is_discovery_check_on_king(~us, move))
-          {
-        	  if (distance(to_sq(move), pos.square<KING>(~us)) > 1 || pos.see_ge(move))
-        	     extension = 1;
-          }
-          else if  (pos.see_ge(move))
+      else if (    givesCheck
+    		 && ((( pos.is_discovery_check_on_king(~us, move) && (ss+1)->killers[0] != make_move(pos.square<KING>(~us), to_sq(move)))
+             || pos.see_ge(move))))
         	  extension = 1;
-      }
 
       // Shuffle extension
       else if (   PvNode
