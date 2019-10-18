@@ -333,6 +333,7 @@ void Thread::search() {
   Color us = rootPos.side_to_move();
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
+  ss->clearanceSq=(ss+1)->clearanceSq=SQ_NONE;
   for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
 
@@ -642,6 +643,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->clearanceSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -909,7 +911,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, ss->clearanceSq);
 
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     moveCountPruning = false;
@@ -1274,8 +1276,12 @@ moves_loop: // When in check, search starts from here
     {
         // Quiet best move: update move sorting heuristics
         if (!pos.capture_or_promotion(bestMove))
+        {
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
                                stat_bonus(depth + (bestValue > beta + PawnValueMg)));
+            if(ttMove && ttMove != bestMove && from_sq(bestMove) == from_sq(ttMove))
+                    	ss->clearanceSq = from_sq(bestMove);
+        }
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + 1));
 
@@ -1283,7 +1289,6 @@ moves_loop: // When in check, search starts from here
         if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
             && !priorCapture)
                 update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
-
     }
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
