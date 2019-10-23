@@ -909,11 +909,12 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move countermove2 = thisThread->oldcounterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
-                                      countermove,
+                                      countermove,countermove2,
                                       ss->killers);
 
     value = bestValue;
@@ -1621,7 +1622,11 @@ moves_loop: // When in check, search starts from here
     if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
-        thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        if (thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] != move)
+        {
+        	  thisThread->oldcounterMoves[pos.piece_on(prevSq)][prevSq] = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+        	  thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        }
     }
 
     // Decrease all the other played quiet moves
