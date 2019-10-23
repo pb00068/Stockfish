@@ -909,12 +909,16 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    Move countermove2 = thisThread->oldcounterMoves[pos.piece_on(prevSq)][prevSq];
+    if (countermove != MOVE_NONE && (countermove == ss->killers[0] ||
+    	  countermove == ss->killers[1] ||
+				countermove == ttMove || !pos.legal(countermove)))
+
+    countermove = thisThread->oldcounterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
-                                      countermove,countermove2,
+                                      countermove,
                                       ss->killers);
 
     value = bestValue;

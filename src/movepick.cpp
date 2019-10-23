@@ -57,9 +57,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move cm2, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}, {cm2, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > 0);
 
@@ -183,18 +183,10 @@ top:
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
 
-      // If the cm2 is the same as a killer, skip it
-      if (   refutations[0].move == refutations[3].move
-          || refutations[1].move == refutations[3].move)
-          --endMoves;
-
-      // If the cm is the same as a killer, skip it
+      // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
-      {
-      	 refutations[2].move = refutations[3].move;
-         --endMoves;
-      }
+          --endMoves;
 
       ++stage;
       /* fallthrough */
@@ -224,7 +216,6 @@ top:
       if (   !skipQuiets
           && select<Next>([&](){return   *cur != refutations[0].move
                                       && *cur != refutations[1].move
-                                      && *cur != refutations[3].move
                                       && *cur != refutations[2].move;}))
           return *(cur - 1);
 
