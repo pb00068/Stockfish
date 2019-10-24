@@ -21,11 +21,12 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, COUNTERCAPTURE, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -57,8 +58,8 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move cc, Move* killers)
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), recaptureMove(cc),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > 0);
@@ -162,6 +163,14 @@ top:
       ++stage;
       return ttMove;
 
+  case COUNTERCAPTURE:
+  	++stage;
+  	if (recaptureMove && recaptureMove != ttMove && pos.capture(recaptureMove) && pos.pseudo_legal(recaptureMove))
+  		return recaptureMove;
+  	else
+  		recaptureMove = MOVE_NONE;
+
+
   case CAPTURE_INIT:
   case PROBCUT_INIT:
   case QCAPTURE_INIT:
@@ -174,6 +183,8 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
+      								 if (cur->move == recaptureMove)
+      									 return false;
                        return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))

@@ -910,10 +910,12 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
+    Move counterCapture = pos.captured_piece() ? thisThread->counterCaptures[pos.captured_piece()][prevSq] : MOVE_NONE;
+
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
-                                      countermove,
+                                      countermove, counterCapture,
                                       ss->killers);
 
     value = bestValue;
@@ -1282,6 +1284,9 @@ moves_loop: // When in check, search starts from here
         if (!pos.capture_or_promotion(bestMove))
             update_quiet_stats(pos, ss, bestMove, quietsSearched, quietCount,
                                stat_bonus(depth + (bestValue > beta + PawnValueMg)));
+        else if (pos.captured_piece())
+					 thisThread->counterCaptures[pos.captured_piece()][prevSq] = move;
+
 
         update_capture_stats(pos, bestMove, capturesSearched, captureCount, stat_bonus(depth + 1));
 
