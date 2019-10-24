@@ -680,6 +680,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, nullptr, 0, stat_bonus(depth));
+                else if (pos.captured_piece())
+                		thisThread->counterCaptures[pos.captured_piece()][prevSq] = move;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -910,7 +912,7 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    Move counterCapture = pos.captured_piece() ? thisThread->counterCaptures[pos.captured_piece()][prevSq] : MOVE_NONE;
+    Move counterCapture = pos.captured_piece() && depth < 4 ? thisThread->counterCaptures[pos.captured_piece()][prevSq] : MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
