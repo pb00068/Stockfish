@@ -21,7 +21,6 @@
 #include <cassert>
 
 #include "movepick.h"
-#include "misc.h"
 
 namespace {
 
@@ -165,7 +164,11 @@ top:
 
   case COUNTERCAPTURE:
   	++stage;
-  	if (recaptureMove && recaptureMove != ttMove && pos.capture(recaptureMove) && pos.pseudo_legal(recaptureMove))
+  	if (recaptureMove
+  			&& recaptureMove != ttMove
+				&& pos.capture(recaptureMove)
+				&& pos.pseudo_legal(recaptureMove)
+				&& pos.see_ge(recaptureMove))
   		return recaptureMove;
   	else
   		recaptureMove = MOVE_NONE;
@@ -183,7 +186,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-      								 if (cur->move == recaptureMove)
+                       if (cur->move == recaptureMove)
       									 return false;
                        return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
