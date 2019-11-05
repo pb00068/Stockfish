@@ -1577,7 +1577,7 @@ moves_loop: // When in check, search starts from here
     }
     else {
     	  captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (quietCount > 6 && captureHistory[moved_piece][to_sq(bestMove)][captured] < 5500)
+        if (quietCount > 6 && !pos.gives_check(bestMove))
         	// 'bad' capture became best-move, give him a extra-boost
           captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
     }
