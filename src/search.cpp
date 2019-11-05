@@ -865,7 +865,7 @@ namespace {
                && probCutCount < 2 + 2 * cutNode)
             if (move != excludedMove && pos.legal(move))
             {
-                //assert(pos.capture_or_promotion(move));
+                assert(!probCutCount || pos.capture_or_promotion(move));
                 assert(depth >= 5);
 
                 captureOrPromotion = probCutCount ? true : pos.capture_or_promotion(move);
@@ -891,13 +891,11 @@ namespace {
                       value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
                 }
                 else
-                  value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, clamp(depth - 4, tte->depth() - 1, tte->depth() + 1), !cutNode);
+                  value = -search<NonPV>(pos, ss+1, -(raisedBeta + 140), -(raisedBeta + 140) +1, clamp(depth - 4, tte->depth() - 3, tte->depth()), !cutNode);
 
                 pos.undo_move(move);
 
-                //dbg_hit_on(!captureOrPromotion, value >= raisedBeta);
-
-                if (value >= raisedBeta)
+                if (value >= raisedBeta + (captureOrPromotion ? 0 : 140))
                     return value;
             }
     }
