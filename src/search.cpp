@@ -1575,8 +1575,12 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
-    else
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+    else {
+    	  captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (quietCount > 6 && captureHistory[moved_piece][to_sq(bestMove)][captured] < 5500)
+        	// 'bad' capture became best-move, give him a extra-boost
+          captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
