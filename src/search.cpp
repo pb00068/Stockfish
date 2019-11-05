@@ -869,9 +869,9 @@ namespace {
                 assert(depth >= 5);
 
                 captureOrPromotion = probCutCount ? true : pos.capture_or_promotion(move);
-                probCutCount++;
 
-
+                if (!captureOrPromotion && tte->depth() < 5)
+                	continue;
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[inCheck]
@@ -884,6 +884,7 @@ namespace {
                 // Perform a preliminary qsearch to verify that the move holds
                 if (captureOrPromotion)
                 {
+                	probCutCount++;
                 	value = -qsearch<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1);
 
                   // If the qsearch held, perform the regular search
@@ -891,11 +892,11 @@ namespace {
                       value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
                 }
                 else
-                  value = -search<NonPV>(pos, ss+1, -(raisedBeta + 140), -(raisedBeta + 140) +1, clamp(depth - 4, tte->depth() - 3, tte->depth()), !cutNode);
+                  value = -search<NonPV>(pos, ss+1, -(raisedBeta + 160), -(raisedBeta + 160) +1, depth - 4, !cutNode);
 
                 pos.undo_move(move);
 
-                if (value >= raisedBeta + (captureOrPromotion ? 0 : 140))
+                if (value >= raisedBeta + (captureOrPromotion ? 0 : 160))
                     return value;
             }
     }
