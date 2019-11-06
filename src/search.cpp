@@ -670,7 +670,7 @@ namespace {
     if (  !PvNode
         && ttHit
 				&& ttValue != VALUE_NONE // Possible in case of TT access race
-        && tte->depth() >= depth - ((ttValue >= beta + 300) ? 1 : 0)
+        && tte->depth() >= depth - ((depth < 10 &&  ttValue >= beta + 400) ? 1 : 0)
 
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
@@ -678,20 +678,19 @@ namespace {
         // If ttMove is quiet, update move sorting heuristics on TT hit
         if (ttMove)
         {
-            Depth d = std::min(depth, tte->depth());
             if (ttValue >= beta)
             {
                 if (!pos.capture_or_promotion(ttMove))
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(d));
+                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
-                    update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(d + 1));
+                    update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
             {
-                int penalty = -stat_bonus(d);
+                int penalty = -stat_bonus(depth);
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
