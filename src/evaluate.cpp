@@ -146,6 +146,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
+  constexpr Score PinnerBonusMalus   = S(  8,  8);
 
 #undef S
 
@@ -557,6 +558,14 @@ namespace {
            | (attackedBy[Us][ROOK  ] & pos.attacks_from<ROOK  >(s));
 
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]);
+    }
+
+    if (pos.pinners(Them))
+    {
+    		if (pos.pinners(Them) & attackedBy[Us][ALL_PIECES])
+    				score += PinnerBonusMalus;
+    		else
+    			  score -= PinnerBonusMalus;
     }
 
     if (T)
