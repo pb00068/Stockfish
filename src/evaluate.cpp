@@ -143,7 +143,7 @@ namespace {
   constexpr Score SliderOnQueen      = S( 59, 18);
   constexpr Score ThreatByKing       = S( 24, 89);
   constexpr Score ThreatByPawnPush   = S( 48, 39);
-  constexpr Score AttackingPinner    = S(  8,  8);
+  constexpr Score PinnerBonusMalus   = S(  4,  4);
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
@@ -560,8 +560,13 @@ namespace {
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]);
     }
 
-    if (pos.pinners(Them) & attackedBy[Us][ALL_PIECES])
-    	  score += AttackingPinner;
+    if (pos.pinners(Them))
+    {
+    		if (pos.pinners(Them) & attackedBy[Us][ALL_PIECES])
+    				score += PinnerBonusMalus;
+    		else
+    			  score -= PinnerBonusMalus;
+    }
 
     if (T)
         Trace::add(THREAT, Us, score);
