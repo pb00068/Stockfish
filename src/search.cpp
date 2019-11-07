@@ -871,7 +871,6 @@ namespace {
                 captureOrPromotion = true;
                 probCutCount++;
 
-
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[inCheck]
                                                                           [captureOrPromotion]
@@ -884,10 +883,11 @@ namespace {
 
                 // when it seems our opponent just gave his rook/queen en price we can further raise beta
                 bool blunder = to_sq(move) == prevSq
-                            && type_of(pos.captured_piece()) >= ROOK
+                		        && depth >= 6
+                            && type_of(pos.captured_piece()) >= QUEEN
                             && type_of(pos.captured_piece()) > moved;
 
-                Value rB = raisedBeta + blunder * 70;
+                Value rB = raisedBeta + blunder * 50;
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -rB, -rB+1);
