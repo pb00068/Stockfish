@@ -877,28 +877,23 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                PieceType moved = type_of(pos.moved_piece(move));
+                PieceType captured = type_of(pos.piece_on(to_sq(move)));
+                bool realGoodCapture = depth >= 6 && captured >= ROOK && pos.see_ge(move, RookValueMg - PawnValueMg);
+                if  (realGoodCapture)
+                     raisedBeta += 40;
 
                 pos.do_move(move, st);
 
-                // when it seems our opponent just gave his rook/queen en price we can further raise beta
-                bool blunder = to_sq(move) == prevSq
-                		        && depth >= 6
-                            && type_of(pos.captured_piece()) >= QUEEN
-                            && type_of(pos.captured_piece()) > moved;
-
-                Value rB = raisedBeta + blunder * 50;
-
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -rB, -rB+1);
+                value = -qsearch<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1);
 
                 // If the qsearch held, perform the regular search
-                if (value >= rB)
-                    value = -search<NonPV>(pos, ss+1, -rB, -rB+1, depth - 4 - blunder, !cutNode);
+                if (value >= raisedBeta)
+                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4 - realGoodCapture, !cutNode);
 
                 pos.undo_move(move);
 
-                if (value >= rB)
+                if (value >= raisedBeta)
                     return value;
             }
     }
