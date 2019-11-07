@@ -871,24 +871,34 @@ namespace {
                 captureOrPromotion = true;
                 probCutCount++;
 
+
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[inCheck]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
+                PieceType moved = type_of(pos.moved_piece(move));
+
                 pos.do_move(move, st);
 
+                // when it seems our opponent just gave his rook/queen en price we can further raise beta
+                bool blunder = to_sq(move) == prevSq
+                            && type_of(pos.captured_piece()) >= ROOK
+                            && type_of(pos.captured_piece()) > moved;
+
+                Value rB = raisedBeta + blunder * 70;
+
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1);
+                value = -qsearch<NonPV>(pos, ss+1, -rB, -rB+1);
 
                 // If the qsearch held, perform the regular search
-                if (value >= raisedBeta)
-                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
+                if (value >= rB)
+                    value = -search<NonPV>(pos, ss+1, -rB, -rB+1, depth - 4 - blunder, !cutNode);
 
                 pos.undo_move(move);
 
-                if (value >= raisedBeta)
+                if (value >= rB)
                     return value;
             }
     }
