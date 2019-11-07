@@ -876,7 +876,6 @@ namespace {
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
-
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -889,7 +888,11 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= raisedBeta)
-                    return value;
+                {
+                	 if (!pos.captured_piece() && is_ok((ss-1)->currentMove))
+                	      (*(ss-2)->continuationHistory)[pos.piece_on(prevSq)][prevSq] << -stat_bonus(depth - 3);
+                   return value;
+                }
             }
     }
 
