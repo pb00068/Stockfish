@@ -146,7 +146,7 @@ namespace {
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
   constexpr Score WeakQueen          = S( 49, 15);
-  constexpr Score PinnerBonusMalus   = S(  8,  8);
+  constexpr Score AttackingPinner    = S(  6,  6);
 
 #undef S
 
@@ -560,12 +560,23 @@ namespace {
         score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]);
     }
 
-    if (pos.pinners(Them))
+    if (pos.pinners(Them) & weak)
     {
-    		if (pos.pinners(Them) & attackedBy[Us][ALL_PIECES])
-    				score += PinnerBonusMalus;
-    		else
-    			  score -= PinnerBonusMalus;
+    	   PieceType ptpinner = type_of(pos.piece_on(lsb(pos.pinners(Them) & weak)));
+    	   PieceType ptpinned = type_of(pos.piece_on(lsb(pos.blockers_for_king(Us) & pos.pieces(Us))));
+    	   PieceType pt = ptpinner;
+    	   if (ptpinned == PAWN)
+    	  	 ptpinned = NO_PIECE_TYPE;
+
+    	   while (pt > PAWN)
+    	   {
+    	  	 --pt;
+    	  	 if (ptpinner != ptpinned && (pos.pinners(Them) & attackedBy[Us][pt]))
+    	  	 {
+    	  		 	 score += AttackingPinner ;
+    	  		 	 break;
+    	  	 }
+    	   }
     }
 
     if (T)
