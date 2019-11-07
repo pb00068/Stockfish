@@ -895,6 +895,8 @@ namespace {
 
                 if (value >= raisedBeta)
                     return value;
+                if  (realGoodCapture)
+                    raisedBeta -= 40;
             }
     }
 
