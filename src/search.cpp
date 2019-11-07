@@ -890,7 +890,7 @@ namespace {
                 if (value >= raisedBeta)
                 {
                 	 if (!pos.captured_piece() && is_ok((ss-1)->currentMove))
-                	      (*(ss-2)->continuationHistory)[pos.piece_on(prevSq)][prevSq] << -stat_bonus(depth - 3);
+                	      (*(ss-1)->continuationHistory)[pos.piece_on(prevSq)][prevSq] << -stat_bonus(depth - 3);
                    return value;
                 }
             }
