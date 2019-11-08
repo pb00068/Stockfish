@@ -859,10 +859,10 @@ namespace {
     {
         Value raisedBeta = std::min(beta + 191 - 46 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
-        int probCutCount = 0;
+        int probCutCount = 0, passedQsearch = 0;
 
         while (  (move = mp.next_move()) != MOVE_NONE
-               && probCutCount < 2 + 2 * cutNode)
+               && probCutCount < 2 + 2 * cutNode + (passedQsearch / 2))
             if (move != excludedMove && pos.legal(move))
             {
                 assert(pos.capture_or_promotion(move));
@@ -884,9 +884,11 @@ namespace {
 
                 // If the qsearch held, perform the regular search
                 if (value >= raisedBeta)
+                {
+                	  passedQsearch++;
                     value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
-                else
-                	probCutCount++;
+                }
+
 
                 pos.undo_move(move);
 
