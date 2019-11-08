@@ -877,30 +877,28 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                PieceType captured = type_of(pos.piece_on(to_sq(move)));
-                PieceType moved = type_of(pos.moved_piece(move));
-                int increment = 0;
-                if ((captured >= ROOK  && moved <= PAWN) ||
-                    (captured >= QUEEN && moved <= BISHOP))
-                    increment = (PieceValue[MG][captured] - PieceValue[MG][moved]) / 64;
-
-                raisedBeta += increment;
-
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1);
 
+                int inc = 0;
+
                 // If the qsearch held, perform the regular search
                 if (value >= raisedBeta)
-                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
+                {
+                		pos.undo_move(move);
+                	  if (pos.see_ge(move, RookValueMg - PawnValueMg))
+                	  	inc = 25;
+                	  pos.do_move(move, st);
+                    value = -search<NonPV>(pos, ss+1, -(raisedBeta+inc), -(raisedBeta+inc)+1, depth - 4, !cutNode);
+                }
 
                 pos.undo_move(move);
 
-                if (value >= raisedBeta)
+                if (value >= raisedBeta+inc)
                     return value;
 
-                raisedBeta -= increment;
             }
     }
 
