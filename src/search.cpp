@@ -886,7 +886,7 @@ namespace {
                 if (value >= raisedBeta)
                     value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
                 else
-                	probCutCount++;
+                	probCutCount+=2;
 
                 pos.undo_move(move);
 
