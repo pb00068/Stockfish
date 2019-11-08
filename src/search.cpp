@@ -879,7 +879,7 @@ namespace {
 
                 PieceType captured = type_of(pos.piece_on(to_sq(move)));
                 PieceType moved = type_of(pos.moved_piece(move));
-                int increment = 0;
+                int increment =0;
                 if ((captured >= ROOK  && moved <= PAWN) ||
                     (captured >= QUEEN && moved <= BISHOP))
                     increment = (PieceValue[MG][captured] - PieceValue[MG][moved]) / 64;
