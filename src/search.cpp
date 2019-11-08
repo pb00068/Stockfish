@@ -857,7 +857,7 @@ namespace {
         &&  depth >= 5
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value raisedBeta = std::min(beta + 191 - 46 * improving, VALUE_INFINITE);
+        Value raisedBeta = std::min(beta + 186 - 46 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
@@ -878,9 +878,10 @@ namespace {
                                                                           [to_sq(move)];
 
                 PieceType captured = type_of(pos.piece_on(to_sq(move)));
-                bool realGoodCapture = depth >= 6 && captured >= ROOK && pos.see_ge(move, RookValueMg - PawnValueMg);
+                bool realGoodCapture = (captured >= ROOK  && type_of(pos.moved_piece(move)) <= PAWN) ||
+                                       (captured >= QUEEN && type_of(pos.moved_piece(move)) <= KNIGHT);
                 if  (realGoodCapture)
-                     raisedBeta += 40;
+                     raisedBeta += 18;
 
                 pos.do_move(move, st);
 
@@ -889,14 +890,15 @@ namespace {
 
                 // If the qsearch held, perform the regular search
                 if (value >= raisedBeta)
-                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4 - realGoodCapture, !cutNode);
+                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
 
                 pos.undo_move(move);
 
                 if (value >= raisedBeta)
                     return value;
+
                 if  (realGoodCapture)
-                    raisedBeta -= 40;
+                    raisedBeta -= 18;
             }
     }
 
