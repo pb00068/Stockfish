@@ -878,10 +878,13 @@ namespace {
                                                                           [to_sq(move)];
 
                 PieceType captured = type_of(pos.piece_on(to_sq(move)));
-                bool realGoodCapture = (captured >= ROOK  && type_of(pos.moved_piece(move)) <= PAWN) ||
-                                       (captured >= QUEEN && type_of(pos.moved_piece(move)) <= KNIGHT);
-                if  (realGoodCapture)
-                     raisedBeta += 18;
+                PieceType moved = type_of(pos.moved_piece(move));
+                int increment = 0;
+                if ((captured >= ROOK  && moved <= PAWN) ||
+                    (captured >= QUEEN && moved <= BISHOP))
+                    increment = int(captured - moved) * (8 + bool(captured == QUEEN) * 10);
+
+                raisedBeta += increment;
 
                 pos.do_move(move, st);
 
@@ -897,8 +900,7 @@ namespace {
                 if (value >= raisedBeta)
                     return value;
 
-                if  (realGoodCapture)
-                    raisedBeta -= 18;
+                raisedBeta -= increment;
             }
     }
 
