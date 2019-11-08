@@ -882,7 +882,7 @@ namespace {
                 int increment = 0;
                 if ((captured >= ROOK  && moved <= PAWN) ||
                     (captured >= QUEEN && moved <= BISHOP))
-                    increment = int(captured - moved) * (8 + bool(captured == QUEEN) * 10);
+                    increment = (PieceValue[MG][captured] - PieceValue[MG][moved]) / 64;
 
                 raisedBeta += increment;
 
