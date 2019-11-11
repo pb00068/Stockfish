@@ -869,7 +869,8 @@ namespace {
                 assert(depth >= 5);
 
                 captureOrPromotion = probCutCount || pos.capture_or_promotion(move);
-                probCutCount++;
+                if (pos.capture_or_promotion(move))
+                	probCutCount++;
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[inCheck]
