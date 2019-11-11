@@ -877,12 +877,14 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                bool negSee = raisedBeta - ss->staticEval < 0 && !pos.see_ge(move, Value(0));
+                bool smallEdge = raisedBeta - ss->staticEval < BishopValueMg - KnightValueMg
+                                 && !pos.see_ge(move, BishopValueMg - KnightValueMg);
+                //dbg_hit_on(smallEdge); 10% with depth bench @ depth 16
 
                 pos.do_move(move, st);
 
                 // Perform a preliminary swallow search to verify that the move holds
-                value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, negSee * 1, !cutNode);
+                value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, smallEdge * 1, !cutNode);
 
                 // If the qsearch held, perform the regular search
                 if (value >= raisedBeta)
