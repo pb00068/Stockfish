@@ -860,7 +860,17 @@ namespace {
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value raisedBeta = std::min(beta + 191 - 46 * improving, VALUE_INFINITE);
-        MovePicker mp(pos, (ttMove && !pos.empty(to_sq(ttMove))) ? ttMove : ss->bestCapture, raisedBeta - ss->staticEval, &thisThread->captureHistory);
+        Move tt = (ttMove && pos.capture(ttMove)
+        && pos.pseudo_legal(ttMove)
+        && pos.see_ge(ttMove, raisedBeta - ss->staticEval)) ? ttMove : MOVE_NONE;
+
+        if (!tt &&
+        		(ss->bestCapture && pos.capture(ss->bestCapture)
+        		        && pos.pseudo_legal(ss->bestCapture)
+        		        && pos.see_ge(ss->bestCapture, raisedBeta - ss->staticEval)))
+									tt = ss->bestCapture;
+        //dbg_hit_on(tt && tt != ttMove);
+        MovePicker mp(pos, tt, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
         while (  (move = mp.next_move()) != MOVE_NONE
