@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -57,13 +58,14 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, Move capKiller)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
   assert(d > 0);
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
+  captureKiller = capKiller;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
@@ -84,7 +86,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph, Move capKiller)
            : pos(p), captureHistory(cph), threshold(th) {
 
   assert(!pos.checkers());
@@ -94,6 +96,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.capture(ttm)
           && pos.pseudo_legal(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
+  captureKiller = capKiller;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -108,7 +111,8 @@ void MovePicker::score() {
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
-                   + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+                   + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
+                   + (m.move == captureKiller ? 2500 : 0 );
 
       else if (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]

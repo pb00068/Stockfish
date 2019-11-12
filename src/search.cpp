@@ -860,7 +860,7 @@ namespace {
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
         Value raisedBeta = std::min(beta + 191 - 46 * improving, VALUE_INFINITE);
-        MovePicker mp(pos, (ttMove && !pos.empty(to_sq(ttMove))) ? ttMove : ss->bestCapture, raisedBeta - ss->staticEval, &thisThread->captureHistory);
+        MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory, ss->bestCapture);
         int probCutCount = 0;
 
         while (  (move = mp.next_move()) != MOVE_NONE
@@ -917,7 +917,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers,
+																			ss->bestCapture);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
