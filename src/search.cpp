@@ -919,7 +919,7 @@ moves_loop: // When in check, search starts from here
     if (ss->killerCapture
         && (!ttMove || !pos.pseudo_legal(ttMove))
         && pos.capture(ss->killerCapture)
-        && pos.see_ge (ss->killerCapture))
+        && pos.see_ge (ss->killerCapture, KnightValueMg))
     	ttM = ss->killerCapture;
 
     MovePicker mp(pos, ttM, depth, &thisThread->mainHistory,
@@ -1413,7 +1413,7 @@ moves_loop: // When in check, search starts from here
     if (ss->killerCapture
         && (!ttMove || !pos.pseudo_legal(ttMove))
         && pos.capture(ss->killerCapture)
-        && pos.see_ge (ss->killerCapture))
+        && pos.see_ge (ss->killerCapture, KnightValueMg))
     	ttMove = ss->killerCapture;
 
     // Initialize a MovePicker object for the current position, and prepare
