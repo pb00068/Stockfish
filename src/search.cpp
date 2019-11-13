@@ -642,7 +642,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killerCapture = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -681,6 +681,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                else ss->killerCapture = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -889,7 +890,11 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= raisedBeta)
+                {
+                	  if (!ss->killerCapture && raisedBeta > ss->staticEval)
+                	  	ss->killerCapture = move; // possibly only material gaining captures
                     return value;
+                }
             }
     }
 
@@ -910,8 +915,14 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move ttM = ttMove;
+    if (ss->killerCapture
+        && (!ttMove || !pos.pseudo_legal(ttMove))
+        && pos.capture(ss->killerCapture)
+        && pos.see_ge (ss->killerCapture))
+    	ttM = ss->killerCapture;
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttM, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
@@ -1223,6 +1234,8 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              if (captureOrPromotion)
+              	 ss->killerCapture = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1395,6 +1408,13 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
+
+
+    if (ss->killerCapture
+        && (!ttMove || !pos.pseudo_legal(ttMove))
+        && pos.capture(ss->killerCapture)
+        && pos.see_ge (ss->killerCapture))
+    	ttMove = ss->killerCapture;
 
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
