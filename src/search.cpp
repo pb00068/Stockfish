@@ -681,7 +681,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
-                else ss->killerCapture = ttMove;
+                else if (type_of(pos.piece_on(to_sq(ttMove))) >= BISHOP)
+                     ss->killerCapture = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -891,7 +892,7 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-                	  if (!ss->killerCapture && raisedBeta > ss->staticEval)
+                	  if (!ss->killerCapture && raisedBeta - ss->staticEval >= BishopValueMg)
                 	  	ss->killerCapture = move; // possibly only material gaining captures
                     return value;
                 }
@@ -916,10 +917,11 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
     Move ttM = ttMove;
-    if (ss->killerCapture
+    if (cutNode
+        && ss->killerCapture
         && (!ttMove || !pos.pseudo_legal(ttMove))
         && pos.capture(ss->killerCapture)
-        && pos.see_ge (ss->killerCapture, KnightValueMg))
+        && pos.see_ge (ss->killerCapture, BishopValueMg))
     	ttM = ss->killerCapture;
 
     MovePicker mp(pos, ttM, depth, &thisThread->mainHistory,
@@ -1234,7 +1236,7 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (captureOrPromotion)
+              if (captureOrPromotion && type_of(pos.piece_on(to_sq(move))) >= BISHOP)
               	 ss->killerCapture = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
@@ -1408,13 +1410,6 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
-
-
-    if (ss->killerCapture
-        && (!ttMove || !pos.pseudo_legal(ttMove))
-        && pos.capture(ss->killerCapture)
-        && pos.see_ge (ss->killerCapture, KnightValueMg))
-    	ttMove = ss->killerCapture;
 
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
