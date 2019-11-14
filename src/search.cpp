@@ -1606,9 +1606,12 @@ moves_loop: // When in check, search starts from here
 
     if (ss->killers[0] != move)
     {
+    	  if (ss->killers[1] == move)
+    	  	bonus/=2;
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
+    else bonus/=4;
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
