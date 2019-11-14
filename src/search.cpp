@@ -679,12 +679,15 @@ namespace {
         {
             if (ttValue >= beta)
             {
+            	  if (ttMove != ss->killers[0])
+            	  {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
+            	  }
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
@@ -1557,12 +1560,13 @@ moves_loop: // When in check, search starts from here
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
 
     bonus1 = stat_bonus(depth + 1);
-    bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
+    bonus2 = bestValue > beta + PawnValueMg && bestMove != ss->killers[0] ? bonus1 // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
 
     if (!pos.capture_or_promotion(bestMove))
     {
-        update_quiet_stats(pos, ss, bestMove, bonus2);
+    	  if (bestMove != ss->killers[0])
+    	  	update_quiet_stats(pos, ss, bestMove, bonus2);
 
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
