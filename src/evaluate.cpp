@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -368,11 +369,13 @@ namespace {
             {
                 if (blockers & pos.pieces(PAWN))
                 {
-                  Bitboard blocked =  pos.pieces(Us  , PAWN) & shift<Down>(pos.pieces());
-                           blocked |= pos.pieces(Them, PAWN) & shift<Up  >(pos.pieces());
+                  Bitboard blocked = pe->blocked_pawns();
 
                   if( blockers & blocked)
+                  {
                     score -= WeakQueenPawnBlocks;
+                    sync_cout << pos << Bitboards::pretty(blockers & blocked ) <<  sync_endl;
+                  }
                   else
                     score -= WeakQueenPawnBlocks * 2;
                 }

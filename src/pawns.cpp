@@ -129,6 +129,9 @@ namespace {
         if (passed)
             e->passedPawns[Us] |= s;
 
+        e->blocked = (blocked & ~lever) |
+        		(shift<pawn_push(Us)>(ourPawns) & pos.pieces(PAWN));
+
         // Score this pawn
         if (support | phalanx)
         {
