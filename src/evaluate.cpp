@@ -366,20 +366,18 @@ namespace {
             Bitboard blockers = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
             if (blockers)
             {
-
                 if (blockers & pos.pieces(PAWN))
                 {
-									Bitboard blocked =  pos.pieces(Us  , PAWN) & shift<Down>(pos.pieces());
-									         blocked |= pos.pieces(Them, PAWN) & shift<Up  >(pos.pieces());
-									//dbg_hit_on(blockers & blocked);
-									if( blockers & blocked)
-										score -= WeakQueenPawnBlocks;
-									else
-										score -= WeakQueenPawnBlocks * 2;
-										//sync_cout << pos << Bitboards::pretty(blockers & blocked ) <<  sync_endl;
+                  Bitboard blocked =  pos.pieces(Us  , PAWN) & shift<Down>(pos.pieces());
+                           blocked |= pos.pieces(Them, PAWN) & shift<Up  >(pos.pieces());
+
+                  if( blockers & blocked)
+                    score -= WeakQueenPawnBlocks;
+                  else
+                    score -= WeakQueenPawnBlocks * 2;
                 }
                 else
-                	score -= WeakQueen;
+                  score -= WeakQueen;
             }
         }
     }
