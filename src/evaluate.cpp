@@ -150,7 +150,8 @@ namespace {
   constexpr Score ThreatByPawnPush   = S( 48, 39);
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
-  constexpr Score WeakQueen          = S( 49, 15);
+  constexpr Score WeakQueen          = S( 54, 16);
+  constexpr Score WeakQueenPawnBlocks= S( 12,  4);
 
 #undef S
 
@@ -258,6 +259,7 @@ namespace {
 
     constexpr Color     Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Direction Down = -pawn_push(Us);
+    constexpr Direction Up   = pawn_push(Us);
     constexpr Bitboard OutpostRanks = (Us == WHITE ? Rank4BB | Rank5BB | Rank6BB
                                                    : Rank5BB | Rank4BB | Rank3BB);
     const Square* pl = pos.squares<Pt>(Us);
@@ -361,8 +363,24 @@ namespace {
         {
             // Penalty if any relative pin or discovered attack against the queen
             Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
-                score -= WeakQueen;
+            Bitboard blockers = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
+            if (blockers)
+            {
+
+                if (blockers & pos.pieces(PAWN))
+                {
+									Bitboard blocked =  pos.pieces(Us  , PAWN) & shift<Down>(pos.pieces());
+									         blocked |= pos.pieces(Them, PAWN) & shift<Up  >(pos.pieces());
+									//dbg_hit_on(blockers & blocked);
+									if( blockers & blocked)
+										score -= WeakQueenPawnBlocks;
+									else
+										score -= WeakQueenPawnBlocks * 2;
+										//sync_cout << pos << Bitboards::pretty(blockers & blocked ) <<  sync_endl;
+                }
+                else
+                	score -= WeakQueen;
+            }
         }
     }
     if (T)
