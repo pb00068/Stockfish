@@ -186,7 +186,7 @@ Entry* probe(const Position& pos) {
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
   e->scores[WHITE] -= Immobile * popcount(e->blocked_pawns() & pos.pieces(WHITE, PAWN));
-  e->scores[BLACK] += Immobile * popcount(e->blocked_pawns() & pos.pieces(BLACK, PAWN));
+  e->scores[BLACK] -= Immobile * popcount(e->blocked_pawns() & pos.pieces(BLACK, PAWN));
   return e;
 }
 
