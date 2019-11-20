@@ -40,6 +40,7 @@ namespace {
   constexpr Score Isolated      = S( 5, 15);
   constexpr Score WeakLever     = S( 0, 56);
   constexpr Score WeakUnopposed = S(13, 27);
+  constexpr Score Immobile      = S( 4,  5);
 
   // Connected pawn bonus
   constexpr int Connected[RANK_NB] = { 0, 7, 8, 12, 29, 48, 86 };
@@ -159,11 +160,6 @@ namespace {
     }
 
     e->blocked &= ~levers;
-//    if ((e->blocked & ~levers) != e->blocked)
-//    {
-//    	sync_cout << pos << " blocked " << Bitboards::pretty(e->blocked) << " levers:" << Bitboards::pretty(levers) << sync_endl;
-//      // e->blocked &= ~levers;
-//    }
 
     return score;
   }
@@ -189,7 +185,8 @@ Entry* probe(const Position& pos) {
   e->blocked=0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
-
+  e->scores[WHITE] -= Immobile * popcount(e->blocked_pawns() & pos.pieces(WHITE, PAWN));
+  e->scores[BLACK] += Immobile * popcount(e->blocked_pawns() & pos.pieces(BLACK, PAWN));
   return e;
 }
 
