@@ -20,13 +20,11 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
 #include "position.h"
 #include "thread.h"
-#include "misc.h"
 
 namespace {
 
@@ -185,8 +183,7 @@ Entry* probe(const Position& pos) {
   e->blocked=0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
-  e->scores[WHITE] -= Immobile * popcount(e->blocked_pawns() & pos.pieces(WHITE, PAWN));
-  e->scores[BLACK] -= Immobile * popcount(e->blocked_pawns() & pos.pieces(BLACK, PAWN));
+
   return e;
 }
 
