@@ -23,7 +23,6 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -151,8 +150,7 @@ namespace {
   constexpr Score ThreatByPawnPush   = S( 48, 39);
   constexpr Score ThreatBySafePawn   = S(173, 94);
   constexpr Score TrappedRook        = S( 47,  4);
-  constexpr Score WeakQueen          = S( 54, 16);
-  constexpr Score WeakQueenPawnBlocks= S( 12,  4);
+  constexpr Score WeakQueen          = S( 49, 15);
 
 #undef S
 
@@ -260,7 +258,6 @@ namespace {
 
     constexpr Color     Them = (Us == WHITE ? BLACK : WHITE);
     constexpr Direction Down = -pawn_push(Us);
-    constexpr Direction Up   = pawn_push(Us);
     constexpr Bitboard OutpostRanks = (Us == WHITE ? Rank4BB | Rank5BB | Rank6BB
                                                    : Rank5BB | Rank4BB | Rank3BB);
     const Square* pl = pos.squares<Pt>(Us);
@@ -364,24 +361,8 @@ namespace {
         {
             // Penalty if any relative pin or discovered attack against the queen
             Bitboard queenPinners;
-            Bitboard blockers = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
-            if (blockers)
-            {
-                if (blockers & pos.pieces(PAWN))
-                {
-                  Bitboard blocked = pe->blocked_pawns();
-
-                  if( blockers & blocked)
-                  {
-                    score -= WeakQueenPawnBlocks;
-                    sync_cout << pos << Bitboards::pretty(blockers & blocked ) <<  sync_endl;
-                  }
-                  else
-                    score -= WeakQueenPawnBlocks * 2;
-                }
-                else
-                  score -= WeakQueen;
-            }
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
+                score -= WeakQueen;
         }
     }
     if (T)

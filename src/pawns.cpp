@@ -20,11 +20,13 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
 #include "position.h"
 #include "thread.h"
+#include "misc.h"
 
 namespace {
 
@@ -72,7 +74,7 @@ namespace {
     constexpr Direction Up   = pawn_push(Us);
 
     Bitboard neighbours, stoppers, support, phalanx, opposed;
-    Bitboard lever, leverPush, blocked;
+    Bitboard levers = 0, lever, leverPush, blocked;
     Square s;
     bool backward, passed, doubled;
     Score score = SCORE_ZERO;
@@ -99,6 +101,7 @@ namespace {
         blocked    = theirPawns & (s + Up);
         stoppers   = theirPawns & passed_pawn_span(Us, s);
         lever      = theirPawns & PawnAttacks[Us][s];
+        levers |= lever;
         leverPush  = theirPawns & PawnAttacks[Us][s + Up];
         doubled    = ourPawns   & (s - Up);
         neighbours = ourPawns   & adjacent_files_bb(s);
@@ -129,8 +132,9 @@ namespace {
         if (passed)
             e->passedPawns[Us] |= s;
 
-        e->blocked = (blocked & ~lever) |
-        		(shift<pawn_push(Us)>(ourPawns) & pos.pieces(PAWN));
+        e->blocked |= blocked;
+        if (doubled)
+        	e->blocked |= (s - Up);
 
         // Score this pawn
         if (support | phalanx)
@@ -154,6 +158,13 @@ namespace {
                      + WeakLever * more_than_one(lever);
     }
 
+    e->blocked &= ~levers;
+//    if ((e->blocked & ~levers) != e->blocked)
+//    {
+//    	sync_cout << pos << " blocked " << Bitboards::pretty(e->blocked) << " levers:" << Bitboards::pretty(levers) << sync_endl;
+//      // e->blocked &= ~levers;
+//    }
+
     return score;
   }
 
@@ -175,6 +186,7 @@ Entry* probe(const Position& pos) {
       return e;
 
   e->key = key;
+  e->blocked=0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
 
