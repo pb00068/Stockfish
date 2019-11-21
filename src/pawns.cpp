@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 #include "bitboard.h"
 #include "pawns.h"
@@ -112,7 +113,11 @@ namespace {
 
         // Compute additional span if pawn is not backward nor blocked
         if (!backward && !blocked)
+        {
             e->pawnAttacksSpan[Us] |= pawn_attack_span(Us, s);
+            e->pawnAttacksSpan[Us] ^= pawn_attacks_bb<Us>(opposed); // probably can't attack squares behind opposer
+            // N.B.: e->pawnAttacksSpan is only used for outposts so merely OutpostRanks (4,5,6) do matter
+        }
 
         // A pawn is passed if one of the three following conditions is true:
         // (a) there is no stoppers except some levers
