@@ -116,7 +116,7 @@ namespace {
         {
 
             e->pawnAttacksSpan[Us] |= pawn_attack_span(Us, s) ^ pawn_attacks_bb<Us>(opposed);
-            // probably we can't attack squares behind opposer
+            // probably we can't attack squares behind our opposer
             // N.B.: e->pawnAttacksSpan is only used for outposts so merely OutpostRanks (4,5,6) do matter
         }
 
