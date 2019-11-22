@@ -128,8 +128,7 @@ namespace {
 
   // Assorted bonuses and penalties
   constexpr Score BishopPawns        = S(  3,  7);
-  constexpr Score BishopOnLever      = S(  2,  2);
-  constexpr Score ClearanceForBishop = S( 15,  9);
+  constexpr Score ClearanceForBishop = S(  8,  8);
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
@@ -322,11 +321,10 @@ namespace {
 
                 if (!(attackedBy[Them][PAWN] & s))
                 {
-									Bitboard protectedLevers = b & pos.pieces(Us, PAWN) & attackedBy[Them][PAWN];
-									while (protectedLevers)
+									Bitboard mobilePawns = b & pos.pieces(Us, PAWN) & (attackedBy[Them][PAWN] | shift<Down>(~pos.pieces()));
+									while (mobilePawns)
 									{
-										score+= BishopOnLever;
-										bb = b ^ attacks_bb<BISHOP>(s, pos.pieces() ^ pop_lsb(&protectedLevers)); // X-Ray through our lever
+										bb = b ^ attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pop_lsb(&mobilePawns)); // X-Ray through our pawn
 										if (bb & pos.pieces(Them, KING, ROOK))
 											score += ClearanceForBishop;
 
