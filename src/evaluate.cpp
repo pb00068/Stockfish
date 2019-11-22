@@ -128,6 +128,7 @@ namespace {
 
   // Assorted bonuses and penalties
   constexpr Score BishopPawns        = S(  3,  7);
+  constexpr Score BishopOnLever      = S(  6,  6);
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
@@ -317,6 +318,9 @@ namespace {
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
                     score += LongDiagonalBishop;
+
+                Bitboard levers = (pos.pieces(Us, PAWN) & pe->pawnAttacks[Them]) | (pos.pieces(Them, PAWN) & pe->pawnAttacks[Us]);
+                score+= BishopOnLever * popcount(levers & b);
             }
 
             // An important Chess960 pattern: A cornered bishop blocked by a friendly
