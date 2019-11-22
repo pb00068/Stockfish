@@ -128,8 +128,8 @@ namespace {
 
   // Assorted bonuses and penalties
   constexpr Score BishopPawns        = S(  3,  7);
-  constexpr Score BishopOnLever      = S(  3,  3);
-  constexpr Score ClearanceForBishop = S(  7,  4);
+  constexpr Score BishopOnLever      = S(  2,  2);
+  constexpr Score ClearanceForBishop = S( 15,  9);
   constexpr Score CorneredBishop     = S( 50, 50);
   constexpr Score FlankAttacks       = S(  8,  0);
   constexpr Score Hanging            = S( 69, 36);
@@ -320,16 +320,19 @@ namespace {
                 if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
                     score += LongDiagonalBishop;
 
-                Bitboard protectedLevers = b & pos.pieces(Us, PAWN) & pe->pawnAttacks[Them];
-                while (protectedLevers)
+                if (!(attackedBy[Them][PAWN] & s))
                 {
-                	score+= BishopOnLever;
-                	b = attacks_bb<BISHOP>(s, pos.pieces() ^ pop_lsb(&protectedLevers)); // X-Ray through our lever
-                	if (b & pos.pieces(Them, KING, ROOK))
-                		score += ClearanceForBishop * 2;
+									Bitboard protectedLevers = b & pos.pieces(Us, PAWN) & attackedBy[Them][PAWN];
+									while (protectedLevers)
+									{
+										score+= BishopOnLever;
+										bb = b ^ attacks_bb<BISHOP>(s, pos.pieces() ^ pop_lsb(&protectedLevers)); // X-Ray through our lever
+										if (bb & pos.pieces(Them, KING, ROOK))
+											score += ClearanceForBishop;
 
-                	if ((b & pos.pieces(Them, QUEEN)))
-                		score += ClearanceForBishop * ((pe->pawnAttacks[Us] & s) ? 4 : 1);
+										if ((attackedBy[Us][ALL_PIECES] & s) && (bb & pos.pieces(Them, QUEEN)))
+											score += ClearanceForBishop * 2;
+									}
                 }
 
             }
@@ -812,9 +815,10 @@ namespace {
 
     // Pieces should be evaluated first (populate attack tables)
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
-            + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
             + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
             + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
+
+    score +=  pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>();
 
     score += mobility[WHITE] - mobility[BLACK];
 
