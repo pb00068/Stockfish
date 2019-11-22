@@ -114,8 +114,12 @@ namespace {
         // Compute additional span if pawn is not backward nor blocked
         if (!backward && !blocked)
         {
-            e->pawnAttacksSpan[Us] |= pawn_attack_span(Us, s) ^ pawn_attack_span(Us, lsb(opposed));
-            // probably we can't attack squares behind our opposer
+        	  if (opposed & pawn_attacks_bb<Them>(theirPawns)) // with protected opposer
+        	  	// we probably can't attack squares behind
+        	  	e->pawnAttacksSpan[Us] |= pawn_attack_span(Us, s) ^ pawn_attack_span(Us, frontmost_sq(Them, opposed));
+        	  else
+        	  	e->pawnAttacksSpan[Us] |= pawn_attack_span(Us, s);
+
             // N.B.: e->pawnAttacksSpan is only used for outposts so merely OutpostRanks (4,5,6) do matter
         }
 
