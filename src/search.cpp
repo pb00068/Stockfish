@@ -647,6 +647,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->failedQueenMoves = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -896,7 +897,11 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= raisedBeta)
+                {
+                	  if (is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN)
+                	  	(ss-1)->failedQueenMoves++;
                     return value;
+                }
             }
     }
 
@@ -927,7 +932,6 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
-    int failedQueenMoves = 0;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1098,7 +1102,7 @@ moves_loop: // When in check, search starts from here
           if (th.marked())
               r++;
 
-          if (failedQueenMoves > 5 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
+          if (ss->failedQueenMoves > 4 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
           	r++;
 
           // Decrease reduction if position is or has been on the PV
@@ -1257,8 +1261,6 @@ moves_loop: // When in check, search starts from here
 
       if (move != bestMove)
       {
-      	  if (type_of(movedPiece) == QUEEN)
-      	  	failedQueenMoves++;
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
