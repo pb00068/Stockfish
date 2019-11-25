@@ -603,6 +603,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
+    int processedQueenmoves=0;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -620,6 +621,7 @@ namespace {
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
+
 
     if (!rootNode)
     {
@@ -647,7 +649,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->failedQueenMoves = 0;
+    (ss+2)->probCutRefutedQueenMoves = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -899,7 +901,7 @@ namespace {
                 if (value >= raisedBeta)
                 {
                 	  if (is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN)
-                	  	(ss-1)->failedQueenMoves++;
+                	  	(ss-1)->probCutRefutedQueenMoves++;
                     return value;
                 }
             }
@@ -1078,6 +1080,8 @@ moves_loop: // When in check, search starts from here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      if (type_of(movedPiece) == QUEEN)
+      	processedQueenmoves++;
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1102,7 +1106,7 @@ moves_loop: // When in check, search starts from here
           if (th.marked())
               r++;
 
-          if (ss->failedQueenMoves > 4 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
+          if (ss->probCutRefutedQueenMoves > 5 && processedQueenmoves > 4 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
           	r++;
 
           // Decrease reduction if position is or has been on the PV
