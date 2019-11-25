@@ -927,6 +927,7 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    int failedQueenMoves = 0;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1097,6 +1098,9 @@ moves_loop: // When in check, search starts from here
           if (th.marked())
               r++;
 
+          if (failedQueenMoves > 5 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
+          	r++;
+
           // Decrease reduction if position is or has been on the PV
           if (ttPv)
               r -= 2;
@@ -1253,6 +1257,8 @@ moves_loop: // When in check, search starts from here
 
       if (move != bestMove)
       {
+      	  if (type_of(movedPiece) == QUEEN)
+      	  	failedQueenMoves++;
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
