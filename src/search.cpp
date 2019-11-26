@@ -899,7 +899,10 @@ namespace {
                 if (value >= raisedBeta)
                 {
                 	  if (is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN)
+                	  {
                 	  	(ss-1)->failedQueenMoves++;
+                	  	(ss-1)->probCutTarget = to_sq(move);
+                	  }
                     return value;
                 }
             }
@@ -1108,8 +1111,6 @@ moves_loop: // When in check, search starts from here
           if (th.marked())
               r++;
 
-          if (ss->failedQueenMoves > 4 && type_of(movedPiece) == QUEEN) // babysitting Queen ?
-          	r++;
 
           // Decrease reduction if position is or has been on the PV
           if (ttPv)
@@ -1128,6 +1129,13 @@ moves_loop: // When in check, search starts from here
               // Increase reduction if ttMove is a capture (~0 Elo)
               if (ttCapture)
                   r++;
+
+              // reduce when (babysitting) Queen abandons probCutTarget
+              if (ss->failedQueenMoves > 2 &&
+                type_of(movedPiece) == QUEEN &&
+                !(pos.attacks_from<QUEEN>(to_sq(move)) & ss->probCutTarget))
+							  r++;
+
 
               // Increase reduction for cut nodes (~5 Elo)
               if (cutNode)
