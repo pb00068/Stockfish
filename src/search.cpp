@@ -899,13 +899,13 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-										if ((ss-1)->probCutTarget == to_sq(move))
-											(ss-1)->probCutHits++;
-										else
-										{
-											(ss-1)->probCutTarget = to_sq(move);
-											(ss-1)->probCutHits=0;
-										}
+                    if ((ss-1)->probCutTarget == to_sq(move))
+                      (ss-1)->probCutHits++;
+                    else
+                    {
+                      (ss-1)->probCutTarget = to_sq(move);
+                      (ss-1)->probCutHits=0;
+                    }
                     return value;
                 }
             }
@@ -994,7 +994,12 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+              {
+                if (ss->probCutHits <= 1
+                    || type_of(movedPiece) == PAWN
+                    || !(pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget))
                   continue;
+              }
 
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 6
@@ -1132,16 +1137,6 @@ moves_loop: // When in check, search starts from here
               // Increase reduction if ttMove is a capture (~0 Elo)
               if (ttCapture)
                   r++;
-
-              // how does the moved Piece relate to probCutTarget?
-              if (ss->probCutHits > 2 && type_of(movedPiece) >= KNIGHT)
-              {
-                if (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget)
-                  r--; // protects weak point
-                else
-                  r++; // does't protect weak point (anymore?)
-              }
-
 
               // Increase reduction for cut nodes (~5 Elo)
               if (cutNode)
