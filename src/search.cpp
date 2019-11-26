@@ -647,7 +647,6 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+0)->probCutHits = 0;
     (ss+0)->probCutTarget = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
@@ -899,13 +898,7 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-                    if ((ss-1)->probCutTarget == to_sq(move))
-                      (ss-1)->probCutHits++;
-                    else
-                    {
-                      (ss-1)->probCutTarget = to_sq(move);
-                      (ss-1)->probCutHits=0;
-                    }
+                    (ss-1)->probCutTarget = to_sq(move);
                     return value;
                 }
             }
@@ -991,22 +984,15 @@ moves_loop: // When in check, search starts from here
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1))
-              {
-              	int th1=0, th2 = 0;
-              	if (ss->probCutHits
-              	     && type_of(movedPiece) > PAWN
-              	     && ((from_sq(move) == ss->probCutTarget || (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget))))
-              		th1 = -960, th2 = -2300;
-
-              	  if (   (*contHist[0])[movedPiece][to_sq(move)] < th1
-                      && (*contHist[1])[movedPiece][to_sq(move)] < th2)
-									continue;
-              }
+				if (lmrDepth
+						< 4 + ((ss - 1)->statScore > 0 || (ss - 1)->moveCount == 1) - (from_sq(move) == ss->probCutTarget)
+              		&& (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
+                  && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+                  continue;
 
 
               // Futility pruning: parent node (~2 Elo)
-              if (   lmrDepth < 6
+              if (   lmrDepth < 6 - (from_sq(move) == ss->probCutTarget)
                   && !inCheck
                   && ss->staticEval + 250 + 211 * lmrDepth <= alpha)
                   continue;
