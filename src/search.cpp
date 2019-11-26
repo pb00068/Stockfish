@@ -994,10 +994,10 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1))
               {
               	int th1=0, th2 = 0;
-              	if (ss->probCutHits > 1
+              	if (ss->probCutHits
               	     && type_of(movedPiece) > PAWN
-              	     && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget))
-              		th1 = -1930, th2 = -4600;
+              	     && ((from_sq(move) == ss->probCutTarget || (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget))))
+              		th1 = -960, th2 = -2300;
 
               	  if (   (*contHist[0])[movedPiece][to_sq(move)] < th1
                       && (*contHist[1])[movedPiece][to_sq(move)] < th2)
