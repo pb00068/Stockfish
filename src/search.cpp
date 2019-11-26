@@ -647,7 +647,8 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->probCutHits = 0;
+    (ss+0)->probCutHits = 0;
+    (ss+0)->probCutTarget = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -898,16 +899,13 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-                	  if (is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) >= KNIGHT)
-                	  {
-                	  	if ((ss-1)->probCutTarget == to_sq(move))
-                	  		(ss-1)->probCutHits++;
-                	  	else
-                	  	{
-                	  		(ss-1)->probCutTarget = to_sq(move);
-                	  		(ss-1)->probCutHits=0;
-                	  	}
-                	  }
+										if ((ss-1)->probCutTarget == to_sq(move))
+											(ss-1)->probCutHits++;
+										else
+										{
+											(ss-1)->probCutTarget = to_sq(move);
+											(ss-1)->probCutHits=0;
+										}
                     return value;
                 }
             }
@@ -1136,12 +1134,12 @@ moves_loop: // When in check, search starts from here
                   r++;
 
               // how does the moved Piece relate to probCutTarget?
-              if (ss->probCutHits > 1 && type_of(movedPiece) >= KNIGHT)
+              if (ss->probCutHits > 2 && type_of(movedPiece) >= KNIGHT)
               {
                 if (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget)
-							    r--; // protects weak point
+                  r--; // protects weak point
                 else
-                	r++; // does't protect weak point (anymore?)
+                  r++; // does't protect weak point (anymore?)
               }
 
 
