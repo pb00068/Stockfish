@@ -647,7 +647,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+0)->probCutTarget = SQ_NONE;
+    (ss+0)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -898,7 +898,7 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-                    (ss-1)->probCutTarget = to_sq(move);
+                    (ss-1)->weakSq = to_sq(move);
                     return value;
                 }
             }
@@ -983,16 +983,20 @@ moves_loop: // When in check, search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
+              bool cmpruning = lmrDepth < 5 && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold;
+              if (cmpruning
+                  && ss->weakSq != SQ_NONE
+                  && lmrDepth == 1
+                  && (from_sq(move) == ss->weakSq || (type_of(movedPiece) > PAWN && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
+              	cmpruning = false;
+
               // Countermoves based pruning (~20 Elo)
-				if (lmrDepth
-						< 4 + ((ss - 1)->statScore > 0 || (ss - 1)->moveCount == 1) - (from_sq(move) == ss->probCutTarget)
-              		&& (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
-                  && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+				      if (cmpruning && lmrDepth < 4 + ((ss - 1)->statScore > 0 || (ss - 1)->moveCount == 1))
                   continue;
 
 
               // Futility pruning: parent node (~2 Elo)
-              if (   lmrDepth < 6 - (from_sq(move) == ss->probCutTarget)
+              if (   lmrDepth < 6 - (from_sq(move) == ss->weakSq)
                   && !inCheck
                   && ss->staticEval + 250 + 211 * lmrDepth <= alpha)
                   continue;
@@ -1109,7 +1113,6 @@ moves_loop: // When in check, search starts from here
           if (th.marked())
               r++;
 
-
           // Decrease reduction if position is or has been on the PV
           if (ttPv)
               r -= 2;
@@ -1137,7 +1140,10 @@ moves_loop: // When in check, search starts from here
               // hence break make_move(). (~5 Elo)
               else if (    type_of(move) == NORMAL
                        && !pos.see_ge(reverse_move(move)))
+              {
                   r -= 2;
+                  ss->weakSq = from_sq(move);
+              }
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
