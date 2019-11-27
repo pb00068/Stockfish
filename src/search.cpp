@@ -988,12 +988,11 @@ moves_loop: // When in check, search starts from here
                   && ss->weakSq != SQ_NONE
                   && lmrDepth == 1
                   && (from_sq(move) == ss->weakSq || (type_of(movedPiece) > PAWN && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
-              	cmpruning = false;
+                  cmpruning = false;
 
               // Countermoves based pruning (~20 Elo)
 				      if (cmpruning && lmrDepth < 4 + ((ss - 1)->statScore > 0 || (ss - 1)->moveCount == 1))
                   continue;
-
 
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 6 - (from_sq(move) == ss->weakSq)
