@@ -691,7 +691,15 @@ namespace {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
                 else
-                	(ss-1)->weakSq = to_sq(ttMove);
+                {
+									if ((ss-1)->weakSq == to_sq(ttMove))
+                    (ss-1)->weakSqHits++;
+									else
+									{
+                    (ss-1)->weakSq = to_sq(ttMove);
+                    (ss-1)->weakSqHits=0;
+									}
+                }
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1276,13 +1284,13 @@ moves_loop: // When in check, search starts from here
                   ss->statScore = 0;
                   if (captureOrPromotion)
                   {
-										if ((ss-1)->weakSq == to_sq(move))
-											(ss-1)->weakSqHits++;
-										else
-										{
-											(ss-1)->weakSq = to_sq(move);
-											(ss-1)->weakSqHits=0;
-										}
+                    if ((ss-1)->weakSq == to_sq(move))
+                      (ss-1)->weakSqHits++;
+                    else
+                    {
+                      (ss-1)->weakSq = to_sq(move);
+                      (ss-1)->weakSqHits=0;
+                    }
                   }
                   break;
               }
