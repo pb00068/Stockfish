@@ -1005,8 +1005,8 @@ moves_loop: // When in check, search starts from here
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
               {
-                if (ss->weakSqHits > 1 &&
-                    (   from_sq(move) == ss->weakSq ||
+                if (lmrDepth > 1 && ss->weakSqHits &&
+                    (  from_sq(move) == ss->weakSq ||
                      ( type_of(movedPiece) != PAWN && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
                 {
                 	// might be a good move
