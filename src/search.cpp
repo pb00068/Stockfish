@@ -692,13 +692,13 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
                 else
                 {
-									if ((ss-1)->weakSq == to_sq(ttMove))
-                    (ss-1)->weakSqHits++;
-									else
-									{
+                  if ((ss-1)->weakSq == to_sq(ttMove))
+                     (ss-1)->weakSqHits++;
+                  else
+                  {
                     (ss-1)->weakSq = to_sq(ttMove);
                     (ss-1)->weakSqHits=0;
-									}
+                  }
                 }
 
                 // Extra penalty for early quiet moves of the previous ply
