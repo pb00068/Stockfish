@@ -647,8 +647,8 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+0)->probCutHits = 0;
-    (ss+0)->probCutTarget = SQ_NONE;
+    (ss+0)->weakSqHits = 0;
+    (ss+0)->weakSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -690,6 +690,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                else
+                	(ss-1)->weakSq = to_sq(ttMove);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -899,12 +901,12 @@ namespace {
 
                 if (value >= raisedBeta)
                 {
-                    if ((ss-1)->probCutTarget == to_sq(move))
-                      (ss-1)->probCutHits++;
+                    if ((ss-1)->weakSq == to_sq(move))
+                      (ss-1)->weakSqHits++;
                     else
                     {
-                      (ss-1)->probCutTarget = to_sq(move);
-                      (ss-1)->probCutHits=0;
+                      (ss-1)->weakSq = to_sq(move);
+                      (ss-1)->weakSqHits=0;
                     }
                     return value;
                 }
@@ -991,19 +993,19 @@ moves_loop: // When in check, search starts from here
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1))
+              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
+                  && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
+                  && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
               {
-              	int th1=0, th2 = 0;
-              	if (ss->probCutHits
-              	     && type_of(movedPiece) > PAWN
-              	     && ((from_sq(move) == ss->probCutTarget || (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->probCutTarget))))
-              		th1 = -960, th2 = -2300;
-
-              	  if (   (*contHist[0])[movedPiece][to_sq(move)] < th1
-                      && (*contHist[1])[movedPiece][to_sq(move)] < th2)
-									continue;
+                if (ss->weakSqHits > 1 &&
+                    (   from_sq(move) == ss->weakSq ||
+                     ( type_of(movedPiece) != PAWN && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
+                {
+                	// might be a good move
+                }
+                else
+                  continue;
               }
-
 
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 6
@@ -1122,7 +1124,6 @@ moves_loop: // When in check, search starts from here
           // Reduction if other threads are searching this position.
           if (th.marked())
               r++;
-
 
           // Decrease reduction if position is or has been on the PV
           if (ttPv)
@@ -1273,6 +1274,16 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
+                  if (captureOrPromotion)
+                  {
+										if ((ss-1)->weakSq == to_sq(move))
+											(ss-1)->weakSqHits++;
+										else
+										{
+											(ss-1)->weakSq = to_sq(move);
+											(ss-1)->weakSqHits=0;
+										}
+                  }
                   break;
               }
           }

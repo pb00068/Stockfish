@@ -49,8 +49,8 @@ struct Stack {
   Value staticEval;
   int statScore;
   int moveCount;
-  int probCutHits;
-  Square probCutTarget;
+  int weakSqHits;
+  Square weakSq;
 };
 
 
