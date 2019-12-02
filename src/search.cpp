@@ -1001,19 +1001,12 @@ moves_loop: // When in check, search starts from here
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
+              if (   lmrDepth < 5 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1) -
+              		(lmrDepth < 5 || ss->weakSqHits <=1 || (  from_sq(move) != ss->weakSq &&
+                   ( type_of(movedPiece) == PAWN || !(pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
-              {
-                if (lmrDepth > 1 && ss->weakSqHits &&
-                    (  from_sq(move) == ss->weakSq ||
-                     ( type_of(movedPiece) != PAWN && (pos.attacks_from(type_of(movedPiece), to_sq(move)) & ss->weakSq))))
-                {
-                	// might be a good move
-                }
-                else
                   continue;
-              }
 
               // Futility pruning: parent node (~2 Elo)
               if (   lmrDepth < 6
