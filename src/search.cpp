@@ -1142,9 +1142,6 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
-              if (from_sq(move) == ss->weakSq && ss->weakSqHits >= 1)
-              	r-=1;
-
               // Increase reduction for cut nodes (~5 Elo)
               if (cutNode)
                   r += 2;
@@ -1152,8 +1149,8 @@ moves_loop: // When in check, search starts from here
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~5 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
+              else if ((from_sq(move) == ss->weakSq && ss->weakSqHits >= 1) ||
+              		( type_of(move) == NORMAL && !pos.see_ge(reverse_move(move))))
                   r -= 2;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
