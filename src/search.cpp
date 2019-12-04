@@ -1000,7 +1000,7 @@ moves_loop: // When in check, search starts from here
           {
               bool potential = (givesCheck         && ((ss-2)->lateGood== move || ss->lateGood== move || (ss+2)->lateGood== move))
                             || (captureOrPromotion && ((ss-2)->lateGood==-move || ss->lateGood==-move || (ss+2)->lateGood==-move));
-              if (!pos.see_ge(move, Value(-100) * (2 * depth - !potential))) // (~20 Elo)
+              if (!pos.see_ge(move, Value(-194) * (depth + potential ))) // (~20 Elo)
                   continue;
           }
       }
@@ -1248,7 +1248,7 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (value >= beta && quietCount > 6)
+              if (quietCount > 6)
               {
               	if (captureOrPromotion)
               		ss->lateGood = -move;
