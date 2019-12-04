@@ -647,6 +647,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+4)->lateGood=0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -995,8 +996,12 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-(31 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (!pos.see_ge(move, Value(-199) * depth)) // (~20 Elo)
+          else // gives check || capture || promotion
+          {
+          	  bool potential = (ss-4)->lateGood==move || (ss-2)->lateGood==move || ss->lateGood==move || (ss+2)->lateGood==move || (ss+4)->lateGood==move;
+              if (!pos.see_ge(move, Value(-199 - potential * 80) * depth)) // (~20 Elo)
                   continue;
+          }
       }
 
       // Step 14. Extensions (~70 Elo)
@@ -1242,6 +1247,8 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              if (quietCount > 6 && (captureOrPromotion || givesCheck))
+              	ss->lateGood = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
