@@ -998,8 +998,9 @@ moves_loop: // When in check, search starts from here
           }
           else // gives check || capture || promotion
           {
-          	  bool potential = (ss-2)->lateGood==move || ss->lateGood==move || (ss+2)->lateGood==move;
-              if (!pos.see_ge(move, Value(-199 - potential * 40) * depth)) // (~20 Elo)
+              bool potential = (givesCheck         && ((ss-2)->lateGood== move || ss->lateGood== move || (ss+2)->lateGood== move))
+                            || (captureOrPromotion && ((ss-2)->lateGood==-move || ss->lateGood==-move || (ss+2)->lateGood==-move));
+              if (!pos.see_ge(move, Value(-194) * (depth + potential ))) // (~20 Elo)
                   continue;
           }
       }
@@ -1247,8 +1248,13 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (quietCount > 6 && (captureOrPromotion || givesCheck))
-              	ss->lateGood = move;
+              if (quietCount > 6)
+              {
+              	if (captureOrPromotion)
+              		ss->lateGood = -move;
+              	else if (givesCheck)
+              		ss->lateGood = move;
+              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
