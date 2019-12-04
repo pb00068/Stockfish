@@ -998,8 +998,8 @@ moves_loop: // When in check, search starts from here
           }
           else // gives check || capture || promotion
           {
-          	  bool potential = (ss-4)->lateGood==move || (ss-2)->lateGood==move || ss->lateGood==move || (ss+2)->lateGood==move || (ss+4)->lateGood==move;
-              if (!pos.see_ge(move, Value(-199 - potential * 80) * depth)) // (~20 Elo)
+          	  bool potential = (ss-2)->lateGood==move || ss->lateGood==move || (ss+2)->lateGood==move;
+              if (!pos.see_ge(move, Value(-199 - potential * 40) * depth)) // (~20 Elo)
                   continue;
           }
       }
