@@ -647,7 +647,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+4)->lateGood=0;
+    (ss+4)->lateGood = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -998,8 +998,7 @@ moves_loop: // When in check, search starts from here
           }
           else // gives check || capture || promotion
           {
-              bool potential = (givesCheck         && ((ss-2)->lateGood== move || ss->lateGood== move || (ss+2)->lateGood== move))
-                            || (captureOrPromotion && ((ss-2)->lateGood==-move || ss->lateGood==-move || (ss+2)->lateGood==-move));
+              bool potential = (captureOrPromotion && ((ss-2)->lateGood==move || ss->lateGood==move || (ss+2)->lateGood==move));
               if (!pos.see_ge(move, Value(-194) * (depth + potential ))) // (~20 Elo)
                   continue;
           }
@@ -1248,13 +1247,8 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (quietCount > 6)
-              {
-              	if (captureOrPromotion)
-              		ss->lateGood = -move;
-              	else if (givesCheck)
+              if (quietCount > 6 && captureOrPromotion)
               		ss->lateGood = move;
-              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
