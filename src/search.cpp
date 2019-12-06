@@ -1596,7 +1596,9 @@ moves_loop: // When in check, search starts from here
     else
     {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (givesCheck && !pos.captured_piece() && captured > type_of(moved_piece))// no-recapture and see positive
+        if (givesCheck &&
+          (pos.is_discovery_check_on_king(~us, bestMove) ||
+          (!pos.captured_piece() && captured > type_of(moved_piece))))// no-recapture and see positive
         	update_quiet_stats(pos, ss, bestMove, stat_bonus(depth) / 2, false);
     }
 
