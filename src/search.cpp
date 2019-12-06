@@ -1108,8 +1108,8 @@ moves_loop: // When in check, search starts from here
               r -= 2;
 
           // Decrease reduction if opponent's move count is high (~10 Elo)
-          if ((ss-1)->moveCount > 14)
-              r-= ((ss-1)->moveCount / 7) - 1;
+          if ((ss-1)->moveCount > 15)
+              r--;
 
           // Decrease reduction if ttMove has been singularly extended
           if (singularLMR)
@@ -1155,6 +1155,8 @@ moves_loop: // When in check, search starts from here
               // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
               r -= ss->statScore / 16384;
           }
+          else  if (cutNode)
+          	r ++;
 
           Depth d = clamp(newDepth - r, 1, newDepth);
 
