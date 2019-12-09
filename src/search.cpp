@@ -796,9 +796,9 @@ namespace {
     {
         if ((ss-1)->currentMove != MOVE_NULL)
         {
+            eval = evaluate(pos);
             int bonus = -(ss-1)->statScore / 512;
-
-            ss->staticEval = eval = evaluate(pos) + bonus;
+            ss->staticEval = eval + bonus;
         }
         else
             ss->staticEval = eval = -(ss-1)->staticEval + 2 * Eval::Tempo;
