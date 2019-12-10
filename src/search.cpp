@@ -66,19 +66,19 @@ namespace {
 
   // Razor and futility margins
   constexpr int RazorMargin = 594;
-  Value futility_margin(Depth d, bool improving) {
-    return Value(232 * (d - improving));
+  Value futility_margin(Depth d, int improving) {
+    return improving > 1 ? Value(202 * (d - 1)) : Value(232 * (d - improving));
   }
 
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
-  Depth reduction(bool i, Depth d, int mn) {
+  Depth reduction(int improving, Depth d, int mn) {
     int r = Reductions[d] * Reductions[mn];
-    return (r + 520) / 1024 + (!i && r > 999);
+    return (r + 520) / 1024 + (!improving && r > 999);
   }
 
-  constexpr int futility_move_count(bool improving, Depth depth) {
+  constexpr int futility_move_count(int improving, Depth depth) {
     return (5 + depth * depth) * (1 + improving) / 2 - 1;
   }
 
@@ -614,10 +614,10 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
-    bool ttHit, ttPv, inCheck, givesCheck, improving, didLMR, priorCapture;
+    bool ttHit, ttPv, inCheck, givesCheck, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, improving;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -774,7 +774,7 @@ namespace {
     if (inCheck)
     {
         ss->staticEval = eval = VALUE_NONE;
-        improving = false;
+        improving = 0;
         goto moves_loop;  // Skip early pruning when in check
     }
     else if (ttHit)
@@ -814,6 +814,9 @@ namespace {
 
     improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
+
+    if (improving && (ss-1)->staticEval != VALUE_NONE && ss->staticEval >= -(ss-1)->staticEval + 2 * Eval::Tempo + 100)
+    	improving++;
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
