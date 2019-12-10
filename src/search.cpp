@@ -816,7 +816,7 @@ namespace {
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
     improving*=4;
-    if (improving && (ss-1)->staticEval != VALUE_NONE && ss->staticEval >= -(ss-1)->staticEval + 2 * Eval::Tempo + 120)
+    if (improving && (ss-2)->staticEval != VALUE_NONE && (ss-4)->staticEval != VALUE_NONE && (ss-2)->staticEval >= (ss-4)->staticEval)
     	improving++;
 
     // Step 8. Futility pruning: child node (~30 Elo)
@@ -832,7 +832,7 @@ namespace {
         && (ss-1)->statScore < 22661
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 33 * depth + 299 - improving * 7
+        &&  ss->staticEval >= beta - 33 * depth + 299 - improving * 8
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -883,7 +883,7 @@ namespace {
         &&  depth >= 5
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value raisedBeta = std::min(beta + 191 - 11 * improving, VALUE_INFINITE);
+        Value raisedBeta = std::min(beta + 191 - 12 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
