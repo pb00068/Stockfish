@@ -812,7 +812,7 @@ namespace {
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
-    // improving detection
+    // improving detection: consider first ply with valid value
     {
       improving = false;
       int p = 0;
