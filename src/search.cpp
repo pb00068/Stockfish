@@ -812,8 +812,33 @@ namespace {
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
-    improving =   ss->staticEval >= (ss-2)->staticEval
-               || (ss-2)->staticEval == VALUE_NONE;
+    // improving detection
+    {
+      improving = false;
+      int p = 2;
+      while (ss->ply - p >= 0)
+      {
+    	 if ((ss-p)->staticEval != VALUE_NONE)
+       {
+          improving = ss->staticEval >= (ss-p)->staticEval;
+          break;
+       }
+    	 p+=2;
+      }
+      if (ss->ply - p < 0) // no improvement detection possible on even plies
+      {
+      	p = 1;
+				while (ss->ply - p >= 0)
+				{
+				 if ((ss-p)->staticEval != VALUE_NONE)
+				 {
+						improving = ss->staticEval >= -(ss-p)->staticEval + 2 * Eval::Tempo;
+						break;
+				 }
+				 p+=2;
+				}
+      }
+    }
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
