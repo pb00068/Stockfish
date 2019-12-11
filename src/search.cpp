@@ -73,13 +73,13 @@ namespace {
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
-  Depth reduction(int improving, Depth d, int mn) {
+  Depth reduction(bool improving, Depth d, int mn) {
     int r = Reductions[d] * Reductions[mn];
     return (r + 520) / 1024 + (!improving && r > 999);
   }
 
-  constexpr int futility_move_count(int improving, Depth depth) {
-    return (5 + depth * depth) * (4 + improving) / 8 - 1;
+  constexpr int futility_move_count(bool improving, Depth depth) {
+    return (5 + depth * depth) * (1 + improving) / 2 - 1;
   }
 
   // History and stats update bonus, based on depth
@@ -832,7 +832,7 @@ namespace {
         && (ss-1)->statScore < 22661
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 33 * depth + 299 - bool(improving) * 30
+        &&  ss->staticEval >= beta - 33 * depth + 299 - improving * 8
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -883,7 +883,7 @@ namespace {
         &&  depth >= 5
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value raisedBeta = std::min(beta + 191 - 46 * bool(improving), VALUE_INFINITE);
+        Value raisedBeta = std::min(beta + 191 - 11 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
@@ -990,13 +990,13 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth);
+          moveCountPruning = moveCount >= futility_move_count((bool)improving, depth);
 
           if (   !captureOrPromotion
               && !givesCheck)
           {
               // Reduced depth of the next LMR search
-              int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
+              int lmrDepth = std::max(newDepth - reduction((bool)improving, depth, moveCount), 0);
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
