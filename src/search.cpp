@@ -816,10 +816,9 @@ namespace {
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
     improving*=4;
-    if (improving && (ss-0)->staticEval > (ss-2)->staticEval + 60
-                  && (ss-2)->staticEval > (ss-4)->staticEval + 60
-                  && (ss-4)->staticEval > (ss-6)->staticEval + 60)
-        improving++; // hitrate ~5%
+    if (improving && (ss-0)->staticEval < (ss-4)->staticEval + 20
+                  && (ss-4)->staticEval < (ss-6)->staticEval + 20)
+        improving--;
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
