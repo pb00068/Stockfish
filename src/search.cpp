@@ -67,7 +67,7 @@ namespace {
   // Razor and futility margins
   constexpr int RazorMargin = 594;
   Value futility_margin(Depth d, int improving) {
-  	return Value(232 * (d - (bool)improving));
+  	return Value(58 * (4 * d - improving));
   }
 
   // Reductions lookup table, initialized at startup
@@ -78,8 +78,8 @@ namespace {
     return (r + 520) / 1024 + (!improving && r > 999);
   }
 
-  constexpr int futility_move_count(bool improving, Depth depth) {
-    return (5 + depth * depth) * (1 + improving) / 2 - 1;
+constexpr int futility_move_count(int improving, Depth depth) {
+    return (5 + depth * depth) * (4 + improving) / 8 - 1;
   }
 
   // History and stats update bonus, based on depth
@@ -816,8 +816,10 @@ namespace {
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
     improving*=4;
-    if (improving && (ss-2)->staticEval > (ss-4)->staticEval && (ss-2)->staticEval != VALUE_NONE && (ss-4)->staticEval != VALUE_NONE)
-        improving++;
+    if (improving && (ss-0)->staticEval > (ss-2)->staticEval + 60
+                  && (ss-2)->staticEval > (ss-4)->staticEval + 60
+                  && (ss-4)->staticEval > (ss-6)->staticEval + 60)
+        improving++; // hitrate ~5%
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
@@ -990,7 +992,7 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count((bool)improving, depth);
+          moveCountPruning = moveCount >= futility_move_count(improving, depth);
 
           if (   !captureOrPromotion
               && !givesCheck)
@@ -1110,7 +1112,7 @@ moves_loop: // When in check, search starts from here
               || cutNode
               || thisThread->ttHitAverage < 384 * ttHitAverageResolution * ttHitAverageWindow / 1024))
       {
-          Depth r = reduction(improving, depth, moveCount);
+          Depth r = reduction((bool)improving, depth, moveCount);
 
           // Decrease reduction if the ttHit running average is large
           if (thisThread->ttHitAverage > 544 * ttHitAverageResolution * ttHitAverageWindow / 1024)
