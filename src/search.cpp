@@ -79,7 +79,7 @@ namespace {
   }
 
   constexpr int futility_move_count(int improving, Depth depth) {
-    return (5 + depth * depth) * (2 + improving) / 4 - 1;
+    return (5 + depth * depth) * (4 + improving) / 8 - 1;
   }
 
   // History and stats update bonus, based on depth
@@ -815,7 +815,7 @@ namespace {
     improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
-    improving*=2;
+    improving*=4;
     if (improving && (ss-2)->staticEval > (ss-4)->staticEval && (ss-2)->staticEval != VALUE_NONE && (ss-4)->staticEval != VALUE_NONE)
         improving++;
 
