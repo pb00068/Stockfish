@@ -67,7 +67,7 @@ namespace {
   // Razor and futility margins
   constexpr int RazorMargin = 594;
   Value futility_margin(Depth d, int improving) {
-  	return Value(58 * (4 * d - improving));
+  	return Value(116 * (2 * d - improving));
   }
 
   // Reductions lookup table, initialized at startup
@@ -79,7 +79,7 @@ namespace {
   }
 
 constexpr int futility_move_count(int improving, Depth depth) {
-    return (5 + depth * depth) * (4 + improving) / 8 - 1;
+    return (5 + depth * depth) * (2 + improving) / 4 - 1;
   }
 
   // History and stats update bonus, based on depth
@@ -815,7 +815,7 @@ namespace {
     improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
-    improving*=4;
+    improving*=2;
     if (improving && (ss-0)->staticEval < (ss-4)->staticEval + 20
                   && (ss-4)->staticEval < (ss-6)->staticEval + 20)
         improving--;
@@ -833,7 +833,7 @@ namespace {
         && (ss-1)->statScore < 22661
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 33 * depth + 299 - improving * 8
+        &&  ss->staticEval >= beta - 33 * depth + 299 - improving * 15
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -884,7 +884,7 @@ namespace {
         &&  depth >= 5
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value raisedBeta = std::min(beta + 191 - 11 * improving, VALUE_INFINITE);
+        Value raisedBeta = std::min(beta + 191 - 23 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
