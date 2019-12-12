@@ -775,14 +775,15 @@ namespace {
     {
         ss->staticEval = eval = VALUE_NONE;
         improving = false;
+        ss->forwardedEval = (ss-2)->forwardedEval;
         goto moves_loop;  // Skip early pruning when in check
     }
     else if (ttHit)
     {
         // Never assume anything about values stored in TT
-        ss->staticEval = eval = tte->eval();
+        ss->staticEval = ss->forwardedEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos);
+            ss->staticEval = ss->forwardedEval = eval = evaluate(pos);
 
         if (eval == VALUE_DRAW)
             eval = value_draw(thisThread);
@@ -798,10 +799,10 @@ namespace {
         {
             int bonus = -(ss-1)->statScore / 512;
 
-            ss->staticEval = eval = evaluate(pos) + bonus;
+            ss->staticEval = ss->forwardedEval = eval = evaluate(pos) + bonus;
         }
         else
-            ss->staticEval = eval = -(ss-1)->staticEval + 2 * Eval::Tempo;
+            ss->staticEval = ss->forwardedEval = eval = -(ss-1)->staticEval + 2 * Eval::Tempo;
 
         tte->save(posKey, VALUE_NONE, ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
@@ -812,8 +813,8 @@ namespace {
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
-    improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
-              || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
+
+    improving =  ss->forwardedEval >= (ss-2)->forwardedEval;
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
