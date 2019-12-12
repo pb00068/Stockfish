@@ -937,7 +937,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers,
+																			!ttHit && depth <= 3);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
