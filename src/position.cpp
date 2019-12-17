@@ -387,7 +387,7 @@ void Position::set_state(StateInfo* si) const {
           si->pawnKey ^= Zobrist::psq[pc][s];
 
       else if (type_of(pc) != KING)
-          si->nonPawnMaterial[color_of(pc)] += PieceValue[MG][pc];
+          si->nonPawnMaterial[color_of(pc)] += DynPieceValue[pc];
   }
 
   if (si->epSquare != SQ_NONE)
@@ -785,7 +785,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           st->pawnKey ^= Zobrist::psq[captured][capsq];
       }
       else
-          st->nonPawnMaterial[them] -= PieceValue[MG][captured];
+          st->nonPawnMaterial[them] -= DynPieceValue[captured];
 
       // Update board and piece lists
       remove_piece(captured, capsq);
@@ -849,7 +849,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                             ^ Zobrist::psq[pc][pieceCount[pc]];
 
           // Update material
-          st->nonPawnMaterial[us] += PieceValue[MG][promotion];
+          st->nonPawnMaterial[us] += DynPieceValue[promotion];
       }
 
       // Update pawn hash key and prefetch access to pawnsTable
