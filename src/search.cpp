@@ -879,8 +879,9 @@ namespace {
         &&  depth >= 5
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-    	  bool progress = improving && (ss->staticEval > (ss-2)->staticEval || ss->staticEval >= (ss-4)->staticEval);
-        Value raisedBeta = std::min(beta + 191 - 46 * progress, VALUE_INFINITE);
+    	  bool progress =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval > (ss-4)->staticEval
+                      || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval > (ss-2)->staticEval;
+        Value raisedBeta = std::min(beta + 191 -23 * improving - 23 * progress, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
