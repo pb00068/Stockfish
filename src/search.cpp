@@ -815,7 +815,7 @@ namespace {
     improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
               || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
-    progress = improving && ss->staticEval >= (ss-2)->staticEval + 40;
+    progress = improving && ss->staticEval >= (ss-2)->staticEval + 80 && ss->staticEval >= (ss-4)->staticEval + 160;
 
     // Step 8. Futility pruning: child node (~30 Elo)
     if (   !PvNode
