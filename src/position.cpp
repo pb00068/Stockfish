@@ -1061,14 +1061,14 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   // The opponent may be able to recapture so this is the best result
   // we can hope for.
-  balance = PieceValue[MG][piece_on(to)] - threshold;
+  balance = DynPieceValue[piece_on(to)] - threshold;
 
   if (balance < VALUE_ZERO)
       return false;
 
   // Now assume the worst possible result: that the opponent can
   // capture our piece for free.
-  balance -= PieceValue[MG][nextVictim];
+  balance -= DynPieceValue[nextVictim];
 
   // If it is enough (like in PxQ) then return immediately. Note that
   // in case nextVictim == KING we always return here, this is ok
@@ -1107,7 +1107,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       //
       assert(balance < VALUE_ZERO);
 
-      balance = -balance - 1 - PieceValue[MG][nextVictim];
+      balance = -balance - 1 - DynPieceValue[nextVictim];
 
       // If balance is still non-negative after giving away nextVictim then we
       // win. The only thing to be careful about it is that we should revert

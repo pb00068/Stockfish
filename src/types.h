@@ -202,6 +202,7 @@ enum Piece {
 };
 
 extern Value PieceValue[PHASE_NB][PIECE_NB];
+extern Value DynPieceValue[PIECE_NB];
 
 typedef int Depth;
 

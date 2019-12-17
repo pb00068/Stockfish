@@ -354,6 +354,10 @@ void Thread::search() {
       else
           for (int i=0; i<4; ++i)
               mainThread->iterValue[i] = mainThread->previousScore;
+
+      Material::Entry* me = Material::probe(rootPos);
+      for (Piece pc = W_PAWN; pc <= W_KING; ++pc)
+         DynPieceValue[pc] = DynPieceValue[~pc] = me->game_phase() >= PHASE_MIDGAME ? PieceValue[MG][pc] : (PieceValue[MG][pc] + PieceValue[EG][pc])/2;
   }
 
   size_t multiPV = Options["MultiPV"];

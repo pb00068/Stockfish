@@ -27,6 +27,8 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
   { VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg }
 };
 
+Value DynPieceValue[PIECE_NB];
+
 namespace PSQT {
 
 #define S(mg, eg) make_score(mg, eg)
@@ -112,7 +114,7 @@ void init() {
 
   for (Piece pc = W_PAWN; pc <= W_KING; ++pc)
   {
-      PieceValue[MG][~pc] = PieceValue[MG][pc];
+      DynPieceValue[pc] = DynPieceValue[~pc] = PieceValue[MG][~pc] = PieceValue[MG][pc];
       PieceValue[EG][~pc] = PieceValue[EG][pc];
 
       Score score = make_score(PieceValue[MG][pc], PieceValue[EG][pc]);
