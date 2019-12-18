@@ -876,9 +876,10 @@ namespace {
     // If we have a good enough capture and a reduced search returns a value
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
+        && depth >=2
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY)
     {
-        Value raisedBeta = std::min(beta + 191 - 46 * improving + (depth < 5 ? (5 - depth) * 40 : 0), VALUE_INFINITE);
+        Value raisedBeta = std::min(beta + 191 - 46 * improving + (depth < 5 ? (5 - depth) * 120 : 0), VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
 
@@ -903,8 +904,8 @@ namespace {
                 value = -qsearch<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1);
 
                 // If the qsearch held, perform the regular search
-                if (depth >= 5 && value >= raisedBeta)
-                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
+                if (value >= raisedBeta)
+                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth >= 5 ? depth - 4 : std::max(1, depth - 2), !cutNode);
 
                 pos.undo_move(move);
 
