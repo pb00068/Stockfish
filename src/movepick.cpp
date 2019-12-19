@@ -213,11 +213,13 @@ top:
       /* fallthrough */
 
   case QUIET:
-      if (   !skipQuiets
-          && select<Next>([&](){return   *cur != refutations[0].move
-                                      && *cur != refutations[1].move
-                                      && *cur != refutations[2].move;}))
-          return *(cur - 1);
+      if (select<Next>([&](){return   *cur != refutations[0].move
+                                   && *cur != refutations[1].move
+                                   && *cur != refutations[2].move;}))
+      {
+      	  if (!skipQuiets || !(cur - 1)->value || (!cur->value && cur < endMoves))
+      	  	return *(cur - 1);
+      }
 
       // Prepare the pointers to loop over the bad captures
       cur = moves;
