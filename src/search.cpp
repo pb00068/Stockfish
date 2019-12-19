@@ -78,8 +78,8 @@ namespace {
     return (r + 520) / 1024 + (!i && r > 999);
   }
 
-  constexpr int futility_move_count(bool improving, Depth depth, bool cutNode) {
-    return (5 + depth * depth) * (1 + improving + cutNode) / 3 - 1;
+  constexpr int futility_move_count(bool improving, Depth depth, bool allNode) {
+    return (5 + depth * depth) * (1 + improving) / 2 + (allNode ? +2 : -1);
   }
 
   // History and stats update bonus, based on depth
