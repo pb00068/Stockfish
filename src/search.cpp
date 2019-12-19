@@ -985,9 +985,6 @@ moves_loop: // When in check, search starts from here
           && pos.non_pawn_material(us)
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
-          // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth);
-
           if (   !captureOrPromotion
               && !givesCheck)
           {
@@ -1079,11 +1076,17 @@ moves_loop: // When in check, search starts from here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       // Check for legality just before making the move
-      if (!rootNode && !pos.legal(move))
+      if (!rootNode)
       {
-          ss->moveCount = --moveCount;
-          continue;
+      		if (!pos.legal(move))
+      		{
+            ss->moveCount = --moveCount;
+            continue;
+      		}
+          // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
+          moveCountPruning = bestValue > VALUE_MATED_IN_MAX_PLY && moveCount >= futility_move_count(improving, depth);
       }
+
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
