@@ -217,7 +217,15 @@ top:
                                    && *cur != refutations[1].move
                                    && *cur != refutations[2].move;}))
       {
-      	  if (!skipQuiets || !(cur - 1)->value || (!cur->value && cur < endMoves))
+          if (skipQuiets)
+          {
+          	if ((cur - 1)->value == 0)
+          	{
+          		cur->value--; // assure value != zero on next turn
+          		return *(cur - 1);
+          	}
+          }
+          else
       	  	return *(cur - 1);
       }
 
