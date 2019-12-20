@@ -78,8 +78,8 @@ namespace {
     return (r + 520) / 1024 + (!i && r > 999);
   }
 
-  constexpr int futility_move_count(bool improving, Depth depth, bool allNode) {
-    return (5 + depth * depth) * (1 + improving) / 2 + (allNode ? +2 : -1);
+  constexpr int futility_move_count(bool improving, Depth depth, bool cutNode) {
+    return (5 + depth * depth) * (1 + improving) / 2 + (cutNode ? -2 : -1);
   }
 
   // History and stats update bonus, based on depth
@@ -986,7 +986,7 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth, !cutNode);
+          moveCountPruning = moveCount >= futility_move_count(improving, depth, cutNode);
 
           if (   !captureOrPromotion
               && !givesCheck)
