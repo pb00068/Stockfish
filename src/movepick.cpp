@@ -21,7 +21,6 @@
 #include <cassert>
 
 #include "movepick.h"
-#include "misc.h"
 
 namespace {
 
@@ -224,10 +223,7 @@ top:
           endMoves = cur;
           if ((*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)] == 0 &&
               (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)] == 0)
-          {
-          	dbg_hit_on(true);
           	return *(cur - 1);
-          }
       }
 
       // Prepare the pointers to loop over the bad captures
