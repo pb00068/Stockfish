@@ -1602,7 +1602,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (pos.captured_piece() && type_of(pos.captured_piece()) > captured)
+        	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -bonus2;
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
