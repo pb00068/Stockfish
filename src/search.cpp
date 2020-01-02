@@ -1006,12 +1006,14 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + 255 + 182 * lmrDepth <= alpha)
                   continue;
 
+              int offset = 0;
               if ( (*contHist[0])[movedPiece][to_sq(move)] > 0 &&
-                   (*contHist[1])[movedPiece][to_sq(move)] > 0)
-              	lmrDepth++;
+                   (*contHist[1])[movedPiece][to_sq(move)] > 0 &&
+									 thisThread->mainHistory[us][from_to(move)] > 0)
+              	offset = -KnightValueMg;
 
               // Prune moves with negative SEE (~10 Elo)
-              if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(offset -(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~20 Elo)
