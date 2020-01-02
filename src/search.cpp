@@ -1585,6 +1585,7 @@ moves_loop: // When in check, search starts from here
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
+    PieceType beforeCaptured = type_of(pos.captured_piece());
 
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
@@ -1602,11 +1603,10 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
-    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (type_of(pos.captured_piece()) > captured)
-        	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -bonus1;
-    }
+
+    if (beforeCaptured > captured)
+    	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -bonus1;
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
