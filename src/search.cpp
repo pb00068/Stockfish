@@ -707,6 +707,10 @@ namespace {
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
+
+                // Further penalty for previous move in case of a clear beta-cut
+                if (ttValue > beta && is_ok((ss-1)->currentMove))
+                    thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -stat_bonus(depth + 1);
             }
             // Penalty for a quiet ttMove that fails low
             else if (!pos.capture_or_promotion(ttMove))
@@ -1585,7 +1589,6 @@ moves_loop: // When in check, search starts from here
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
-    PieceType beforeCaptured = type_of(pos.captured_piece());
 
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
@@ -1605,7 +1608,8 @@ moves_loop: // When in check, search starts from here
     else
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
 
-    if (bestValue > beta && ((beforeCaptured > captured && prevSq == to_sq(bestMove)) || captured > type_of(moved_piece)))
+    // Further penalty for previous move in case of a clear beta-cut
+    if (bestValue > beta && is_ok((ss-1)->currentMove))
     	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -bonus1;
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
