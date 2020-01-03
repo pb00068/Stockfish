@@ -1605,8 +1605,9 @@ moves_loop: // When in check, search starts from here
     else
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
 
-    if (bestValue > beta && ((beforeCaptured > captured && prevSq == to_sq(bestMove)) || captured > type_of(moved_piece)))
-    	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -bonus1;
+    if (bestValue >= beta && beforeCaptured > captured && prevSq == to_sq(bestMove))
+    	thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << -stat_bonus(depth + 2);
+
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
