@@ -913,7 +913,7 @@ namespace {
                 if (value >= raisedBeta)
                 {
                 	  PieceType captured = type_of(pos.piece_on(to_sq(move)));
-                    if (thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] <= 0)
+                    if (thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] < -2500)
                         thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] << stat_bonus(depth - 3);
                     return value;
                 }
