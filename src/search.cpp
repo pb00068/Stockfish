@@ -1284,7 +1284,7 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion && quietCount < 64)
           {
               quietsSearched[quietCount] = move;
-              quietsSearchedDepths[quietCount++] = doFullDepthSearch ? newDepth + 1 : d+1;
+              quietsSearchedDepths[quietCount++] = (didLMR ? d : newDepth) + 1;
           }
       }
     }
