@@ -90,11 +90,17 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   assert(!pos.checkers());
 
   stage = PROBCUT_TT;
+  if (threshold <=0 &&
+      threshold > KnightValueMg - BishopValueMg)
+      threshold = KnightValueMg - BishopValueMg;
+
   ttMove =   ttm
           && pos.capture(ttm)
           && pos.pseudo_legal(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+
+
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
