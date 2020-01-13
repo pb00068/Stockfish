@@ -1089,6 +1089,10 @@ moves_loop: // When in check, search starts from here
       if (type_of(move) == CASTLING)
           extension = 1;
 
+      // probably last iteration (w/ repeated rootDepth)
+      if (rootNode && moveCount==1 && !extension && !Threads.increaseDepth)
+      	extension = 1;
+
       // Add extension to new depth
       newDepth += extension;
 
