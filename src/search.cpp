@@ -1130,10 +1130,10 @@ moves_loop: // When in check, search starts from here
           {
               r--;
               // Further decrease reduction on late quite moves as hit-rate is still growing
-              if (r > 3
+              if (moveCount > 10
               		&& !captureOrPromotion
-									&& thisThread->ttHitAverage > 540 * ttHitAverageResolution * ttHitAverageWindow / 1024)
-                  r--;
+									&& thisThread->ttHitAverage > 550 * ttHitAverageResolution * ttHitAverageWindow / 1024)
+              	r--;
           }
 
           // Reduction if other threads are searching this position.
