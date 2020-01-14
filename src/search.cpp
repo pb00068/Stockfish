@@ -1127,7 +1127,14 @@ moves_loop: // When in check, search starts from here
 
           // Decrease reduction if the ttHit running average is large
           if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
+          {
               r--;
+              // Further decrease reduction on late quite moves as hit-rate is still growing
+              if (moveCount > 10
+              		&& !captureOrPromotion
+									&& thisThread->ttHitAverage > 550 * ttHitAverageResolution * ttHitAverageWindow / 1024)
+              	r--;
+          }
 
           // Reduction if other threads are searching this position.
           if (th.marked())
