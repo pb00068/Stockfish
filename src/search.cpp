@@ -396,7 +396,7 @@ void Thread::search() {
   int searchAgainCounter = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
-  while (   ++rootDepth < MAX_PLY
+  while (   ++rootDepth + searchAgainCounter < MAX_PLY
          && !Threads.stop
          && !(Limits.depth && mainThread && rootDepth > Limits.depth))
   {
@@ -483,6 +483,8 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
+                  if (!searchAgainCounter)
+                       searchAgainCounter++;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
