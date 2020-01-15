@@ -54,6 +54,9 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
   }
 }
 
+void TTEntry::saveEx_TTMove(Move m) {
+	 key16 = m;
+}
 
 /// TranspositionTable::resize() sets the size of the transposition table,
 /// measured in megabytes. Transposition table consists of a power of 2 number
@@ -107,6 +110,10 @@ void TranspositionTable::clear() {
 
   for (std::thread& th: threads)
       th.join();
+}
+
+TTEntry* TranspositionTable::getPadding(const Key key) const {
+	 return &table[(uint32_t(key) * uint64_t(clusterCount)) >> 32].entry[ClusterSize];
 }
 
 /// TranspositionTable::probe() looks up the current position in the transposition

@@ -129,6 +129,11 @@ public:
                                            Move*);
   Move next_move(bool skipQuiets = false);
 
+  void setRefutation(Move m, int index)
+  {
+  	refutations[index] = m;
+  }
+
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
