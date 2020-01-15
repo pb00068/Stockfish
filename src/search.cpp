@@ -1233,20 +1233,20 @@ moves_loop: // When in check, search starts from here
       pos.undo_move(move);
 
       if (ttMove && moveCount == 1 && value < alpha) // tt-move failed low
-			{
+      {
 
 				TTEntry* tte2 = TT.getPadding(posKey);
 				if (tte2->exTTmove() && tte2->exTTmove() != ttMove && pos.pseudo_legal(tte2->exTTmove()) && !pos.capture(tte2->exTTmove()))
 				{
 					Move mm =  ss->killers[0];
-					if (tte2->exTTmove() != mm && tte2->exTTmove() != ss->killers[1] )
-					{
-						mp.setRefutation(tte2->exTTmove(), 0);
-					  if (mm)
-					  	mp.setRefutation(mm, 1);
-					}
-				}
-			}
+					if (tte2->exTTmove() != mm && tte2->exTTmove() != ss->killers[1])
+				  {
+            mp.setRefutation(tte2->exTTmove(), 0);
+            if (mm)
+              mp.setRefutation(mm, 1);
+          }
+        }
+      }
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1357,10 +1357,9 @@ moves_loop: // When in check, search starts from here
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
 
-			if (ttMove && bestMove && bestMove != ttMove)
-			{
-				 tte = TT.getPadding(posKey);
-				 tte->saveEx_TTMove(ttMove); // save the old tt-move in the padding area
+			if (ttMove && bestMove && bestMove != ttMove)	{
+         tte = TT.getPadding(posKey);
+         tte->saveEx_TTMove(ttMove); // save the old tt-move in the padding area
 			}
     }
 
