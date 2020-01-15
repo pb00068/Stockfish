@@ -1190,8 +1190,8 @@ moves_loop: // When in check, search starts from here
           else if (depth < 8 && moveCount > 2)
               r++;
 
-          // Don't reduce evasion moves to much
-          if (inCheck)
+          // Less reduction on evasions (but never nullify it)
+          if (inCheck && r > 1)
           	r--;
 
           Depth d = clamp(newDepth - r, 1, newDepth);
