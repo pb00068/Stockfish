@@ -1190,6 +1190,10 @@ moves_loop: // When in check, search starts from here
           else if (depth < 8 && moveCount > 2)
               r++;
 
+          // Don't reduce evasion moves to much
+          if (inCheck)
+          	r--;
+
           Depth d = clamp(newDepth - r, 1, newDepth);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
