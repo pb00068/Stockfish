@@ -1125,10 +1125,6 @@ moves_loop: // When in check, search starts from here
       {
           Depth r = reduction(improving, depth, moveCount);
 
-          // Decrease reduction if the ttHit running average is large
-          if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
-              r--;
-
           // Reduction if other threads are searching this position.
           if (th.marked())
               r++;
@@ -1189,6 +1185,15 @@ moves_loop: // When in check, search starts from here
           // Increase reduction for captures/promotions if late move and at low depth
           else if (depth < 8 && moveCount > 2)
               r++;
+
+          // Decrease reduction if the ttHit running average is large
+          if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
+          {
+		         if (thisThread->rootDepth - (ss->ply + newDepth - r) > 8)
+			         r -=2; // Further decrease reduction on very small search trees
+		         else
+			         r--;
+          }
 
           Depth d = clamp(newDepth - r, 1, newDepth);
 
