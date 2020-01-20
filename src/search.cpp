@@ -1151,6 +1151,10 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
+              //decrease reduction when moved piece has become a blocker (or continues to be)
+              if ((pos.blockers_for_king(WHITE) | pos.blockers_for_king(BLACK)) & to_sq(move))
+                 r--;
+
               // Increase reduction for cut nodes (~10 Elo)
               if (cutNode)
                   r += 2;
