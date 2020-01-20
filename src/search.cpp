@@ -786,15 +786,7 @@ namespace {
     // Step 6. Static evaluation of the position
     if (inCheck)
     {
-        ss->staticEval = (ss-2)->staticEval;
-        // worsen eval if king-chase with king forced to move forwards
-        if (pos.non_pawn_material(~us) >= 3 * RookValueMg
-        	&& is_ok((ss-2)->currentMove)
-        	&& pos.square<KING>(us) == to_sq((ss-2)->currentMove)
-          &&  relative_rank(us, rank_of(pos.square<KING>(us))) >
-        	    relative_rank(us, rank_of(from_sq((ss-2)->currentMove))))
-               ss->staticEval -= 2 * relative_rank(us, rank_of(pos.square<KING>(us)));
-        eval = ss->staticEval;
+        ss->staticEval = eval = VALUE_NONE;
         improving = false;
         goto moves_loop;  // Skip early pruning when in check
     }
@@ -833,7 +825,8 @@ namespace {
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
-    improving =  ss->staticEval > (ss-2)->staticEval;
+    improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval >= (ss-4)->staticEval
+              || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval >= (ss-2)->staticEval;
 
     // Step 8. Futility pruning: child node (~50 Elo)
     if (   !PvNode
@@ -1415,7 +1408,7 @@ moves_loop: // When in check, search starts from here
     // Evaluate the position statically
     if (inCheck)
     {
-        ss->staticEval = (ss-2)->staticEval;
+        ss->staticEval = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
     }
     else
