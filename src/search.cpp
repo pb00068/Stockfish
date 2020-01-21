@@ -1188,9 +1188,10 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            ss->statScore = (int(PieceValue[MG][pos.captured_piece()]) * 6
-                + (thisThread->captureHistory)[movedPiece][to_sq(move)][type_of(pos.captured_piece())]) - 11800;
-            if (ss->statScore > -1000)
+          	if (!ss->statScore)
+                ss->statScore = (int(PieceValue[MG][pos.captured_piece()]) * 6
+                + (thisThread->captureHistory)[movedPiece][to_sq(move)][type_of(pos.captured_piece())]) - 9800;
+            if (ss->statScore > 0)
                 r--;
           	// Increase reduction for captures/promotions if late move and at low depth
             if (depth < 8 && moveCount > 2)
