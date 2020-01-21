@@ -1175,7 +1175,6 @@ moves_loop: // When in check, search starts from here
                   && thisThread->mainHistory[us][from_to(move)] >= 0)
                   ss->statScore = 0;
 
-
               // Decrease/increase reduction by comparing opponent's stat score (~10 Elo)
               if (ss->statScore >= -102 && (ss-1)->statScore < -114)
                   r--;
@@ -1188,10 +1187,9 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-          	if (!ss->statScore) {
+          	if (quietCount < 2)
                 ss->statScore = (int(PieceValue[MG][pos.captured_piece()]) * 6
-                + (thisThread->captureHistory)[movedPiece][to_sq(move)][type_of(pos.captured_piece())]) - 11800;
-          	}
+                + (thisThread->captureHistory)[movedPiece][to_sq(move)][type_of(pos.captured_piece())]) - 5000;
             if (ss->statScore > 0)
                 r--;
           	// Increase reduction for captures/promotions if late move and at low depth
