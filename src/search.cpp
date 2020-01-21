@@ -1196,7 +1196,7 @@ moves_loop: // When in check, search starts from here
 
           doFullDepthSearch = (value > alpha && d != newDepth), didLMR = true;
 
-          // renounce full depth search when just 1 below depth and another thread is searching this pos
+          // renounce full depth search when just 1 below depth and another thread is searching this pos.
           if (th.marked() && d + 1 == newDepth)
           	  doFullDepthSearch = false;
       }
