@@ -1202,6 +1202,10 @@ moves_loop: // When in check, search starts from here
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
       {
+          if (captureOrPromotion && quietCount < 2)
+      	         ss->statScore = (int(PieceValue[MG][pos.captured_piece()]) * 6
+                  + (thisThread->captureHistory)[movedPiece][to_sq(move)][type_of(pos.captured_piece())])
+                  - (didLMR ? 3000 : 5000);
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
           if (didLMR && !captureOrPromotion)
