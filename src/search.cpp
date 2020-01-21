@@ -1195,6 +1195,10 @@ moves_loop: // When in check, search starts from here
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && d != newDepth), didLMR = true;
+
+          // renounce full depth search when just 1 below depth and another thread is searching this pos
+          if (th.marked() && d + 1 == newDepth)
+          	  doFullDepthSearch = false;
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1, didLMR = false;
