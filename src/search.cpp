@@ -116,7 +116,7 @@ namespace {
   struct ThreadHolding {
     explicit ThreadHolding(Thread* thisThread, Key posKey, int ply, Value alfa) {
        location = ply < 8 ? &breadcrumbs[posKey & (breadcrumbs.size() - 1)] : nullptr;
-       alpha = 0;
+       alpha = VALUE_ZERO;
        owning = false;
        if (location)
        {
@@ -141,9 +141,15 @@ namespace {
 
     Value otherAlpha() { return alpha; }
 
+    void updateAlpha(Value alfa)
+    {
+    	alpha = alfa;
+    }
+
     private:
     Breadcrumb* location;
-    Value  alpha, owning;
+    Value  alpha;
+		bool owning;
   };
 
   template <NodeType NT>
@@ -1283,7 +1289,7 @@ moves_loop: // When in check, search starts from here
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
                   alpha = value;
-                  ThreadHolding th(thisThread, posKey, ss->ply, alpha);
+                  th.updateAlpha(alpha);
               }
               else
               {
