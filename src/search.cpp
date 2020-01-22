@@ -1125,25 +1125,27 @@ moves_loop: // When in check, search starts from here
       {
           Depth r = reduction(improving, depth, moveCount);
 
-          // Decrease reduction if the ttHit running average is large
-          if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
-              r--;
-
           // Reduction if other threads are searching this position.
           if (th.marked())
               r++;
+          else
+          {
+             // Decrease reduction if the ttHit running average is large
+             if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
+                 r--;
 
-          // Decrease reduction if position is or has been on the PV (~10 Elo)
-          if (ttPv)
-              r -= 2;
+             // Decrease reduction if position is or has been on the PV (~10 Elo)
+             if (ttPv)
+                 r -= 2;
 
-          // Decrease reduction if opponent's move count is high (~5 Elo)
-          if ((ss-1)->moveCount > 14)
-              r--;
+             // Decrease reduction if opponent's move count is high (~5 Elo)
+             if ((ss-1)->moveCount > 14)
+                 r--;
 
-          // Decrease reduction if ttMove has been singularly extended (~3 Elo)
-          if (singularLMR)
-              r -= 2;
+             // Decrease reduction if ttMove has been singularly extended (~3 Elo)
+             if (singularLMR)
+                 r -= 2;
+          }
 
           if (!captureOrPromotion)
           {
@@ -1195,10 +1197,6 @@ moves_loop: // When in check, search starts from here
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && d != newDepth), didLMR = true;
-
-          // renounce full depth search when just 1 below depth and another thread is searching this pos.
-          if (th.marked() && d + 1 == newDepth)
-          	  doFullDepthSearch = false;
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1, didLMR = false;
