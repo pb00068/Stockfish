@@ -117,6 +117,7 @@ namespace {
     explicit ThreadHolding(Thread* thisThread, Key posKey, int ply, Value alfa) {
        location = ply < 8 ? &breadcrumbs[posKey & (breadcrumbs.size() - 1)] : nullptr;
        alpha = VALUE_ZERO;
+       otherThread = false;
        owning = false;
        if (location)
        {
@@ -130,7 +131,7 @@ namespace {
           }
           else if (   tmp != thisThread
                    && (*location).key.load(std::memory_order_relaxed) == posKey)
-              alpha = alfa;
+              alpha = alfa, otherThread=true;
        }
     }
 
@@ -138,18 +139,23 @@ namespace {
        if (owning) // Free the marked location
            (*location).thread.store(nullptr, std::memory_order_relaxed);
     }
-
+    
+    bool marked() { return otherThread; }
+    
     Value otherAlpha() { return alpha; }
+
+    
 
     void updateAlpha(Value alfa)
     {
-    	alpha = alfa;
+    	if (otherThread)
+    	    alpha = alfa;
     }
 
     private:
     Breadcrumb* location;
     Value  alpha;
-		bool owning;
+		bool otherThread, owning;
   };
 
   template <NodeType NT>
@@ -1136,7 +1142,7 @@ moves_loop: // When in check, search starts from here
               r--;
 
           // Reduction if other threads are searching this position with same alpha
-          if (alpha != VALUE_ZERO && th.otherAlpha() == alpha)
+          if (th.marked() && th.otherAlpha() == alpha)
               r++;
 
           // Decrease reduction if position is or has been on the PV (~10 Elo)
