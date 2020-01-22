@@ -114,9 +114,9 @@ namespace {
   // node for potential reductions. A free node will be marked upon entering the moves
   // loop by the constructor, and unmarked upon leaving that loop by the destructor.
   struct ThreadHolding {
-    explicit ThreadHolding(Thread* thisThread, Key posKey, int ply) {
+    explicit ThreadHolding(Thread* thisThread, Key posKey, int ply, Value alfa) {
        location = ply < 8 ? &breadcrumbs[posKey & (breadcrumbs.size() - 1)] : nullptr;
-       otherThread = false;
+       alpha = 0;
        owning = false;
        if (location)
        {
@@ -130,7 +130,7 @@ namespace {
           }
           else if (   tmp != thisThread
                    && (*location).key.load(std::memory_order_relaxed) == posKey)
-              otherThread = true;
+              alpha = alfa;
        }
     }
 
@@ -139,11 +139,11 @@ namespace {
            (*location).thread.store(nullptr, std::memory_order_relaxed);
     }
 
-    bool marked() { return otherThread; }
+    Value otherAlpha() { return alpha; }
 
     private:
     Breadcrumb* location;
-    bool otherThread, owning;
+    Value  alpha, owning;
   };
 
   template <NodeType NT>
@@ -957,7 +957,7 @@ moves_loop: // When in check, search starts from here
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
 
     // Mark this node as being searched
-    ThreadHolding th(thisThread, posKey, ss->ply);
+    ThreadHolding th(thisThread, posKey, ss->ply, alpha);
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1129,8 +1129,8 @@ moves_loop: // When in check, search starts from here
           if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
               r--;
 
-          // Reduction if other threads are searching this position.
-          if (th.marked())
+          // Reduction if other threads are searching this position with same alpha
+          if (alpha != VALUE_ZERO && th.otherAlpha() == alpha)
               r++;
 
           // Decrease reduction if position is or has been on the PV (~10 Elo)
@@ -1281,7 +1281,10 @@ moves_loop: // When in check, search starts from here
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              {
                   alpha = value;
+                  ThreadHolding th(thisThread, posKey, ss->ply, alpha);
+              }
               else
               {
                   assert(value >= beta); // Fail high
