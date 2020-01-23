@@ -624,10 +624,11 @@ bool Position::pseudo_legal(const Move m) const {
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
-bool Position::gives_check(Move m) const {
+bool Position::gives_check(Move m, bool& discoCheck) const {
 
   assert(is_ok(m));
   assert(color_of(moved_piece(m)) == sideToMove);
+  discoCheck=false;
 
   Square from = from_sq(m);
   Square to = to_sq(m);
@@ -639,7 +640,10 @@ bool Position::gives_check(Move m) const {
   // Is there a discovered check?
   if (   (st->blockersForKing[~sideToMove] & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
+  {
+  	  discoCheck = true;
       return true;
+  }
 
   switch (type_of(m))
   {
@@ -658,8 +662,9 @@ bool Position::gives_check(Move m) const {
       Square capsq = make_square(file_of(to), rank_of(from));
       Bitboard b = (pieces() ^ from ^ capsq) | to;
 
-      return  (attacks_bb<  ROOK>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, ROOK))
-            | (attacks_bb<BISHOP>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, BISHOP));
+      discoCheck =  (attacks_bb<  ROOK>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, ROOK))
+                  | (attacks_bb<BISHOP>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, BISHOP));
+      return discoCheck;
   }
   case CASTLING:
   {

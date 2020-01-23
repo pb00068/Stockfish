@@ -108,7 +108,7 @@ public:
   Bitboard checkers() const;
   Bitboard blockers_for_king(Color c) const;
   Bitboard check_squares(PieceType pt) const;
-  bool is_discovery_check_on_king(Color c, Move m) const;
+
 
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
@@ -123,7 +123,7 @@ public:
   bool pseudo_legal(const Move m) const;
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
-  bool gives_check(Move m) const;
+  bool gives_check(Move m, bool& discoCheck) const;
   bool advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   Piece captured_piece() const;
@@ -322,9 +322,6 @@ inline Bitboard Position::check_squares(PieceType pt) const {
   return st->checkSquares[pt];
 }
 
-inline bool Position::is_discovery_check_on_king(Color c, Move m) const {
-  return st->blockersForKing[c] & from_sq(m);
-}
 
 inline bool Position::pawn_passed(Color c, Square s) const {
   return !(pieces(~c, PAWN) & passed_pawn_span(c, s));
@@ -446,7 +443,8 @@ inline void Position::move_piece(Piece pc, Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt) {
-  do_move(m, newSt, gives_check(m));
+	bool disco;
+  do_move(m, newSt, gives_check(m, disco));
 }
 
 #endif // #ifndef POSITION_H_INCLUDED
