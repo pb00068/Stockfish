@@ -1112,8 +1112,15 @@ moves_loop: // When in check, search starts from here
           continue;
       }
 
-      if (captureOrPromotion && type_of(pos.piece_on(to_sq(move))) == QUEEN)
-      	ss->queenTaker = move;
+      // detect cheap Queen capture (possibly not determined by last move)
+      if (captureOrPromotion
+          && type_of(pos.piece_on(to_sq(move))) == QUEEN
+          && type_of(movedPiece) != QUEEN
+          && is_ok((ss-1)->currentMove)
+          && to_sq((ss-1)->currentMove) != to_sq(move)
+          && !(between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove)))
+          ss->queenTaker = move;
+
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
