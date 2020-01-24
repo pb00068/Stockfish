@@ -672,7 +672,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->queenTaker = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -946,11 +946,15 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
+
+    bool qenprise = ((ss+1)->queenTaker && pos.pseudo_QueenCapture((ss+1)->queenTaker, us)) ||
+                    ((ss+3)->queenTaker && pos.pseudo_QueenCapture((ss+3)->queenTaker, us));
+
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, qenprise);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1035,6 +1039,8 @@ moves_loop: // When in check, search starts from here
           }
       }
 
+
+
       // Step 14. Extensions (~75 Elo)
 
       // Singular extension search (~70 Elo). If all moves but one fail low on a
@@ -1105,6 +1111,9 @@ moves_loop: // When in check, search starts from here
           ss->moveCount = --moveCount;
           continue;
       }
+
+      if (captureOrPromotion && type_of(pos.piece_on(to_sq(move))) == QUEEN)
+      	ss->queenTaker = move;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;

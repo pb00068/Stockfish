@@ -550,6 +550,21 @@ bool Position::legal(Move m) const {
 }
 
 
+bool Position::pseudo_QueenCapture(const Move m, Color queencolor) const
+{
+	 Square from = from_sq(m);
+	 Square to = to_sq(m);
+
+	 if (!piece_on(to) || color_of(piece_on(to)) != queencolor || type_of(piece_on(to)) != QUEEN)
+		 return false;
+	 if (!piece_on(from) || color_of(piece_on(from)) == queencolor)
+	 	 return false;
+
+	 if (type_of(piece_on(from)) != PAWN)
+		   return bool(attacks_from(type_of(piece_on(from)), from) & to);
+	 return true;
+}
+
 /// Position::pseudo_legal() takes a random move and tests whether the move is
 /// pseudo legal. It is used to validate moves from TT that can be corrupted
 /// due to SMP concurrent access or hash position key aliasing.
