@@ -57,7 +57,7 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool qenprise)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
 
@@ -66,7 +66,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  qEnprise = qenprise;
 }
 
 /// MovePicker constructor for quiescence search
@@ -175,8 +174,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-      	               bool ignoringQueen = qEnprise && type_of(pos.moved_piece(*cur)) != QUEEN && !pos.gives_check(*cur);
-                       return pos.see_ge(*cur, Value(-55 * cur->value / 1024 + ignoringQueen * RookValueMg)) ?
+                       return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);

@@ -126,8 +126,7 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*,
-																					 bool);
+                                           Move*);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -147,7 +146,6 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
-  bool qEnprise;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
