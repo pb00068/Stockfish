@@ -672,7 +672,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->queenTaker = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->bigTaker = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -947,8 +947,7 @@ moves_loop: // When in check, search starts from here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
 
-    bool qenprise = ((ss+1)->queenTaker && pos.pseudo_QueenCapture((ss+1)->queenTaker, us)) ||
-                    ((ss+3)->queenTaker && pos.pseudo_QueenCapture((ss+3)->queenTaker, us));
+    bool bigEnprise = (ss+1)->bigTaker && pos.pseudo_BigCapture((ss+1)->bigTaker, (ss+1)->bigTake, us);
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
@@ -1011,14 +1010,19 @@ moves_loop: // When in check, search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
+              int offset = 0;
+              if (bigEnprise)
+              	offset = to_sq((ss+1)->bigTaker) == from_sq(move) ? -2 : +1;
+
+
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1) - 2 * bool(qenprise && type_of(movedPiece) == QUEEN)
+              if (   lmrDepth < 4 + offset + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
 
               // Futility pruning: parent node (~5 Elo)
-              if (   lmrDepth < 6
+              if (   lmrDepth < 6 + offset
                   && !inCheck
                   && ss->staticEval + 235 + 172 * lmrDepth <= alpha
                   &&  thisThread->mainHistory[us][from_to(move)]
@@ -1112,14 +1116,14 @@ moves_loop: // When in check, search starts from here
           continue;
       }
 
-      // detect cheap Queen capture (possibly not determined by last move)
+      // detect cheap major piece capture (possibly not determined by last move)
       if (captureOrPromotion
-          && type_of(pos.piece_on(to_sq(move))) == QUEEN
-          && type_of(movedPiece) != QUEEN
+          && type_of(pos.piece_on(to_sq(move))) >= ROOK
+          && type_of(pos.piece_on(to_sq(move))) > type_of(movedPiece)
           && is_ok((ss-1)->currentMove)
-          && to_sq((ss-1)->currentMove) != to_sq(move)
-          && !(between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove)))
-          ss->queenTaker = move;
+          && to_sq((ss-1)->currentMove) != to_sq(move))
+          //&& !(between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove))) access to between_bb's are not cheap
+          ss->bigTaker = move, ss->bigTake = type_of(pos.piece_on(to_sq(move)));
 
 
       // Update the current move (this must be done after singular extension search)

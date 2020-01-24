@@ -550,14 +550,14 @@ bool Position::legal(Move m) const {
 }
 
 
-bool Position::pseudo_QueenCapture(const Move m, Color queencolor) const
+bool Position::pseudo_BigCapture(const Move m, PieceType pt, Color color) const
 {
 	 Square from = from_sq(m);
 	 Square to = to_sq(m);
 
-	 if (!piece_on(to) || color_of(piece_on(to)) != queencolor || type_of(piece_on(to)) != QUEEN)
+	 if (!piece_on(to) || color_of(piece_on(to)) != color || type_of(piece_on(to)) != pt)
 		 return false;
-	 if (!piece_on(from) || color_of(piece_on(from)) == queencolor)
+	 if (!piece_on(from) || color_of(piece_on(from)) == color)
 	 	 return false;
 
 	 if (type_of(piece_on(from)) != PAWN)
