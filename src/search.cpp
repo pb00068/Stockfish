@@ -1181,16 +1181,15 @@ moves_loop: // When in check, search starts from here
               r -= ss->statScore / 16384;
 
               // Increase reduction for cut nodes (~10 Elo)
-							if (cutNode)
-									r += 2;
+              if (cutNode)
+                  r += 2;
 
-							// Decrease reduction for moves that escape a capture. Filter out
-							// castling moves, because they are coded as "king captures rook" and
-							// hence break make_move(). (~2 Elo)
-							else if (    type_of(move) == NORMAL
-											 && !pos.see_ge(reverse_move(move)))
-									r -= 2 + ttPv;
-
+              // Decrease reduction for moves that escape a capture. Filter out
+              // castling moves, because they are coded as "king captures rook" and
+              // hence break make_move(). (~2 Elo)
+              else if (    type_of(move) == NORMAL
+                       && !pos.see_ge(reverse_move(move)))
+                  r -= 2 + ttPv;
           }
 
           // Increase reduction for captures/promotions if late move and at low depth
@@ -1199,7 +1198,7 @@ moves_loop: // When in check, search starts from here
 
           Depth red = reduction(improving, depth, moveCount);
           if (r > red)
-          	  r = red;
+          	  red++;
 
           Depth d = clamp(newDepth - r - red, 1, newDepth);
 
