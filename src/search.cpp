@@ -1127,7 +1127,7 @@ moves_loop: // When in check, search starts from here
               || cutNode
               || thisThread->ttHitAverage < 375 * ttHitAverageResolution * ttHitAverageWindow / 1024))
       {
-          Depth r = reduction(improving, depth, moveCount);
+          Depth r = 0;
 
           // Decrease reduction if the ttHit running average is large
           if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
@@ -1155,16 +1155,7 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
-              // Increase reduction for cut nodes (~10 Elo)
-              if (cutNode)
-                  r += 2;
 
-              // Decrease reduction for moves that escape a capture. Filter out
-              // castling moves, because they are coded as "king captures rook" and
-              // hence break make_move(). (~2 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
-                  r -= 2 + ttPv;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1188,12 +1179,28 @@ moves_loop: // When in check, search starts from here
 
               // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
               r -= ss->statScore / 16384;
+
+              // Increase reduction for cut nodes (~10 Elo)
+							if (cutNode)
+									r += 2;
+
+							// Decrease reduction for moves that escape a capture. Filter out
+							// castling moves, because they are coded as "king captures rook" and
+							// hence break make_move(). (~2 Elo)
+							else if (    type_of(move) == NORMAL
+											 && !pos.see_ge(reverse_move(move)))
+									r -= 2 + ttPv;
+
           }
 
           // Increase reduction for captures/promotions if late move and at low depth
           else if (depth < 8 && moveCount > 2)
               r++;
 
+          if(r > 2)
+          	r--;
+
+          r +=reduction(improving, depth, moveCount);
           Depth d = clamp(newDepth - r, 1, newDepth);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
