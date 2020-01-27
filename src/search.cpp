@@ -947,7 +947,7 @@ moves_loop: // When in check, search starts from here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
 
-    bool bigEnprise = (ss+1)->bigTaker && pos.pseudo_BigCapture((ss+1)->bigTaker, (ss+1)->bigTake, us);
+    int bigEnprise = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
@@ -1010,10 +1010,10 @@ moves_loop: // When in check, search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-              int offset = 0;
-              if (bigEnprise)
-              	offset = to_sq((ss+1)->bigTaker) == from_sq(move) ? -2 : +1;
+              if (!bigEnprise) // init
+              	   bigEnprise = 1 + bool((ss+1)->bigTaker && pos.pseudo_BigCapture((ss+1)->bigTaker, (ss+1)->bigTake, us));
 
+              int offset = bigEnprise == 2 && to_sq((ss+1)->bigTaker) == from_sq(move) ? -3 : 0;
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 4 + offset + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
@@ -1116,13 +1116,10 @@ moves_loop: // When in check, search starts from here
           continue;
       }
 
-      // detect cheap major piece capture (possibly not determined by last move)
+      // detect cheap major piece capture
       if (captureOrPromotion
           && type_of(pos.piece_on(to_sq(move))) >= ROOK
-          && type_of(pos.piece_on(to_sq(move))) > type_of(movedPiece)
-          && is_ok((ss-1)->currentMove)
-          && to_sq((ss-1)->currentMove) != to_sq(move))
-          //&& !(between_bb(from_sq(move), to_sq(move)) & from_sq((ss-1)->currentMove))) access to between_bb's are not cheap
+          && type_of(pos.piece_on(to_sq(move))) > type_of(movedPiece))
           ss->bigTaker = move, ss->bigTake = type_of(pos.piece_on(to_sq(move)));
 
 
@@ -1186,8 +1183,8 @@ moves_loop: // When in check, search starts from here
                        && !pos.see_ge(reverse_move(move)))
               {
                   r -= 2 + ttPv;
-                  if (!bigEnprise && (type_of(movedPiece) == QUEEN || type_of(movedPiece) == ROOK))
-                       (ss+1)->bigTaker = reverse_move(move), bigEnprise=true;
+                  if (bigEnprise != 2 && (type_of(movedPiece) == QUEEN || type_of(movedPiece) == ROOK))
+                       (ss+1)->bigTaker = reverse_move(move), bigEnprise=2;
               }
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
