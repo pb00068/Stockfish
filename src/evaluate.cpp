@@ -462,7 +462,37 @@ namespace {
 
 
     }
-    else kingDanger = 192;
+    else // just consider safe checks
+    {
+    	safe  = ~pos.pieces(Them) & ~attackedBy[Us][ALL_PIECES];
+
+      b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+      b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+
+      // Enemy rooks checks
+      rookChecks = b1 & safe & attackedBy[Them][ROOK];
+
+      if (rookChecks)
+          kingDanger += RookSafeCheck;
+
+      queenChecks =  (b1 | b2)
+                   & attackedBy[Them][QUEEN]
+                   & safe
+                   & ~attackedBy[Us][QUEEN]
+                   & ~rookChecks;
+
+      if (queenChecks)
+          kingDanger += QueenSafeCheck;
+
+      bishopChecks =  b2 & attackedBy[Them][BISHOP] & safe & ~queenChecks;
+			if (bishopChecks)
+					kingDanger += BishopSafeCheck;
+
+			// Enemy knights checks
+			knightChecks = pos.attacks_from<KNIGHT>(ksq) & attackedBy[Them][KNIGHT];
+			if (knightChecks & safe)
+          kingDanger += KnightSafeCheck;
+    }
 
     // Transform the kingDanger units into a Score, and subtract it from the evaluation
     if (kingDanger > 100)
