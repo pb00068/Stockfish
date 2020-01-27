@@ -1197,11 +1197,11 @@ moves_loop: // When in check, search starts from here
           else if (depth < 8 && moveCount > 2)
               r++;
 
-          if(r > 2)
-          	r--;
+          Depth red = reduction(improving, depth, moveCount);
+          if (r > red)
+          	  r = red;
 
-          r +=reduction(improving, depth, moveCount);
-          Depth d = clamp(newDepth - r, 1, newDepth);
+          Depth d = clamp(newDepth - r - red, 1, newDepth);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
