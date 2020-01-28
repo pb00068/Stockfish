@@ -924,7 +924,12 @@ namespace {
                 pos.undo_move(move);
 
                 if (value >= raisedBeta)
+                {
+                	  if (depth < 7 &&
+                	    thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][ type_of(pos.piece_on(to_sq(move)))] < 0)
+                	  	thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][ type_of(pos.piece_on(to_sq(move)))] << stat_bonus(depth - 4);
                     return value;
+                }
             }
     }
 
