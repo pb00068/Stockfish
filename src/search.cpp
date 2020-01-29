@@ -1029,9 +1029,8 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            int offset = givesCheck
-                         && captureOrPromotion
-                         && thisThread->captureHistory[movedPiece][to_sq(move)][ type_of(pos.piece_on(to_sq(move)))] > 300;
+            int offset = captureOrPromotion
+                         && thisThread->captureHistory[movedPiece][to_sq(move)][ type_of(pos.piece_on(to_sq(move)))] >=0;
           	if (!pos.see_ge(move, Value(-194) * (depth + 4 * offset))) // (~25 Elo)
             {
               if (captureOrPromotion && captureCount < 32)
