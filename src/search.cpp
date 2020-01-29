@@ -1027,11 +1027,16 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
+          else
           {
+
+            int offset = captureOrPromotion && depth > 2 ? thisThread->captureHistory[movedPiece][to_sq(move)][ type_of(pos.piece_on(to_sq(move)))] / 2048 : 0;
+          	if (!pos.see_ge(move, Value(-194) * (depth + offset))) // (~25 Elo)
+            {
               if (captureOrPromotion && captureCount < 32)
                   capturesSearched[captureCount++] = move;
               continue;
+            }
           }
       }
 
