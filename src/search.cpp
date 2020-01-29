@@ -1035,13 +1035,17 @@ moves_loop: // When in check, search starts from here
           	if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
             {
           		bool cut = true;
-          		if (depth > 4 && givesCheck && captureOrPromotion) {
-          			ss->currentMove = move;
-								pos.do_move(move, st);
-								value = -qsearch<NonPV>(pos, ss+1, -(alpha+1), -alpha);
-								pos.undo_move(move);
-								cut = value < alpha;
-          		}
+//          		if (depth > 4 && givesCheck && captureOrPromotion) {
+//          			ss->currentMove = move;
+//
+//								pos.do_move(move, st);
+//
+//								// Perform a preliminary qsearch to verify that the move holds
+//								value = -qsearch<NonPV>(pos, ss+1, -(alpha+1), -alpha);
+//
+//								pos.undo_move(move);
+//								cut = true;// value < alpha+1;
+//          		}
           		if (cut)
           		{
           		    if (captureOrPromotion && captureCount < 32)
