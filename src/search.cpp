@@ -1295,7 +1295,7 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove)
+      if (move != bestMove && (!PvNode || moveCount > 1))
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
