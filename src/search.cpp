@@ -1603,7 +1603,6 @@ moves_loop: // When in check, search starts from here
 
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
-
     int bonus1, bonus2;
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
