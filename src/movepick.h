@@ -128,6 +128,7 @@ public:
                                            Move,
                                            Move*);
   Move next_move(bool skipQuiets = false);
+  void kickValid();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -140,8 +141,8 @@ private:
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
   Move ttMove;
-  ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
-  int stage;
+  ExtMove refutations[4], *cur, *endMoves, *endBadCaptures;
+  int stage, refs;
   Square recaptureSquare;
   Value threshold;
   Depth depth;
