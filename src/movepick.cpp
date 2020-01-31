@@ -183,6 +183,16 @@ top:
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
 
+      // If killer1 is legal & quiet then don't consider killer 2
+      if (*cur != MOVE_NONE &&	*cur != ttMove && pos.pseudo_legal(*cur) && !pos.capture(*cur) && pos.legal(*cur))
+      {
+        refutations[1].move = MOVE_NONE;
+        if (refutations[0].move == refutations[2].move)
+          --endMoves;
+        ++stage;
+        return *(cur++);
+      }
+
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
