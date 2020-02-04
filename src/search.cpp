@@ -694,7 +694,7 @@ namespace {
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
-    ttPv = depth > 3 && (PvNode || (ttHit && tte->is_pv() && tte->depth() > 3));
+    ttPv = depth > 5 && (PvNode || (ttHit && tte->is_pv() && tte->depth() > 5));
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
                                 + ttHitAverageResolution * ttHit;
