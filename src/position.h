@@ -320,8 +320,8 @@ inline Bitboard Position::blockers_for_king(Color c) const {
 }
 
 inline int Position::blockers_change(Color c) const {
-	 return (!st->blockersForKing[ c] &&  st->previous->blockersForKing[ c])
-			 +  ( st->blockersForKing[~c] && !st->previous->blockersForKing[~c]);
+	 return (popcount(st->previous->blockersForKing[c]) - popcount(st->blockersForKing[c]))
+			 +  (popcount(st->blockersForKing[~c]) - popcount(st->previous->blockersForKing[~c]));
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {
