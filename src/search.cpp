@@ -1148,7 +1148,8 @@ moves_loop: // When in check, search starts from here
 
           if (!captureOrPromotion)
           {
-              r += pos.blockers_changeBad(us);
+          	  if (!inCheck || type_of(movedPiece) == KING)
+          	  	r += pos.blockers_changeBad(us);
 
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
