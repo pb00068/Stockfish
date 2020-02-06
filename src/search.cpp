@@ -1130,9 +1130,6 @@ moves_loop: // When in check, search starts from here
           if (thisThread->ttHitAverage > 500 * ttHitAverageResolution * ttHitAverageWindow / 1024)
               r--;
 
-          if (pos.blockers_change(us) > 0)
-          	  r--;
-
           // Reduction if other threads are searching this position.
           if (th.marked())
               r++;
@@ -1151,6 +1148,8 @@ moves_loop: // When in check, search starts from here
 
           if (!captureOrPromotion)
           {
+              if (pos.blockers_change(us) > 0)
+               	  r--;
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
                   r++;
