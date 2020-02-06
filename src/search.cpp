@@ -1148,7 +1148,7 @@ moves_loop: // When in check, search starts from here
 
           if (!captureOrPromotion)
           {
-              r -= pos.blockers_change(us);
+              r += pos.blockers_changeBad(us);
 
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
