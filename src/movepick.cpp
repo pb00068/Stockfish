@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "tt.h"
 
 namespace {
 
@@ -57,9 +58,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool root)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), rootPos(root) {
 
   assert(d > 0);
 
@@ -127,6 +128,19 @@ void MovePicker::score() {
                        + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
+
+   // Boost quiet rootMoves which had been in the PV
+   if (Type == QUIETS && rootPos)
+    	for (auto& m : *this)
+    	{
+    		  Move move = m.move;
+    		  if (type_of(move) == NORMAL) {
+    		  	Key k = pos.getKey(move);
+    		  	TTEntry* tte = TT.probe(k, rootPos);
+    		  	if (rootPos && tte->is_pv())
+    		  		m.value +=15000;
+    		  }
+    	}
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.

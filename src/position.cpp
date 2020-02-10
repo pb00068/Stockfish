@@ -677,6 +677,14 @@ bool Position::gives_check(Move m) const {
   }
 }
 
+Key Position::getKey(Move m) const
+{
+	Piece pc = piece_on(from_sq(m));
+	Key k = st->key ^ Zobrist::side;
+	k ^= Zobrist::psq[pc][from_sq(m)] ^ Zobrist::psq[pc][to_sq(m)];
+	return k;
+}
+
 
 /// Position::do_move() makes a move, and saves all information necessary
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal

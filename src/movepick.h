@@ -126,7 +126,7 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*);
+                                           Move*, bool);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -146,6 +146,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  bool rootPos;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
