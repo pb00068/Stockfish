@@ -514,7 +514,10 @@ void Thread::search() {
           completedDepth = rootDepth;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
-      	 if (rootDepth > 10 && is_ok(lastBestMove) && !rootPos.capture_or_promotion(lastBestMove))
+      	 if (rootDepth > 5
+             && is_ok(lastBestMove)
+      	     && lastBestMove != ss->killers[0]
+             && !rootPos.capture_or_promotion(lastBestMove))
       	 {
       		 ss->killers[1] = ss->killers[0];
       		 ss->killers[0] = lastBestMove;
@@ -1660,7 +1663,8 @@ moves_loop: // When in check, search starts from here
 
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
-    if (ss->killers[0] != move)
+  	// update killers except at root-node with high depths
+    if (ss->killers[0] != move && (ss->ply || bonus < 1400))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
