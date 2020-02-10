@@ -514,8 +514,11 @@ void Thread::search() {
           completedDepth = rootDepth;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
-      	 if (is_ok(lastBestMove) && !rootPos.capture_or_promotion(lastBestMove))
+      	 if (rootDepth > 10 && is_ok(lastBestMove) && !rootPos.capture_or_promotion(lastBestMove))
+      	 {
+      		 ss->killers[1] = ss->killers[0];
       		 ss->killers[0] = lastBestMove;
+      	 }
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
