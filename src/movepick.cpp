@@ -58,9 +58,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool root)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, bool nearRoot)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), rootPos(root) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), hitTT(nearRoot) {
 
   assert(d > 0);
 
@@ -130,16 +130,18 @@ void MovePicker::score() {
       }
 
    // Boost quiet rootMoves which had been in the PV
-   if (Type == QUIETS && rootPos)
+   if (Type == QUIETS && hitTT)
     	for (auto& m : *this)
     	{
           Move move = m.move;
           if (type_of(move) == NORMAL) {
             Key k = pos.getKey(move);
-            TTEntry* tte = TT.probe(k, rootPos);
-            if (rootPos && tte->is_pv())
+            TTEntry* tte = TT.probe(k, hitTT);
+            if (hitTT && tte->is_pv())
               m.value +=15000;
           }
+          else if (type_of(move) == CASTLING)
+          	m.value +=15000;
       }
 }
 

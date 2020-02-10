@@ -146,7 +146,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
-  bool rootPos;
+  bool hitTT;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED
