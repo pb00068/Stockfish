@@ -133,14 +133,14 @@ void MovePicker::score() {
    if (Type == QUIETS && rootPos)
     	for (auto& m : *this)
     	{
-    		  Move move = m.move;
-    		  if (type_of(move) == NORMAL) {
-    		  	Key k = pos.getKey(move);
-    		  	TTEntry* tte = TT.probe(k, rootPos);
-    		  	if (rootPos && tte->is_pv())
-    		  		m.value +=15000;
-    		  }
-    	}
+          Move move = m.move;
+          if (type_of(move) == NORMAL) {
+            Key k = pos.getKey(move);
+            TTEntry* tte = TT.probe(k, rootPos);
+            if (rootPos && tte->is_pv())
+              m.value +=15000;
+          }
+      }
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
