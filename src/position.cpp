@@ -680,7 +680,7 @@ bool Position::gives_check(Move m) const {
 }
 
 // designed for quiet moves only
-// ignore pawn moves which create en-passant occasion
+// ignore double pawn pushes creating en-passant
 Key Position::getKey(Move m) const
 {
 	Piece pc = piece_on(from_sq(m));

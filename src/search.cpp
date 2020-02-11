@@ -951,7 +951,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      (PvNode || rootNode ) && depth > 5);
+                                      (rootNode || (PvNode && ss->ply < 2)) && depth > 10);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
