@@ -951,7 +951,8 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-																			ss->badCaptKiller);
+                                      ss->badCaptKiller,
+                                      ss->badCaptDiff);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1626,8 +1627,13 @@ moves_loop: // When in check, search starts from here
     else
     {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (quietCount > 2)
+        if (type_of(moved_piece) != KING && quietCount > 1
+            && !(captured == KNIGHT && type_of(moved_piece) == BISHOP)
+            && type_of(moved_piece) > captured)
+        {
         	ss->badCaptKiller = bestMove;
+        	ss->badCaptDiff = PieceValue[MG][type_of(moved_piece)] - PieceValue[MG][captured];
+        }
     }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
