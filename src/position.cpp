@@ -679,18 +679,19 @@ bool Position::gives_check(Move m) const {
   }
 }
 
+// designed for quiet moves only
+// ignore pawn moves which create en-passant occasion
 Key Position::getKey(Move m) const
 {
 	Piece pc = piece_on(from_sq(m));
 	Square to = to_sq(m);
 	Square from = from_sq(m);
 	Color us = sideToMove;
-	Piece captured = type_of(m) == ENPASSANT ? make_piece(~us, PAWN) : piece_on(to);
 	Key k = st->key ^ Zobrist::side;
 	if (type_of(m) == CASTLING)
 	{
 	      Square rto = relative_square(us, to > from ? SQ_F1 : SQ_D1);
-	      k ^= Zobrist::psq[captured][to] ^ Zobrist::psq[captured][rto];
+	      k ^= Zobrist::psq[piece_on(to)][to] ^ Zobrist::psq[piece_on(to)][rto];
 	}
 	k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 	// Update castling rights if needed
