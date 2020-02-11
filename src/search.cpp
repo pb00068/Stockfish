@@ -672,7 +672,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->badCaptKiller = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -950,7 +950,8 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers,
+																			ss->badCaptKiller);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1623,7 +1624,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (quietCount > 2)
+        	ss->badCaptKiller = bestMove;
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
