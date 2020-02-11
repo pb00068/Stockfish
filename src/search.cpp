@@ -1026,7 +1026,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (move != ss->badCaptKiller && !pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
@@ -1627,9 +1627,10 @@ moves_loop: // When in check, search starts from here
     else
     {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (type_of(moved_piece) != KING && quietCount > 1
-            && !(captured == KNIGHT && type_of(moved_piece) == BISHOP)
-            && type_of(moved_piece) > captured)
+        if (type_of(bestMove) != PROMOTION
+            && type_of(moved_piece) != KING
+            && quietCount > 5
+            && !pos.see_ge(bestMove, PieceValue[MG][KNIGHT] - PieceValue[MG][BISHOP]))
         {
         	ss->badCaptKiller = bestMove;
         	ss->badCaptDiff = PieceValue[MG][type_of(moved_piece)] - PieceValue[MG][captured];
