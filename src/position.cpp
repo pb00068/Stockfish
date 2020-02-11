@@ -682,8 +682,24 @@ bool Position::gives_check(Move m) const {
 Key Position::getKey(Move m) const
 {
 	Piece pc = piece_on(from_sq(m));
+	Square to = to_sq(m);
+	Square from = from_sq(m);
+	Color us = sideToMove;
+	Piece captured = type_of(m) == ENPASSANT ? make_piece(~us, PAWN) : piece_on(to);
 	Key k = st->key ^ Zobrist::side;
-	k ^= Zobrist::psq[pc][from_sq(m)] ^ Zobrist::psq[pc][to_sq(m)];
+	if (type_of(m) == CASTLING)
+	{
+	      Square rto = relative_square(us, to > from ? SQ_F1 : SQ_D1);
+	      k ^= Zobrist::psq[captured][to] ^ Zobrist::psq[captured][rto];
+	}
+	k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
+	// Update castling rights if needed
+	if (st->castlingRights && (castlingRightsMask[from] | castlingRightsMask[to]))
+	{
+	   int cr = castlingRightsMask[from] | castlingRightsMask[to];
+	   k ^= Zobrist::castling[st->castlingRights & cr];
+	}
+
 	return k;
 }
 
