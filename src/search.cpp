@@ -1030,10 +1030,12 @@ moves_loop: // When in check, search starts from here
           // capture,promotion or checking move
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
           {
-             if (depth > 4) {
+             if (!PvNode && depth > 4 && abs(beta) < VALUE_MATE_IN_MAX_PLY && beta > -VALUE_KNOWN_WIN) {
                 ss->currentMove = move;
-                pos.do_move(move, st);
-                Value reducedBeta = std::max(beta - 80 * depth, -VALUE_INFINITE);
+                ss->continuationHistory = &thisThread->continuationHistory[inCheck][captureOrPromotion][pos.moved_piece(move)][to_sq(move)];
+                StateInfo st1;
+                pos.do_move(move, st1);
+                Value reducedBeta = beta - 80 * depth;
                 Value v = -qsearch<NonPV>(pos, ss+1, -reducedBeta, -reducedBeta+1);
                 pos.undo_move(move);
                 if (v < reducedBeta)
