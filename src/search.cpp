@@ -907,10 +907,6 @@ namespace {
                 probCutCount++;
 
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[inCheck]
-                                                                          [captureOrPromotion]
-                                                                          [pos.moved_piece(move)]
-                                                                          [to_sq(move)];
 
                 pos.do_move(move, st);
 
@@ -919,7 +915,14 @@ namespace {
 
                 // If the qsearch held, perform the regular search
                 if (value >= raisedBeta)
-                    value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
+                {
+                   ss->continuationHistory = &thisThread->continuationHistory [inCheck]
+                                                                              [captureOrPromotion]
+                                                                              [pos.moved_piece(move)]
+                                                                              [to_sq(move)];
+
+                   value = -search<NonPV>(pos, ss+1, -raisedBeta, -raisedBeta+1, depth - 4, !cutNode);
+                }
 
                 pos.undo_move(move);
 
