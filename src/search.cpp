@@ -1030,20 +1030,19 @@ moves_loop: // When in check, search starts from here
           // capture,promotion or checking move
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
           {
-             if (!PvNode && depth > 4 && abs(beta) < VALUE_MATE_IN_MAX_PLY && beta > -VALUE_KNOWN_WIN) {
+             if (depth > 4 && beta > -VALUE_KNOWN_WIN && pos.legal(move)) {
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[inCheck][captureOrPromotion][pos.moved_piece(move)][to_sq(move)];
-                StateInfo st1;
-                pos.do_move(move, st1);
+                //ss->continuationHistory = &thisThread->continuationHistory[inCheck][captureOrPromotion][pos.moved_piece(move)][to_sq(move)]; neccessary?
+                pos.do_move(move, st);
                 Value reducedBeta = beta - 80 * depth;
                 Value v = -qsearch<NonPV>(pos, ss+1, -reducedBeta, -reducedBeta+1);
                 pos.undo_move(move);
                 if (v < reducedBeta)
                    continue;
-								//else  sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
-          	  }
-          	  else
-          	  	continue;
+                //else  sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+          }
+          else
+            continue;
           }
       }
 
