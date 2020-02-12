@@ -1027,8 +1027,22 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
+          // capture,promotion or checking move
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
-              continue;
+          {
+             if (depth > 4) {
+                ss->currentMove = move;
+                pos.do_move(move, st);
+                Value reducedBeta = std::max(beta - 80 * depth, -VALUE_INFINITE);
+                Value v = -qsearch<NonPV>(pos, ss+1, -reducedBeta, -reducedBeta+1);
+                pos.undo_move(move);
+                if (v < reducedBeta)
+                   continue;
+								//else  sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
+          	  }
+          	  else
+          	  	continue;
+          }
       }
 
       // Step 14. Extensions (~75 Elo)
