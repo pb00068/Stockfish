@@ -951,8 +951,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->badCaptKiller,
-                                      ss->badCaptDiff);
+                                      ss->badCaptKiller);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1631,10 +1630,7 @@ moves_loop: // When in check, search starts from here
             && type_of(moved_piece) != KING
             && quietCount > 5
             && !pos.see_ge(bestMove, PieceValue[MG][KNIGHT] - PieceValue[MG][BISHOP]))
-        {
         	ss->badCaptKiller = bestMove;
-        	ss->badCaptDiff = PieceValue[MG][type_of(moved_piece)] - PieceValue[MG][captured];
-        }
     }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted

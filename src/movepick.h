@@ -127,8 +127,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            Move*,
-																					 Move,
-																					 Value);
+																					 Move);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -148,7 +147,6 @@ private:
   Value threshold;
   Depth depth;
   Move badCaptKill;
-  Value badCaptDiff;
   ExtMove moves[MAX_MOVES];
 };
 
