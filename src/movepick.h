@@ -88,6 +88,8 @@ enum StatsType { NoCaptures, Captures };
 /// the move's from and to squares, see www.chessprogramming.org/Butterfly_Boards
 typedef Stats<int16_t, 10692, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyHistory;
 
+typedef Stats<int16_t, 10692, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB), 4> LowPlyHistory;
+
 /// CounterMoveHistory stores counter moves indexed by [piece][to] of the previous
 /// move, see www.chessprogramming.org/Countermove_Heuristic
 typedef Stats<Move, NOT_USED, PIECE_NB, SQUARE_NB> CounterMoveHistory;
@@ -122,11 +124,11 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Square);
-  MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
+  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const LowPlyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           Move*);
+                                           Move*, int);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -137,6 +139,7 @@ private:
 
   const Position& pos;
   const ButterflyHistory* mainHistory;
+  const LowPlyHistory* lowPlyHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
   Move ttMove;
@@ -145,6 +148,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   Depth depth;
+  int ply;
   ExtMove moves[MAX_MOVES];
 };
 
