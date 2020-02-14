@@ -672,7 +672,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->badCaptKiller = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->badCaptKiller = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -951,7 +951,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->badCaptKiller);
+                                      ss->badCaptKiller ? ss->badCaptKiller : (ss-2)->badCaptKiller);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1028,7 +1028,7 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
-          else if (move != ss->badCaptKiller && !pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
+          else if (!pos.see_ge(move, Value(-194) * (depth + 2 * (move == ss->badCaptKiller)) )) // (~25 Elo)
               continue;
       }
 
@@ -1628,7 +1628,7 @@ moves_loop: // When in check, search starts from here
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
         if (type_of(bestMove) != PROMOTION
             && type_of(moved_piece) != KING
-            && quietCount > 5
+            && quietCount > 4
             && !pos.see_ge(bestMove, PieceValue[MG][KNIGHT] - PieceValue[MG][BISHOP]))
         	ss->badCaptKiller = bestMove;
     }
