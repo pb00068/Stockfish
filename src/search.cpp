@@ -696,8 +696,8 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && depth > 13 && ss->ply < 5 && is_ok((ss-1)->currentMove))
-       thisThread->lowPlyHistory[~us][from_to((ss-1)->currentMove)][ss->ply - 1] << 4000;
+    if (ttPv && depth > 11 && ss->ply < 3 && is_ok((ss-1)->currentMove))
+       thisThread->lowPlyHistory[~us][from_to((ss-1)->currentMove)][bool(pos.captured_piece())] << 1500;
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
@@ -718,6 +718,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                else if (depth > 13 && ss->ply < 2)
+                    thisThread->lowPlyHistory[us][from_to(ttMove)][1] << 2000;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -954,7 +956,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, depth > 15 ? ss->ply : 6);
+                                      ss->killers, depth > 14 && ttPv);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1627,7 +1629,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (depth > 13 && ss->ply < 2)
+           thisThread->lowPlyHistory[us][from_to(bestMove)][1] << 2000;
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
@@ -1679,8 +1685,8 @@ moves_loop: // When in check, search starts from here
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
 
-    if (bonus == -8 && ss->ply < 4)
-    	thisThread->lowPlyHistory[us][from_to(move)][ss->ply] << 4000;
+    if ((bonus == -8 || bonus > 5000) && ss->ply < 2)
+    	thisThread->lowPlyHistory[us][from_to(move)][0] << 2000;
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
