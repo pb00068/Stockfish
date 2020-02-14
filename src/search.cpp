@@ -1636,7 +1636,7 @@ moves_loop: // When in check, search starts from here
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         if (type_of(moved_piece) == PAWN && captured > PAWN && depth < 13)
-        	captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -stat_bonus(depth + 3);
+        	captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -stat_bonus (depth + 3);
         else
         	captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
     }
