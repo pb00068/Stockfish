@@ -127,6 +127,14 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            Move*);
+
+  inline void setSeeOffset(Value o, Square r)
+  {
+  	if (o > 0)
+  		seeOffset = o;
+  	recaptureSquare = r;
+  }
+
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -146,6 +154,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  Value seeOffset;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

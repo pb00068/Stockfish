@@ -97,6 +97,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   stage += (ttMove == MOVE_NONE);
 }
 
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -169,12 +170,14 @@ top:
       endMoves = generate<CAPTURES>(pos, cur);
 
       score<CAPTURES>();
+      seeOffset = VALUE_ZERO;
       ++stage;
       goto top;
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
+      	               Value off = seeOffset && recaptureSquare != from_sq(*cur) ? seeOffset : VALUE_ZERO;
+                       return pos.see_ge(*cur, Value(off - 55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
