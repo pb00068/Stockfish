@@ -1228,15 +1228,13 @@ moves_loop: // When in check, search starts from here
       }
 
       if (value <= alpha
-          && depth > 2
           && captureOrPromotion
-          && type_of(movedPiece) == PAWN
-          && type_of(pos.captured_piece()) > PAWN
+          && type_of(movedPiece) < type_of(pos.captured_piece())
           && is_ok((ss+1)->currentMove)
           && to_sq(move) != to_sq((ss+1)->currentMove)
           && pos.capture((ss+1)->currentMove)
           && pos.pseudo_legal((ss+1)->currentMove))
-      	  mp.setSeeOffset(PieceValue[MG][type_of(pos.piece_on(to_sq((ss+1)->currentMove)))] - PieceValue[MG][type_of(pos.captured_piece())], to_sq((ss+1)->currentMove));
+      	  mp.setSeeOffset(PieceValue[MG][type_of(pos.piece_on(to_sq((ss+1)->currentMove)))], to_sq((ss+1)->currentMove));
           //  sync_cout << pos << UCI::move(move, pos.is_chess960()) << "   reply: " <<  UCI::move((ss+1)->currentMove, pos.is_chess960()) << " c-type: " << type_of(pos.captured_piece()) << sync_endl;
 
       // Step 18. Undo move
