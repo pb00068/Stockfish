@@ -71,7 +71,7 @@ public:
   Depth rootDepth, completedDepth;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
-  SeqMoveHistory lowPlyHistory;
+  SeqMoveHistory seqMoveHistory;
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
   Score contempt;

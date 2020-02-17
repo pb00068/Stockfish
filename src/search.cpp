@@ -698,9 +698,6 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && depth > 13 && ss->ply < 5 && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-       thisThread->lowPlyHistory[~us][from_to((ss-1)->currentMove)][(ss->ply -1)/2] << 1500;
-
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
                                 + ttHitAverageResolution * ttHit;
@@ -953,11 +950,15 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
+    //if ((countermove == ss->killers[0] || countermove == ss->killers[1]) && is_ok((ss-2)->currentMove))
+    if (countermove == MOVE_NONE || pos.capture(countermove) || !pos.pseudo_legal(countermove))
+    	  countermove = thisThread->seqMoveHistory[to_sq((ss-2)->currentMove)][prevSq];
+
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, depth > 14 && (ttPv || cutNode) ? ss->ply : 256);
+                                      ss->killers);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1699,10 +1700,14 @@ moves_loop: // When in check, search starts from here
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        if (is_ok((ss-2)->currentMove))
+        {
+        	Square pprevSq = to_sq((ss-2)->currentMove);
+        	thisThread->seqMoveHistory[pprevSq][prevSq] = move;
+        }
     }
 
-    if ((bonus == -8 || bonus > 5000) && ss->ply < 4) // bonus == -8 => depth > 15
-    	thisThread->lowPlyHistory[us][from_to(move)][ss->ply/2] << (bonus == -8 ? 2000 : 1000);
+
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
