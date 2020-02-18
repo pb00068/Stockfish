@@ -628,14 +628,14 @@ namespace {
     bool ttHit, ttPv, inCheck, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, prunedCount, captureCount, quietCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     inCheck = pos.checkers();
     priorCapture = pos.captured_piece();
     Color us = pos.side_to_move();
-    moveCount = captureCount = quietCount = ss->moveCount = 0;
+    moveCount = captureCount = quietCount = prunedCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
 
@@ -1000,7 +1000,8 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth);
+          moveCountPruning = moveCount + prunedCount >= futility_move_count(improving, depth);
+
 
           if (   !captureOrPromotion
               && !givesCheck)
@@ -1012,7 +1013,10 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+              {
+                  prunedCount++;
                   continue;
+              }
 
               // Futility pruning: parent node (~5 Elo)
               if (   lmrDepth < 6
@@ -1022,14 +1026,20 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 25000)
-                  continue;
+              {
+                   prunedCount++;
+                   continue;
+							}
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
+          {
+          	  prunedCount++;
               continue;
+          }
       }
 
       // Step 14. Extensions (~75 Elo)
