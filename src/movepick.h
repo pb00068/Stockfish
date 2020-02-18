@@ -128,11 +128,12 @@ public:
                                            Move,
                                            Move*);
 
-  inline void setSeeOffset(Value o, Square r)
+  inline void setRecapMove(Move recap)
   {
-  	if (o > 0)
-  		seeOffset = o;
-  	recaptureSquare = r;
+  	recaptureSquare = to_sq(recap);
+  	recapSource = from_sq(recap);
+  	//if (stage == 2) //GOOD_CAPTURES
+  	//	score<CAPTURES>();
   }
 
   Move next_move(bool skipQuiets = false);
@@ -150,11 +151,10 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  Square recaptureSquare;
+  Square recaptureSquare, recapSource;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
-  Value seeOffset;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

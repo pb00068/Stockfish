@@ -66,6 +66,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  recaptureSquare = recapSource = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -109,6 +110,8 @@ void MovePicker::score() {
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+                   //+ bool(to_sq(m) == recapSource) * 1000
+                   //+ bool(from_sq(m) == recaptureSquare) * 1000;
 
       else if (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
@@ -116,6 +119,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
+                  // +      bool(from_sq(m) == recaptureSquare) * 1000;
 
       else // Type == EVASIONS
       {
@@ -169,14 +173,12 @@ top:
       endMoves = generate<CAPTURES>(pos, cur);
 
       score<CAPTURES>();
-      seeOffset = VALUE_ZERO;
       ++stage;
       goto top;
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-      	               Value off = seeOffset && recaptureSquare != from_sq(*cur) ? seeOffset : VALUE_ZERO;
-                       return pos.see_ge(*cur, Value(off - 55 * cur->value / 1024)) ?
+                       return pos.see_ge(*cur, Value(55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
