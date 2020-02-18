@@ -1236,7 +1236,7 @@ moves_loop: // When in check, search starts from here
              && pos.capture(answer)
              && (!captureOrPromotion || type_of(pos.captured_piece()) < type_of(pos.piece_on(to_sq(answer))))
              && pos.pseudo_legal(answer)
-             && type_of(pos.piece_on(to_sq(answer))) > PAWN
+             && type_of(pos.piece_on(to_sq(answer))) > BISHOP
              && (type_of(pos.moved_piece(answer)) < BISHOP ||
                !(between_bb(from_sq(answer), to_sq(answer)) & from_sq(move))))
       	     mp.setRecapMove(answer);

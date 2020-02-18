@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -100,13 +101,25 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   recapTarget = recapSource = SQ_NONE;
 }
 
+
+void MovePicker::setRecapMove(Move recap)
+{
+	if (recap != make_move(recapSource, recapTarget))
+	{
+ 	   recapTarget = to_sq(recap);
+ 	   recapSource = from_sq(recap);
+ 	   if (stage == 2) // re-score GOOD_CAPTURES
+ 		   score<RECAPTURES>();
+	}
+ }
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
 template<GenType Type>
 void MovePicker::score() {
 
-  static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+  static_assert(Type == CAPTURES || Type == RECAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
   for (auto& m : *this)
       if (Type == CAPTURES)
@@ -114,13 +127,16 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
                    + bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * 500;
 
+      else if (Type == RECAPTURES)
+      	  m.value += bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * 500;
+
       else if (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +      bool(from_sq(m) == recapTarget) * 1000;
+                   +      bool(from_sq(m) == recapTarget) * 2200;
 
       else // Type == EVASIONS
       {

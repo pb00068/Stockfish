@@ -128,12 +128,12 @@ public:
                                            Move,
                                            Move*);
 
-  inline void setRecapMove(Move recap)
+  void setRecapMove(Move recap);
+
+
+  inline Square getRecapTarget()
   {
-  	recapTarget = to_sq(recap);
-  	recapSource = from_sq(recap);
-  	if (stage == 2) // re-score GOOD_CAPTURES
-  		score<CAPTURES>();
+  	return recapTarget;
   }
 
   Move next_move(bool skipQuiets = false);
