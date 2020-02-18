@@ -1228,18 +1228,20 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
-      if (value <= alpha
-          && moveCount <= 2
-          && is_ok((ss+1)->currentMove)
-          && to_sq(move) != to_sq((ss+1)->currentMove)
-          && pos.capture((ss+1)->currentMove)
-          && (!captureOrPromotion || type_of(pos.captured_piece()) < type_of(pos.piece_on(to_sq((ss+1)->currentMove))))
-          && pos.pseudo_legal((ss+1)->currentMove)
-          && type_of(pos.piece_on(to_sq((ss+1)->currentMove))) > PAWN
-          && (type_of(pos.moved_piece((ss+1)->currentMove)) < BISHOP ||
-							!(between_bb(from_sq((ss+1)->currentMove), to_sq((ss+1)->currentMove)) & from_sq(move)) ))
-      	  mp.setRecapMove((ss+1)->currentMove);
+      if (value <= alpha && moveCount <= 2)
+			{
+      	  Move answer = (ss+1)->currentMove;
+      	  if (is_ok(answer)
+             && to_sq(move) != to_sq(answer)
+             && pos.capture(answer)
+             && (!captureOrPromotion || type_of(pos.captured_piece()) < type_of(pos.piece_on(to_sq(answer))))
+             && pos.pseudo_legal(answer)
+             && type_of(pos.piece_on(to_sq(answer))) > PAWN
+             && (type_of(pos.moved_piece(answer)) < BISHOP ||
+               !(between_bb(from_sq(answer), to_sq(answer)) & from_sq(move))))
+      	     mp.setRecapMove(answer);
       	  //	sync_cout << pos << UCI::move(move, pos.is_chess960()) << "   reply: " <<  UCI::move((ss+1)->currentMove, pos.is_chess960()) << " c-type: " << type_of(pos.captured_piece()) << sync_endl;
+			}
 
       // Step 18. Undo move
       pos.undo_move(move);
