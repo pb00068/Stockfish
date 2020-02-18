@@ -128,7 +128,7 @@ public:
                                            Move,
                                            Move*);
 
-  void setRecapMove(Move recap);
+  void setRecapMove(Move recap, Value);
 
 
   inline Square getRecapTarget()
@@ -152,7 +152,7 @@ private:
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
   Square recaptureSquare, recapSource, recapTarget;
-  Value threshold;
+  Value threshold, recapV;
   Depth depth;
   ExtMove moves[MAX_MOVES];
 };

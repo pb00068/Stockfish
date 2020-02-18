@@ -102,12 +102,13 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
 }
 
 
-void MovePicker::setRecapMove(Move recap)
+void MovePicker::setRecapMove(Move recap, Value v)
 {
-	if (recap != make_move(recapSource, recapTarget))
+	if (v > 0 && recap != make_move(recapSource, recapTarget))
 	{
  	   recapTarget = to_sq(recap);
  	   recapSource = from_sq(recap);
+ 	   recapV = v;
  	   if (stage == 2) // re-score GOOD_CAPTURES
  		   score<RECAPTURES>();
 	}
@@ -125,10 +126,10 @@ void MovePicker::score() {
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
-                   + bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * 500;
+                   + bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * recapV;
 
       else if (Type == RECAPTURES)
-      	  m.value += bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * 500;
+      	  m.value += bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * recapV;
 
       else if (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
@@ -136,7 +137,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +      bool(from_sq(m) == recapTarget) * 2200;
+                   +      bool(from_sq(m) == recapTarget) * recapV;
 
       else // Type == EVASIONS
       {
