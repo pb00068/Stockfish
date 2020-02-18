@@ -132,8 +132,8 @@ public:
   {
   	recaptureSquare = to_sq(recap);
   	recapSource = from_sq(recap);
-  	//if (stage == 2) //GOOD_CAPTURES
-  	//	score<CAPTURES>();
+  	if (stage == 2) // re-score GOOD_CAPTURES
+  		score<CAPTURES>();
   }
 
   Move next_move(bool skipQuiets = false);
