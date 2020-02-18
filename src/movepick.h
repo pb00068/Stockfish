@@ -130,7 +130,7 @@ public:
 
   inline void setRecapMove(Move recap)
   {
-  	recaptureSquare = to_sq(recap);
+  	recapTarget = to_sq(recap);
   	recapSource = from_sq(recap);
   	if (stage == 2) // re-score GOOD_CAPTURES
   		score<CAPTURES>();
@@ -151,7 +151,7 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  Square recaptureSquare, recapSource;
+  Square recaptureSquare, recapSource, recapTarget;
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];

@@ -66,7 +66,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  recaptureSquare = recapSource = SQ_NONE;
+  recapTarget = recapSource = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
@@ -81,7 +81,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
           && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  recaptureSquare = recapSource = SQ_NONE;
+  recapTarget = recapSource = SQ_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -97,7 +97,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.pseudo_legal(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
-  recaptureSquare = recapSource = SQ_NONE;
+  recapTarget = recapSource = SQ_NONE;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
@@ -112,7 +112,7 @@ void MovePicker::score() {
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
-                   + bool(to_sq(m) == recapSource || from_sq(m) == recaptureSquare) * 500;
+                   + bool(to_sq(m) == recapSource || from_sq(m) == recapTarget) * 500;
 
       else if (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
@@ -120,7 +120,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +      bool(from_sq(m) == recaptureSquare) * 1000;
+                   +      bool(from_sq(m) == recapTarget) * 1000;
 
       else // Type == EVASIONS
       {
