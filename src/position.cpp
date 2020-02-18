@@ -1229,6 +1229,17 @@ void Position::flip() {
   assert(pos_is_ok());
 }
 
+bool Position::slidesThrough(Square s, Move m, Color c) const
+{
+	if (!is_ok(m))
+		return false;
+	PieceType pt = type_of(moved_piece(m));
+	if (pt == ROOK && rank_of(from_sq(m)) != rank_of(s) && file_of(from_sq(m)) != file_of(s))
+		return false; // early exit, between_bb call is not cheap
+
+	return (pt >= BISHOP && pt <= QUEEN && color_of(piece_on(from_sq(m))) == c && (between_bb(from_sq(m), to_sq(m)) & s));
+}
+
 
 /// Position::pos_is_ok() performs some consistency checks for the
 /// position object and raises an asserts if something wrong is detected.

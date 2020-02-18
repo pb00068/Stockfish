@@ -139,6 +139,7 @@ public:
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);
   void undo_null_move();
+  bool slidesThrough(Square s, Move m, Color c) const;
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value threshold = VALUE_ZERO) const;

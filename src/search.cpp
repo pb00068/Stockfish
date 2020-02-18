@@ -341,6 +341,7 @@ void Thread::search() {
   for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
 
+  ss->clearSq = (ss+1)->clearSq = (ss+2)->clearSq = (ss+3)->clearSq = (ss+4)->clearSq = SQ_NONE;
   ss->pv = pv;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
@@ -673,6 +674,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+4)->clearSq = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -951,7 +953,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, ss->clearSq);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1012,7 +1014,10 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
+              {
+              	  ss->currentMove = move;
                   continue;
+              }
 
               // Futility pruning: parent node (~5 Elo)
               if (   lmrDepth < 6
@@ -1022,11 +1027,16 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 25000)
+              {
+              	  ss->currentMove = move;
                   continue;
+              }
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
-                  continue;
+              {
+              	ss->currentMove = move; continue;
+              }
           }
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
               continue;
@@ -1694,6 +1704,11 @@ moves_loop: // When in check, search starts from here
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
+
+    // set clearSq when one of the next 2 moves crosses from_sq(move)
+    if (  pos.slidesThrough(from_sq(move), (ss+1)->currentMove, ~us)
+    	||  pos.slidesThrough(from_sq(move), (ss+2)->currentMove,  us))
+    	ss->clearSq = from_sq(move);
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
