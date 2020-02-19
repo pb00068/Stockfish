@@ -78,8 +78,8 @@ namespace {
     return (r + 511) / 1024 + (!i && r > 1007);
   }
 
-  constexpr int futility_move_count(bool improving, Depth depth) {
-    return (4 + depth * depth) / (2 - improving);
+  constexpr int futility_move_count(bool improving, Depth depth, int pruned) {
+    return (4 - pruned + depth * depth) / (2 - improving);
   }
 
   // History and stats update bonus, based on depth
@@ -1000,7 +1000,7 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount + prunedCount >= futility_move_count(improving, depth);
+          moveCountPruning = moveCount >= futility_move_count(improving, depth, prunedCount);
 
 
           if (   !captureOrPromotion
