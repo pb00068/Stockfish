@@ -550,7 +550,7 @@ bool Position::legal(Move m) const {
   if (blockers_for_king(us) & from)
   {
        if (type_of(piece_on(from)) == KNIGHT)
-      	 return false; // pinned knight can't never move
+         return false; // pinned knight can't never move
        else
          return aligned(from, to, square<KING>(us));
   }
@@ -647,7 +647,9 @@ bool Position::gives_check(Move m) const {
   // Is there a discovered check?
   if (blockers_for_king(~sideToMove) & from)
   {
-  	  if (type_of(moved_piece(m)) == KNIGHT || !aligned(from, to, square<KING>(~sideToMove)))
+  	  if (type_of(moved_piece(m)) == KNIGHT)
+  	  	return true;
+  	  if (!aligned(from, to, square<KING>(~sideToMove)))
   	  	return true;
   }
 

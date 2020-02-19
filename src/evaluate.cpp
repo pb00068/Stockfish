@@ -272,9 +272,9 @@ namespace {
 
         if (pos.blockers_for_king(Us) & s)
         {
-        	  if (Pt == KNIGHT)
-        	  	b = 0;
-        	  else
+            if (Pt == KNIGHT)
+              b = 0;
+            else
               b &= LineBB[pos.square<KING>(Us)][s];
         }
 
