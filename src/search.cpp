@@ -957,7 +957,7 @@ moves_loop: // When in check, search starts from here
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, ttPv || ss->ply < 2 ? ss->ply : 256);
+                                      ss->killers, ss->ply < 2 || ttPv ? ss->ply : 256);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
