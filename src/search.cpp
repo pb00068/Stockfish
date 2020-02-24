@@ -1040,12 +1040,15 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Extensions (~75 Elo)
 
+      // Extend nodes which where/are on the PV but exploration behind nominal depth
+      if (ttPv && !captureOrPromotion && ss->ply + depth + 1 < thisThread->rootDepth)
+      	extension = 1;
       // Singular extension search (~70 Elo). If all moves but one fail low on a
       // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
       // then that move is singular and should be extended. To verify this we do
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin then we will extend the ttMove.
-      if (    depth >= 6
+      else if (    depth >= 6
           &&  move == ttMove
           && !rootNode
           && !excludedMove // Avoid recursive singular search
