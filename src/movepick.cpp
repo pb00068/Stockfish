@@ -25,7 +25,7 @@
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, MAIN_EX_PVMOVE, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -56,7 +56,7 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
+MovePicker::MovePicker(const Position& p, Move ttm, Move exm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, int pl)
            : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
              refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) , ply(pl) {
@@ -65,6 +65,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = pos.checkers() ? EVASION_TT : MAIN_TT;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
+  exPVMove = exm && exm != ttMove ? exm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -79,6 +80,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   ttMove =   ttm
           && (depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
           && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
+  exPVMove = MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -94,6 +96,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.capture(ttm)
           && pos.pseudo_legal(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
+  exPVMove = MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
 }
 
@@ -140,7 +143,7 @@ Move MovePicker::select(Pred filter) {
       if (T == Best)
           std::swap(*cur, *std::max_element(cur, endMoves));
 
-      if (*cur != ttMove && filter())
+      if (*cur != ttMove && *cur != exPVMove && filter())
           return *cur++;
 
       cur++;
@@ -162,6 +165,12 @@ top:
   case PROBCUT_TT:
       ++stage;
       return ttMove;
+
+  case MAIN_EX_PVMOVE:
+      ++stage;
+      if (exPVMove && pos.pseudo_legal(exPVMove))
+        return exPVMove;
+      goto top;
 
   case CAPTURE_INIT:
   case PROBCUT_INIT:

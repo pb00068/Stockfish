@@ -589,6 +589,30 @@ void Thread::search() {
 
 namespace {
 
+  void storeExPvMove(Move move, Key poskey, Stack *ss)
+  {
+	  int i;
+	  for (i=0; i < 4; i++)
+		  if (!ss->exPvPosKey[i] || ss->exPvPosKey[i] == poskey)
+		  {
+        ss->exPvPosKey[i] = poskey;
+        ss->exPvMove[i] = move;
+        break;
+		  }
+
+      if (i == 4)
+	        ss->exPvPosKey[0] = poskey, ss->exPvMove[0] = move;
+  }
+
+  Move getExPvMove(Key poskey, Stack *ss)
+  {
+    int i;
+    for (i=0; i < 4; i++)
+       if (ss->exPvPosKey[i] == poskey)
+         return ss->exPvMove[i];
+    return MOVE_NONE;
+  }
+
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
@@ -933,6 +957,7 @@ namespace {
             }
     }
 
+
     // Step 11. Internal iterative deepening (~1 Elo)
     if (depth >= 7 && !ttMove)
     {
@@ -951,7 +976,9 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+	  Move exPvMove = ttPv ? getExPvMove(posKey, ss) : MOVE_NONE;
+
+    MovePicker mp(pos, ttMove, exPvMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
                                       &thisThread->captureHistory,
                                       contHist,
@@ -1282,17 +1309,21 @@ moves_loop: // When in check, search starts from here
 
           if (value > alpha)
           {
-              bestMove = move;
-
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
+              {
                   alpha = value;
+                  if (bestMove)
+                     storeExPvMove(bestMove, posKey, ss);
+                  bestMove = move;
+              }
               else
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
+                  bestMove = move;
                   break;
               }
           }
@@ -1328,8 +1359,12 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+        if (PvNode && ttMove && ttMove != bestMove)
+        	storeExPvMove(ttMove, posKey, ss);
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
@@ -1349,6 +1384,7 @@ moves_loop: // When in check, search starts from here
 
     return bestValue;
   }
+
 
 
   // qsearch() is the quiescence search function, which is called by the main search
