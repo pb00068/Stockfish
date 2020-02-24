@@ -696,8 +696,13 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
+    if (ttPv && !pos.captured_piece() && is_ok((ss-1)->currentMove))
+    {
+    	Move prev = (ss-1)->currentMove;
+    	update_continuation_histories(ss-1, pos.piece_on(to_sq(prev)), to_sq(prev), stat_bonus(depth));
+    	if (depth > 12 && ss->ply - 1 < MAX_LPH)
+          thisThread->lowPlyHistory[ss->ply - 1][from_to(prev)] << stat_bonus(depth - 5);
+    }
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
