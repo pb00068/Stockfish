@@ -1040,8 +1040,8 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Extensions (~75 Elo)
 
-      // Extend nodes which where/are on the PV but exploration behind nominal depth
-      if (ttPv && !captureOrPromotion && ss->ply + depth + 1 < thisThread->rootDepth)
+      // Extend first moves if node where/are on the PV but exploration behind nominal depth
+      if (ttPv && moveCount < 3 && ss->ply + depth + 2 < thisThread->rootDepth)
       	extension = 1;
       // Singular extension search (~70 Elo). If all moves but one fail low on a
       // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
