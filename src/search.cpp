@@ -623,7 +623,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth extension, exTTPvExtension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
     bool ttHit, ttPv, inCheck, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
@@ -992,7 +992,7 @@ moves_loop: // When in check, search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      extension = 0;
+      extension = exTTPvExtension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
@@ -1040,9 +1040,10 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Extensions (~75 Elo)
 
-      // Extend first moves if node where/are on the PV but exploration behind nominal depth
-      if (ttPv && move == ttMove && ss->ply + depth + 2 < thisThread->rootDepth && !excludedMove)
-      	extension = 1;
+      // Extend tt-move if node were/is on the PV but exploration behind nominal depth, do it only once per ex-pv-variation
+      if (depth > 4 && ttPv && !PvNode && move == ttMove && !thisThread->ttpvExtended && ss->ply + depth + 2 < thisThread->rootDepth && !excludedMove)
+      	exTTPvExtension = 1, thisThread->ttpvExtended = true;
+
       // Singular extension search (~70 Elo). If all moves but one fail low on a
       // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
       // then that move is singular and should be extended. To verify this we do
@@ -1096,11 +1097,11 @@ moves_loop: // When in check, search starts from here
           extension = 1;
 
       // Castling extension
-      if (type_of(move) == CASTLING)
+      if (type_of(move) == CASTLING && !exTTPvExtension)
           extension = 1;
 
       // Add extension to new depth
-      newDepth += extension;
+      newDepth += extension + exTTPvExtension;
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
@@ -1241,6 +1242,9 @@ moves_loop: // When in check, search starts from here
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
+
+      if (exTTPvExtension)
+      	thisThread->ttpvExtended = false;
 
       // Step 19. Check for a new best move
       // Finished searching the move. If a stop occurred, the return value of
