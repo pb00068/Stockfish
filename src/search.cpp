@@ -696,15 +696,15 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && !PvNode && is_ok((ss-1)->currentMove))
+    if (ttHit && tte->is_pv() && PvNode && !pos.captured_piece() && is_ok((ss-1)->currentMove))
     {
         Square to = to_sq((ss-1)->currentMove);
         Piece mp = pos.piece_on(to);
-    		int val = thisThread->mainHistory[~us][from_to((ss-1)->currentMove)]
-                  + (*(ss-2)->continuationHistory)[mp][to]
-                  + (*(ss-3)->continuationHistory)[mp][to]
-                  + (*(ss-5)->continuationHistory)[mp][to];
-    		ttPv = val >= -1500;
+
+    		thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] = std::max(0, (int)thisThread->mainHistory[~us][from_to((ss-1)->currentMove)]);
+        (*(ss-2)->continuationHistory)[mp][to] = std::max(0, (int) (*(ss-2)->continuationHistory)[mp][to]);
+        (*(ss-3)->continuationHistory)[mp][to] = std::max(0, (int) (*(ss-3)->continuationHistory)[mp][to]);
+        (*(ss-5)->continuationHistory)[mp][to] = std::max(0, (int) (*(ss-5)->continuationHistory)[mp][to]);
     }
 
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
