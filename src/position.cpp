@@ -679,6 +679,31 @@ bool Position::gives_check(Move m) const {
   }
 }
 
+// designed for quiet moves only
+// ignore double pawn pushes creating en-passant
+Key Position::getKey(Move m) const
+{
+	Piece pc = piece_on(from_sq(m));
+	Square to = to_sq(m);
+	Square from = from_sq(m);
+	Color us = sideToMove;
+	Key k = st->key ^ Zobrist::side;
+	if (type_of(m) == CASTLING)
+	{
+	      Square rto = relative_square(us, to > from ? SQ_F1 : SQ_D1);
+	      k ^= Zobrist::psq[piece_on(to)][to] ^ Zobrist::psq[piece_on(to)][rto];
+	}
+	k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
+	// Update castling rights if needed
+	if (st->castlingRights && (castlingRightsMask[from] | castlingRightsMask[to]))
+	{
+	   int cr = castlingRightsMask[from] | castlingRightsMask[to];
+	   k ^= Zobrist::castling[st->castlingRights & cr];
+	}
+
+	return k;
+}
+
 
 /// Position::do_move() makes a move, and saves all information necessary
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal

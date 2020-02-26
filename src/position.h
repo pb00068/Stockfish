@@ -97,6 +97,7 @@ public:
   template<PieceType Pt> const Square* squares(Color c) const;
   template<PieceType Pt> Square square(Color c) const;
   bool is_on_semiopen_file(Color c, Square s) const;
+  Key getKey(Move m) const;
 
   // Castling
   int castling_rights(Color c) const;

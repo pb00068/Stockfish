@@ -33,7 +33,7 @@ TranspositionTable TT; // Our global transposition table
 /// TTEntry::save populates the TTEntry with a new node's data, possibly
 /// overwriting an old position. Update is not atomic and can be racy.
 
-void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) {
+void TTEntry::save(Key k, Value v, bool pv, bool more_pv, Bound b, Depth d, Move m, Value ev) {
 
   // Preserve any existing move for the same position
   if (m || (k >> 48) != key16)
@@ -49,7 +49,7 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
       key16     = (uint16_t)(k >> 48);
       value16   = (int16_t)v;
       eval16    = (int16_t)ev;
-      genBound8 = (uint8_t)(TT.generation8 | uint8_t(pv) << 2 | b);
+      genBound8 = (uint8_t)(TT.generation8 | uint8_t(pv) << 2 | uint8_t(more_pv) << 3 | b);
       depth8    = (uint8_t)(d - DEPTH_OFFSET);
   }
 }
@@ -122,7 +122,7 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   for (int i = 0; i < ClusterSize; ++i)
       if (!tte[i].key16 || tte[i].key16 == key16)
       {
-          tte[i].genBound8 = uint8_t(generation8 | (tte[i].genBound8 & 0x7)); // Refresh
+          tte[i].genBound8 = uint8_t(generation8 | (tte[i].genBound8 & 0xF)); // Refresh
 
           return found = (bool)tte[i].key16, &tte[i];
       }
@@ -131,11 +131,11 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   TTEntry* replace = tte;
   for (int i = 1; i < ClusterSize; ++i)
       // Due to our packed storage format for generation and its cyclic
-      // nature we add 263 (256 is the modulus plus 7 to keep the unrelated
+      // nature we add 271 (256 is the modulus plus 15 to keep the unrelated
       // lowest three bits from affecting the result) to calculate the entry
       // age correctly even after generation8 overflows into the next cycle.
-      if (  replace->depth8 - ((263 + generation8 - replace->genBound8) & 0xF8)
-          >   tte[i].depth8 - ((263 + generation8 -   tte[i].genBound8) & 0xF8))
+      if (  replace->depth8 - ((271 + generation8 - replace->genBound8) & 0xF0)
+          >   tte[i].depth8 - ((271 + generation8 -   tte[i].genBound8) & 0xF0))
           replace = &tte[i];
 
   return found = false, replace;
@@ -150,7 +150,7 @@ int TranspositionTable::hashfull() const {
   int cnt = 0;
   for (int i = 0; i < 1000; ++i)
       for (int j = 0; j < ClusterSize; ++j)
-          cnt += (table[i].entry[j].genBound8 & 0xF8) == generation8;
+          cnt += (table[i].entry[j].genBound8 & 0xF0) == generation8;
 
   return cnt / ClusterSize;
 }
