@@ -696,6 +696,17 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
+    if (ttPv && !PvNode && is_ok((ss-1)->currentMove))
+    {
+        Square to = to_sq((ss-1)->currentMove);
+        Piece mp = pos.piece_on(to);
+    		int val = thisThread->mainHistory[~us][from_to((ss-1)->currentMove)]
+                  + (*(ss-2)->continuationHistory)[mp][to]
+                  + (*(ss-3)->continuationHistory)[mp][to]
+                  + (*(ss-5)->continuationHistory)[mp][to];
+    		ttPv = val >= -1500;
+    }
+
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
         thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
 
