@@ -1005,14 +1005,17 @@ moves_loop: // When in check, search starts from here
           && pos.non_pawn_material(us)
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
+      	 int mc = moveCount - 2 * ttPv;
+      	 assert (mc >= 0); // guaranteed by bestValue > VALUE_TB_LOSS_IN_MAX_PLY
+
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-          moveCountPruning = moveCount >= futility_move_count(improving, depth);
+          moveCountPruning = mc >= futility_move_count(improving, depth);
 
           if (   !captureOrPromotion
               && !givesCheck)
           {
               // Reduced depth of the next LMR search
-              int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
+              int lmrDepth = std::max(newDepth - reduction(improving, depth, mc), 0);
 
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
