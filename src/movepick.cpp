@@ -58,9 +58,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, int pl, bool mttPV)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, int pl, bool ttPV)
            : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
-             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) , ply(pl) , m_ttpv(mttPV) {
+             refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d) , ply(pl) , ttpv(ttPV) {
 
   assert(d > 0);
 
@@ -131,7 +131,7 @@ void MovePicker::score() {
       }
 
 
-  if (Type == QUIETS && m_ttpv && depth > 5)
+  if (Type == QUIETS && ttpv && depth > 5)
   {
       	for (auto& m : *this)
       	{
@@ -139,11 +139,12 @@ void MovePicker::score() {
             if (type_of(move) != PROMOTION)
             {
               Key k = pos.getKey(move);
-              TTEntry* tte = TT.probe(k, m_ttpv);
-              if (m_ttpv && tte->is_pv()) // hitrate ~ 7%
-                m.value += 15000;
+              TTEntry* tte = TT.probe(k, ttpv);
+              if (ttpv && tte->is_pv())
+                m.value += 10000;
             }
-            else m.value += 14000;
+            else if (promotion_type(move) == QUEEN)
+                m.value += 10000;
         }
   }
 }
