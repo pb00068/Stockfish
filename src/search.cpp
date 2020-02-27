@@ -1006,7 +1006,7 @@ moves_loop: // When in check, search starts from here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
       	 int mc = moveCount - 2 * ttPv;
-      	 assert (mc >= 0); // guaranteed by bestValue > VALUE_TB_LOSS_IN_MAX_PLY
+      	 assert (mc >= 0); // moveCount > 1 guaranteed by bestValue > VALUE_TB_LOSS_IN_MAX_PLY
 
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
           moveCountPruning = mc >= futility_move_count(improving, depth);
