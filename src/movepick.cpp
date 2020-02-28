@@ -175,7 +175,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
+              return (ply < 3 && (*lowPlyHistory)[ply][from_to(cur->move)] == 1) || pos.see_ge(*cur, Value(-55 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);

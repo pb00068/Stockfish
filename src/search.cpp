@@ -514,6 +514,16 @@ void Thread::search() {
           completedDepth = rootDepth;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
+//      	 if (lastBestMove
+//      			 && rootPos.capture(lastBestMove)
+//						 && !rootPos.see_ge(lastBestMove))
+//      	 {
+//
+//      		  dbg_hit_on(true);
+//      		  sync_cout << "inf " << lowPlyHistory[0][from_to(lastBestMove)] << sync_endl;
+//      		  abort();
+//      	 }
+
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
@@ -1282,7 +1292,15 @@ moves_loop: // When in check, search starts from here
 
           if (value > alpha)
           {
+          	  // mark former neg-SEE capture bestmove
+              if (ss->ply < 3 && bestMove && bestMove != move && pos.capture(bestMove) && !pos.see_ge(bestMove))
+                  thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] << 1;
+
               bestMove = move;
+
+              // mark former neg-SEE capture ttmove
+              if (ss->ply < 3 && ttMove && bestMove != ttMove && pos.capture(ttMove) && !pos.see_ge(ttMove))
+                  thisThread->lowPlyHistory[ss->ply][from_to(ttMove)] << 1;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
