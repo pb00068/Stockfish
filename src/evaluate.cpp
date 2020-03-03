@@ -130,7 +130,7 @@ namespace {
   constexpr Score BishopPawns         = S(  3,  7);
   constexpr Score CorneredBishop      = S( 50, 50);
   constexpr Score FlankAttacks        = S(  8,  0);
-  constexpr Score KnightFork          = S(  8,  2);
+  constexpr Score KnightFork          = S(  4,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KingProtector       = S(  7,  8);
   constexpr Score KnightOnQueen       = S( 16, 12);
@@ -512,15 +512,15 @@ namespace {
            score += ThreatByMinor[pt];
            if (pt > BISHOP && (attackedBy[Us][KNIGHT] & sq) )
            {
-	             Bitboard bb = (attackedBy[Us][KNIGHT] & (~attackedBy[Them][ALL_PIECES]));
-	             while (bb)
-	             {
-			            Square s= pop_lsb(&bb);
-			            if (s == sq)
-				             continue;
-			            if (more_than_one(PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING))))
-				             score += KnightFork;
-	             }
+               Bitboard bb = (attackedBy[Us][KNIGHT] & ~attackedBy[Them][ALL_PIECES]);
+               while (bb)
+               {
+                  Square s= pop_lsb(&bb);
+                  if (s == sq)
+                     continue;
+                  if (more_than_one(PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING))))
+                     score += KnightFork;
+               }
            }
         }
 
