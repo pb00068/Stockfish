@@ -589,6 +589,17 @@ void Thread::search() {
 
 namespace {
 
+
+bool is_ok2prune(Position& pos, Move m) {
+	  // don't shallow prune moves that lead to a ttpv-position
+    if (type_of(m) == PROMOTION)
+  	   return true; //promotion_type(m) != QUEEN;
+
+    Key k = pos.getKey(m);
+    bool hit;
+    TTEntry* tte = TT.probe(k, hit);
+    return !hit || !tte->is_pv();
+}
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
@@ -1018,7 +1029,8 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
-                  continue;
+                   if (!ttPv || is_ok2prune(pos, move))
+                    continue;
 
               // Futility pruning: parent node (~5 Elo)
               if (   lmrDepth < 6
@@ -1028,14 +1040,16 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 25000)
-                  continue;
+                   if (!ttPv || is_ok2prune(pos, move))
+                    continue;
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
-                  continue;
+                  if (!ttPv || is_ok2prune(pos, move))
+                    continue;
           }
           else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
-              continue;
+                 continue;
       }
 
       // Step 14. Extensions (~75 Elo)
