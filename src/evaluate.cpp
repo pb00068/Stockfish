@@ -130,7 +130,7 @@ namespace {
   constexpr Score BishopPawns         = S(  3,  7);
   constexpr Score CorneredBishop      = S( 50, 50);
   constexpr Score FlankAttacks        = S(  8,  0);
-  constexpr Score KnightFork          = S(  8,  4);
+  constexpr Score KnightFork          = S(  4,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KingProtector       = S(  7,  8);
   constexpr Score KnightOnQueen       = S( 16, 12);
@@ -501,41 +501,43 @@ namespace {
     // Enemies not strongly protected and under our attack
     weak = pos.pieces(Them) & ~stronglyProtected & attackedBy[Us][ALL_PIECES];
 
-    int threats = 0;
     // Bonus according to the kind of attacking pieces
     if (defended | weak)
     {
         b = (defended | weak) & (attackedBy[Us][KNIGHT] | attackedBy[Us][BISHOP]);
         while (b)
-            score += ThreatByMinor[type_of(pos.piece_on(pop_lsb(&b)))], threats++;
+        {
+           Square sq = pop_lsb(&b);
+           PieceType pt = type_of(pos.piece_on(sq));
+           score += ThreatByMinor[pt];
+           if (pt > BISHOP && (attackedBy[Us][KNIGHT] & sq) )
+           {
+               Bitboard bb = (attackedBy[Us][KNIGHT] & ~attackedBy[Them][ALL_PIECES]);
+               while (bb)
+               {
+                  Square s= pop_lsb(&bb);
+                  if (s == sq)
+                     continue;
+                  if (more_than_one(PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING))))
+                     score += KnightFork;
+               }
+           }
+        }
 
         b = weak & attackedBy[Us][ROOK];
         while (b)
-            score += ThreatByRook[type_of(pos.piece_on(pop_lsb(&b)))], threats++;
+            score += ThreatByRook[type_of(pos.piece_on(pop_lsb(&b)))];
 
         if (weak & attackedBy[Us][KING])
-            score += ThreatByKing, threats++;
+            score += ThreatByKing;
 
         b =  ~attackedBy[Them][ALL_PIECES]
            | (nonPawnEnemies & attackedBy2[Us]);
-        score += Hanging * popcount(weak & b), threats+= popcount(weak & b);
+        score += Hanging * popcount(weak & b);
 
         // Additional bonus if weak piece is only protected by a queen
         score += WeakQueenProtection * popcount(weak & attackedBy[Them][QUEEN]);
     }
-
-
-    if (threats > 1)
-		{
-				Bitboard bb = attackedBy[Us][KNIGHT] & (weak | ~attackedBy[Them][ALL_PIECES]);
-				while (bb)
-				{
-					 Square s = pop_lsb(&bb);
-					 Bitboard bbb = PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING));
-					 if (bbb)
-							score += KnightFork * (1 + 3 * more_than_one(bbb));
-				}
-		}
 
     // Bonus for restricting their piece moves
     b =   attackedBy[Them][ALL_PIECES]
