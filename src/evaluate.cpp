@@ -23,12 +23,15 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
 #include "thread.h"
+#include "misc.h"
+#include "uci.h"
 
 namespace Trace {
 
@@ -130,6 +133,7 @@ namespace {
   constexpr Score BishopPawns         = S(  3,  7);
   constexpr Score CorneredBishop      = S( 50, 50);
   constexpr Score FlankAttacks        = S(  8,  0);
+  constexpr Score Fork                = S( 0,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KingProtector       = S(  7,  8);
   constexpr Score KnightOnQueen       = S( 16, 12);
@@ -505,7 +509,29 @@ namespace {
     {
         b = (defended | weak) & (attackedBy[Us][KNIGHT] | attackedBy[Us][BISHOP]);
         while (b)
-            score += ThreatByMinor[type_of(pos.piece_on(pop_lsb(&b)))];
+        {
+                 Square sq = pop_lsb(&b);
+                 PieceType pt = type_of(pos.piece_on(sq));
+                 score += ThreatByMinor[pt];
+                 if (pt > BISHOP && (attackedBy[Us][KNIGHT] & sq) )
+                 {
+                     bool hit = false;
+                     Bitboard bb = (attackedBy[Us][KNIGHT] & (~attackedBy[Them][ALL_PIECES]));
+                     while (bb)
+                     {
+                        Square s= pop_lsb(&bb);
+                        if (s == sq)
+                        	continue;
+                        if (more_than_one(PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING))))
+                        {
+                          score += Fork, hit=true;
+                          sync_cout << pos << UCI::move(make_move(s,s), pos.is_chess960()) << Bitboards::pretty(PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING))) << " safe " << Bitboards::pretty(~attackedBy[Them][ALL_PIECES]) << sync_endl;
+                        }
+                     }
+                     dbg_hit_on(hit);
+                 }
+        }
+
 
         b = weak & attackedBy[Us][ROOK];
         while (b)
