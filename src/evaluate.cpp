@@ -23,15 +23,12 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
-#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
 #include "pawns.h"
 #include "thread.h"
-#include "misc.h"
-#include "uci.h"
 
 namespace Trace {
 
