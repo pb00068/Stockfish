@@ -589,6 +589,13 @@ void Thread::search() {
 
 namespace {
 
+
+  void storeLowPly(LowPlyHistory lp, int ply, int fromTo, int bonus) {
+  	if (ply <= 3)
+  		lp[ply][fromTo] << bonus;
+  	if (ply >= 2)
+  		lp[ply - 2][fromTo] << bonus;
+  }
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType NT>
@@ -696,8 +703,9 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
+    if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH + 2 && !pos.captured_piece() && is_ok((ss-1)->currentMove))
+    	storeLowPly(thisThread->lowPlyHistory, ss->ply - 1, from_to((ss-1)->currentMove), stat_bonus(depth - 6));
+
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
@@ -1701,8 +1709,8 @@ moves_loop: // When in check, search starts from here
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
 
-    if (depth > 12 && ss->ply < MAX_LPH)
-        thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
+    if (depth > 12 && ss->ply < MAX_LPH + 2)
+    	  storeLowPly(thisThread->lowPlyHistory, ss->ply, from_to(move), stat_bonus(depth - 7));
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
