@@ -527,15 +527,15 @@ namespace {
 
     if (threats > 1)
 		{
-      Bitboard bb = attackedBy[Us][KNIGHT] & (weak | ~attackedBy[Them][ALL_PIECES]);
-      while (bb)
-      {
-         Square s = pop_lsb(&bb);
-         Bitboard bbb = PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING));
-         if (bbb)
-            score += KnightFork * (1 + 3 * more_than_one(bbb));
-      }
-    }
+				Bitboard bb = attackedBy[Us][KNIGHT] & (weak | ~attackedBy[Them][ALL_PIECES]);
+				while (bb)
+				{
+					 Square s = pop_lsb(&bb);
+					 Bitboard bbb = PseudoAttacks[KNIGHT][s] & (pos.pieces(Them, ROOK, QUEEN) | pos.pieces(Them, KING));
+					 if (bbb)
+							score += KnightFork * (1 + 3 * more_than_one(bbb));
+				}
+		}
 
     // Bonus for restricting their piece moves
     b =   attackedBy[Them][ALL_PIECES]
