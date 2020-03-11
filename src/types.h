@@ -186,6 +186,7 @@ enum Value : int {
   BishopValueMg = 825,   BishopValueEg = 915,
   RookValueMg   = 1276,  RookValueEg   = 1380,
   QueenValueMg  = 2538,  QueenValueEg  = 2682,
+  Tempo = 28,
 
   MidgameLimit  = 15258, EndgameLimit  = 3915
 };
@@ -203,7 +204,12 @@ enum Piece {
   PIECE_NB = 16
 };
 
-extern Value PieceValue[PHASE_NB][PIECE_NB];
+constexpr Value PieceValue[PHASE_NB][PIECE_NB] = {
+  { VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg, VALUE_ZERO, VALUE_ZERO,
+    VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg, VALUE_ZERO, VALUE_ZERO },
+  { VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, VALUE_ZERO, VALUE_ZERO,
+    VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, VALUE_ZERO, VALUE_ZERO }
+};
 
 typedef int Depth;
 
@@ -352,16 +358,16 @@ constexpr Color operator~(Color c) {
   return Color(c ^ BLACK); // Toggle color
 }
 
-constexpr Square operator~(Square s) {
-  return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
+constexpr Square flip_rank(Square s) {
+  return Square(s ^ SQ_A8);
+}
+
+constexpr Square flip_file(Square s) {
+  return Square(s ^ SQ_H1);
 }
 
 constexpr Piece operator~(Piece pc) {
   return Piece(pc ^ 8); // Swap color of piece B_KNIGHT -> W_KNIGHT
-}
-
-inline File map_to_queenside(File f) {
-  return std::min(f, File(FILE_H - f)); // Map files ABCDEFGH to files ABCDDCBA
 }
 
 constexpr CastlingRights operator&(Color c, CastlingRights cr) {

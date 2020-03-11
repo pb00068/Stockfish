@@ -127,25 +127,26 @@ namespace {
   };
 
   // Assorted bonuses and penalties
-  constexpr Score BishopPawns        = S(  3,  7);
-  constexpr Score CorneredBishop     = S( 50, 50);
-  constexpr Score FlankAttacks       = S(  8,  0);
-  constexpr Score Hanging            = S( 69, 36);
-  constexpr Score KingProtector      = S(  7,  8);
-  constexpr Score KnightOnQueen      = S( 16, 12);
-  constexpr Score LongDiagonalBishop = S( 45,  0);
-  constexpr Score MinorBehindPawn    = S( 18,  3);
-  constexpr Score Outpost            = S( 30, 21);
-  constexpr Score PassedFile         = S( 11,  8);
-  constexpr Score PawnlessFlank      = S( 17, 95);
-  constexpr Score RestrictedPiece    = S(  7,  7);
-  constexpr Score RookOnQueenFile    = S(  7,  6);
-  constexpr Score SliderOnQueen      = S( 59, 18);
-  constexpr Score ThreatByKing       = S( 24, 89);
-  constexpr Score ThreatByPawnPush   = S( 48, 39);
-  constexpr Score ThreatBySafePawn   = S(173, 94);
-  constexpr Score TrappedRook        = S( 52, 10);
-  constexpr Score WeakQueen          = S( 49, 15);
+  constexpr Score BishopPawns         = S(  3,  7);
+  constexpr Score CorneredBishop      = S( 50, 50);
+  constexpr Score FlankAttacks        = S(  8,  0);
+  constexpr Score Hanging             = S( 69, 36);
+  constexpr Score KingProtector       = S(  7,  8);
+  constexpr Score KnightOnQueen       = S( 16, 12);
+  constexpr Score LongDiagonalBishop  = S( 45,  0);
+  constexpr Score MinorBehindPawn     = S( 18,  3);
+  constexpr Score Outpost             = S( 30, 21);
+  constexpr Score PassedFile          = S( 11,  8);
+  constexpr Score PawnlessFlank       = S( 17, 95);
+  constexpr Score RestrictedPiece     = S(  7,  7);
+  constexpr Score RookOnQueenFile     = S(  7,  6);
+  constexpr Score SliderOnQueen       = S( 59, 18);
+  constexpr Score ThreatByKing        = S( 24, 89);
+  constexpr Score ThreatByPawnPush    = S( 48, 39);
+  constexpr Score ThreatBySafePawn    = S(173, 94);
+  constexpr Score TrappedRook         = S( 52, 10);
+  constexpr Score WeakQueen           = S( 49, 15);
+  constexpr Score WeakQueenProtection = S( 14,  0);
 
 #undef S
 
@@ -235,8 +236,8 @@ namespace {
     attackedBy2[Us] = dblAttackByPawn | (attackedBy[Us][KING] & attackedBy[Us][PAWN]);
 
     // Init our king safety tables
-    Square s = make_square(clamp(file_of(ksq), FILE_B, FILE_G),
-                           clamp(rank_of(ksq), RANK_2, RANK_7));
+    Square s = make_square(Utility::clamp(file_of(ksq), FILE_B, FILE_G),
+                           Utility::clamp(rank_of(ksq), RANK_2, RANK_7));
     kingRing[Us] = PseudoAttacks[KING][s] | s;
 
     kingAttackersCount[Them] = popcount(kingRing[Us] & pe->pawn_attacks(Them));
@@ -518,7 +519,7 @@ namespace {
         score += Hanging * popcount(weak & b);
 
         // Additional bonus if weak piece is only protected by a queen
-        score += make_score(14, 0) * popcount(weak & attackedBy[Them][QUEEN]);
+        score += WeakQueenProtection * popcount(weak & attackedBy[Them][QUEEN]);
     }
 
     // Bonus for restricting their piece moves
@@ -642,7 +643,7 @@ namespace {
             || (pos.pieces(PAWN) & (s + Up)))
             bonus = bonus / 2;
 
-        score += bonus - PassedFile * map_to_queenside(file_of(s));
+        score += bonus - PassedFile * edge_distance(file_of(s));
     }
 
     if (T)
@@ -830,8 +831,7 @@ namespace {
         Trace::add(TOTAL, score);
     }
 
-    return  (pos.side_to_move() == WHITE ? v : -v) // Side to move point of view
-           + Eval::Tempo;
+    return  (pos.side_to_move() == WHITE ? v : -v) + Tempo; // Side to move point of view
   }
 
 } // namespace

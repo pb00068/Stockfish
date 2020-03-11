@@ -365,7 +365,7 @@ void Thread::search() {
   // for match (TC 60+0.6) results spanning a wide range of k values.
   PRNG rng(now());
   double floatLevel = Options["UCI_LimitStrength"] ?
-                        clamp(std::pow((Options["UCI_Elo"] - 1346.6) / 143.4, 1 / 0.806), 0.0, 20.0) :
+                      Utility::clamp(std::pow((Options["UCI_Elo"] - 1346.6) / 143.4, 1 / 0.806), 0.0, 20.0) :
                         double(Options["Skill Level"]);
   int intLevel = int(floatLevel) +
                  ((floatLevel - int(floatLevel)) * 1024 > rng.rand<unsigned>() % 1024  ? 1 : 0);
@@ -538,7 +538,7 @@ void Thread::search() {
       {
           double fallingEval = (332 +  6 * (mainThread->previousScore - bestValue)
                                     +  6 * (mainThread->iterValue[iterIdx]  - bestValue)) / 704.0;
-          fallingEval = clamp(fallingEval, 0.5, 1.5);
+          fallingEval = Utility::clamp(fallingEval, 0.5, 1.5);
 
           // If the bestMove is stable over several iterations, reduce time accordingly
           timeReduction = lastBestMoveDepth + 9 < completedDepth ? 1.94 : 0.91;
@@ -819,14 +819,14 @@ namespace {
             ss->staticEval = eval = evaluate(pos) + bonus;
         }
         else
-            ss->staticEval = eval = -(ss-1)->staticEval + 2 * Eval::Tempo;
+            ss->staticEval = eval = -(ss-1)->staticEval + 2 * Tempo;
 
         tte->save(posKey, VALUE_NONE, ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Step 7. Razoring (~1 Elo)
     if (   !rootNode // The required rootNode PV handling is not available in qsearch
-        &&  depth < 2
+        &&  depth == 1
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
@@ -957,7 +957,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      depth > 12 && ttPv ? ss->ply : MAX_PLY);
+                                      depth > 12 ? ss->ply : MAX_PLY);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1178,13 +1178,6 @@ moves_loop: // When in check, search starts from here
                              + (*contHist[3])[movedPiece][to_sq(move)]
                              - 4926;
 
-              // Reset statScore to zero if negative and most stats shows >= 0
-              if (    ss->statScore < 0
-                  && (*contHist[0])[movedPiece][to_sq(move)] >= 0
-                  && (*contHist[1])[movedPiece][to_sq(move)] >= 0
-                  && thisThread->mainHistory[us][from_to(move)] >= 0)
-                  ss->statScore = 0;
-
               // Decrease/increase reduction by comparing opponent's stat score (~10 Elo)
               if (ss->statScore >= -102 && (ss-1)->statScore < -114)
                   r--;
@@ -1200,7 +1193,7 @@ moves_loop: // When in check, search starts from here
           else if (depth < 8 && moveCount > 2)
               r++;
 
-          Depth d = clamp(newDepth - r, 1, newDepth);
+          Depth d = Utility::clamp(newDepth - r, 1, newDepth);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
@@ -1437,13 +1430,13 @@ moves_loop: // When in check, search starts from here
         else
             ss->staticEval = bestValue =
             (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
-                                             : -(ss-1)->staticEval + 2 * Eval::Tempo;
+                                             : -(ss-1)->staticEval + 2 * Tempo;
 
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
             if (!ttHit)
-                tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit, BOUND_LOWER,
+                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
             return bestValue;
@@ -1670,7 +1663,7 @@ moves_loop: // When in check, search starts from here
 
 
   // update_continuation_histories() updates histories of the move pairs formed
-  // by moves at ply -1, -2, and -4 with current move.
+  // by moves at ply -1, -2, -4, and -6 with current move.
 
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
