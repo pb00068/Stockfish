@@ -156,7 +156,7 @@ namespace {
   Value value_from_tt(Value v, int ply, int r50c);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth);
+  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
 
@@ -696,9 +696,6 @@ namespace {
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
 
-    if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
-
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (ttHitAverageWindow - 1) * thisThread->ttHitAverage / ttHitAverageWindow
                                 + ttHitAverageResolution * ttHit;
@@ -717,7 +714,7 @@ namespace {
             if (ttValue >= beta)
             {
                 if (!pos.capture_or_promotion(ttMove))
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -952,12 +949,10 @@ moves_loop: // When in check, search starts from here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
-                                      &thisThread->lowPlyHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers,
-                                      depth > 12 ? ss->ply : MAX_PLY);
+                                      ss->killers);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1632,7 +1627,7 @@ moves_loop: // When in check, search starts from here
 
     if (!pos.capture_or_promotion(bestMove))
     {
-        update_quiet_stats(pos, ss, bestMove, bonus2, depth);
+        update_quiet_stats(pos, ss, bestMove, bonus2);
 
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1672,7 +1667,7 @@ moves_loop: // When in check, search starts from here
 
   // update_quiet_stats() updates move sorting heuristics
 
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth) {
+  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
     if (ss->killers[0] != move)
     {
@@ -1693,9 +1688,6 @@ moves_loop: // When in check, search starts from here
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
-
-    if (depth > 12 && ss->ply < MAX_LPH)
-        thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
