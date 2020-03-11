@@ -1005,7 +1005,7 @@ moves_loop: // When in check, search starts from here
           && pos.non_pawn_material(us)
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
-      	 int mc = moveCount - 2 * ttPv;
+      	 int mc = moveCount - ttPv;
       	 assert (mc >= 0); // moveCount > 1 guaranteed by bestValue > VALUE_TB_LOSS_IN_MAX_PLY
 
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
