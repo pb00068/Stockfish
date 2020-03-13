@@ -112,8 +112,8 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
-          m.value =  (ply > 7 ? 1 : 3) *  (*mainHistory)[pos.side_to_move()][from_to(m)][0]/4 +
-					           (ply > 7 ? 3 : 1) *  (*mainHistory)[pos.side_to_move()][from_to(m)][1]/4 +
+          m.value =  (ply > 10 ? 1 : 3) *  (*mainHistory)[pos.side_to_move()][from_to(m)][0]/4 +
+					           (ply > 10 ? 3 : 1) *  (*mainHistory)[pos.side_to_move()][from_to(m)][1]/4 +
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
@@ -126,8 +126,8 @@ void MovePicker::score() {
               m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                        - Value(type_of(pos.moved_piece(m)));
           else
-              m.value =  (ply > 7 ? 1 : 3) * (*mainHistory)[pos.side_to_move()][from_to(m)][0]/4 +
-							           (ply > 7 ? 3 : 1) * (*mainHistory)[pos.side_to_move()][from_to(m)][1]/4 +
+              m.value =  (ply > 10 ? 1 : 3) * (*mainHistory)[pos.side_to_move()][from_to(m)][0]/4 +
+							           (ply > 10 ? 3 : 1) * (*mainHistory)[pos.side_to_move()][from_to(m)][1]/4 +
                        + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }

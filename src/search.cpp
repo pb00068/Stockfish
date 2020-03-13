@@ -727,7 +727,7 @@ namespace {
             else if (!pos.capture_or_promotion(ttMove))
             {
                 int penalty = -stat_bonus(depth);
-                thisThread->mainHistory[us][from_to(ttMove)][ss->ply > 7] << penalty;
+                thisThread->mainHistory[us][from_to(ttMove)][ss->ply > 10] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
@@ -900,7 +900,6 @@ namespace {
         Value raisedBeta = std::min(beta + 189 - 45 * improving, VALUE_INFINITE);
         MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->captureHistory);
         int probCutCount = 0;
-
         while (  (move = mp.next_move()) != MOVE_NONE
                && probCutCount < 2 + 2 * cutNode)
             if (move != excludedMove && pos.legal(move))
@@ -1024,7 +1023,7 @@ moves_loop: // When in check, search starts from here
               if (   lmrDepth < 6
                   && !inCheck
                   && ss->staticEval + 235 + 172 * lmrDepth <= alpha
-                  &&  thisThread->mainHistory[us][from_to(move)][0]
+                  &&  (thisThread->mainHistory[us][from_to(move)][0]  + thisThread->mainHistory[us][from_to(move)][0]) / 2
                     + (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 25000)
@@ -1169,7 +1168,7 @@ moves_loop: // When in check, search starts from here
                        && !pos.see_ge(reverse_move(move)))
                   r -= 2 + ttPv;
 
-              ss->statScore =  thisThread->mainHistory[us][from_to(move)][0]
+              ss->statScore =  ( thisThread->mainHistory[us][from_to(move)][0] + thisThread->mainHistory[us][from_to(move)][1])/2
                              + (*contHist[0])[movedPiece][to_sq(move)]
                              + (*contHist[1])[movedPiece][to_sq(move)]
                              + (*contHist[3])[movedPiece][to_sq(move)]
@@ -1637,7 +1636,7 @@ moves_loop: // When in check, search starts from here
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            thisThread->mainHistory[us][from_to(quietsSearched[i])][ss->ply > 7] << bonus2;
+            thisThread->mainHistory[us][from_to(quietsSearched[i])][ss->ply > 10] << bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
@@ -1682,11 +1681,11 @@ moves_loop: // When in check, search starts from here
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->mainHistory[us][from_to(move)][ss->ply > 7] << bonus;
+    thisThread->mainHistory[us][from_to(move)][ss->ply > 10] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if (type_of(pos.moved_piece(move)) != PAWN)
-        thisThread->mainHistory[us][from_to(reverse_move(move))][ss->ply > 7] << -bonus;
+        thisThread->mainHistory[us][from_to(reverse_move(move))][ss->ply > 10] << -bonus;
 
     if (is_ok((ss-1)->currentMove))
     {
