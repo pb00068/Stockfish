@@ -70,8 +70,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for quiescence search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Square rs)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), recaptureSquare(rs), depth(d) {
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Square rs, int pl)
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), recaptureSquare(rs), depth(d), ply(pl) {
 
   assert(d <= 0);
 
@@ -95,6 +95,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
           && pos.pseudo_legal(ttm)
           && pos.see_ge(ttm, threshold) ? ttm : MOVE_NONE;
   stage += (ttMove == MOVE_NONE);
+  ply = 0;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
@@ -105,18 +106,33 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
+  int r1 = 0, r2 = 0;
+  if (Type != CAPTURES)
+  {
+  	if (ply > 20 )
+  		r1=r2=3;
+    else if (ply > 15 )
+  	  r1=2,r2=3;
+    else if (ply > 10 )
+  	  r1=1, r2=2;
+    else if (ply > 5 )
+   	  r2=1;
+  }
+
+
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
-          m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
+          m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)][r1] +
+					               (*mainHistory)[pos.side_to_move()][from_to(m)][r2] +
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   + (ply < MAX_LPH ?  4 * (*lowPlyHistory)[ply][from_to(m)] : 0);
+                   + (ply < MAX_LPH && depth > 12 ?  4 * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
       {
@@ -124,7 +140,8 @@ void MovePicker::score() {
               m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                        - Value(type_of(pos.moved_piece(m)));
           else
-              m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)]
+              m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)][r1] +
+							           (*mainHistory)[pos.side_to_move()][from_to(m)][r2] +
                        + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
