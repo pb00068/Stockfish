@@ -814,7 +814,7 @@ namespace {
     {
         if ((ss-1)->currentMove != MOVE_NULL)
         {
-            int bonus = -(ss-1)->statScore / 512;
+            int bonus = -((ss-1)->statScore - 7000) / 512;
 
             ss->staticEval = eval = evaluate(pos) + bonus;
         }
@@ -843,7 +843,7 @@ namespace {
     // Step 9. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 23397
+        && (ss-1)->statScore < 30397
         &&  eval >= beta
         &&  eval >= ss->staticEval
         &&  ss->staticEval >= beta - 32 * depth - 30 * improving + 120 * ttPv + 292
@@ -1015,7 +1015,7 @@ moves_loop: // When in check, search starts from here
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
+              if (   lmrDepth < 4 + ((ss-1)->statScore > 7000 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
@@ -1179,6 +1179,7 @@ moves_loop: // When in check, search starts from here
               else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r++;
 
+              dbg_mean_of(thisThread->mainHistory[us][from_to(move)]);
               // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
               r -= (ss->statScore + thisThread->mainHistory[us][from_to(move)] - 4926) / 16384;
           }
