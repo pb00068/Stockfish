@@ -1172,20 +1172,15 @@ moves_loop: // When in check, search starts from here
                              + (*contHist[1])[movedPiece][to_sq(move)]
                              + (*contHist[3])[movedPiece][to_sq(move)];
 
-              if (!ss->statScore)
-              	r++;
-
-              ss->statScore += thisThread->mainHistory[us][from_to(move)] - 4926;
-
               // Decrease/increase reduction by comparing opponent's stat score (~10 Elo)
-              if (ss->statScore >= -102 && (ss-1)->statScore < -114)
+              if (ss->statScore >= 0 && (ss-1)->statScore < 0)
                   r--;
 
-              else if ((ss-1)->statScore >= -116 && ss->statScore < -154)
+              else if ((ss-1)->statScore >= 0 && ss->statScore < 0)
                   r++;
 
               // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
-              r -= ss->statScore / 16384;
+              r -= (ss->statScore + thisThread->mainHistory[us][from_to(move)] - 4926) / 16384;
           }
 
           // Increase reduction for captures/promotions if late move and at low depth
