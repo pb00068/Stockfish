@@ -1029,6 +1029,11 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[3])[movedPiece][to_sq(move)] < 27400)
                   continue;
 
+
+              if (lmrDepth < 7 && (pos.blockers_for_king(us) & pos.pieces(~us)))
+                  if (from_sq(thisThread->counterMoves[movedPiece][to_sq(move)]) == lsb(pos.blockers_for_king(us) & pos.pieces(~us)))
+                    continue;
+
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
