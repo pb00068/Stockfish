@@ -968,7 +968,7 @@ moves_loop: // When in check, search starts from here
 
     Square dsq = SQ_NONE;
     if (pos.blockers_for_king(us) & pos.pieces(~us))
-       dsq = lsb(pos.blockers_for_king(us) & pos.pieces(~us));
+       dsq = msb(pos.blockers_for_king(us) & pos.pieces(~us));
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1041,7 +1041,7 @@ moves_loop: // When in check, search starts from here
           }
           else
           	{
-          	 bool good = dsq != SQ_NONE && (to_sq(move) == dsq || lsb(pos.pinners(~us)) == to_sq(move));
+          	 bool good = dsq != SQ_NONE && (to_sq(move) == dsq || to_sq(move) == msb(pos.pinners(~us)));
           	 if (!pos.see_ge(move, Value(-194) * (depth + 6 * good))) // (~25 Elo)
           		 continue;
           	}
