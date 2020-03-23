@@ -966,6 +966,10 @@ moves_loop: // When in check, search starts from here
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
 
+    Square dsq = SQ_NONE;
+    if (pos.blockers_for_king(us) & pos.pieces(~us))
+       dsq = lsb(pos.blockers_for_king(us) & pos.pieces(~us));
+
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1014,14 +1018,16 @@ moves_loop: // When in check, search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
+              bool good = dsq != SQ_NONE && type_of(movedPiece) == KING;
+
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
+              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1) - 2 * good
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
 
               // Futility pruning: parent node (~5 Elo)
-              if (   lmrDepth < 6
+              if (   lmrDepth < 6 - 2 * good
                   && !inCheck
                   && ss->staticEval + 235 + 172 * lmrDepth <= alpha
                   &&  (*contHist[0])[movedPiece][to_sq(move)]
@@ -1029,17 +1035,17 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[3])[movedPiece][to_sq(move)] < 27400)
                   continue;
 
-
-              if (lmrDepth < 7 && (pos.blockers_for_king(us) & pos.pieces(~us)))
-                  if (from_sq(thisThread->counterMoves[movedPiece][to_sq(move)]) == lsb(pos.blockers_for_king(us) & pos.pieces(~us)))
-                    continue;
-
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * (lmrDepth + 2 * good))))
                   continue;
           }
-          else if (!pos.see_ge(move, Value(-194) * depth)) // (~25 Elo)
-              continue;
+          else
+          	{
+          	 bool good = dsq != SQ_NONE && (to_sq(move) == dsq || lsb(pos.pinners(~us)) == to_sq(move));
+          	 if (!pos.see_ge(move, Value(-194) * (depth + 6 * good))) // (~25 Elo)
+          		 continue;
+          	}
+
       }
 
       // Step 14. Extensions (~75 Elo)
