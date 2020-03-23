@@ -1030,9 +1030,13 @@ moves_loop: // When in check, search starts from here
                   continue;
 
 
-              if (lmrDepth < 7 && (pos.blockers_for_king(us) & pos.pieces(~us)))
-                  if (from_sq(thisThread->counterMoves[movedPiece][to_sq(move)]) == lsb(pos.blockers_for_king(us) & pos.pieces(~us)))
-                    continue;
+              if (lmrDepth < 6 && (pos.blockers_for_king(us) & pos.pieces(~us)))
+              {
+              	Move cm = thisThread->counterMoves[movedPiece][to_sq(move)];
+              	  if (from_sq(cm) == lsb(pos.blockers_for_king(us) & pos.pieces(~us)))
+              	  	if (!aligned(to_sq(cm),from_sq(cm), pos.square<KING>(us)))
+              	  		continue;
+              }
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
