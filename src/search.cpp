@@ -672,7 +672,8 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->discoBest = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->checking = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1015,22 +1016,34 @@ moves_loop: // When in check, search starts from here
               // Reduced depth of the next LMR search
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-              bool preventsDisco = (ss+1)->discoBest && aligned(pos.square<KING>(us), from_sq((ss+1)->discoBest), to_sq(move));
+              bool preventsCheck = false;
 
+              if ((ss+1)->checking != SQ_NONE)
+              {
+              	  //verify if move blocks upcoming check
+              	  preventsCheck = (ss+1)->checking != to_sq(move) && aligned(pos.square<KING>(us), to_sq(move), (ss+1)->checking);
+              	  // or if king moves away from upcoming checking ray
+              	  if (!preventsCheck && type_of(movedPiece) == KING && !aligned(pos.square<KING>(us), to_sq(move), (ss+1)->checking))
+              	  	preventsCheck = true;
+              }
+
+              if (!preventsCheck)
+              {
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1) - 2 * preventsDisco
+              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
 
               // Futility pruning: parent node (~5 Elo)
-              if (   lmrDepth < 6 - 3 * preventsDisco
+              if (   lmrDepth < 6
                   && !inCheck
                   && ss->staticEval + 235 + 172 * lmrDepth <= alpha
                   &&  (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 27400)
                   continue;
+              }
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
@@ -1285,7 +1298,9 @@ moves_loop: // When in check, search starts from here
           {
               bestMove = move;
               if (discoCheck)
-              	ss->discoBest = move;
+              	ss->checking = from_sq(move);
+              else if (givesCheck && type_of(movedPiece) > KNIGHT)
+              	ss->checking = to_sq(move);
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
