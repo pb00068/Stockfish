@@ -113,13 +113,13 @@ void MovePicker::score() {
 
       else if (Type == QUIETS)
       {
-      	  bool favKingMoves = pos.blockers_for_king(pos.side_to_move()) != 0;
+          bool favKingMoves = pos.blockers_for_king(pos.side_to_move()) != 0;
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-									 + (favKingMoves && type_of(pos.moved_piece(m)) == KING) ?  2000 : 0
+                   + ((favKingMoves && type_of(pos.moved_piece(m)) == KING) ?  2000 : 0)
                    + (ply < MAX_LPH ?  4 * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
 
