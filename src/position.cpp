@@ -626,13 +626,14 @@ bool Position::pseudo_legal(const Move m) const {
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
-bool Position::gives_check(Move m) const {
+bool Position::gives_check(Move m, bool& discocheck) const {
 
   assert(is_ok(m));
   assert(color_of(moved_piece(m)) == sideToMove);
 
   Square from = from_sq(m);
   Square to = to_sq(m);
+  discocheck = false;
 
   // Is there a direct check?
   if (check_squares(type_of(piece_on(from))) & to)
@@ -641,8 +642,10 @@ bool Position::gives_check(Move m) const {
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
+  {
+  		discocheck = true;
       return true;
-
+  }
   switch (type_of(m))
   {
   case NORMAL:
