@@ -1016,21 +1016,23 @@ moves_loop: // When in check, search starts from here
               int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
               bool preventsDisco = (ss+1)->discoBest && aligned(pos.square<KING>(us), from_sq((ss+1)->discoBest), to_sq(move));
-
+              if (!preventsDisco)
+              {
               // Countermoves based pruning (~20 Elo)
-              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1) - 2 * preventsDisco
+              if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
                   && (*contHist[0])[movedPiece][to_sq(move)] < CounterMovePruneThreshold
                   && (*contHist[1])[movedPiece][to_sq(move)] < CounterMovePruneThreshold)
                   continue;
 
               // Futility pruning: parent node (~5 Elo)
-              if (   lmrDepth < 6 - 3 * preventsDisco
+              if (   lmrDepth < 6
                   && !inCheck
                   && ss->staticEval + 235 + 172 * lmrDepth <= alpha
                   &&  (*contHist[0])[movedPiece][to_sq(move)]
                     + (*contHist[1])[movedPiece][to_sq(move)]
                     + (*contHist[3])[movedPiece][to_sq(move)] < 27400)
                   continue;
+              }
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(32 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
