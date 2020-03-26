@@ -1018,7 +1018,7 @@ moves_loop: // When in check, search starts from here
 
               bool preventsCheck = false;
 
-              if (lmrDepth < 3 && (ss+1)->checking != SQ_NONE)
+              if (lmrDepth <= 2 && (ss+1)->checking != SQ_NONE)
               {
               	  //verify if move blocks upcoming check
               	  preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
