@@ -1018,14 +1018,8 @@ moves_loop: // When in check, search starts from here
 
               bool preventsCheck = false;
 
-              if (!inCheck && lmrDepth <= 2 && (ss+1)->checking != SQ_NONE)
-              {
-              	  if (type_of(movedPiece) == KING)
-              	  	preventsCheck = !aligned(pos.square<KING>(us), (ss+1)->checking, to_sq(move));
-              	  //verify if move blocks upcoming checking ray
-              	  else
-              	  	preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
-              }
+              if (!inCheck && lmrDepth <= 2 && (ss+1)->checking != SQ_NONE && type_of(movedPiece) != KING)
+                  preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
 
               if (!preventsCheck)
               {
