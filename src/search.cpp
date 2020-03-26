@@ -1018,10 +1018,10 @@ moves_loop: // When in check, search starts from here
 
               bool preventsCheck = false;
 
-              if ((ss+1)->checking != SQ_NONE)
+              if (lmrDepth < 3 && (ss+1)->checking != SQ_NONE)
               {
               	  //verify if move blocks upcoming check
-              	  preventsCheck = (ss+1)->checking != to_sq(move) && aligned(pos.square<KING>(us), to_sq(move), (ss+1)->checking);
+              	  preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
               	  // or if king moves away from upcoming checking ray
               	  if (!preventsCheck && type_of(movedPiece) == KING && !aligned(pos.square<KING>(us), to_sq(move), (ss+1)->checking))
               	  	preventsCheck = true;
@@ -1297,10 +1297,13 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (discoCheck)
-              	ss->checking = from_sq(move);
-              else if (givesCheck && type_of(movedPiece) > KNIGHT)
-              	ss->checking = to_sq(move);
+              if (value >= beta)
+              {
+								if (discoCheck)
+									ss->checking = from_sq(move);
+								else if (givesCheck && type_of(movedPiece) > KNIGHT)
+									ss->checking = to_sq(move);
+              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
