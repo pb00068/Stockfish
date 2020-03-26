@@ -1018,13 +1018,13 @@ moves_loop: // When in check, search starts from here
 
               bool preventsCheck = false;
 
-              if (lmrDepth <= 2 && (ss+1)->checking != SQ_NONE)
+              if (!inCheck && lmrDepth <= 2 && (ss+1)->checking != SQ_NONE)
               {
-              	  //verify if move blocks upcoming check
-              	  preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
-              	  // or if king moves away from upcoming checking ray
-              	  if (!preventsCheck && type_of(movedPiece) == KING && !aligned(pos.square<KING>(us), to_sq(move), (ss+1)->checking))
-              	  	preventsCheck = true;
+              	  if (type_of(movedPiece) == KING)
+              	  	preventsCheck = !aligned(pos.square<KING>(us), (ss+1)->checking, to_sq(move));
+              	  //verify if move blocks upcoming checking ray
+              	  else
+              	  	preventsCheck = between_bb(pos.square<KING>(us), (ss+1)->checking) & to_sq(move);
               }
 
               if (!preventsCheck)
@@ -1297,11 +1297,12 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (value >= beta)
+              if (value >= beta && is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) != KING)
               {
 								if (discoCheck)
 									ss->checking = from_sq(move);
-								else if (givesCheck && type_of(movedPiece) > KNIGHT)
+								else if (givesCheck && type_of(movedPiece) > KNIGHT
+                     && !(between_bb(pos.square<KING>(~us), to_sq(move)) & to_sq((ss-1)->currentMove)))
 									ss->checking = to_sq(move);
               }
 
