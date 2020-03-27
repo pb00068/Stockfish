@@ -1648,7 +1648,7 @@ moves_loop: // When in check, search starts from here
     }
     else
     {
-    	int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(bestMove)) > file_of(from_sq(bestMove)) ? 6 : moved_piece;
+    	int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(bestMove)) > file_of(from_sq(bestMove)) ? 6 + moved_piece : moved_piece;
     	captureHistory[captPc][to_sq(bestMove)][captured] << bonus1;
     }
 
@@ -1661,7 +1661,7 @@ moves_loop: // When in check, search starts from here
     for (int i = 0; i < captureCount; ++i)
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
-        int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(capturesSearched[i])) > file_of(from_sq(capturesSearched[i])) ? 6 : moved_piece;
+        int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(capturesSearched[i])) > file_of(from_sq(capturesSearched[i])) ? 6 + moved_piece : moved_piece;
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         captureHistory[captPc][to_sq(capturesSearched[i])][captured] << -bonus1;
     }
