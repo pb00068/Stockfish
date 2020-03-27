@@ -1647,7 +1647,10 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+    {
+    	int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(bestMove)) > file_of(from_sq(bestMove)) ? 6 : moved_piece;
+    	captureHistory[captPc][to_sq(bestMove)][captured] << bonus1;
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
@@ -1658,8 +1661,9 @@ moves_loop: // When in check, search starts from here
     for (int i = 0; i < captureCount; ++i)
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
+        int captPc = type_of(moved_piece) == PAWN && file_of(to_sq(capturesSearched[i])) > file_of(from_sq(capturesSearched[i])) ? 6 : moved_piece;
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
+        captureHistory[captPc][to_sq(capturesSearched[i])][captured] << -bonus1;
     }
   }
 
