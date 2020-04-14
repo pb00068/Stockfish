@@ -106,6 +106,9 @@ namespace {
         phalanx    = neighbours & rank_bb(s);
         support    = neighbours & rank_bb(s - Up);
 
+        if (blocked & !lever)
+        	e->immobile |= s;
+
         e->blockedCount[Us] += bool(blocked);
 
         // A pawn is backward when it is behind all pawns of the same color on
@@ -178,6 +181,7 @@ Entry* probe(const Position& pos) {
       return e;
 
   e->key = key;
+  e->immobile = 0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
 
