@@ -623,7 +623,7 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove, bestMove, equalMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
     bool ttHit, ttPv, formerPv, inCheck, givesCheck, improving, didLMR, priorCapture;
@@ -967,6 +967,7 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    equalMove = MOVE_NONE;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1261,6 +1262,9 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
+
+          if (moveCount > 1 && value == alpha)
+          	equalMove = move;
       }
 
       // Step 18. Undo move
@@ -1327,7 +1331,7 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove)
+      if (move != bestMove && move != equalMove)
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
@@ -1357,8 +1361,16 @@ moves_loop: // When in check, search starts from here
                    :     inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+
+        if (equalMove && equalMove != bestMove && !pos.capture_or_promotion(equalMove))
+        {
+            thisThread->mainHistory[us][from_to(equalMove)] << stat_bonus(depth + 1);
+            update_continuation_histories(ss, pos.moved_piece(equalMove), to_sq(move), stat_bonus(depth + 1));
+        }
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
