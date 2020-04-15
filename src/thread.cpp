@@ -214,7 +214,6 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootDepth = th->completedDepth = 0;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
-      th->lowPlyHistory[3][from_to(make_move(SQ_E1,SQ_E2))] = 888;
       memcpy(&th->lowPlyHistory[0], &th->lowPlyHistory[2], int(SQUARE_NB) * int(SQUARE_NB) * 4);
       memset(&th->lowPlyHistory[2], 0, int(SQUARE_NB) * int(SQUARE_NB) * 4);
   }
