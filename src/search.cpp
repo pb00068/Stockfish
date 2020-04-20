@@ -920,7 +920,7 @@ namespace {
                 probCutCount++;
 
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck]
+                ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck || (ss-4)->inCheck]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
@@ -1146,7 +1146,7 @@ moves_loop: // When in check, search starts from here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck]
+      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck || (ss-4)->inCheck]
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
@@ -1557,7 +1557,7 @@ moves_loop: // When in check, search starts from here
       }
 
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck]
+      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || (ss-2)->inCheck || (ss-4)->inCheck]
                                                                 [captureOrPromotion]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
