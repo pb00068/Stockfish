@@ -924,7 +924,7 @@ namespace {
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
-                ss->special = inCheck || captureOrPromotion;
+                ss->special = inCheck;
 
                 pos.do_move(move, st);
 
@@ -1151,7 +1151,7 @@ moves_loop: // When in check, search starts from here
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
-      ss->special = inCheck || captureOrPromotion;
+      ss->special = inCheck;
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1563,7 +1563,6 @@ moves_loop: // When in check, search starts from here
                                                                 [captureOrPromotion]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
-      ss->special = inCheck || captureOrPromotion;
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
