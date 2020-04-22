@@ -626,7 +626,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
-    bool ttHit, ttPv, formerPv, givesCheck, improving, didLMR, priorCapture;
+    bool ttHit, ttPv, formerPv, givesCheck, checkingPos, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
@@ -974,6 +974,8 @@ moves_loop: // When in check, search starts from here
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
 
+    checkingPos = false;
+
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1004,6 +1006,7 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      checkingPos |= givesCheck;
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1182,7 +1185,8 @@ moves_loop: // When in check, search starts from here
           if (moveCountPruning && !formerPv)
               r++;
 
-          if (!ss->inCheck && (ss-2)->inCheck && (ss-4)->inCheck)
+          // Less reduction after a king hunt if we can't check anymore
+          if (!checkingPos && (ss-1)->inCheck && (ss-3)->inCheck)
           	r--;
 
           // Decrease reduction if opponent's move count is high (~5 Elo)
