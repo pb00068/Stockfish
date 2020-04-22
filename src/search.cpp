@@ -862,6 +862,7 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->pawnMove = false;
 
         pos.do_null_move(st);
 
@@ -924,6 +925,7 @@ namespace {
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
+                ss->pawnMove = type_of(pos.moved_piece(move)) == PAWN;
 
                 pos.do_move(move, st);
 
@@ -1150,6 +1152,7 @@ moves_loop: // When in check, search starts from here
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
+      ss->pawnMove = type_of(pos.moved_piece(move)) == PAWN;
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1561,6 +1564,7 @@ moves_loop: // When in check, search starts from here
                                                                 [captureOrPromotion]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
+      ss->pawnMove = type_of(pos.moved_piece(move)) == PAWN;
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
@@ -1711,8 +1715,13 @@ moves_loop: // When in check, search starts from here
 
     for (int i : {1, 2, 4, 6})
     {
-        if (ss->inCheck && i > 2)
-        	break;
+        if (i > 2)
+        {
+        	if (ss->inCheck)
+        		break;
+        	if (!(ss-i)->pawnMove)
+        		continue;
+        }
         if (is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
     }
