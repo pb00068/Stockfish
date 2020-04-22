@@ -1719,8 +1719,8 @@ moves_loop: // When in check, search starts from here
         {
         	if (ss->inCheck)
         		break;
-        	if (type_of(pc) == PAWN && !(ss-i)->pawnMove)
-        		continue;
+        	if (type_of(pc) == PAWN && (ss-i)->pawnMove)
+        		bonus *= 4;
         }
         if (is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
