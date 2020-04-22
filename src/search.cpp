@@ -1719,7 +1719,7 @@ moves_loop: // When in check, search starts from here
         {
         	if (ss->inCheck)
         		break;
-        	if (!(ss-i)->pawnMove)
+        	if (type_of(pc) == PAWN && !(ss-i)->pawnMove)
         		continue;
         }
         if (is_ok((ss-i)->currentMove))
