@@ -1182,7 +1182,7 @@ moves_loop: // When in check, search starts from here
           if (moveCountPruning && !formerPv)
               r++;
 
-          if (!ss->inCheck && (ss-2)->inCheck)
+          if (!ss->inCheck && (ss-2)->inCheck && (ss-4)->inCheck)
           	r--;
 
           // Decrease reduction if opponent's move count is high (~5 Elo)
