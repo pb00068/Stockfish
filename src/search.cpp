@@ -626,7 +626,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
-    bool ttHit, ttPv, formerPv, givesCheck, improving, didLMR, priorCapture;
+    bool ttHit, ttPv, formerPv, givesCheck, canCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
@@ -957,6 +957,7 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
+    canCheck = false;
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
@@ -1004,6 +1005,7 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      canCheck |= givesCheck;
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1182,9 +1184,6 @@ moves_loop: // When in check, search starts from here
           if (moveCountPruning && !formerPv)
               r++;
 
-          if (!ss->inCheck && (ss-2)->inCheck && (ss-4)->inCheck)
-          	r--;
-
           // Decrease reduction if opponent's move count is high (~5 Elo)
           if ((ss-1)->moveCount > 14)
               r--;
@@ -1198,6 +1197,10 @@ moves_loop: // When in check, search starts from here
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
                   r++;
+
+              // coming out of a check-sequence
+              if (!canCheck && (ss-1)->inCheck && (ss-3)->inCheck)
+                 	r--;
 
               // Increase reduction for cut nodes (~10 Elo)
               if (cutNode)
