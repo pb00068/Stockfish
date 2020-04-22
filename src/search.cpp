@@ -627,7 +627,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue;
     bool ttHit, ttPv, formerPv, givesCheck, improving, didLMR, priorCapture;
-    bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
+    bool doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -916,12 +916,12 @@ namespace {
                 assert(pos.capture_or_promotion(move));
                 assert(depth >= 5);
 
-                captureOrPromotion = true;
+                ss->captureOrPromotion = true;
                 probCutCount++;
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                          [captureOrPromotion]
+                                                                          [ss->captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
@@ -1001,7 +1001,7 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv = nullptr;
 
       extension = 0;
-      captureOrPromotion = pos.capture_or_promotion(move);
+      ss->captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -1019,7 +1019,7 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-          if (   !captureOrPromotion
+          if (   !ss->captureOrPromotion
               && !givesCheck)
           {
               // Countermoves based pruning (~20 Elo)
@@ -1128,7 +1128,7 @@ moves_loop: // When in check, search starts from here
       // Late irreversible move extension
       if (   move == ttMove
           && pos.rule50_count() > 80
-          && (captureOrPromotion || type_of(movedPiece) == PAWN))
+          && (ss->captureOrPromotion || type_of(movedPiece) == PAWN))
           extension = 2;
 
       // Add extension to new depth
@@ -1147,7 +1147,7 @@ moves_loop: // When in check, search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion]
+                                                                [ss->captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
@@ -1159,7 +1159,7 @@ moves_loop: // When in check, search starts from here
       if (    depth >= 3
           &&  moveCount > 1 + 2 * rootNode
           && (!rootNode || thisThread->best_move_count(move) == 0)
-          && (  !captureOrPromotion
+          && (  !ss->captureOrPromotion
               || moveCountPruning
               || ss->staticEval + PieceValue[EG][pos.captured_piece()] <= alpha
               || cutNode
@@ -1190,7 +1190,7 @@ moves_loop: // When in check, search starts from here
           if (singularLMR)
               r -= 1 + formerPv;
 
-          if (!captureOrPromotion)
+          if (!ss->captureOrPromotion)
           {
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
@@ -1199,6 +1199,10 @@ moves_loop: // When in check, search starts from here
               // Increase reduction for cut nodes (~10 Elo)
               if (cutNode)
                   r += 2;
+
+              // Less reduction on coming out from an exchange (or promotion)
+              if ((ss-1)->captureOrPromotion && (ss-2)->captureOrPromotion)
+              	r -= 1;
 
               // Decrease reduction for moves that escape a capture. Filter out
               // castling moves, because they are coded as "king captures rook" and
@@ -1255,7 +1259,7 @@ moves_loop: // When in check, search starts from here
       {
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
-          if (didLMR && !captureOrPromotion)
+          if (didLMR && !ss->captureOrPromotion)
           {
               int bonus = value > alpha ?  stat_bonus(newDepth)
                                         : -stat_bonus(newDepth);
@@ -1344,10 +1348,10 @@ moves_loop: // When in check, search starts from here
 
       if (move != bestMove)
       {
-          if (captureOrPromotion && captureCount < 32)
+          if (ss->captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!captureOrPromotion && quietCount < 64)
+          else if (!ss->captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
     }
