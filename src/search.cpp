@@ -719,14 +719,15 @@ namespace {
         {
             if (ttValue >= beta)
             {
-                if (!pos.capture_or_promotion(ttMove))
+                bool directCheck = pos.check_squares(type_of(pos.piece_on(from_sq(ttMove)))) & to_sq(ttMove);
+                if (!pos.capture_or_promotion(ttMove) && !directCheck)
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
 
-                if (pos.check_squares(type_of(pos.piece_on(from_sq(ttMove)))) & to_sq(ttMove))
+                if (directCheck)
                 	thisThread->checkingHistory[pos.square<KING>(~us)][from_to(ttMove)] << stat_bonus(depth);
             }
             // Penalty for a quiet ttMove that fails low
@@ -1684,22 +1685,26 @@ moves_loop: // When in check, search starts from here
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
+
+    bool directCheck = pos.check_squares(type_of(pos.piece_on(from_sq(bestMove)))) & to_sq(bestMove);
     // only direct checks (are easy and fast to determinate)
-    if (pos.check_squares(type_of(pos.piece_on(from_sq(bestMove)))) & to_sq(bestMove))
+    if (directCheck)
         thisThread->checkingHistory[pos.square<KING>(~us)][from_to(bestMove)] << bonus1;
 
     if (!pos.capture_or_promotion(bestMove))
     {
-        update_quiet_stats(pos, ss, bestMove, bonus2, depth);
+    	  if (!directCheck)
+          update_quiet_stats(pos, ss, bestMove, bonus2, depth);
 
 
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
             if (quietsSChecks[i])
-            	   thisThread->checkingHistory[pos.square<KING>(~us)][from_to(quietsSearched[i])] << stat_bonus(depth);
+                thisThread->checkingHistory[pos.square<KING>(~us)][from_to(quietsSearched[i])] << stat_bonus(depth);
+            else
+                thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
         }
     }
     else
