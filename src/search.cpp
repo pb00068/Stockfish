@@ -954,8 +954,8 @@ namespace {
 moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-6)->inCheck ? &thisThread->continuationHistory[0][0][EMPTY_SLOT][0] : (ss-6)->continuationHistory};
+                                          nullptr                   , (ss-4)->inCheck == ss->inCheck ? (ss-4)->continuationHistory : &thisThread->continuationHistory[0][0][EMPTY_SLOT][0],
+                                          nullptr                   , (ss-6)->inCheck == ss->inCheck ? (ss-6)->continuationHistory : &thisThread->continuationHistory[0][0][EMPTY_SLOT][0] };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
