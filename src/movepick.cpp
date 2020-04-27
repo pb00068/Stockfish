@@ -57,9 +57,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, int pl, bool cn3)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, Move* killers, int pl, bool cn3, bool cn5)
            : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl), cnt(cn3){
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl), cnt3(cn3), cnt5(cn5){
 
   assert(d > 0);
 
@@ -108,8 +108,8 @@ void MovePicker::score() {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
-                   + 2 * cnt * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
-                   + cnt *     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                   + 2 * cnt3 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
+                   + cnt5 *     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ?  4 * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
