@@ -953,6 +953,9 @@ namespace {
 
 moves_loop: // When in check, search starts from here
 
+if (ss->inCheck != pos.checkers())
+    	sync_cout << pos << " ss->inCheck != pos.checkers(), search depth: " << depth << sync_endl, abort();
+
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
