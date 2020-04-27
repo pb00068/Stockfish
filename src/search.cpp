@@ -953,9 +953,9 @@ namespace {
 
 moves_loop: // When in check, search starts from here
 
-    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-6)->continuationHistory };
+    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->inCheck ? thisThread->empty : (ss-2)->continuationHistory,
+                                          nullptr                   , (ss-4)->inCheck ? thisThread->empty : (ss-4)->continuationHistory,
+                                          nullptr                   , (ss-6)->inCheck ? thisThread->empty : (ss-6)->continuationHistory};
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
@@ -965,8 +965,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      depth > 12 ? ss->ply : MAX_PLY,
-                                      !(ss-4)->inCheck, !(ss-6)->inCheck);
+                                      depth > 12 ? ss->ply : MAX_PLY);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
