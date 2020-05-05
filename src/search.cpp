@@ -921,7 +921,7 @@ namespace {
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                          [captureOrPromotion]
+                                                                          [is_ok((ss-1)->currentMove) && to_sq(move) == to_sq((ss-1)->currentMove)]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
@@ -1154,7 +1154,7 @@ moves_loop: // When in check, search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion]
+                                                                [is_ok((ss-1)->currentMove) && to_sq(move) == to_sq((ss-1)->currentMove)]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
@@ -1420,7 +1420,7 @@ moves_loop: // When in check, search starts from here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool ttHit, pvHit, givesCheck, captureOrPromotion;
+    bool ttHit, pvHit, givesCheck;
     int moveCount;
 
     if (PvNode)
@@ -1522,7 +1522,6 @@ moves_loop: // When in check, search starts from here
       assert(is_ok(move));
 
       givesCheck = pos.gives_check(move);
-      captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
 
@@ -1565,7 +1564,7 @@ moves_loop: // When in check, search starts from here
 
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion]
+                                                                [is_ok((ss-1)->currentMove) && to_sq(move) == to_sq((ss-1)->currentMove)]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
 
