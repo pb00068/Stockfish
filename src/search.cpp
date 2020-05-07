@@ -916,7 +916,7 @@ namespace {
                 assert(pos.capture_or_promotion(move));
                 assert(depth >= 5);
 
-                captureOrPromotion = true;
+                captureOrPromotion = raisedBeta - ss->staticEval > 0 || type_of(pos.moved_piece(move)) >  type_of(pos.piece_on(to_sq(move)));
                 probCutCount++;
 
                 ss->currentMove = move;
@@ -1158,7 +1158,7 @@ moves_loop: // When in check, search starts from here
       pos.do_move(move, st, givesCheck);
 
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-      [captureOrPromotion && (type_of(movedPiece) >=  type_of(pos.captured_piece()))]
+      [captureOrPromotion && (type_of(movedPiece) >  type_of(pos.captured_piece()))]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
@@ -1574,7 +1574,7 @@ moves_loop: // When in check, search starts from here
       pos.do_move(move, st, givesCheck);
 
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-            [captureOrPromotion && (type_of(movedPiece) >=  type_of(pos.captured_piece()))]
+            [captureOrPromotion && (type_of(movedPiece) >  type_of(pos.captured_piece()))]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
