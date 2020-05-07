@@ -1568,14 +1568,14 @@ moves_loop: // When in check, search starts from here
       }
 
       ss->currentMove = move;
-
+      Piece movedPiece = pos.moved_piece(move);
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
 
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-            [captureOrPromotion && (type_of(pos.moved_piece(move)) >=  type_of(pos.captured_piece()))]
-                                                                [pos.moved_piece(move)]
+            [captureOrPromotion && (type_of(movedPiece) >=  type_of(pos.captured_piece()))]
+                                                                [movedPiece]
                                                                 [to_sq(move)];
 
       value = -qsearch<NT>(pos, ss+1, -beta, -alpha, depth - 1);
