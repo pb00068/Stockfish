@@ -1153,13 +1153,17 @@ moves_loop: // When in check, search starts from here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion]
-                                                                [movedPiece]
-                                                                [to_sq(move)];
 
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
+
+      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+      [captureOrPromotion && (type_of(movedPiece) >=  type_of(pos.captured_piece()))]
+                                                                [movedPiece]
+                                                                [to_sq(move)];
+
+
+
 
       // Step 16. Reduced depth search (LMR, ~200 Elo). If the move fails high it will be
       // re-searched at full depth.
@@ -1564,13 +1568,16 @@ moves_loop: // When in check, search starts from here
       }
 
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion]
-                                                                [pos.moved_piece(move)]
-                                                                [to_sq(move)];
+
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
+
+      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+            [captureOrPromotion && (type_of(pos.moved_piece(move)) >=  type_of(pos.captured_piece()))]
+                                                                [pos.moved_piece(move)]
+                                                                [to_sq(move)];
+
       value = -qsearch<NT>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
 
