@@ -340,8 +340,8 @@ void Thread::search() {
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
-      (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
-
+      (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0], // Use as a sentinel
+      (ss-i)->altContinuationHistory = &this->continuationHistory[0][0][NO_PIECE][0];
   ss->pv = pv;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
@@ -862,7 +862,7 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-
+        ss->altContinuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
         pos.do_null_move(st);
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
@@ -954,7 +954,7 @@ namespace {
 moves_loop: // When in check, search starts from here
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
+                                         (ss-1)->altContinuationHistory, (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
@@ -1158,6 +1158,10 @@ moves_loop: // When in check, search starts from here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      ss->altContinuationHistory = &thisThread->continuationHistory[ss->inCheck]
+                                                                   [!captureOrPromotion]
+                                                                   [movedPiece]
+                                                                   [to_sq(move)];
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1566,6 +1570,10 @@ moves_loop: // When in check, search starts from here
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [captureOrPromotion]
+                                                                [pos.moved_piece(move)]
+                                                                [to_sq(move)];
+      ss->altContinuationHistory = &thisThread->continuationHistory[ss->inCheck]
+                                                                [!captureOrPromotion]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
 
