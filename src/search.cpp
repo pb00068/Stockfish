@@ -921,7 +921,7 @@ namespace {
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                          [captureOrPromotion]
+                                                                          [captureOrPromotion || pos.gives_check(move)]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
@@ -1154,7 +1154,7 @@ moves_loop: // When in check, search starts from here
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion || pos.captured_piece()]
+                                                                [captureOrPromotion || givesCheck]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
@@ -1565,7 +1565,7 @@ moves_loop: // When in check, search starts from here
 
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                [captureOrPromotion || pos.captured_piece()]
+                                                                [captureOrPromotion || givesCheck]
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)];
 
