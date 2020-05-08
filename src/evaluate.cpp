@@ -321,7 +321,7 @@ namespace {
 
                 // Penalty for all enemy x-rayed pawns protected by king or pawns
                 score -= BishopXRayPawns * popcount(
-                  PseudoAttacks[BISHOP][s] & pos.pieces(Them, PAWN) & (attackedBy[Them][PAWN] || attackedBy[Them][KING]));
+                  PseudoAttacks[BISHOP][s] & pos.pieces(Them, PAWN) & (attackedBy[Them][PAWN] | attackedBy[Them][KING]));
 
                 // Bonus for bishop on a long diagonal which can "see" both center squares
                 if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
