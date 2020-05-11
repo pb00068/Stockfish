@@ -1689,7 +1689,8 @@ moves_loop: // When in check, search starts from here
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            thisThread->mainHistory[us][from_to(quietsSearched[i])] << (ss->inCheck ? -bonus2/4 : -bonus2);
+            if (!ss->inCheck)
+                 thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
@@ -1738,11 +1739,15 @@ moves_loop: // When in check, search starts from here
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->mainHistory[us][from_to(move)] << (ss->inCheck ? bonus/4 : bonus);
+    if (!ss->inCheck)
+    {
+        thisThread->mainHistory[us][from_to(move)] << bonus;
+        if (type_of(pos.moved_piece(move)) != PAWN)
+            thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
+    }
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
-    if (type_of(pos.moved_piece(move)) != PAWN)
-        thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
+
 
     if (is_ok((ss-1)->currentMove))
     {
