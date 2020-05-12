@@ -327,8 +327,8 @@ namespace {
                 if (more_than_one(attacks_bb<BISHOP>(s, pos.pieces(PAWN)) & Center))
                     score += LongDiagonalBishop;
 
-                if (rank_of(s) < 4 && distance(s, pos.square<KING>(Us)) == 1 &&
-                         more_than_one(PseudoAttacks[KING][s] & rank_bb(rank_of(s)) & pos.pieces(Us, PAWN)))
+                if (distance(s, pos.square<KING>(Us)) == 1 &&
+                    more_than_one(PseudoAttacks[KING][s] & rank_bb(rank_of(s)) & pos.pieces(Us, PAWN)))
                         score -= Fianchetto;
 
                 // An important Chess960 pattern: a cornered bishop blocked by a friendly
