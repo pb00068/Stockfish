@@ -200,8 +200,11 @@ top:
           cur = endBadCaptures;
           endMoves = generate<QUIETS>(pos, cur);
 
-          score<QUIETS>();
-          partial_insertion_sort(cur, endMoves, -3000 * depth);
+          if (depth != DEPTH_QS_RECAPTURES)
+          {
+             score<QUIETS>();
+             partial_insertion_sort(cur, endMoves, -3000 * depth);
+          }
       }
 
       ++stage;

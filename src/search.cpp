@@ -959,13 +959,16 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
-                                      &thisThread->lowPlyHistory,
-                                      &captureHistory,
-                                      contHist,
-                                      countermove,
-                                      ss->killers,
-                                      depth > 12 ? ss->ply : MAX_PLY);
+    MovePicker mp(pos, ttMove,
+              // at notorious allNodes don't always score & sort moves
+              (ttMove || cutNode || thisThread->nodes % 3 || depth < 6) ? depth : DEPTH_QS_RECAPTURES,
+              &thisThread->mainHistory,
+              &thisThread->lowPlyHistory,
+              &captureHistory,
+              contHist,
+              countermove,
+              ss->killers,
+              depth > 12 ? ss->ply : MAX_PLY);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
