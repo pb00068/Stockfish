@@ -629,7 +629,7 @@ namespace {
     bool ttHit, ttPv, formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture, singularLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, lowplybonus = 0;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -699,7 +699,7 @@ namespace {
     formerPv = ttPv && !PvNode;
 
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
+        lowplybonus = stat_bonus(depth - 5), thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << lowplybonus;
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (TtHitAverageWindow - 1) * thisThread->ttHitAverage / TtHitAverageWindow
@@ -1379,8 +1379,12 @@ moves_loop: // When in check, search starts from here
                    :     ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+        if (ttPv && lowplybonus && !PvNode)
+            ttPv = false, thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << -lowplybonus/2;
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
