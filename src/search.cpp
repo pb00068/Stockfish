@@ -701,6 +701,14 @@ namespace {
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
         thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
 
+    if (formerPv && !pos.captured_piece() && is_ok((ss-1)->currentMove))
+    {
+        Move prev = (ss-1)->currentMove;
+        thisThread->mainHistory[~us][from_to(prev)] << stat_bonus(depth + 1);
+        update_continuation_histories(ss-1, pos.piece_on(to_sq(prev)), to_sq(prev), stat_bonus(depth + 1));
+    }
+
+
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (TtHitAverageWindow - 1) * thisThread->ttHitAverage / TtHitAverageWindow
                                 + TtHitAverageResolution * ttHit;
