@@ -707,8 +707,8 @@ namespace {
     ttPv = PvNode || (ttHit && tte->is_pv());
     formerPv = ttPv && !PvNode;
 
-    if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
+    if (ttPv && depth > 10 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
+        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 6);
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
     thisThread->ttHitAverage =   (TtHitAverageWindow - 1) * thisThread->ttHitAverage / TtHitAverageWindow
@@ -974,7 +974,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      depth > 12 ? ss->ply : MAX_PLY);
+                                      depth > 10 ? ss->ply : MAX_PLY);
 
     value = bestValue;
     singularLMR = moveCountPruning = false;
@@ -1759,7 +1759,7 @@ moves_loop: // When in check, search starts from here
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
 
-    if (depth > 12 && ss->ply < MAX_LPH)
+    if (depth > 10 && ss->ply < MAX_LPH)
         thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
   }
 
