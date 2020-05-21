@@ -701,12 +701,7 @@ namespace {
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
         thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
 
-    if (formerPv && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-    {
-        Move prevMv = (ss-1)->currentMove;
-        thisThread->mainHistory[~us][from_to(prevMv)] << stat_bonus(depth);
-        update_continuation_histories(ss-1, pos.piece_on(to_sq(prevMv)), to_sq(prevMv), stat_bonus(depth));
-    }
+
 
 
     // thisThread->ttHitAverage can be used to approximate the running average of ttHit
@@ -730,7 +725,7 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
 
                 // Extra penalty for early quiet moves of the previous ply
-                if ((ss-1)->moveCount <= 2 && !priorCapture)
+                if (!tte->is_pv() && (ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
             }
             // Penalty for a quiet ttMove that fails low
@@ -740,6 +735,14 @@ namespace {
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
+
+        }
+
+        if (tte->is_pv() && !priorCapture && is_ok((ss-1)->currentMove))
+        {
+           Move prevMv = (ss-1)->currentMove;
+           thisThread->mainHistory[~us][from_to(prevMv)] << stat_bonus(depth);
+           update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
         }
 
         if (pos.rule50_count() < 90)
