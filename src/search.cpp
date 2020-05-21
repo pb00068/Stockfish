@@ -703,9 +703,9 @@ namespace {
 
     if (formerPv && !pos.captured_piece() && is_ok((ss-1)->currentMove))
     {
-        Move prev = (ss-1)->currentMove;
-        thisThread->mainHistory[~us][from_to(prev)] << stat_bonus(depth + 1);
-        update_continuation_histories(ss-1, pos.piece_on(to_sq(prev)), to_sq(prev), stat_bonus(depth + 1));
+        Move prevMv = (ss-1)->currentMove;
+        thisThread->mainHistory[~us][from_to(prevMv)] << stat_bonus(depth + 1);
+        update_continuation_histories(ss-1, pos.piece_on(to_sq(prevMv)), to_sq(prevMv), stat_bonus(depth + 1));
     }
 
 
