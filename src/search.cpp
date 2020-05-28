@@ -455,6 +455,8 @@ void Thread::search() {
           while (true)
           {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
+              aspiration_beta = beta;
+              aspiration_highFails = 0;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -1286,6 +1288,9 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
+
+          if (ss->ply % 2 == 0 && thisThread->aspiration_beta < beta)
+            beta = thisThread->aspiration_beta;
       }
 
       // Step 18. Undo move
@@ -1493,11 +1498,19 @@ moves_loop: // When in check, search starts from here
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
-            if (!ttHit)
-                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
+            if (PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_highFails)
+            {
+               thisThread->aspiration_highFails++;
+               thisThread->aspiration_beta = bestValue;
+            }
+            else
+            {
+               if (!ttHit)
+                   tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
-            return bestValue;
+               return bestValue;
+            }
         }
 
         if (PvNode && bestValue > alpha)
@@ -1593,8 +1606,14 @@ moves_loop: // When in check, search starts from here
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
-              else
-                  break; // Fail high
+              else {
+                     if (PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_highFails)
+                     {
+                             thisThread->aspiration_highFails++;
+                             thisThread->aspiration_beta = bestValue;
+                     }
+                     else break; // Fail high
+              }
           }
        }
     }
