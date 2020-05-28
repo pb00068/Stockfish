@@ -1289,9 +1289,8 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
-
-          if (ss->ply % 2 == 0 && thisThread->aspiration_highFails )
-               beta = thisThread->aspiration_beta;
+          if (ss->ply % 2 == 0 && thisThread->aspiration_highFails && beta < thisThread->aspiration_beta)
+               beta  = thisThread->aspiration_beta;
           //sync_cout << "info my beta at ply " << ss->ply << " mc:" << moveCount << " is " << beta << "   asp beta is " << thisThread->aspiration_beta << " asp alpha is " << thisThread->aspiration_alfa <<  sync_endl;
       }
 
@@ -1504,7 +1503,8 @@ moves_loop: // When in check, search starts from here
             {
                thisThread->aspiration_highFails++;
                //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
-               thisThread->aspiration_beta = bestValue+1;
+               thisThread->aspiration_beta = bestValue;
+               bestValue-=1;
             }
             else
             {
@@ -1614,7 +1614,8 @@ moves_loop: // When in check, search starts from here
                      {
                              thisThread->aspiration_highFails++;
                              //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
-                             thisThread->aspiration_beta = bestValue+1;
+                             thisThread->aspiration_beta = bestValue;
+                             bestValue-=1;
                      }
                      else break; // Fail high
               }
