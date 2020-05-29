@@ -456,7 +456,7 @@ void Thread::search() {
           {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
               aspiration_beta = beta;
-              aspiration_highFails = 0;
+              aspiration_ply = 0;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
               beta = aspiration_beta;
 
@@ -1289,8 +1289,8 @@ moves_loop: // When in check, search starts from here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
-          if (ss->ply % 2 == 0 && thisThread->aspiration_highFails && beta < thisThread->aspiration_beta)
-               beta  = thisThread->aspiration_beta;
+          if (ss->ply == thisThread->aspiration_ply)
+               beta  = thisThread->aspiration_beta, thisThread->aspiration_ply -=2;
           //sync_cout << "info my beta at ply " << ss->ply << " mc:" << moveCount << " is " << beta << "   asp beta is " << thisThread->aspiration_beta << " asp alpha is " << thisThread->aspiration_alfa <<  sync_endl;
       }
 
@@ -1499,9 +1499,9 @@ moves_loop: // When in check, search starts from here
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
-            if (bestValue > beta && PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_highFails)
+            if (bestValue > beta && PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_ply)
             {
-               thisThread->aspiration_highFails++;
+               thisThread->aspiration_ply=ss->ply-2;
                //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
                thisThread->aspiration_beta = bestValue;
                bestValue-=1;
@@ -1610,9 +1610,9 @@ moves_loop: // When in check, search starts from here
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else {
-                     if (bestValue > beta && PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_highFails)
+                     if (bestValue > beta && PvNode && thisThread->aspiration_beta == beta && ss->ply % 2 == 0 && !thisThread->aspiration_ply)
                      {
-                             thisThread->aspiration_highFails++;
+                             thisThread->aspiration_ply=ss->ply-2;
                              //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
                              thisThread->aspiration_beta = bestValue;
                              bestValue-=1;
