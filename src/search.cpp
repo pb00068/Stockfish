@@ -1503,8 +1503,8 @@ moves_loop: // When in check, search starts from here
             {
                thisThread->aspiration_ply=ss->ply-2;
                //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
-               thisThread->aspiration_beta = bestValue;
-               bestValue-=1;
+               thisThread->aspiration_beta = (bestValue + beta) / 2;
+               bestValue = thisThread->aspiration_beta - 1;
             }
             else
             {
@@ -1614,8 +1614,8 @@ moves_loop: // When in check, search starts from here
                      {
                              thisThread->aspiration_ply=ss->ply-2;
                              //sync_cout << "info set new asp-beta at ply " << ss->ply << " is " << thisThread->aspiration_beta  << "   will be  " << bestValue << sync_endl;
-                             thisThread->aspiration_beta = bestValue;
-                             bestValue-=1;
+                             thisThread->aspiration_beta = (bestValue + beta) / 2;
+                             bestValue = thisThread->aspiration_beta - 1;
                      }
                      else break; // Fail high
               }
