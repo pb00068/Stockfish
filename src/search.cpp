@@ -1747,6 +1747,8 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
+    if (thisThread->gamePlyTrigger[us][from_to(move)] < pos.game_ply() - ss->ply) // rootPos passed over
+        thisThread->gamePlyTrigger[us][from_to(move)] = 500;
     thisThread->gamePlyTrigger[us][from_to(move)] = std::min(pos.game_ply(), (int)thisThread->gamePlyTrigger[us][from_to(move)]);
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
