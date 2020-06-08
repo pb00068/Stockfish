@@ -966,6 +966,7 @@ moves_loop: // When in check, search starts from here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+                                      &thisThread->gamePlyTrigger,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
                                       contHist,
@@ -1746,6 +1747,7 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
+    thisThread->gamePlyTrigger[us][from_to(move)] = std::min(pos.game_ply(), (int)thisThread->gamePlyTrigger[us][from_to(move)]);
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if (type_of(pos.moved_piece(move)) != PAWN)
