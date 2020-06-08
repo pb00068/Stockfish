@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "movepick.h"
 #include "types.h"
+#include "tt.h"
 
 class Position;
 
@@ -50,7 +51,7 @@ struct Stack {
   int statScore;
   int moveCount;
   bool inCheck;
-  bool cmLead2ttPV; // true if the move we searched just lead to a position with ttPv=true
+  TTEntry* cm_pvtte; // true if the move we searched just lead to a position with ttPv=true
 };
 
 

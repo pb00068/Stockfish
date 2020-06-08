@@ -602,6 +602,7 @@ namespace {
 
     constexpr bool PvNode = NT == PV;
     const bool rootNode = PvNode && ss->ply == 0;
+    ss->cm_pvtte = nullptr;
 
     // Check if we have an upcoming move which draws by repetition, or
     // if the opponent had an alternative move earlier to this position.
@@ -640,7 +641,6 @@ namespace {
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     ss->inCheck = pos.checkers();
-    ss->cmLead2ttPV = false;
     priorCapture = pos.captured_piece();
     Color us = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
@@ -703,7 +703,7 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
     ttPv = PvNode || (ttHit && tte->is_pv());
-    (ss-1)->cmLead2ttPV = (ttHit && tte->is_pv());
+    (ss-1)->cm_pvtte = ttHit && tte->is_pv() ? tte : nullptr;
     formerPv = ttPv && !PvNode;
 
     if (ttPv && depth > 12 && ss->ply - 1 < MAX_LPH && !pos.captured_piece() && is_ok((ss-1)->currentMove))
@@ -1358,7 +1358,10 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove && (!ss->cmLead2ttPV || value < alpha))
+      if (value < alpha - 1 && ss->cm_pvtte != nullptr)
+          ss->cm_pvtte->toggle_pv(); // switch bit as PV might be obsolete
+
+      if (move != bestMove)
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
@@ -1441,7 +1444,7 @@ moves_loop: // When in check, search starts from here
 
     Thread* thisThread = pos.this_thread();
     (ss+1)->ply = ss->ply + 1;
-    ss->cmLead2ttPV=false;
+    ss->cm_pvtte = nullptr;
     bestMove = MOVE_NONE;
     ss->inCheck = pos.checkers();
     moveCount = 0;
@@ -1464,7 +1467,7 @@ moves_loop: // When in check, search starts from here
     ttValue = ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove = ttHit ? tte->move() : MOVE_NONE;
     pvHit = ttHit && tte->is_pv();
-    (ss-1)->cmLead2ttPV = pvHit;
+    (ss-1)->cm_pvtte = ttHit && tte->is_pv() ? tte : nullptr;
 
     if (  !PvNode
         && ttHit
