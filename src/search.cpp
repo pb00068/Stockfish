@@ -1358,7 +1358,7 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove && !ss->cmLead2ttPV)
+      if (move != bestMove && (!ss->cmLead2ttPV || value < alpha))
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
