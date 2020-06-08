@@ -1359,7 +1359,7 @@ moves_loop: // When in check, search starts from here
       }
 
       if (value < alpha - 1 && ss->cm_pvtte != nullptr)
-          ss->cm_pvtte->toggle_pv(); // switch bit as PV might be obsolete
+          ss->cm_pvtte->toggle_pv(); //switch bit as PV might be obsolete
 
       if (move != bestMove)
       {
