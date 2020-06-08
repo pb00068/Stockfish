@@ -50,6 +50,7 @@ struct Stack {
   int statScore;
   int moveCount;
   bool inCheck;
+  bool cmLead2ttPV; // true if the move we searched just lead to a position with ttPv=true
 };
 
 
