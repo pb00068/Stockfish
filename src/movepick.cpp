@@ -108,8 +108,8 @@ void MovePicker::score() {
       {
            bool hit = pos.game_ply() == (*gamePlyTrigger)[pos.side_to_move()][from_to(m)];
            m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)];
-           if (hit)
-              m.value *=2;
+           if (hit && m.value > 0)
+              m.value *=3;
 
            m.value += 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                     + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
