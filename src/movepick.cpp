@@ -107,13 +107,15 @@ void MovePicker::score() {
       else if (Type == QUIETS)
       {
            // don't consider positive values when they derive from best moves played much later
-           int th = pos.game_ply() < (*gamePlyTrigger)[pos.side_to_move()][from_to(m)] - 4 ? 32000 : 0;
-           m.value =     std::min(th, (int)(*mainHistory)[pos.side_to_move()][from_to(m)])
-                   + 2 * std::min(th, (int)(*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)])
-                   + 2 * std::min(th, (int)(*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)])
-                   + 2 * std::min(th, (int)(*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)])
-                   +     std::min(th, (int)(*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)])
-                   + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+           int diff = abs(pos.game_ply() - (*gamePlyTrigger)[pos.side_to_move()][from_to(m)]);
+           m.value =     (*mainHistory)[pos.side_to_move()][from_to(m)];
+           if (diff < 2)
+              m.value *= 4;
+           m.value += 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
+                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
+                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
+                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                    +     (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
 
       else // Type == EVASIONS
