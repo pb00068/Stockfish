@@ -88,7 +88,7 @@ enum StatsType { NoCaptures, Captures };
 /// the move's from and to squares, see www.chessprogramming.org/Butterfly_Boards
 typedef Stats<int16_t, 10692, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyHistory;
 
-typedef Stats<int16_t, NOT_USED, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> GamePlyTrigger;
+typedef Stats<int16_t, NOT_USED, PIECE_NB, SQUARE_NB> GamePlyTrigger;
 
 /// LowPlyHistory at higher depths records successful quiet moves on plies 0 to 3
 /// and quiet moves which are/were in the PV (ttPv)
