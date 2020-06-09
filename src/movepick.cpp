@@ -106,11 +106,11 @@ void MovePicker::score() {
 
       else if (Type == QUIETS)
       {
-           // don't consider positive values when they derive from best moves played much later
-           int diff = abs(pos.game_ply() - (*gamePlyTrigger)[pos.side_to_move()][from_to(m)]);
-           m.value =     (*mainHistory)[pos.side_to_move()][from_to(m)];
-           if (diff < 2)
-              m.value *= 4;
+           bool hit = pos.game_ply() == (*gamePlyTrigger)[pos.side_to_move()][from_to(m)];
+           m.value =  (*mainHistory)[pos.side_to_move()][from_to(m)];
+           if (hit)
+              m.value *=2;
+
            m.value += 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                     + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                     + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
