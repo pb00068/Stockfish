@@ -1714,7 +1714,7 @@ moves_loop: // When in check, search starts from here
     Thread* thisThread = pos.this_thread();
     Piece mp = pos.moved_piece(move);
     thisThread->mainHistory[us][from_to(move)] << bonus;
-    if (bonus > stat_bonus(depth + 1))
+    if (bonus > stat_bonus(depth))
         thisThread->gamePlyTrigger[mp][to_sq(move)] = pos.game_ply();
     update_continuation_histories(ss, mp, to_sq(move), bonus);
 
