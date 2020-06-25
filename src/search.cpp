@@ -1351,7 +1351,6 @@ moves_loop: // When in check, search starts from here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
-    bool resetTTMove = false;
     if (!moveCount)
         bestValue = excludedMove ? alpha
                    :     ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
@@ -1360,14 +1359,9 @@ moves_loop: // When in check, search starts from here
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
 
-    else {
-        if (!cutNode && depth > 8 && ttMove && mp.getVirtualttMoveIndex() > 6)
-           resetTTMove = true;
-        // Bonus for prior countermove that caused the fail low
-        if ((depth >= 3 || PvNode)
+    else if (   (depth >= 3 || PvNode) // Bonus for prior countermove that caused the fail low
              && !priorCapture)
         update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
-    }
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
@@ -1378,7 +1372,7 @@ moves_loop: // When in check, search starts from here
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
-        if (resetTTMove)
+        if (!bestMove && !ss->inCheck && !cutNode && depth > 7 && mp.getVirtualttMoveIndex() > 4)
            tte->resetTTMove();
     }
 

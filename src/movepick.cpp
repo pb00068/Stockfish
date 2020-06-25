@@ -65,6 +65,9 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+
+  ttMoveIndex=0;
+  selcount=0;
 }
 
 /// MovePicker constructor for quiescence search
@@ -131,11 +134,15 @@ Move MovePicker::select(Pred filter) {
 
   while (cur < endMoves)
   {
+      selcount++;
       if (T == Best)
           std::swap(*cur, *std::max_element(cur, endMoves));
 
       if (*cur != ttMove && filter())
           return *cur++;
+
+      if (*cur == ttMove && cur->value < -500)
+         ttMoveIndex = selcount;
 
       cur++;
   }
