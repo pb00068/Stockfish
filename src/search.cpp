@@ -946,7 +946,7 @@ moves_loop: // When in check, search starts from here
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
-    Move firstMove = MOVE_NONE;
+    Move altMove = ttMove;
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1127,8 +1127,8 @@ moves_loop: // When in check, search starts from here
           ss->moveCount = --moveCount;
           continue;
       }
-      if (moveCount == 1)
-         firstMove = move;
+      if (altMove == ttMove)
+          altMove = move;
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1375,7 +1375,7 @@ moves_loop: // When in check, search starts from here
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
         if (!bestMove && !ss->inCheck && depth > tte->depth() - 2 && !cutNode && mp.getVirtualttMoveIndex() > 4)
-           tte->setTTMove(firstMove);
+           tte->setTTMove(altMove);
     }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
