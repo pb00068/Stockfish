@@ -692,8 +692,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else if (type_of(pos.moved_piece(ttMove)) == PAWN)
-                    thisThread->mainHistory[us][from_to(ttMove)] << stat_bonus(depth);
+                else if (type_of(pos.moved_piece(ttMove)) == PAWN && more_than_one(pos.pieces(~us, PAWN) & rank_bb(rank_of(to_sq(ttMove)))))
+                    thisThread->mainHistory[us][from_to(ttMove)] << 16;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1675,8 +1675,8 @@ moves_loop: // When in check, search starts from here
     else
     {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (type_of(moved_piece) == PAWN)
-           thisThread->mainHistory[us][from_to(bestMove)] << stat_bonus(depth);
+        if (type_of(moved_piece) == PAWN && more_than_one(pos.pieces(~us, PAWN) & rank_bb(rank_of(to_sq(bestMove)))))
+           thisThread->mainHistory[us][from_to(bestMove)] << 16;
     }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
