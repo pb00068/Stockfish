@@ -692,6 +692,8 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                else if (type_of(pos.moved_piece(ttMove)) == PAWN)
+                    thisThread->mainHistory[us][from_to(ttMove)] << stat_bonus(depth);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -876,7 +878,7 @@ namespace {
     {
         Value raisedBeta = beta + 176 - 49 * improving;
         assert(raisedBeta < VALUE_INFINITE);
-        MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, raisedBeta - ss->staticEval, &thisThread->mainHistory, &captureHistory);
         int probCutCount = 0;
 
         while (   (move = mp.next_move()) != MOVE_NONE
@@ -1671,7 +1673,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (type_of(moved_piece) == PAWN)
+           thisThread->mainHistory[us][from_to(bestMove)] << stat_bonus(depth);
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
