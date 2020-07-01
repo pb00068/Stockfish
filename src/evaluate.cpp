@@ -432,7 +432,7 @@ namespace {
     // Enemy rooks checks
     rookChecks = b1 & safe & attackedBy[Them][ROOK];
     if (rookChecks)
-        kingDanger += safe_Check<Us>(rookChecks, ksq, RookSafeCheck, 1.75, 4);
+        kingDanger += analyse_check<Us>(rookChecks, ksq, RookSafeCheck, 1.75, 3);
     else
         unsafeChecks |= b1 & attackedBy[Them][ROOK];
 
@@ -444,7 +444,7 @@ namespace {
                  & ~attackedBy[Us][QUEEN]
                  & ~rookChecks;
     if (queenChecks)
-     kingDanger += safe_Check<Us>(queenChecks, ksq, QueenSafeCheck, 1.45, 4);
+     kingDanger += analyse_check<Us>(queenChecks, ksq, QueenSafeCheck, 1.45, 3);
 
     // Enemy bishops checks: we count them only if they are from squares from
     // which we can't give a queen check, because queen checks are more valuable.
@@ -453,7 +453,7 @@ namespace {
                   & safe
                   & ~queenChecks;
     if (bishopChecks)
-        kingDanger += safe_Check<Us>(bishopChecks, ksq, BishopSafeCheck, 1.5, 4);
+        kingDanger += analyse_check<Us>(bishopChecks, ksq, BishopSafeCheck, 1.5, 2);
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
 
