@@ -1219,6 +1219,10 @@ moves_loop: // When in check, search starts from here
             if (   !givesCheck
                 && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 211 * depth <= alpha)
                 r++;
+
+            // Decrease reduction if capture/promotion was best in sibling node
+            if (move == ss->killers[2])
+                r--;
           }
 
           Depth d = Utility::clamp(newDepth - r, 1, newDepth);
