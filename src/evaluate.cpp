@@ -398,7 +398,7 @@ namespace {
     constexpr Color    Them = ~Us;
     constexpr Bitboard Camp = (Us == WHITE ? AllSquares ^ Rank6BB ^ Rank7BB ^ Rank8BB
                                            : AllSquares ^ Rank1BB ^ Rank2BB ^ Rank3BB);
-    constexpr Bitboard CampFront = Us == WHITE ? ~rank_bb(RANK_5) : ~rank_bb(RANK_4);
+    constexpr Bitboard CampFront = Us == WHITE ? ~Rank5BB : ~Rank4BB;
 
     Bitboard weak, b1, b2, b3, safe, unsafeChecks = 0;
     Bitboard rookChecks, queenChecks, bishopChecks, knightChecks;
