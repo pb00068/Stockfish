@@ -1211,6 +1211,11 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
+            // Decrease reduction if capture/promotion was best in sibling node
+            if (move == ss->killers[2])
+                r-=2;
+            else
+            {
             // Increase reduction for captures/promotions if late move and at low depth
             if (depth < 8 && moveCount > 2)
                 r++;
@@ -1219,10 +1224,7 @@ moves_loop: // When in check, search starts from here
             if (   !givesCheck
                 && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 211 * depth <= alpha)
                 r++;
-
-            // Decrease reduction if capture/promotion was best in sibling node
-            if (move == ss->killers[2])
-                r--;
+            }
           }
 
           Depth d = Utility::clamp(newDepth - r, 1, newDepth);
