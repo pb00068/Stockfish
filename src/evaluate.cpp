@@ -175,7 +175,7 @@ namespace {
     template<Color Us> Score threats() const;
     template<Color Us> Score passed() const;
     template<Color Us> Score space() const;
-    template<Color Us> int safe_Check(const Bitboard, const Bitboard, const Square, int, double, int) const;
+    template<Color Us> int analyse_check(const Bitboard, const Square, int, double, int) const;
     Value winnable(Score score) const;
 
     const Position& pos;
@@ -391,11 +391,11 @@ namespace {
   }
 
   template<Tracing T> template<Color Us>
-  int Evaluation<T>::safe_Check(const Bitboard checks, const Bitboard defense, const Square ksq, int bonus, double factor, int divisor) const
+  int Evaluation<T>::analyse_check(const Bitboard checks, const Square ksq, int bonus, double factor, int divisor) const
   {
      if (more_than_one(checks))
         return bonus * factor;
-     else if (between_bb(lsb(checks), ksq) & defense)
+     else if (between_bb(lsb(checks), ksq) & attackedBy2[Us] & ~attackedBy[~Us][ALL_PIECES])
            return bonus/divisor;
      return bonus;
   }
@@ -432,8 +432,7 @@ namespace {
     // Enemy rooks checks
     rookChecks = b1 & safe & attackedBy[Them][ROOK];
     if (rookChecks)
-        kingDanger += more_than_one(rookChecks) ? RookSafeCheck * 175/100
-                                                : RookSafeCheck;
+        kingDanger += safe_Check<Us>(rookChecks, ksq, RookSafeCheck, 1.75, 4);
     else
         unsafeChecks |= b1 & attackedBy[Them][ROOK];
 
@@ -445,7 +444,7 @@ namespace {
                  & ~attackedBy[Us][QUEEN]
                  & ~rookChecks;
     if (queenChecks)
-       kingDanger += safe_Check(queenChecks, attackedBy2[Us] & ~attackedBy[Them][ALL_PIECES], ksq, QueenSafeCheck, 1.45, 3);
+     kingDanger += safe_Check<Us>(queenChecks, ksq, QueenSafeCheck, 1.45, 4);
 
     // Enemy bishops checks: we count them only if they are from squares from
     // which we can't give a queen check, because queen checks are more valuable.
@@ -454,8 +453,7 @@ namespace {
                   & safe
                   & ~queenChecks;
     if (bishopChecks)
-        kingDanger += more_than_one(bishopChecks) ? BishopSafeCheck * 3/2
-                                                  : BishopSafeCheck;
+        kingDanger += safe_Check<Us>(bishopChecks, ksq, BishopSafeCheck, 1.5, 4);
     else
         unsafeChecks |= b2 & attackedBy[Them][BISHOP];
 
