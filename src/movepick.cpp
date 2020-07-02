@@ -19,8 +19,9 @@
 */
 
 #include <cassert>
-
+#include <iostream>
 #include "movepick.h"
+#include "misc.h"
 
 namespace {
 
@@ -114,7 +115,8 @@ void MovePicker::score() {
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
           if (m.value > 0 && type_of(pos.moved_piece(m)) == PAWN && pos.game_ply() + 2 < (*gamePlyTrigger)[pos.side_to_move()][from_to(m)])
-             m.value -= 5000; //to early to apply bonus
+             m.value -= 5000, dbg_hit_on(int((*gamePlyTrigger)[pos.side_to_move()][from_to(m)]) == 500), dbg_mean_of(int((*gamePlyTrigger)[pos.side_to_move()][from_to(m)]) - pos.game_ply()),
+                sync_cout << "info game ply : " << pos.game_ply() << " ply trigger " << int((*gamePlyTrigger)[pos.side_to_move()][from_to(m)]) << sync_endl; //to early to apply bonus
       }
       else // Type == EVASIONS
       {
