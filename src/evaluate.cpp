@@ -82,9 +82,10 @@ namespace {
 
   // SafeCheck[PieceType][normal/multiple/interpose] contains safe check bonus by piece type,
   // higher if multiple safe checks are possible for that piece type.
+  // for Queen normal & interpose check we divide the array value by the distance to king
   enum Check { NORMAL, MULTIPLE, INTERPOSE };
   constexpr int SafeCheck[][3] = {
-        {}, {}, {792, 1283, 0}, {645, 967, 246}, {1084, 1897, 246}, {772, 1119, 98}
+        {}, {}, {792, 1283, 0}, {645, 967, 322}, {1004, 1897, 800}, {1500, 1119, 772}
   };
 
 #define S(mg, eg) make_score(mg, eg)
@@ -398,7 +399,15 @@ namespace {
         return SafeCheck[Pt][MULTIPLE];
 
      if (interpositions & between_bb(ksq, lsb(checks)))
-        return SafeCheck[Pt][INTERPOSE];
+     {
+         if (Pt == QUEEN)
+            return SafeCheck[Pt][INTERPOSE]/distance(ksq, lsb(checks));
+         else
+            return SafeCheck[Pt][INTERPOSE];
+     }
+
+     if (Pt == QUEEN)
+        return SafeCheck[Pt][NORMAL] / std::min(distance(ksq, lsb(checks)), 3);
 
      return SafeCheck[Pt][NORMAL];
   }
