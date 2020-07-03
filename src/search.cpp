@@ -1214,7 +1214,7 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            if (move == (ss+0)->killers[2] || move == (ss+0)->killers[3] ||
+            if (move == (ss-0)->killers[2] || move == (ss-0)->killers[3] ||
                 move == (ss-2)->killers[2] || move == (ss-2)->killers[3] ||
                 move == (ss+2)->killers[2] || move == (ss+2)->killers[3])
               r-=2;
