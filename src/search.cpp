@@ -1214,12 +1214,11 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            if (move == ss->killers[2])
+            if (move == (ss+0)->killers[2] || move == (ss+0)->killers[3] ||
+                move == (ss-2)->killers[2] || move == (ss-2)->killers[3] ||
+                move == (ss+2)->killers[2] || move == (ss+2)->killers[3])
               r-=2;
-            else if (move == ss->killers[3])
-              r--;
-            else
-            {
+
             // Increase reduction for captures/promotions if late move and at low depth
             if (depth < 8 && moveCount > 2)
                 r++;
@@ -1228,7 +1227,6 @@ moves_loop: // When in check, search starts from here
             if (   !givesCheck
                 && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 211 * depth <= alpha)
                 r++;
-            }
           }
 
           Depth d = Utility::clamp(newDepth - r, 1, newDepth);
