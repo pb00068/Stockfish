@@ -107,15 +107,15 @@ void MovePicker::score() {
 
       else if (Type == QUIETS)
       {
-          m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
-                   + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
+          m.value =  2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
-                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
 
-          if (m.value > 0 && type_of(pos.moved_piece(m)) == PAWN && pos.game_ply() + 6 < (*gamePlyTrigger)[pos.side_to_move()][from_to(m)])
+          if (m.value > 0 && pos.game_ply() + 8 < (*gamePlyTrigger)[pos.moved_piece(m)][to_sq(m)])
               m.value /=4;
+          m.value += (*mainHistory)[pos.side_to_move()][from_to(m)] +
+                     (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
       else // Type == EVASIONS
       {
