@@ -692,10 +692,10 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else if (ss->killers[2] != ttMove && !pos.see_ge(ttMove))
+                else if (ss->killers[2] != ttMove)
                 {
-                        ss->killers[3] = ss->killers[2];
-                        ss->killers[2] = ttMove;
+                   ss->killers[3] = ss->killers[2];
+                   ss->killers[2] = ttMove;
                 }
 
                 // Extra penalty for early quiet moves of the previous ply
@@ -1214,10 +1214,11 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            if (move == (ss-0)->killers[2] || move == (ss-0)->killers[3] ||
-                move == (ss-2)->killers[2] || move == (ss-2)->killers[3] ||
-                move == (ss+2)->killers[2] || move == (ss+2)->killers[3])
-              r-=2;
+            if (move == (ss-0)->killers[2] || move == (ss-0)->killers[3])
+               r-=3;
+            else if (move == (ss-2)->killers[2] || move == (ss-2)->killers[3] ||
+                     move == (ss+2)->killers[2] || move == (ss+2)->killers[3])
+               r-=2;
 
             // Increase reduction for captures/promotions if late move and at low depth
             if (depth < 8 && moveCount > 2)
@@ -1369,7 +1370,7 @@ moves_loop: // When in check, search starts from here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
-        if (captureOrPromotion && ss->killers[2] != bestMove && !pos.see_ge(bestMove))
+        if (captureOrPromotion && ss->killers[2] != bestMove)
         {
             ss->killers[3] = ss->killers[2];
             ss->killers[2] = bestMove;
