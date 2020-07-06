@@ -1671,7 +1671,22 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (quietCount > 4) { // 'bad' capture became best
+        {
+           while (true) // add bonus until it gets a 'good' one
+           {
+              Value v = PieceValue[MG][pos.piece_on(to_sq(bestMove))] * 6
+                       + captureHistory[moved_piece][to_sq(bestMove)][captured];
+              if (v >= 10692 || pos.see_ge(bestMove, Value(-69 * v / 1024)))
+                 break;
+              //sync_cout << "info val: " << pos.key() << " : " << captureHistory[moved_piece][to_sq(bestMove)][captured] << sync_endl;
+              captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+           }
+        }
+        }
+    }
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
