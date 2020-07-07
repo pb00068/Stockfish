@@ -694,8 +694,8 @@ namespace {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
                 else if (ss->killers[2] != ttMove)
                 {
-                        ss->killers[3] = ss->killers[2];
-                        ss->killers[2] = ttMove;
+                    ss->killers[3] = ss->killers[2];
+                    ss->killers[2] = ttMove;
                 }
 
                 // Extra penalty for early quiet moves of the previous ply
