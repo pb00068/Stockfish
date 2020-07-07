@@ -645,7 +645,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->killers[2] = (ss+4)->killers[3] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = (ss+2)->killers[3] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -692,7 +692,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else if (ss->killers[2] != ttMove && !pos.see_ge(ttMove))
+                else if (ss->killers[2] != ttMove)
                 {
                         ss->killers[3] = ss->killers[2];
                         ss->killers[2] = ttMove;
@@ -1369,7 +1369,7 @@ moves_loop: // When in check, search starts from here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
-        if (captureOrPromotion && ss->killers[2] != bestMove && !pos.see_ge(bestMove))
+        if (captureOrPromotion && ss->killers[2] != bestMove)
         {
             ss->killers[3] = ss->killers[2];
             ss->killers[2] = bestMove;
