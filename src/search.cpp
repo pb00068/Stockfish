@@ -1671,7 +1671,7 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << (quietCount > 4 && !pos.see_ge(bestMove, Value(-1)) ? stat_bonus(depth + 2) : bonus1);
 
     // Extra penalty for a quiet TT or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 || ((ss-1)->currentMove == (ss-1)->killers[0]))
