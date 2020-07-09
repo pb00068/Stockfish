@@ -645,7 +645,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = (ss+2)->killers[3] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->killers[2] = (ss+4)->killers[3] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -695,7 +695,9 @@ namespace {
                 else if (ss->killers[2] != ttMove)
                 {
                     ss->killers[3] = ss->killers[2];
+                    ss->captTyp[1] = ss->captTyp[0];
                     ss->killers[2] = ttMove;
+                    ss->captTyp[0] = pos.piece_on(to_sq(ttMove));
                 }
 
                 // Extra penalty for early quiet moves of the previous ply
@@ -943,6 +945,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
+                                      ss->captTyp,
                                       ss->ply);
 
     value = bestValue;
@@ -1214,12 +1217,6 @@ moves_loop: // When in check, search starts from here
           }
           else
           {
-            if (move == ss->killers[2])
-              r-=2;
-            else if (move == ss->killers[3])
-              r--;
-            else
-            {
             // Increase reduction for captures/promotions if late move and at low depth
             if (depth < 8 && moveCount > 2)
                 r++;
@@ -1228,7 +1225,6 @@ moves_loop: // When in check, search starts from here
             if (   !givesCheck
                 && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 211 * depth <= alpha)
                 r++;
-            }
           }
 
           Depth d = Utility::clamp(newDepth - r, 1, newDepth);
@@ -1375,6 +1371,8 @@ moves_loop: // When in check, search starts from here
         {
             ss->killers[3] = ss->killers[2];
             ss->killers[2] = bestMove;
+            ss->captTyp[1] = ss->captTyp[0];
+            ss->captTyp[0] = pos.piece_on(to_sq(bestMove));
         }
     }
 

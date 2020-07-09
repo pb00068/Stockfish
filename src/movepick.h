@@ -134,6 +134,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            const Move*,
+                                           const Piece*,
                                            int);
   Move next_move(bool skipQuiets = false);
 
@@ -150,6 +151,8 @@ private:
   const PieceToHistory** continuationHistory;
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
+  Move  captkiller[2];
+  Piece cpptyp[2];
   int stage;
   Square recaptureSquare;
   Value threshold;
