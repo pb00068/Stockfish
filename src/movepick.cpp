@@ -172,7 +172,7 @@ top:
       if (select<Best>([&](){
              bool extra = (cur->move == captkiller[0] && pos.piece_on(to_sq(cur->move)) == cpptyp[0]) ||
                           (cur->move == captkiller[1] && pos.piece_on(to_sq(cur->move)) == cpptyp[1]);
-                       return pos.see_ge(*cur, Value((extra ? -1000 : 0 ) - (69 * cur->value / 1024))) ?
+                       return pos.see_ge(*cur, Value((extra ? -PieceValue[MG][pos.moved_piece(cur->move)] : 0 ) - (69 * cur->value / 1024))) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
