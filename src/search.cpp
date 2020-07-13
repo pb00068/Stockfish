@@ -1052,14 +1052,21 @@ moves_loop: // When in check, search starts from here
                      + PieceValue[MG][type_of(pos.piece_on(to_sq(move)))] <= alpha)
                   continue;
 
-              if(givesCheck && (pos.blockers_for_king(~us) & from_sq(move))
-                      && distance(pos.square<KING>(~us), to_sq(move)) > 1
-                      && !aligned(pos.square<KING>(~us), from_sq(move), to_sq(move)))
+              bool doSeebasedPruning = true;
+              if(depth > 2 && givesCheck && (pos.blockers_for_king(~us) & from_sq(move)))
               {
-                 ; //don't prune these
+                 if (captureOrPromotion)
+                   doSeebasedPruning = captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] >=0;
+                 else
+                 {
+                   doSeebasedPruning =  thisThread->mainHistory[us][from_to(move)] >=0;
+                 }
+                 if (doSeebasedPruning) // only now the heavy calculations
+                     doSeebasedPruning = distance(pos.square<KING>(~us), to_sq(move)) > 1
+                     && !aligned(pos.square<KING>(~us), from_sq(move), to_sq(move));
               }
               // See based pruning
-              else if (!pos.see_ge(move, Value(-202) * depth)) // (~25 Elo)
+              if (doSeebasedPruning && !pos.see_ge(move, Value(-202) * depth)) // (~25 Elo)
                   continue;
           }
       }
