@@ -114,7 +114,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
           if (m.value > 0)
               m.value /= std::max(1, abs(pos.game_ply() - (*gamePlyTrigger)[pos.moved_piece(m)][to_sq(m)])/2);
-          m.value += (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+          m.value += (ply < MAX_LPH ? std::min(4, depth / 3) * 2 * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
       else // Type == EVASIONS
       {
