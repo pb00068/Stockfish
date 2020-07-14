@@ -951,8 +951,6 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    Square triedDiscoSq = SQ_NONE;
-
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
@@ -1054,11 +1052,14 @@ moves_loop: // When in check, search starts from here
                      + PieceValue[MG][type_of(pos.piece_on(to_sq(move)))] <= alpha)
                   continue;
 
-              if(givesCheck &&  triedDiscoSq != from_sq(move) && (pos.blockers_for_king(~us) & from_sq(move))
-                      && distance(pos.square<KING>(~us), to_sq(move)) > 1
-                      && !aligned(pos.square<KING>(~us), from_sq(move), to_sq(move)))
+              if(givesCheck
+                 && !captureOrPromotion
+                 && pos.is_discovery_check_on_king(~us, move)
+                 && ((*contHist[0])[movedPiece][to_sq(move)] >= CounterMovePruneThreshold
+                 || (*contHist[1])[movedPiece][to_sq(move)] >= CounterMovePruneThreshold)
+                )
               {
-                 triedDiscoSq = from_sq(move); //don't prune these
+                 ; //don't prune these
               }
               // See based pruning
               else if (!pos.see_ge(move, Value(-202) * depth)) // (~25 Elo)
