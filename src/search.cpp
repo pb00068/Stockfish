@@ -1000,11 +1000,12 @@ moves_loop: // When in check, search starts from here
 
       // Evasion by capturing discovering check piece
       if (ss->inCheck
-          && moveCount == 1
+          && moveCount < 1
           && !rootNode
           && captureOrPromotion
           && to_sq(move) != to_sq((ss-1)->currentMove)
           && depth > 1
+          && type_of(movedPiece) < type_of(pos.piece_on(to_sq(move)))
           && pos.legal(move))
           depth--; // retire check extension
 
