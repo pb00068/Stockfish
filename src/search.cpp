@@ -1000,7 +1000,7 @@ moves_loop: // When in check, search starts from here
 
       // Evasion by capturing discovering check piece
       if (ss->inCheck
-          && moveCount < 1
+          && moveCount <= 1
           && !rootNode
           && captureOrPromotion
           && to_sq(move) != to_sq((ss-1)->currentMove)
