@@ -992,10 +992,21 @@ moves_loop: // When in check, search starts from here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
+
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+
+      // Evasion by capturing discovering check piece
+      if (ss->inCheck
+          && moveCount == 1
+          && !rootNode
+          && captureOrPromotion
+          && to_sq(move) != to_sq((ss-1)->currentMove)
+          && depth > 1
+          && pos.legal(move))
+          depth--; // retire check extension
 
       // Calculate new depth for this move
       newDepth = depth - 1;
