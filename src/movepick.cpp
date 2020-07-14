@@ -112,8 +112,8 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
 
-          if (m.value > 0 && pos.game_ply() + 8 < (*gamePlyTrigger)[pos.moved_piece(m)][to_sq(m)])
-              m.value /=4;
+          if (m.value > 0 && abs(pos.game_ply() - (*gamePlyTrigger)[pos.moved_piece(m)][to_sq(m)]) < 4)
+              m.value *=4;
           m.value += (*mainHistory)[pos.side_to_move()][from_to(m)] +
                      (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }

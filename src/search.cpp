@@ -1743,10 +1743,7 @@ moves_loop: // When in check, search starts from here
     if (type_of(pos.moved_piece(move)) != PAWN)
         thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
 
-      // reset if we passed over stored game ply by a large margin
-      if (thisThread->gamePlyTrigger[mp][to_sq(move)] < pos.game_ply() - ss->ply - 8)
-          thisThread->gamePlyTrigger[mp][to_sq(move)] = 500;
-      thisThread    ->gamePlyTrigger[mp][to_sq(move)] = std::min(pos.game_ply(), (int)thisThread->gamePlyTrigger[mp][to_sq(move)]);
+    thisThread->gamePlyTrigger[mp][to_sq(move)] = (3 * thisThread->gamePlyTrigger[mp][to_sq(move)] + pos.game_ply()) / 4;
 
     if (is_ok((ss-1)->currentMove))
     {
