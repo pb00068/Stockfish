@@ -998,16 +998,15 @@ moves_loop: // When in check, search starts from here
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
-      // Evasion by capturing discovering check piece
+      // Evasion by capturing checking piece
       if (ss->inCheck
           && moveCount <= 1
-          && !rootNode
           && captureOrPromotion
-          && to_sq(move) != to_sq((ss-1)->currentMove)
           && depth > 1
-          && type_of(movedPiece) < type_of(pos.piece_on(to_sq(move)))
+          && cutNode
+          && pos.see_ge(move, PieceValue[MG][pos.captured_piece()])
           && pos.legal(move))
-          depth--; // retire check extension
+          depth--; // reduce search
 
       // Calculate new depth for this move
       newDepth = depth - 1;
