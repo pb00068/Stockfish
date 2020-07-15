@@ -1002,7 +1002,7 @@ moves_loop: // When in check, search starts from here
       if (ss->inCheck
           && moveCount <= 1
           && captureOrPromotion
-          && depth > 1
+          && depth>1
           && cutNode
           && pos.see_ge(move, PieceValue[MG][pos.captured_piece()])
           && pos.legal(move))
