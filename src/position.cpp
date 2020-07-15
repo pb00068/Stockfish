@@ -1064,8 +1064,8 @@ bool Position::see_ge(Move m, Value threshold) const {
       {
           if ((swap = PawnValueMg - swap) < res)
               break;
-
-          occupied ^= lsb(bb);
+          from = lsb(bb);
+          occupied ^= from;
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1074,7 +1074,8 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = KnightValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          from = lsb(bb);
+          occupied ^= from;
       }
 
       else if ((bb = stmAttackers & pieces(BISHOP)))
@@ -1082,7 +1083,8 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = BishopValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          from = lsb(bb);
+          occupied ^= from;
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1091,7 +1093,8 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = RookValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          from = lsb(bb);
+          occupied ^= from;
           attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
       }
 
@@ -1100,7 +1103,8 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = QueenValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          from = lsb(bb);
+          occupied ^= from;
           attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK  , QUEEN));
       }
@@ -1109,6 +1113,9 @@ bool Position::see_ge(Move m, Value threshold) const {
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
           return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+
+      if (st->blockersForKing[~stm] & from)
+          attackers &= ~(pieces(~stm) ^ pieces(~stm, KING));
   }
 
   return bool(res);
