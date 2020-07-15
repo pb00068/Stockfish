@@ -1032,12 +1032,10 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   Bitboard occupied = pieces() ^ from ^ to;
   Color stm = color_of(piece_on(from));
-  Bitboard attackers;
+  Bitboard attackers = attackers_to(to, occupied);
   if ((st->blockersForKing[~stm] & from) &&
      (piece_on(to) || type_of(piece_on(from)) == KNIGHT || !aligned(from, square<KING>(~stm), to)))
-     attackers = attacks_bb<KING>(to) & pieces(KING);
-  else
-     attackers = attackers_to(to, occupied);
+     attackers &= ~(pieces(~stm) ^ pieces(~stm, KING));
   Bitboard stmAttackers, bb;
   int res = 1;
 
