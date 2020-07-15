@@ -1003,7 +1003,8 @@ moves_loop: // When in check, search starts from here
           && moveCount <= 1
           && captureOrPromotion
           && depth > 1
-          && pos.see_ge(move, PieceValue[MG][pos.captured_piece()] + 1)
+          && cutNode
+          && pos.see_ge(move, PieceValue[MG][pos.captured_piece()])
           && pos.legal(move))
           depth--; // reduce search
 
