@@ -142,6 +142,7 @@ namespace {
   constexpr Score FlankAttacks        = S(  8,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KnightOnQueen       = S( 16, 11);
+  constexpr Score KnightContrByBishop = S( -3, -8);
   constexpr Score LongDiagonalBishop  = S( 45,  0);
   constexpr Score MinorBehindPawn     = S( 18,  3);
   constexpr Score PassedFile          = S( 11,  8);
@@ -306,6 +307,9 @@ namespace {
         int mob = popcount(b & mobilityArea[Us]);
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
+
+        if (Pt == KNIGHT && (b & attackedBy[Them][BISHOP]) == b)
+            score += KnightContrByBishop;
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
@@ -847,8 +851,8 @@ namespace {
 
     // Pieces evaluated first (also populates attackedBy, attackedBy2).
     // Note that the order of evaluation of the terms is left unspecified.
+    score +=  pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>();
     score +=  pieces<WHITE, KNIGHT>() - pieces<BLACK, KNIGHT>()
-            + pieces<WHITE, BISHOP>() - pieces<BLACK, BISHOP>()
             + pieces<WHITE, ROOK  >() - pieces<BLACK, ROOK  >()
             + pieces<WHITE, QUEEN >() - pieces<BLACK, QUEEN >();
 
