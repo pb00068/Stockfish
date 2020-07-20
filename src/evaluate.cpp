@@ -143,7 +143,7 @@ namespace {
   constexpr Score FlankAttacks        = S(  8,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KnightOnQueen       = S( 16, 11);
-  constexpr Score KnightContrByBishop = S(  0, -8);
+  constexpr Score KnightContrByBishop = S( -1, -8);
   constexpr Score LongDiagonalBishop  = S( 45,  0);
   constexpr Score MinorBehindPawn     = S( 18,  3);
   constexpr Score PassedFile          = S( 11,  8);
@@ -309,8 +309,11 @@ namespace {
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
 
-        if (Pt == KNIGHT && (b & attackedBy[Them][BISHOP]) == b && pe->passed_pawns(Them))
-            score += KnightContrByBishop * popcount(pe->passed_pawns(Them));
+        // penalty if with enemy bishop's help our knight is controlled
+        if (Pt == KNIGHT
+             && more_than_one(b & attackedBy[Them][BISHOP])
+             &&  ((b & (attackedBy[Them][BISHOP] | ~mobilityArea[Us])) == b ))
+            score += KnightContrByBishop;
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
