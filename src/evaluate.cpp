@@ -312,7 +312,7 @@ namespace {
         // penalty if with enemy bishop's help our knight is controlled
         if (Pt == KNIGHT
              && more_than_one(b & attackedBy[Them][BISHOP])
-             &&  ((b & (attackedBy[Them][BISHOP] | ~mobilityArea[Us])) == b ))
+             &&  ((b & (attackedBy[Them][BISHOP] | attackedBy[Them][PAWN])) == b ))
             score += KnightContrByBishop;
 
         if (Pt == BISHOP || Pt == KNIGHT)
