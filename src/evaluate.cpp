@@ -143,7 +143,7 @@ namespace {
   constexpr Score FlankAttacks        = S(  8,  0);
   constexpr Score Hanging             = S( 69, 36);
   constexpr Score KnightOnQueen       = S( 16, 11);
-  constexpr Score KnightContrByBishop = S( -1, -8);
+  constexpr Score KnightContrByBishop = S(  0,-14);
   constexpr Score LongDiagonalBishop  = S( 45,  0);
   constexpr Score MinorBehindPawn     = S( 18,  3);
   constexpr Score PassedFile          = S( 11,  8);
@@ -312,7 +312,7 @@ namespace {
         // penalty if with enemy bishop's help our knight is controlled
         if (Pt == KNIGHT
              && more_than_one(b & attackedBy[Them][BISHOP])
-             &&  ((b & (attackedBy[Them][BISHOP] | attackedBy[Them][PAWN])) == b ))
+             &&  ((b & (attackedBy[Them][BISHOP] | attackedBy[Them][PAWN] | attackedBy[Them][KING])) == b ))
             score += KnightContrByBishop;
 
         if (Pt == BISHOP || Pt == KNIGHT)
