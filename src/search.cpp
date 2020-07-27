@@ -296,7 +296,7 @@ void Thread::search() {
   // The latter is needed for statScores and killer initialization.
   Stack stack[MAX_PLY+10], *ss = stack+7;
   Move  pv[MAX_PLY+1];
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, alpha, beta, delta, oldbeta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -311,7 +311,7 @@ void Thread::search() {
   ss->pv = pv;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
-  beta = VALUE_INFINITE;
+  beta = oldbeta = VALUE_INFINITE;
 
   if (mainThread)
   {
@@ -451,7 +451,11 @@ void Thread::search() {
               {
                   if (!failedHighCnt)
                       beta = (alpha + beta) / 2;
+                  else
+                      beta = (alpha + oldbeta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  if (alpha >= beta) // might be needed due to oldbeta, kicks in very rarely if at all
+                      alpha-=delta;
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -459,6 +463,7 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
+                  oldbeta = beta;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
