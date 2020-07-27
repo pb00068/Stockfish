@@ -452,10 +452,10 @@ void Thread::search() {
                   if (!failedHighCnt)
                       beta = (alpha + beta) / 2;
                   else
-                      beta = (alpha + oldbeta) / 2;
+                      beta = (alpha + beta + oldbeta) / 3;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
                   if (alpha >= beta) // might be needed due to oldbeta, kicks in very rarely if at all
-                      alpha-=delta;
+                      alpha= beta - delta;
 
                   failedHighCnt = 0;
                   if (mainThread)
