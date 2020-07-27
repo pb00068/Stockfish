@@ -1112,7 +1112,9 @@ moves_loop: // When in check, search starts from here
       }
 
       // Check extension (~2 Elo)
+      // don't extend 3 consecutive checks
       else if (    givesCheck
+               && !((ss-1)->inCheck && (ss-3)->inCheck)
                && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move)))
           extension = 1;
 
