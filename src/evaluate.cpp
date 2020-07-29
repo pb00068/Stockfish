@@ -159,6 +159,7 @@ namespace {
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
   constexpr Score WeakQueen           = S( 56, 15);
+  constexpr Score MinorsVsQueen       = S( 10,  0);
 
 
 #undef S
@@ -578,6 +579,7 @@ namespace {
     if (pos.count<QUEEN>(Them) == 1)
     {
         bool queenImbalance = pos.count<QUEEN>() == 1;
+        Score sc = SCORE_ZERO;
 
         Square s = pos.square<QUEEN>(Them);
         safe =   mobilityArea[Us]
@@ -586,12 +588,19 @@ namespace {
 
         b = attackedBy[Us][KNIGHT] & attacks_bb<KNIGHT>(s);
 
-        score += KnightOnQueen * popcount(b & safe) * (1 + queenImbalance);
+        sc += KnightOnQueen * popcount(b & safe) * (1 + queenImbalance);
 
         b =  (attackedBy[Us][BISHOP] & attacks_bb<BISHOP>(s, pos.pieces()))
            | (attackedBy[Us][ROOK  ] & attacks_bb<ROOK  >(s, pos.pieces()));
 
-        score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
+        sc += SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
+
+        if (queenImbalance && sc == SCORE_ZERO
+                   && popcount (pos.pieces(Us  ) & ~pos.pieces(Us,   PAWN))
+                   >= popcount (pos.pieces(Them) & ~pos.pieces(Them, PAWN)) + 2)
+                  score += MinorsVsQueen;
+
+        score += sc;
     }
 
     if (T)
