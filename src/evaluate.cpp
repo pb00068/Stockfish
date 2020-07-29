@@ -158,7 +158,8 @@ namespace {
   constexpr Score ThreatBySafePawn    = S(173, 94);
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
-  constexpr Score WeakQueen           = S( 52, 14);
+  constexpr Score WeakQueen           = S( 56, 15);
+  constexpr Score WeakQueenImbalance  = S( 10,  5);
 
 
 #undef S
@@ -384,13 +385,12 @@ namespace {
         if (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners, blockers;
-            blockers = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
-            if (blockers)
+            Bitboard queenPinners;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
             {
                 score -= WeakQueen;
-                if (pos.count<QUEEN>() == 1 && (blockers & pos.pieces(Them)))
-                    score -= WeakQueen;
+                if (pos.count<QUEEN>() == 1)
+                    score -= WeakQueenImbalance;
             }
 
             // Bonus for queen on weak square in enemy camp
