@@ -153,13 +153,14 @@ namespace {
   constexpr Score RookOnKingRing      = S( 16,  0);
   constexpr Score RookOnQueenFile     = S(  6, 11);
   constexpr Score SliderOnQueen       = S( 60, 18);
-  constexpr Score SliderOnQueen2      = S( 40, 12);
+  constexpr Score SniperOnSingQueen   = S( 40, 12);
   constexpr Score ThreatByKing        = S( 24, 89);
   constexpr Score ThreatByPawnPush    = S( 48, 39);
   constexpr Score ThreatBySafePawn    = S(173, 94);
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
-  constexpr Score WeakQueen           = S( 56, 15);
+  constexpr Score SniperOnQueen1      = S( 60, 16);
+  constexpr Score SniperOnQueen2      = S( 40, 10);
 
 
 
@@ -390,9 +391,9 @@ namespace {
             blockers = pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners);
             if (blockers)
             {
-                score -= WeakQueen;
-                if (pos.count<QUEEN>() == 1 && (blockers & pos.pieces(Them)))
-                    score -= SliderOnQueen2;
+                score -= (blockers & pos.pieces(Them)) ? SniperOnQueen1 : SniperOnQueen2;
+                if (     (blockers & pos.pieces(Them)) && pos.count<QUEEN>() == 1)
+                    score -= SniperOnSingQueen;
             }
 
             // Bonus for queen on weak square in enemy camp
