@@ -161,7 +161,7 @@ namespace {
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
   constexpr Score WeakQueen           = S( 56, 15);
-  constexpr Score BishopThreatsRook   = S(  5,  5);
+  constexpr Score BishopThreatsRook   = S(  4,  4);
 
 
 #undef S
@@ -578,23 +578,31 @@ namespace {
     score += ThreatByPawnPush * popcount(b);
 
 
-    if (attackedBy[Us][BISHOP])
+    if ((attackedBy[Us][BISHOP] & mobilityArea[Us]) && pos.count<QUEEN>(Them) + pos.count<ROOK>(Them) >=2)
     {
-        b = pos.pieces(Them,ROOK) & ~weak;
-        safe = ~pos.pieces() & ~attackedBy[Them][ALL_PIECES];
+        b = pos.pieces(Them,ROOK);
         Square threat = SQ_NONE;
+        int mindistance = 8;
         while (b)
         {
             Square rsq = pop_lsb(&b);
-            defended = attacks_bb<BISHOP>(rsq, pos.pieces() & ~b & ~pos.pieces(Them,KING)) & attackedBy[Us][BISHOP] & safe;
-            if (defended && !(attackedBy[Us][BISHOP] & rsq))
+            defended = attacks_bb<BISHOP>(rsq, pos.pieces() & ~b & ~pos.pieces(Them,KING)) & attackedBy[Us][BISHOP] & ~pos.pieces() & mobilityArea[Us];
+            if (defended)
             {
-               score += BishopThreatsRook;
-               Square x = lsb(defended);
-               if ( x == threat || (attacks_bb<BISHOP>(x, pos.pieces()) & pos.pieces(Them, QUEEN, KING)))
-                  score += BishopThreatsRook * 10; // wins al least the quality when no piece can interfere
+               while (defended)
+               {
+                  Square x = pop_lsb(&defended);
+                  mindistance = std::min(mindistance, distance(x, rsq));
+                  if (distance(x, rsq) < 4)
+                    score += BishopThreatsRook;
+                  if ( x == threat || (!(attackedBy[Them][ALL_PIECES] & x) && (attacks_bb<BISHOP>(x, pos.pieces()) & pos.pieces(Them, QUEEN, KING))))
+                  {
+                     score += make_score(30/mindistance, 60/mindistance); // wins at least the quality when no piece can interfere
+                     break;
+                  }
            // sync_cout << pos << Bitboards::pretty(defended) << UCI::move(make_move(rsq, x), pos.is_chess960()) << sync_endl;
-               threat = x;
+                  threat = x;
+               }
             }
         }
     }
