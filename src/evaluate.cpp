@@ -592,7 +592,7 @@ namespace {
                score += BishopThreatsRook;
                Square x = lsb(defended);
                if ( x == threat || (attacks_bb<BISHOP>(x, pos.pieces()) & pos.pieces(Them, QUEEN, KING)))
-                  score += BishopThreatsRook * 4; // wins al least the quality when no piece can interfere
+                  score += BishopThreatsRook * 10; // wins al least the quality when no piece can interfere
            // sync_cout << pos << Bitboards::pretty(defended) << UCI::move(make_move(rsq, x), pos.is_chess960()) << sync_endl;
                threat = x;
             }
