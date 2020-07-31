@@ -23,7 +23,9 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+//#include <iostream>
 
+//#include "uci.h"
 #include "bitboard.h"
 #include "evaluate.h"
 #include "material.h"
@@ -159,6 +161,7 @@ namespace {
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
   constexpr Score WeakQueen           = S( 56, 15);
+  constexpr Score BishopThreatsRook   = S(  5,  5);
 
 
 #undef S
@@ -574,6 +577,27 @@ namespace {
     b = pawn_attacks_bb<Us>(b) & nonPawnEnemies;
     score += ThreatByPawnPush * popcount(b);
 
+
+    if (attackedBy[Us][BISHOP])
+    {
+        b = pos.pieces(Them,ROOK) & ~weak;
+        safe = ~pos.pieces() & ~attackedBy[Them][ALL_PIECES];
+        Square threat = SQ_NONE;
+        while (b)
+        {
+            Square rsq = pop_lsb(&b);
+            defended = attacks_bb<BISHOP>(rsq, pos.pieces() & ~b & ~pos.pieces(Them,KING)) & attackedBy[Us][BISHOP] & safe;
+            if (defended && !(attackedBy[Us][BISHOP] & rsq))
+            {
+               score += BishopThreatsRook;
+               Square x = lsb(defended);
+               if ( x == threat || (attacks_bb<BISHOP>(x, pos.pieces()) & pos.pieces(Them, QUEEN, KING)))
+                  score += BishopThreatsRook * 4; // wins al least the quality when no piece can interfere
+           // sync_cout << pos << Bitboards::pretty(defended) << UCI::move(make_move(rsq, x), pos.is_chess960()) << sync_endl;
+               threat = x;
+            }
+        }
+    }
     // Bonus for threats on the next moves against enemy queen
     if (pos.count<QUEEN>(Them) == 1)
     {
