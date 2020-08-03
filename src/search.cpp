@@ -1520,7 +1520,8 @@ moves_loop: // When in check, search starts from here
     //dbg_hit_on(!ttMove, ss->killers[0] && pos.gives_check(ss->killers[0]));
     if (!ttMove && ss->killers[0] && pos.legal(ss->killers[0]) && pos.gives_check(ss->killers[0]))
       ttMove = ss->killers[0];
-    else if (!ttMove && ss->killers[1] && pos.legal(ss->killers[1]) && pos.gives_check(ss->killers[1]))
+    else
+      if (!ttMove && ss->killers[1] && pos.legal(ss->killers[1]) && pos.gives_check(ss->killers[1]))
       ttMove = ss->killers[1];
 
     // Initialize a MovePicker object for the current position, and prepare
