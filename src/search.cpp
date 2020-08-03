@@ -1592,8 +1592,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (!pos.capture_or_promotion(bestMove))
-                      update_quiet_stats(pos, ss, bestMove, 8, 0);
+                  if (!captureOrPromotion && depth >= DEPTH_QS_NO_CHECKS)
+                      update_quiet_stats(pos, ss, bestMove, 4, 0);
                   break; // Fail high
               }
           }
