@@ -1461,17 +1461,7 @@ moves_loop: // When in check, search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
-    {
-        if (ttMove && (tte->bound() & BOUND_LOWER) && pos.gives_check(ttMove))
-        {
-             if (ss->killers[0] != ttMove)
-             {
-                  ss->killers[1] = ss->killers[0];
-                  ss->killers[0] = ttMove;
-             }
-        }
         return ttValue;
-    }
 
     // Evaluate the position statically
     if (ss->inCheck)
@@ -1516,12 +1506,6 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
-
-    //dbg_hit_on(!ttMove, ss->killers[0] && pos.gives_check(ss->killers[0]));
-    if (!ttMove && ss->killers[0] && pos.legal(ss->killers[0]) && pos.gives_check(ss->killers[0]))
-      ttMove = ss->killers[0];
-    else if (!ttMove && ss->killers[1] && pos.legal(ss->killers[1]) && pos.gives_check(ss->killers[1]))
-      ttMove = ss->killers[1];
 
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
@@ -1608,14 +1592,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (givesCheck)
-                  {
-                    if (ss->killers[0] != bestMove)
-                    {
-                           ss->killers[1] = ss->killers[0];
-                           ss->killers[0] = bestMove;
-                    }
-                  }
+                  if (!pos.capture_or_promotion(bestMove))
+                      update_quiet_stats(pos, ss, bestMove, 8, 0);
                   break; // Fail high
               }
           }
