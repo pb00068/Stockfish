@@ -1591,7 +1591,11 @@ moves_loop: // When in check, search starts from here
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else
+              {
+                  if (!pos.capture_or_promotion(bestMove))
+                      update_quiet_stats(pos, ss, bestMove, 8, 0);
                   break; // Fail high
+              }
           }
        }
     }
