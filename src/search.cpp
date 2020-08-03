@@ -1591,7 +1591,11 @@ moves_loop: // When in check, search starts from here
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else
+              {
+                  if (captureOrPromotion)
+                      thisThread->captureHistory[pos.moved_piece(bestMove)][to_sq(bestMove)][type_of(pos.piece_on(to_sq(bestMove)))] << stat_bonus(1);
                   break; // Fail high
+              }
           }
        }
     }
