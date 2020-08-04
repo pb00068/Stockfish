@@ -1592,8 +1592,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (!captureOrPromotion && depth >= DEPTH_QS_NO_CHECKS)
-                      update_quiet_stats(pos, ss, bestMove, 4, 0);
+                  if (!captureOrPromotion && value >  beta + PawnValueMg && depth >= 0)
+                      update_quiet_stats(pos, ss, bestMove, 8, 0);
                   break; // Fail high
               }
           }
