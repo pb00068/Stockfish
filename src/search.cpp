@@ -1507,6 +1507,8 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
+    int quietCount = 0;
+
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen and checking knight promotions, and other checks(only if depth >= DEPTH_QS_CHECKS)
@@ -1525,6 +1527,8 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
+      if (!captureOrPromotion)
+         quietCount++;
 
       // Futility pruning
       if (   !ss->inCheck
@@ -1592,8 +1596,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (!captureOrPromotion && value >  beta + PawnValueMg && depth >= 0)
-                      update_quiet_stats(pos, ss, bestMove, 8, 0);
+                  if (!captureOrPromotion && quietCount > 1)
+                      update_quiet_stats(pos, ss, bestMove, 4 * quietCount, 0);
                   break; // Fail high
               }
           }
