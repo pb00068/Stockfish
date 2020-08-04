@@ -1596,8 +1596,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (!captureOrPromotion && quietCount > 1)
-                      update_quiet_stats(pos, ss, bestMove, 4 * quietCount, 0);
+                  if (!captureOrPromotion && depth >= 0 && quietCount > 1)
+                      update_quiet_stats(pos, ss, bestMove, 4 * quietCount, 0); // bring this checkmove up in move order
                   break; // Fail high
               }
           }
