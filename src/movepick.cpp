@@ -262,7 +262,7 @@ top:
       /* fallthrough */
 
   case QCHECK:
-       return select<Best>([](){ return true; });
+      return select<Best>([](){ return true; });
   }
 
   assert(false);
