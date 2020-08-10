@@ -772,7 +772,7 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        ss->staticEval = eval = Eval::useNNUE ? evaluate(pos) : VALUE_NONE;
         improving = false;
         goto moves_loop;
     }
@@ -811,8 +811,11 @@ namespace {
         &&  eval <= alpha - RazorMargin)
         return qsearch<NT>(pos, ss, alpha, beta);
 
-    improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval > (ss-4)->staticEval
-              || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval > (ss-2)->staticEval;
+    if (Eval::useNNUE)
+      improving = ss->staticEval > (ss-2)->staticEval;
+    else
+      improving =  (ss-2)->staticEval == VALUE_NONE ? (ss->staticEval > (ss-4)->staticEval
+                || (ss-4)->staticEval == VALUE_NONE) : ss->staticEval > (ss-2)->staticEval;
 
     // Step 8. Futility pruning: child node (~50 Elo)
     if (   !PvNode
@@ -1468,7 +1471,7 @@ moves_loop: // When in check, search starts from here
     // Evaluate the position statically
     if (ss->inCheck)
     {
-        ss->staticEval = VALUE_NONE;
+        ss->staticEval = Eval::useNNUE ? evaluate(pos) : VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
     }
     else
