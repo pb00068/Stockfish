@@ -451,7 +451,11 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  ++failedHighCnt;
+
+                  if (rootDepth > 10)
+                      failedHighCnt /= 2;
+                  else
+                      failedHighCnt = 0;
 
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
