@@ -451,19 +451,21 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  ++failedHighCnt;
+
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  ++failedHighCnt;
               }
               else
               {
                   ++rootMoves[pvIdx].bestMoveCount;
                   break;
               }
-              ++failedHighCnt;
 
               delta += delta / 4 + 5;
 
