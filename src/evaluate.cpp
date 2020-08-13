@@ -962,6 +962,7 @@ Value Eval::evaluate(const Position& pos) {
             if (pos.pieces(pos.side_to_move(), QUEEN))
                b |= pos.check_squares(QUEEN);
             v += PotentialChecks * popcount(b);
+            return v;
          }
       }
   }
