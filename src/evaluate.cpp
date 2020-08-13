@@ -196,6 +196,7 @@ namespace {
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
   constexpr Score WeakQueen           = S( 56, 15);
+  constexpr Score PotentialChecks     = S(  5,  5);
 
 
 #undef S
@@ -946,7 +947,23 @@ Value Eval::evaluate(const Position& pos) {
       Value v = eg_value(pos.psq_score());
       // Take NNUE eval only on balanced positions
       if (abs(v) < NNUEThreshold)
-         return NNUE::evaluate(pos) + Tempo;
+      {
+         v = NNUE::evaluate(pos) + Tempo;
+         if (abs(v) > NNUEThreshold * 4)
+         {
+            // calculate how much enemy king is potentially exposed
+            Bitboard b=0;
+            if (pos.pieces(pos.side_to_move(), KNIGHT))
+               b |= pos.check_squares(KNIGHT);
+            if (pos.pieces(pos.side_to_move(), BISHOP))
+               b |= pos.check_squares(BISHOP);
+            if (pos.pieces(pos.side_to_move(), ROOK))
+               b |= pos.check_squares(ROOK);
+            if (pos.pieces(pos.side_to_move(), QUEEN))
+               b |= pos.check_squares(QUEEN);
+            v += PotentialChecks * popcount(b);
+         }
+      }
   }
   return Evaluation<NO_TRACE>(pos).value();
 }
