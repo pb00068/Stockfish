@@ -949,7 +949,7 @@ Value Eval::evaluate(const Position& pos) {
       if (abs(v) < NNUEThreshold)
       {
          v = NNUE::evaluate(pos) + Tempo;
-         if (abs(v) > NNUEThreshold * 4)
+         if (v > NNUEThreshold * 4)
          {
             // calculate how much enemy king is potentially exposed
             Bitboard b=0;
