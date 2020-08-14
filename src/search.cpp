@@ -645,7 +645,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->toForget = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1044,6 +1044,9 @@ moves_loop: // When in check, search starts from here
                     + (*contHist[5])[movedPiece][to_sq(move)] / 2 < 27376)
                   continue;
 
+              if (lmrDepth < 2 && move == ss->toForget)
+                 continue;
+
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(29 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
@@ -1195,6 +1198,9 @@ moves_loop: // When in check, search starts from here
           // Decrease reduction if position is or has been on the PV (~10 Elo)
           if (ttPv)
               r -= 2;
+
+          if (move == ss->toForget)
+              r++;
 
           if (moveCountPruning && !formerPv)
               r++;
@@ -1358,6 +1364,8 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
+      else if (value != -VALUE_INFINITE && value < alpha - 800)
+         ss->toForget = move;
 
       if (move != bestMove)
       {
