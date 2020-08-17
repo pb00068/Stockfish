@@ -1362,7 +1362,7 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove && move != ss->checkers)
+      if (move != bestMove && (move != ss->checkers || !givesCheck))
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
