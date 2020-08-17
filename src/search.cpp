@@ -1358,7 +1358,8 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!captureOrPromotion && quietCount < 64 && (!givesCheck || thisThread->mainHistory[us][from_to(move)] < 0))
+          else if (!captureOrPromotion && quietCount < 64 &&
+                  (!givesCheck || thisThread->mainHistory[us][from_to(move)] < 0))
               quietsSearched[quietCount++] = move;
       }
     }
