@@ -646,7 +646,6 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+4)->checkers= MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1345,8 +1344,6 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (givesCheck)
-                 ss->checkers = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1362,12 +1359,12 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove && (move != ss->checkers || !givesCheck))
+      if (move != bestMove)
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!captureOrPromotion && quietCount < 64)
+          else if (!captureOrPromotion && quietCount < 64 && (!givesCheck || thisThread->mainHistory[us][from_to(move)] < 0))
               quietsSearched[quietCount++] = move;
       }
     }
