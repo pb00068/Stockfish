@@ -156,7 +156,7 @@ namespace {
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, bool*, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
+                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
   // to the given depth are generated and counted, and the sum is returned.
@@ -591,7 +591,6 @@ namespace {
     assert(!(PvNode && cutNode));
 
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
-    bool quietsChecking[64];
     StateInfo st;
     TTEntry* tte;
     Key posKey;
@@ -1360,13 +1359,13 @@ moves_loop: // When in check, search starts from here
           }
       }
 
-      if (move != bestMove)
+      if (move != bestMove && !givesCheck)
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
           else if (!captureOrPromotion && quietCount < 64)
-              quietsSearched[quietCount] = move, quietsChecking[quietCount++]=givesCheck;
+              quietsSearched[quietCount++] = move;
       }
     }
 
@@ -1391,7 +1390,7 @@ moves_loop: // When in check, search starts from here
 
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
-                         quietsSearched, quietsChecking, quietCount, capturesSearched, captureCount, depth);
+                         quietsSearched, quietCount, capturesSearched, captureCount, depth);
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
@@ -1680,7 +1679,7 @@ moves_loop: // When in check, search starts from here
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, bool* quietsChecking, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
+                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
 
     int bonus1, bonus2;
     Color us = pos.side_to_move();
@@ -1699,11 +1698,10 @@ moves_loop: // When in check, search starts from here
 
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
-            if (!quietsChecking[i] || thisThread->mainHistory[us][from_to(quietsSearched[i])] < 0)
-            {
-               thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
-               update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
-            }
+        {
+            thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
+            update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
+        }
     }
     else
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
