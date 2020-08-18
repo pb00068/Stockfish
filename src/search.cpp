@@ -1688,7 +1688,7 @@ moves_loop: // When in check, search starts from here
         // Decrease all the non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            if (!quietsChecking[i] || thisThread->mainHistory[us][from_to(quietsSearched[i])] < -50)
+            if (!quietsChecking[i] || thisThread->mainHistory[us][from_to(quietsSearched[i])] < -40)
                thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
             if (!quietsChecking[i])
                update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
