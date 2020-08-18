@@ -645,7 +645,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->checkingKiller = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -695,7 +695,11 @@ namespace {
             if (ttValue >= beta)
             {
                 if (!pos.capture_or_promotion(ttMove))
+                {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                    if ( pos.check_squares(type_of(pos.piece_on(from_sq(ttMove)))) & to_sq(ttMove))
+                       ss->checkingKiller = ttMove;
+                }
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1349,7 +1353,7 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!captureOrPromotion && quietCount < 64 && move != ss->killers[0] &&  move != ss->killers[1])
+          else if (!captureOrPromotion && quietCount < 64 && move != ss->killers[0] &&  move != ss->killers[1] && move != ss->checkingKiller)
               quietsSearched[quietCount++] = move;
       }
     }
@@ -1374,8 +1378,12 @@ moves_loop: // When in check, search starts from here
                    :     ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+        if (givesCheck && !captureOrPromotion)
+          ss->checkingKiller = bestMove;
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
