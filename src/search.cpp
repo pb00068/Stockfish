@@ -599,7 +599,7 @@ namespace {
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool ttHit, ttPv, formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
-         ttCapture, singularQuietLMR;
+         ttCapture, singularQuietLMR, bestGivesCheck;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -1329,6 +1329,7 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              bestGivesCheck = givesCheck;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1374,8 +1375,20 @@ moves_loop: // When in check, search starts from here
                    :     ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
-        update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
+    {
+        bool justOpportunistCheck = bestGivesCheck
+                                && !(ss-1)->inCheck
+                                && !pos.capture_or_promotion(bestMove)
+                                && pos.count<PAWN>() > 8
+                                && type_of(pos.piece_on(prevSq)) == KING
+                                && !aligned(from_sq((ss-1)->currentMove), prevSq, to_sq(bestMove));
+
+        if (justOpportunistCheck)
+            (*(ss-1)->continuationHistory)[pos.moved_piece(bestMove)][to_sq(bestMove)] << stat_bonus(depth);
+        else
+           update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
