@@ -1704,6 +1704,8 @@ moves_loop: // When in check, search starts from here
                     thisThread->pawnHistory[us][to_sq(quietsSearched[i])][1] << -bonus2;
                if (supported)
                     thisThread->pawnHistory[us][to_sq(quietsSearched[i])][2] << -bonus2;
+               if (!supports && !escorts && !supported)
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][3] << -bonus2;
             }
         }
     }
@@ -1766,6 +1768,9 @@ moves_loop: // When in check, search starts from here
           thisThread->pawnHistory[us][to_sq(move)][1] << bonus;
        if (supported)
           thisThread->pawnHistory[us][to_sq(move)][2] << bonus;
+
+       if (!supports && !escorts && !supported)
+          thisThread->pawnHistory[us][to_sq(move)][3] << bonus;
     }
 
     if (is_ok((ss-1)->currentMove))
