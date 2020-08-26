@@ -134,8 +134,6 @@ int MovePicker::getPawnVal(Square s) const
      v += (*pawnStructHistory)[pos.side_to_move()][s][1];
   if (supported)
      v += (*pawnStructHistory)[pos.side_to_move()][s][2];
-  if (!supports && !escorts && !supported)
-     v += (*pawnStructHistory)[pos.side_to_move()][s][3];
 
     return v;
 }
