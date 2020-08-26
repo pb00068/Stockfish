@@ -164,7 +164,7 @@ public:
   Score psq_score() const;
   Value non_pawn_material(Color c) const;
   Value non_pawn_material() const;
-  void obtain_pawnmoveType(Square to, bool &escorts, bool &supported) const;
+  void obtain_pawnmoveType(Square to, bool &supports, bool &escorts, bool &supported) const;
 
   // Position consistency check, for debugging
   bool pos_is_ok() const;

@@ -1696,13 +1696,14 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss, moved, to_sq(quietsSearched[i]), -bonus2);
             if (type_of(moved) == PAWN)
             {
-               bool escorts, supported;
-               pos.obtain_pawnmoveType(to_sq(quietsSearched[i]), escorts, supported);
-
-               if (escorts)
+               bool supports, escorts, supported;
+               pos.obtain_pawnmoveType(to_sq(quietsSearched[i]), supports, escorts, supported);
+               if (supports)
                     thisThread->pawnHistory[us][to_sq(quietsSearched[i])][0] << -bonus2;
-               if (supported)
+               if (escorts)
                     thisThread->pawnHistory[us][to_sq(quietsSearched[i])][1] << -bonus2;
+               if (supported)
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][2] << -bonus2;
             }
         }
     }
@@ -1757,13 +1758,14 @@ moves_loop: // When in check, search starts from here
     if (type_of(pos.moved_piece(move)) != PAWN)
         thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
     else {
-       bool escorts, supported;
-       pos.obtain_pawnmoveType(to_sq(move), escorts, supported);
-
-       if (escorts)
+       bool supports, escorts, supported;
+       pos.obtain_pawnmoveType(to_sq(move), supports, escorts, supported);
+       if (supports)
           thisThread->pawnHistory[us][to_sq(move)][0] << bonus;
-       if (supported)
+       if (escorts)
           thisThread->pawnHistory[us][to_sq(move)][1] << bonus;
+       if (supported)
+          thisThread->pawnHistory[us][to_sq(move)][2] << bonus;
     }
 
     if (is_ok((ss-1)->currentMove))
