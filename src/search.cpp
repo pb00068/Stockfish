@@ -1694,16 +1694,16 @@ moves_loop: // When in check, search starts from here
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
             Piece moved = pos.moved_piece(quietsSearched[i]);
             update_continuation_histories(ss, moved, to_sq(quietsSearched[i]), -bonus2);
-            if (type_of(moved) == PAWN)
+            if (type_of(moved) == PAWN && depth > 3)
             {
                bool supports, escorts, supported;
                pos.obtain_pawnmoveType(to_sq(quietsSearched[i]), supports, escorts, supported);
                if (supports)
-                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][0] << -bonus2;
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][0] << -stat_bonus(depth-3);
                if (escorts)
-                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][1] << -bonus2;
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][1] << -stat_bonus(depth-3);
                if (supported)
-                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][2] << -bonus2;
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][2] << -stat_bonus(depth-3);
             }
         }
     }
