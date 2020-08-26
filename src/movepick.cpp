@@ -125,15 +125,13 @@ void MovePicker::score() {
 
 int MovePicker::getPawnVal(Square s) const
 {
-  bool supports, escorts, supported;
-  pos.obtain_pawnmoveType(s, supports, escorts, supported);
+  bool escorts, supported;
+  pos.obtain_pawnmoveType(s, escorts, supported);
   int v =0;
-  if (supports)
-     v += (*pawnStructHistory)[pos.side_to_move()][s][0];
   if (escorts)
-     v += (*pawnStructHistory)[pos.side_to_move()][s][1];
+     v += (*pawnStructHistory)[pos.side_to_move()][s][0];
   if (supported)
-     v += (*pawnStructHistory)[pos.side_to_move()][s][2];
+     v += (*pawnStructHistory)[pos.side_to_move()][s][1];
 
     return v;
 }
