@@ -950,6 +950,7 @@ moves_loop: // When in check, search starts from here
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
+                                      &thisThread->pawnHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
@@ -1691,7 +1692,21 @@ moves_loop: // When in check, search starts from here
         for (int i = 0; i < quietCount; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
-            update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
+            Piece moved = pos.moved_piece(quietsSearched[i]);
+            update_continuation_histories(ss, moved, to_sq(quietsSearched[i]), -bonus2);
+            if (type_of(moved) == PAWN)
+            {
+               bool supports, escorts, supported;
+               pos.obtain_pawnmoveType(to_sq(quietsSearched[i]), supports, escorts, supported);
+               if (supports)
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][0] << -bonus2;
+               else if (escorts)
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][1] << -bonus2;
+               else if (supported)
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][2] << -bonus2;
+               else
+                    thisThread->pawnHistory[us][to_sq(quietsSearched[i])][3] << -bonus2;
+            }
         }
     }
     else
@@ -1744,6 +1759,18 @@ moves_loop: // When in check, search starts from here
 
     if (type_of(pos.moved_piece(move)) != PAWN)
         thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
+    else {
+       bool supports, escorts, supported;
+       pos.obtain_pawnmoveType(to_sq(move), supports, escorts, supported);
+       if (supports)
+          thisThread->pawnHistory[us][to_sq(move)][0] << bonus;
+       else if (escorts)
+          thisThread->pawnHistory[us][to_sq(move)][1] << bonus;
+       else if (supported)
+          thisThread->pawnHistory[us][to_sq(move)][2] << bonus;
+       else
+          thisThread->pawnHistory[us][to_sq(move)][3] << bonus;
+    }
 
     if (is_ok((ss-1)->currentMove))
     {
