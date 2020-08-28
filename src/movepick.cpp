@@ -104,13 +104,16 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
-          m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
+      {
+          int mainval = (*mainHistory)[pos.side_to_move()][from_to(m)];
+          m.value = mainval
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +  (type_of(pos.moved_piece(m)) == PAWN ? getPawnVal(to_sq(m)) : 0)
+                   +  (type_of(pos.moved_piece(m)) == PAWN ? getPawnVal(to_sq(m), mainval) : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+      }
 
       else // Type == EVASIONS
       {
@@ -124,11 +127,11 @@ void MovePicker::score() {
       }
 }
 
-int MovePicker::getPawnVal(Square s) const
+int MovePicker::getPawnVal(Square s, int max) const
 {
   bool supports, escorts, supported;
   pos.obtain_pawnmoveType(s, supports, escorts, supported);
-  int v = 5000;
+  int v = 0;
   if (supports)
      v += (*pawnStructHistory)[pos.side_to_move()][s][0];
   else if  (escorts)
@@ -138,7 +141,7 @@ int MovePicker::getPawnVal(Square s) const
   else
      v += (*pawnStructHistory)[pos.side_to_move()][s][3];
 
-    return v;
+    return std::clamp(v, -abs(max), abs(max));
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
