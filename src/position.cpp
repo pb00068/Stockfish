@@ -445,7 +445,7 @@ void Position::obtain_pawnmoveType(Square to, bool &supports, bool &escorts, boo
    escorts   = bool(adjacentPawns & rank_bb(to));
    supported = bool(adjacentPawns & rank_bb(d ));
 
-   if (relative_rank(sideToMove, rank_of(to)) <= RANK_6)
+   if (relative_rank(sideToMove, to) <= RANK_6)
    {
         d = to + pawn_push(sideToMove);
         supports = bool(adjacentPawns & rank_bb(d));

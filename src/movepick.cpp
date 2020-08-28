@@ -134,14 +134,12 @@ int MovePicker::getPawnVal(Square s, int max) const
   int v = 0;
   if (supports)
      v += (*pawnStructHistory)[pos.side_to_move()][s][0];
-  else if  (escorts)
+  if  (escorts)
      v += (*pawnStructHistory)[pos.side_to_move()][s][1];
-  else if (supported)
+  if (supported)
      v += (*pawnStructHistory)[pos.side_to_move()][s][2];
-  else
-     v += (*pawnStructHistory)[pos.side_to_move()][s][3];
 
-    return std::clamp(v, -abs(max), abs(max));
+    return std::clamp(v/2, -abs(max), abs(max));
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
