@@ -19,7 +19,7 @@
 #include <cassert>
 
 #include "movepick.h"
-#include "misc.h"
+
 
 namespace {
 
@@ -105,13 +105,12 @@ void MovePicker::score() {
 
       else if (Type == QUIETS)
       {
-          int mainval = (*mainHistory)[pos.side_to_move()][from_to(m)];
-          m.value = mainval
+          m.value = (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +  (type_of(pos.moved_piece(m)) == PAWN ? getPawnVal(to_sq(m), mainval) : 0)
+                   +  (type_of(pos.moved_piece(m)) == PAWN ? getPawnVal(to_sq(m)) : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
 
@@ -127,7 +126,7 @@ void MovePicker::score() {
       }
 }
 
-int MovePicker::getPawnVal(Square s, int max) const
+int MovePicker::getPawnVal(Square s) const
 {
   bool supports, escorts, supported;
   pos.obtain_pawnmoveType(s, supports, escorts, supported);
@@ -139,7 +138,7 @@ int MovePicker::getPawnVal(Square s, int max) const
   if (supported)
      v += (*pawnStructHistory)[pos.side_to_move()][s][2];
 
-    return std::clamp(v/2, -abs(max), abs(max));
+    return v/16;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.

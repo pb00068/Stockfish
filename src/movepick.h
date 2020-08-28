@@ -143,7 +143,7 @@ private:
   template<GenType> void score();
   ExtMove* begin() { return cur; }
   ExtMove* end() { return endMoves; }
-  int getPawnVal(Square s, int) const;
+  int getPawnVal(Square s) const;
 
   const Position& pos;
   const ButterflyHistory* mainHistory;
