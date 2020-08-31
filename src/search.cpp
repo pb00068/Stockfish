@@ -325,7 +325,6 @@ void Thread::search() {
 
   std::copy(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, &lowPlyHistory[0][0]);
   std::fill(&lowPlyHistory[MAX_LPH - 2][0], &lowPlyHistory.back().back() + 1, 0);
-  pawnHistory.fill(0);
 
   size_t multiPV = size_t(Options["MultiPV"]);
 
@@ -1767,16 +1766,8 @@ moves_loop: // When in check, search starts from here
 
     if (type_of(pos.moved_piece(move)) != PAWN)
         thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
-    else {
-       bool supports, escorts, supported;
-       pos.obtain_pawnmoveType(to_sq(move), supports, escorts, supported);
-       if (supports)
-          thisThread->pawnHistory[us][to_sq(move)][0] << bonus;
-       if (escorts)
-          thisThread->pawnHistory[us][to_sq(move)][1] << bonus;
-       if (supported)
-          thisThread->pawnHistory[us][to_sq(move)][2] << bonus;
-    }
+    else
+        thisThread->pawnHistory[us][to_sq(move)] = pos.obtain_pawnmoveStructVal(to_sq(move));
 
     if (is_ok((ss-1)->currentMove))
     {
