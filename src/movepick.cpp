@@ -115,11 +115,7 @@ void MovePicker::score() {
           {
              int v1 = getPawnVal(to_sq(m));
              int v2 = (*pawnStructHistory)[pos.side_to_move()][to_sq(m)];
-             if (v1 > v2)
-                m.value += abs((*mainHistory)[pos.side_to_move()][from_to(m)]);
-             else
-             if (v1 < v2)
-                m.value -= abs((*mainHistory)[pos.side_to_move()][from_to(m)])/2;
+             m.value += (v1 - v2) * 50;
           }
       }
 

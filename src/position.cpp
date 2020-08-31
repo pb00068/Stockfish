@@ -442,18 +442,15 @@ int Position::obtain_pawnmoveStructVal(Square to) const {
 
    Square d = to - pawn_push(sideToMove);
    Bitboard adjacentPawns = adjacent_files_bb(to) & pieces(sideToMove, PAWN);
-   int escorts   = bool(adjacentPawns & rank_bb(to))
-        + more_than_one(adjacentPawns & rank_bb(to));
-   int supported = bool(adjacentPawns & rank_bb(d ))
-        + more_than_one(adjacentPawns & rank_bb(d ));
+   int escorts   = bool(adjacentPawns & rank_bb(to));
+   int supported = popcount(adjacentPawns & rank_bb(d ));
    int supportsOrAttacks = 0;
    if (relative_rank(sideToMove, to) <= RANK_6)
    {
         d = to + pawn_push(sideToMove);
-        supportsOrAttacks = bool(adjacent_files_bb(to) & pieces() & rank_bb(d)) +
-                   more_than_one(adjacent_files_bb(to) & pieces() & rank_bb(d));
+        supportsOrAttacks = popcount(adjacent_files_bb(to) & pieces() & rank_bb(d));
    }
-   return supportsOrAttacks * 100 + supported * 10 + escorts;
+   return supportsOrAttacks * 30 + supported * 10 + escorts * 5;
 }
 
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)
