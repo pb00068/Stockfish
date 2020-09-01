@@ -438,7 +438,20 @@ const string Position::fen() const {
   return ss.str();
 }
 
+int Position::getPawnMovePotential(Square to, int refval) const {
 
+   if (refval < -2000)
+     return 0;
+   Square s = to - pawn_push(sideToMove);
+   int supported = popcount(adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(s));
+   int supportsOrAttacks = 0;
+   if (relative_rank(sideToMove, to) <= RANK_7)
+   {
+        s = to + pawn_push(sideToMove);
+        supportsOrAttacks = popcount(adjacent_files_bb(to) & (pieces() & ~pieces(~sideToMove, PAWN)) & rank_bb(s));
+   }
+   return (supportsOrAttacks * 2 + supported) * abs(refval / 8);
+}
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)
 /// that are blocking attacks on the square 's' from 'sliders'. A piece blocks a
 /// slider if removing that piece from the board would result in a position where
