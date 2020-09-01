@@ -440,7 +440,7 @@ const string Position::fen() const {
 
 int Position::getPawnMovePotential(Square to, int refval) const {
 
-   if (refval < -2000)
+   if (refval < -1000)
      return 0;
    Square s = to - pawn_push(sideToMove);
    int supported = popcount(adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(s));
