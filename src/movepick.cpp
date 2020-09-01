@@ -19,6 +19,7 @@
 #include <cassert>
 
 #include "movepick.h"
+#include "types.h"
 
 namespace {
 
@@ -63,6 +64,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+  pawnpushtargets = AllSquares;
 }
 
 /// MovePicker constructor for quiescence search
@@ -97,6 +99,15 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
+  if (Type == QUIETS && pawnpushtargets == AllSquares)
+  {
+     pawnpushtargets = pos.pieces() & ~pos.pieces(~pos.side_to_move(), PAWN);
+     if  (pos.side_to_move() == WHITE)
+        pawnpushtargets = shift<SOUTH_EAST>(pawnpushtargets) | shift<SOUTH_WEST>(pawnpushtargets);
+     else
+        pawnpushtargets = shift<NORTH_EAST>(pawnpushtargets) | shift<NORTH_WEST>(pawnpushtargets);
+  }
+
   for (auto& m : *this)
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
@@ -108,6 +119,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                   +     (type_of(pos.moved_piece(m)) == PAWN && (pawnpushtargets & to_sq(m)) ? 400 : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
