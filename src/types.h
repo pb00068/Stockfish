@@ -217,7 +217,7 @@ enum : int {
 
   DEPTH_NONE   = -6,
 
-  DEPTH_OFFSET = 0 // value used only for TT entry occupancy check
+  DEPTH_OFFSET = 0  // value used only for TT entry occupancy check
 };
 
 enum Square : int {
