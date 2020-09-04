@@ -1464,7 +1464,11 @@ moves_loop: // When in check, search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
+    {
+        if (ttMove && pos.capture_or_promotion(ttMove))
+           thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] << 8-depth;
         return ttValue;
+    }
 
     // Evaluate the position statically
     if (ss->inCheck)
@@ -1608,7 +1612,7 @@ moves_loop: // When in check, search starts from here
               else
               {
                   if (captureOrPromotion)
-                    thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] << 17;
+                    thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] << 8-depth;
                   break; // Fail high
               }
           }
