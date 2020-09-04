@@ -1558,7 +1558,9 @@ moves_loop: // When in check, search starts from here
 
       // Do not search moves with negative SEE values
       if (   !ss->inCheck
-          && !(givesCheck && pos.is_discovery_check_on_king(~pos.side_to_move(), move))
+          && !(givesCheck
+            && pos.is_discovery_check_on_king(~pos.side_to_move(), move)
+            && distance(to_sq(move), pos.square<KING>(~pos.side_to_move())) > 1)
           && !pos.see_ge(move))
           continue;
 
