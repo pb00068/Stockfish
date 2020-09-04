@@ -1465,8 +1465,9 @@ moves_loop: // When in check, search starts from here
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
     {
-        if (ttMove && pos.capture_or_promotion(ttMove))
-           thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] << 8-depth;
+        if (ttMove && pos.capture_or_promotion(ttMove) &&
+           thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] < 0)
+           thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] << (10 - 2 * depth);
         return ttValue;
     }
 
@@ -1611,8 +1612,8 @@ moves_loop: // When in check, search starts from here
                   alpha = value;
               else
               {
-                  if (captureOrPromotion)
-                    thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] << 8-depth;
+                  if (captureOrPromotion && moveCount > 1 )
+                    thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] << (10 - 2 * depth);
                   break; // Fail high
               }
           }
