@@ -960,7 +960,7 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    if (depth <= 1 && cutNode && !ttMove) {
+    if (depth <= 1 && !ttMove) {
           if (ss->killers[2] && type_of(pos.piece_on(to_sq  (ss->killers[2]))) >
                                 type_of(pos.piece_on(from_sq(ss->killers[2]))))
              ttMove = ss->killers[2];
