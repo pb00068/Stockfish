@@ -135,6 +135,8 @@ public:
                                            int);
   Move next_move(bool skipQuiets = false);
 
+  void setEscapeSquare(Square s);
+
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
@@ -149,7 +151,7 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  Square recaptureSquare;
+  Square recaptureSquare,escapeSquare;
   Value threshold;
   Depth depth;
   int ply;

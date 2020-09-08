@@ -61,6 +61,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   assert(d > 0);
 
+  escapeSquare = SQ_NONE;
+
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
 }
@@ -89,6 +91,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
                              && pos.see_ge(ttm, threshold));
 }
 
+void MovePicker::setEscapeSquare(Square s)
+{
+   escapeSquare = s;
+}
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -108,6 +115,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                   + (escapeSquare == from_sq(m) ? 1000 : 0 )
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
@@ -167,9 +175,19 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-69 * cur->value / 1024)) ?
-                              // Move losing capture to endBadCaptures to be tried later
-                              true : (*endBadCaptures++ = *cur, false); }))
+                       if (pos.see_ge(*cur, Value(-69 * cur->value / 1024)))
+                       {
+                          if (from_sq(cur->move) == escapeSquare)
+                             escapeSquare = SQ_NONE;
+                          return true;
+                       }
+                       else
+                       {
+                           // Move losing capture to endBadCaptures to be tried later
+                           *endBadCaptures++ = *cur;
+                           return false;
+                       }
+          }))
           return *(cur - 1);
 
       // Prepare the pointers to loop over the refutations array

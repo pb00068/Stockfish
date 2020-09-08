@@ -698,7 +698,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else ss->killers[2] = ttMove;
+                else ss->killers[2] = ss->currentMove = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -959,12 +959,6 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-
-    if (depth <= 1 && cutNode && !ttMove) {
-          if (ss->killers[2] && type_of(pos.piece_on(to_sq  (ss->killers[2]))) >
-                                type_of(pos.piece_on(from_sq(ss->killers[2]))))
-             ttMove = ss->killers[2];
-    }
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1357,6 +1351,9 @@ moves_loop: // When in check, search starts from here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (is_ok((ss+1)->currentMove) && (ss+1)->currentMove == (ss+1)->killers[2])
+             mp.setEscapeSquare(to_sq((ss+1)->currentMove));
       }
     }
 
