@@ -646,7 +646,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -698,6 +698,7 @@ namespace {
             {
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                else ss->killers[2] = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -958,6 +959,18 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+
+    if (depth <= 3 && cutNode && !ttMove) {
+       for (int i : {2, 0, 1})
+       {
+          if (ss->killers[i] && type_of(pos.piece_on(to_sq  (ss->killers[i]))) >
+                                type_of(pos.piece_on(from_sq(ss->killers[i]))))
+          {
+             ttMove = ss->killers[i];
+             break;
+          }
+       }
+    }
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1709,7 +1722,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (quietCount < 4)
+           ss->killers[2] = bestMove;
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 + (ss-1)->ttHit || ((ss-1)->currentMove == (ss-1)->killers[0]))
