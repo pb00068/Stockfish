@@ -960,7 +960,7 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    if (depth <= 1 && !ttMove) {
+    if (depth <= 2 && !ttMove) {
           if (ss->killers[2] && type_of(pos.piece_on(to_sq  (ss->killers[2]))) >
                                 type_of(pos.piece_on(from_sq(ss->killers[2]))))
              ttMove = ss->killers[2];
@@ -1471,7 +1471,11 @@ moves_loop: // When in check, search starts from here
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
                             : (tte->bound() & BOUND_UPPER)))
+    {
+        if (ttMove && ttValue >= beta && pos.capture_or_promotion(ttMove))
+           ss->killers[2] = ttMove;
         return ttValue;
+    }
 
     // Evaluate the position statically
     if (ss->inCheck)
@@ -1516,6 +1520,10 @@ moves_loop: // When in check, search starts from here
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
+
+    if (!ttMove && ss->killers[2] && type_of(pos.piece_on(to_sq  (ss->killers[2]))) >
+                                     type_of(pos.piece_on(from_sq(ss->killers[2]))))
+      ttMove = ss->killers[2];
 
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
@@ -1613,7 +1621,11 @@ moves_loop: // When in check, search starts from here
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else
+              {
+                  if (captureOrPromotion)
+                      ss->killers[2] = bestMove;
                   break; // Fail high
+              }
           }
        }
     }
