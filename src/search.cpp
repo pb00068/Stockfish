@@ -1623,7 +1623,7 @@ moves_loop: // When in check, search starts from here
               else
               {
                   if (captureOrPromotion)
-                      ss->killers[2] = bestMove;
+                      ss->killers[2] = move;
                   break; // Fail high
               }
           }
