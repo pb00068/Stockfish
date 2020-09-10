@@ -646,7 +646,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->badCaptKiller = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -965,7 +965,9 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->ply);
+                                      ss->ply,
+                                      ss->badCaptKiller,
+                                      ss->badCaptDiff);
 
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
@@ -1065,7 +1067,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // See based pruning
-              if (!pos.see_ge(move, Value(-221) * depth)) // (~25 Elo)
+              if (move != ss->badCaptKiller && !pos.see_ge(move, Value(-221) * depth)) // (~25 Elo)
                   continue;
           }
       }
@@ -1709,7 +1711,17 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (type_of(bestMove) != PROMOTION
+                    && type_of(moved_piece) != KING
+                    && quietCount > 5
+                    && !pos.see_ge(bestMove, PieceValue[MG][KNIGHT] - PieceValue[MG][BISHOP]))
+                {
+                   ss->badCaptKiller = bestMove;
+                   ss->badCaptDiff = PieceValue[MG][type_of(moved_piece)] - PieceValue[MG][captured];
+                }
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 + (ss-1)->ttHit || ((ss-1)->currentMove == (ss-1)->killers[0]))

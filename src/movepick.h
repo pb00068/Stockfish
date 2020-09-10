@@ -132,7 +132,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            const Move*,
-                                           int);
+                                           int, Move, Value);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -154,6 +154,8 @@ private:
   Depth depth;
   int ply;
   ExtMove moves[MAX_MOVES];
+  Move badCaptKill;
+  Value badCaptDiff;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

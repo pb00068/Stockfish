@@ -55,9 +55,9 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, int pl)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, int pl, Move badcaptk, Value diff)
            : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl) {
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl), badCaptKill(badcaptk), badCaptDiff(diff) {
 
   assert(d > 0);
 
@@ -167,7 +167,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-69 * cur->value / 1024)) ?
+                       return pos.see_ge(*cur, Value( ((cur->move == badCaptKill) ? -badCaptDiff : 0 ) -69 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
