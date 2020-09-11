@@ -1609,13 +1609,17 @@ moves_loop: // When in check, search starts from here
                   break; // Fail high
           }
        }
-      else if (!captureOrPromotion && moveCount)
+      else if (!captureOrPromotion
+          && moveCount
+          && (*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] <= 17 + moveCount * 2
+          && (*(ss-2)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] <= 17 + moveCount * 2)
       {
 
-          if  ((*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] < 10)
+          if  ((*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] >= 0)
                (*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] = -1;
-          if  ((*(ss-2)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] < 10)
+          if  ((*(ss-2)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] >= 0)
                (*(ss-2)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] = -1;
+
       }
     }
 
