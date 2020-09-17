@@ -1609,7 +1609,6 @@ moves_loop: // When in check, search starts from here
        }
       else if (!captureOrPromotion && moveCount)
       {
-
           if  ((*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] < 10)
                (*(ss-1)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] = -1;
           if  ((*(ss-2)->continuationHistory)[pos.moved_piece(move)][to_sq(move)] < 10)
