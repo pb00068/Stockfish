@@ -1723,6 +1723,8 @@ moves_loop: // When in check, search starts from here
 
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
+    if (bonus == 17)
+        bonus/=2;
     for (int i : {1, 2, 4, 6})
     {
         if (ss->inCheck && i > 2)
