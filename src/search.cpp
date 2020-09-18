@@ -968,6 +968,8 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    bool blockersThem = pos.blockers_for_king(~us);
+    bool blockersUs   = pos.blockers_for_king( us);
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1167,6 +1169,10 @@ moves_loop: // When in check, search starts from here
           // Reduction if other threads are searching this position
           if (th.marked())
               r++;
+
+          if (((!blockersThem || givesCheck) && pos.blockers_for_king(~us)) ||
+               (blockersUs && !pos.blockers_for_king(us)))
+             r--;
 
           // Decrease reduction if position is or has been on the PV (~10 Elo)
           if (ss->ttPv)
