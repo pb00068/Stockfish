@@ -969,7 +969,6 @@ moves_loop: // When in check, search starts from here
     singularQuietLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
     bool blockersThem = pos.blockers_for_king(~us);
-    bool blockersUs   = pos.blockers_for_king( us);
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1230,8 +1229,7 @@ moves_loop: // When in check, search starts from here
                 r++;
           }
 
-          if (r < 0 && ((!blockersThem &&  pos.blockers_for_king(~us)) ||
-                         (blockersUs   && !pos.blockers_for_king( us))))
+          if (improving && r <= 0 && (!blockersThem &&  pos.blockers_for_king(~us)))
              r--;
 
           r +=reduction(improving, depth, moveCount);
