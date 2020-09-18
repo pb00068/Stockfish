@@ -1160,7 +1160,7 @@ moves_loop: // When in check, search starts from here
               || cutNode
               || thisThread->ttHitAverage < 427 * TtHitAverageResolution * TtHitAverageWindow / 1024))
       {
-          Depth r = reduction(improving, depth, moveCount);
+          Depth r = 0;
 
           // Decrease reduction if the ttHit running average is large
           if (thisThread->ttHitAverage > 509 * TtHitAverageResolution * TtHitAverageWindow / 1024)
@@ -1169,10 +1169,6 @@ moves_loop: // When in check, search starts from here
           // Reduction if other threads are searching this position
           if (th.marked())
               r++;
-
-          if (((!blockersThem || givesCheck) && pos.blockers_for_king(~us)) ||
-               (blockersUs && !pos.blockers_for_king(us)))
-             r--;
 
           // Decrease reduction if position is or has been on the PV (~10 Elo)
           if (ss->ttPv)
@@ -1234,6 +1230,11 @@ moves_loop: // When in check, search starts from here
                 r++;
           }
 
+          if (r < 0 && ((!blockersThem &&  pos.blockers_for_king(~us)) ||
+                         (blockersUs   && !pos.blockers_for_king( us))))
+             r--;
+
+          r +=reduction(improving, depth, moveCount);
           Depth d = std::clamp(newDepth - r, 1, newDepth);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
