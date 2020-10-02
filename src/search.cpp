@@ -591,9 +591,10 @@ namespace {
     StateInfo st;
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove, bestMove, allNodeBest;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
+    Value allNodeSecondBest;
     bool formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
@@ -606,7 +607,7 @@ namespace {
     priorCapture = pos.captured_piece();
     Color us = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
-    bestValue = -VALUE_INFINITE;
+    bestValue = allNodeSecondBest = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
 
     // Check for the available remaining time
@@ -642,7 +643,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
-    (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    (ss+1)->excludedMove = bestMove = allNodeBest = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
@@ -1312,7 +1313,10 @@ moves_loop: // When in check, search starts from here
 
       if (value > bestValue)
       {
+          if (bestValue > allNodeSecondBest)
+             allNodeSecondBest = bestValue;
           bestValue = value;
+          allNodeBest = move;
 
           if (value > alpha)
           {
@@ -1364,11 +1368,18 @@ moves_loop: // When in check, search starts from here
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
-
-    // Bonus for prior countermove that caused the fail low
-    else if (   (depth >= 3 || PvNode)
+    else
+    {
+        if (allNodeBest
+            && !pos.capture_or_promotion(allNodeBest)
+            && allNodeSecondBest > -VALUE_INFINITE
+            && bestValue - allNodeSecondBest > PawnValueEg)
+                 update_quiet_stats(pos, ss, allNodeBest, stat_bonus(depth), depth);
+        // Bonus for prior countermove that caused the fail low
+        if (   (depth >= 3 || PvNode)
              && !priorCapture)
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
+    }
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
