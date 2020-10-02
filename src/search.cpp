@@ -1374,7 +1374,7 @@ moves_loop: // When in check, search starts from here
             && !pos.capture_or_promotion(allNodeBest)
             && allNodeSecondBest > -VALUE_INFINITE
             && bestValue - allNodeSecondBest > PawnValueEg)
-                 update_quiet_stats(pos, ss, allNodeBest, stat_bonus(depth), depth);
+             thisThread->mainHistory[us][from_to(allNodeBest)] << stat_bonus(depth);
         // Bonus for prior countermove that caused the fail low
         if (   (depth >= 3 || PvNode)
              && !priorCapture)
