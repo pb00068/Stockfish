@@ -272,8 +272,6 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
   // 5-6. Halfmove clock and fullmove number
   ss >> std::skipws >> st->rule50 >> gamePly;
 
-  st->byPassSeeMove = MOVE_NONE;
-
   // Convert from fullmove starting from 1 to gamePly starting from 0,
   // handle also common incorrect FEN with fullmove = 0.
   gamePly = std::max(2 * (gamePly - 1), 0) + (sideToMove == BLACK);
@@ -326,10 +324,7 @@ void Position::set_check_info(StateInfo* si) const {
   si->checkSquares[KING]   = 0;
 }
 
-void Position::setByPassSeeMove(Move m)
-{
-   st->byPassSeeMove = m;
-}
+
 /// Position::set_state() computes the hash keys of the position, and other
 /// data that once computed is updated incrementally as moves are made.
 /// The function is only used when a new position is set up, and to verify
@@ -1068,9 +1063,6 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   assert(is_ok(m));
 
-  if (st->byPassSeeMove == m)
-     return true;
-
   // Only deal with normal moves, assume others pass a simple see
   if (type_of(m) != NORMAL)
       return VALUE_ZERO >= threshold;
@@ -1084,8 +1076,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   swap = PieceValue[MG][piece_on(from)] - swap;
   if (swap <= 0)
       return true;
-
-
 
   Bitboard occupied = pieces() ^ from ^ to;
   Color stm = color_of(piece_on(from));
