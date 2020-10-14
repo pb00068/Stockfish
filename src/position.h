@@ -45,6 +45,7 @@ struct StateInfo {
   int    rule50;
   int    pliesFromNull;
   Square epSquare;
+  Move   byPassSeeMove;
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -142,6 +143,7 @@ public:
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);
   void undo_null_move();
+  void setByPassSeeMove(Move m);
 
   // Static Exchange Evaluation
   bool see_ge(Move m, Value threshold = VALUE_ZERO) const;
