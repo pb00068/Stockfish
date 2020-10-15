@@ -643,7 +643,8 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->betaCrusher = MOVE_NONE;
+    (ss+2)->overshoot=0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1038,7 +1039,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(29 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value((move == ss->betaCrusher ? -ss->overshoot : 0) - (29 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
                   continue;
           }
           else
@@ -1050,7 +1051,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // See based pruning
-              if (!pos.see_ge(move, Value(-221) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value((move == ss->betaCrusher ? -ss->overshoot : 0) -221) * depth)) // (~25 Elo)
                   continue;
           }
       }
@@ -1353,8 +1354,21 @@ moves_loop: // When in check, search starts from here
                    :     ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+        if (bestValue > beta)
+        {
+            if (!ss->betaCrusher || bestValue - beta > ss->overshoot)
+            {
+               ss->betaCrusher = bestMove;
+               ss->overshoot = bestValue - beta;
+            }
+            else if (ss->overshoot > 0)
+              ss->overshoot--;
+
+        }
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
