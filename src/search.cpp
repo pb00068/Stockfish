@@ -1183,7 +1183,7 @@ moves_loop: // When in check, search starts from here
               r += rootNode ? thisThread->failedHighCnt * thisThread->failedHighCnt * moveCount / 512 : 0;
 
               if (ss->ply == 1)
-                 r += thisThread->failedLowCnt * thisThread->failedLowCnt * (moveCount + (ss-1)->moveCount) / 64;
+                 r += thisThread->failedLowCnt * thisThread->failedLowCnt * moveCount / 256;
 
               // Increase reduction for cut nodes (~10 Elo)
               if (cutNode)
