@@ -1173,7 +1173,7 @@ moves_loop: // When in check, search starts from here
           if ((rootNode || !PvNode) && depth > 10 && thisThread->bestMoveChanges <= 2)
           {
               r++;
-              if (rootNode && moveCount > 8)
+              if (rootNode && moveCount > 8 && type_of(movedPiece) != PAWN)
                   r++;
           }
 
