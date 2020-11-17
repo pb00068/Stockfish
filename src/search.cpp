@@ -1308,7 +1308,7 @@ moves_loop: // When in check, search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: when
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1)
+              if (moveCount > 1 && newDepth > 8)
                   ++thisThread->bestMoveChanges;
           }
           else
