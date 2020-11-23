@@ -19,7 +19,7 @@
 #include <cassert>
 
 #include "movepick.h"
-
+#include "misc.h"
 namespace {
 
   enum Stages {
@@ -109,7 +109,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   + (from_sq(m) == recaptureSquare ? 300 : 0)
+                   + (from_sq(m) == recaptureSquare ? ((pos.blockers_for_king(~pos.side_to_move()) & recaptureSquare) ? 1600 : 400) : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS

@@ -964,7 +964,9 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    if (ttMove && ttMove != ss->killers[0] && from_sq(ttMove) == from_sq(ss->killers[0]))
+    if (ttMove
+        && ((ttMove != ss->killers[0] && from_sq(ttMove) == from_sq(ss->killers[0])) ||
+            (ttMove != ss->killers[1] && from_sq(ttMove) == from_sq(ss->killers[1]))))
        ss->clearSq = from_sq(ttMove);
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
