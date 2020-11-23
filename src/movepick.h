@@ -132,6 +132,7 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            const Move*,
+                                           Square,
                                            int);
   Move next_move(bool skipQuiets = false);
 
