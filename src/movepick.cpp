@@ -60,7 +60,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
              ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, recaptureSquare(clearsq), depth(d), ply(pl) {
 
   assert(d > 0);
-
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
 }
@@ -109,7 +108,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   + (from_sq(m) == recaptureSquare ? ((pos.blockers_for_king(~pos.side_to_move()) & recaptureSquare) ? 1600 : 400) : 0)
+                   + (from_sq(m) == recaptureSquare ? (*mainHistory)[pos.side_to_move()][from_to(refutations[0].move)] : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
@@ -199,6 +198,8 @@ top:
       {
           cur = endBadCaptures;
           endMoves = generate<QUIETS>(pos, cur);
+          if (!refutations[0].move)
+             recaptureSquare = SQ_NONE;
 
           score<QUIETS>();
           partial_insertion_sort(cur, endMoves, -3000 * depth);
