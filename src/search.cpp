@@ -1399,11 +1399,10 @@ moves_loop: // When in check, search starts from here
                   depth, bestMove, ss->staticEval);
 
     if (ttMove
-        && depth == 7
+        && (depth == 6 || depth == 7)
         && !bestMove
         && !cutNode
         && !excludedMove
-        &&  abs(ttValue) < VALUE_KNOWN_WIN
         && (tte->bound() & BOUND_LOWER))
          tte->resetMove(); // we don't want this node trigger a singular search on next iteration
 
