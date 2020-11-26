@@ -1072,7 +1072,6 @@ moves_loop: // When in check, search starts from here
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin, then we will extend the ttMove.
       if (    depth >= 7
-          &&  cutNode
           &&  move == ttMove
           && !rootNode
           && !excludedMove // Avoid recursive singular search
@@ -1084,7 +1083,7 @@ moves_loop: // When in check, search starts from here
           Value singularBeta = ttValue - ((formerPv + 4) * depth) / 2;
           Depth singularDepth = (depth - 1 + 3 * formerPv) / 2;
           ss->excludedMove = move;
-          value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, false);
+          value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, ttValue < beta);
           ss->excludedMove = MOVE_NONE;
 
           if (value < singularBeta)
