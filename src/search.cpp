@@ -1390,11 +1390,22 @@ moves_loop: // When in check, search starts from here
     else if (depth > 3)
         ss->ttPv = ss->ttPv && (ss+1)->ttPv;
 
+
+
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
+
+    if (ttMove
+        && depth == 7
+        && !bestMove
+        && !cutNode
+        && !excludedMove
+        &&  abs(ttValue) < VALUE_KNOWN_WIN
+        && (tte->bound() & BOUND_LOWER))
+         tte->resetMove(); // we don't want this node trigger a singular search on next iteration
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
