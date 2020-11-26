@@ -1072,6 +1072,7 @@ moves_loop: // When in check, search starts from here
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin, then we will extend the ttMove.
       if (    depth >= 7
+          &&  cutNode
           &&  move == ttMove
           && !rootNode
           && !excludedMove // Avoid recursive singular search
