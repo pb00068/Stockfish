@@ -1099,6 +1099,8 @@ moves_loop: // When in check, search starts from here
           // a soft bound.
           else if (singularBeta >= beta)
               return singularBeta;
+          else if (!cutNode && tte->depth() < singularDepth)
+              tte->resetMove();
 
           // If the eval of ttMove is greater than beta we try also if there is another
           // move that pushes it over beta, if so also produce a cutoff.
@@ -1398,13 +1400,6 @@ moves_loop: // When in check, search starts from here
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
 
-    if (ttMove
-        && (depth == 6 || depth == 7)
-        && !bestMove
-        && !cutNode
-        && !excludedMove
-        && (tte->bound() & BOUND_LOWER))
-         tte->resetMove(); // we don't want this node trigger a singular search on next iteration
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
