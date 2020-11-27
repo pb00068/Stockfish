@@ -1712,8 +1712,11 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
-    else
+    else {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (quietCount > 4 && !pos.see_ge(bestMove, Value(-69 * captureHistory[moved_piece][to_sq(bestMove)][captured] / 1024)) )
+           captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1 * 10;
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or main killer move in previous ply when it gets refuted
     if (   ((ss-1)->moveCount == 1 + (ss-1)->ttHit || ((ss-1)->currentMove == (ss-1)->killers[0]))
