@@ -53,11 +53,8 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
   }
 }
 
-void TTEntry::twoPhaseReset() {
-   if ((genBound8 >> 3) < (TT.generation8 >> 3))
-      move16 = 0;
-   else
-      genBound8 = (uint8_t)((TT.generation8 - 8) | (genBound8 & 0x7));
+void TTEntry::resetMove() {
+   move16 = 0;
 }
 
 
