@@ -652,7 +652,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1714,8 +1714,8 @@ moves_loop: // When in check, search starts from here
     }
     else {
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (quietCount > 4 && !pos.see_ge(bestMove, Value(-69 * captureHistory[moved_piece][to_sq(bestMove)][captured] / 1024)) )
-           captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1 * 10;
+        if (quietCount > 4 && type_of(moved_piece) > captured + 1)
+            ss->killers[2] = bestMove;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or main killer move in previous ply when it gets refuted
