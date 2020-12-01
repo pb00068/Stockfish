@@ -753,7 +753,7 @@ namespace {
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
                     if (!excludedMove)
-                    tte->save(pos.key(), value_to_tt(value, ss->ply), ss->ttPv, b,
+                        tte->save(pos.key(), value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
 
@@ -804,7 +804,7 @@ namespace {
             ss->staticEval = eval = -(ss-1)->staticEval + 2 * Tempo;
 
         if (!excludedMove)
-        tte->save(pos.key(), VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+            tte->save(pos.key(), VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Step 7. Razoring (~1 Elo)
@@ -938,11 +938,10 @@ namespace {
                 {
                     // if transposition table doesn't have equal or more deep info write probCut data into it
                     if ( !(ss->ttHit
-                       && !excludedMove
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
                     {
-                        if (tte != nullptr)
+                        if (!excludedMove)
                             tte->save(pos.key(), value_to_tt(value, ss->ply), ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
