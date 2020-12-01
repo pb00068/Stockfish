@@ -84,6 +84,10 @@ public:
     return &table[mul_hi64(key, clusterCount)].entry[0];
   }
 
+  TTEntry* veryFirstEntry() const {
+     return &table[0].entry[0];
+  }
+
 private:
   friend struct TTEntry;
 

@@ -599,7 +599,6 @@ namespace {
     ASSERT_ALIGNED(&st, Eval::NNUE::kCacheLineSize);
 
     TTEntry* tte;
-    Key posKey;
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
@@ -667,8 +666,7 @@ namespace {
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
-    posKey = excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(excludedMove);
-    tte = TT.probe(posKey, ss->ttHit);
+    tte = excludedMove ? ss->ttHit = false, TT.veryFirstEntry() : TT.probe(pos.key(), ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
@@ -754,7 +752,8 @@ namespace {
                 if (    b == BOUND_EXACT
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
-                    tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
+                    if (!excludedMove)
+                        tte->save(pos.key(), value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
 
@@ -804,7 +803,8 @@ namespace {
         else
             ss->staticEval = eval = -(ss-1)->staticEval + 2 * Tempo;
 
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        if (!excludedMove)
+            tte->save(pos.key(), VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Step 7. Razoring (~1 Elo)
@@ -940,9 +940,12 @@ namespace {
                     if ( !(ss->ttHit
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
-                        tte->save(posKey, value_to_tt(value, ss->ply), ttPv,
+                    {
+                        if (!excludedMove)
+                            tte->save(pos.key(), value_to_tt(value, ss->ply), ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
+                    }
                     return value;
                 }
             }
@@ -976,7 +979,7 @@ moves_loop: // When in check, search starts from here
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
 
     // Mark this node as being searched
-    ThreadHolding th(thisThread, posKey, ss->ply);
+    ThreadHolding th(thisThread, pos.key(), ss->ply);
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1384,7 +1387,7 @@ moves_loop: // When in check, search starts from here
         ss->ttPv = ss->ttPv && (ss+1)->ttPv;
 
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        tte->save(pos.key(), value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
