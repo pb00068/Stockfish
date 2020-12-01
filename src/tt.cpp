@@ -46,7 +46,7 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
       assert(d < 256 + DEPTH_OFFSET);
 
       if ((uint16_t)k == key16 && depth8 > (uint8_t)(d - DEPTH_OFFSET) && (genBound8 & 3) == b)
-         depth8    = (depth8 + (uint8_t)(d - DEPTH_OFFSET)) / 2;
+         depth8    = (uint8_t)(d - DEPTH_OFFSET + 1);
       else
          depth8    = (uint8_t)(d - DEPTH_OFFSET);
       key16     = (uint16_t)k;
