@@ -666,7 +666,7 @@ namespace {
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
-    tte = excludedMove ? TT.excludedMove_dummy_entry(ss->ttHit) : TT.probe(pos.key(), ss->ttHit);
+    tte = excludedMove ? ss->ttHit = false, nullptr : TT.probe(pos.key(), ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
@@ -941,9 +941,12 @@ namespace {
                        && !excludedMove
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
-                        tte->save(pos.key(), value_to_tt(value, ss->ply), ttPv,
+                    {
+                        if (tte != nullptr)
+                            tte->save(pos.key(), value_to_tt(value, ss->ply), ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
+                    }
                     return value;
                 }
             }
