@@ -673,7 +673,7 @@ namespace {
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
-    sing_extended = ss->ttHit  ? depth <= tte->depth() + 2 && tte->wasSingularExtended() : false;
+    sing_extended = ss->ttHit  ? depth <= tte->depth() + 1 && tte->wasSingularExtended() : false;
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
     formerPv = ss->ttPv && !PvNode;
@@ -1098,7 +1098,7 @@ moves_loop: // When in check, search starts from here
           {
               extension = 1;
               singularQuietLMR = !ttCapture;
-              sing_extended = value < singularBeta - 90;
+              sing_extended = value < singularBeta - 40;
           }
 
           // Multi-cut pruning
