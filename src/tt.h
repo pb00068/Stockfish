@@ -26,7 +26,8 @@
 ///
 /// key        16 bit
 /// depth       8 bit
-/// generation  5 bit
+/// generation  4 bit
+/// singular ex 1 bit
 /// pv node     1 bit
 /// bound type  2 bit
 /// move       16 bit
@@ -39,9 +40,10 @@ struct TTEntry {
   Value value() const { return (Value)value16; }
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)depth8 + DEPTH_OFFSET; }
+  bool wasSingularExtended()  const { return (bool)(genBound8 & 0x8); }
   bool is_pv()  const { return (bool)(genBound8 & 0x4); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
-  void save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev);
+  void save(Key k, Value v, bool singular, bool pv, Bound b, Depth d, Move m, Value ev);
 
 private:
   friend class TranspositionTable;
@@ -74,7 +76,7 @@ class TranspositionTable {
 
 public:
  ~TranspositionTable() { aligned_large_pages_free(table); }
-  void new_search() { generation8 += 8; } // Lower 3 bits are used by PV flag and Bound
+  void new_search() { generation8 += 16; } // Lower 4 bits are used by SingularEx,PV flag and Bound
   TTEntry* probe(const Key key, bool& found) const;
   int hashfull() const;
   void resize(size_t mbSize);

@@ -605,7 +605,8 @@ namespace {
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
-         ttCapture, singularQuietLMR;
+         ttCapture, singularQuietLMR,
+         sing_extended; // when true then extend also on next iteration without search
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -672,6 +673,7 @@ namespace {
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
+    sing_extended = ss->ttHit  ? tte->wasSingularExtended() : false;
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
     formerPv = ss->ttPv && !PvNode;
@@ -754,7 +756,7 @@ namespace {
                 if (    b == BOUND_EXACT
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
-                    tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
+                    tte->save(posKey, value_to_tt(value, ss->ply), sing_extended, ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
 
@@ -804,7 +806,7 @@ namespace {
         else
             ss->staticEval = eval = -(ss-1)->staticEval + 2 * Tempo;
 
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, sing_extended, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Step 7. Razoring (~1 Elo)
@@ -940,7 +942,7 @@ namespace {
                     if ( !(ss->ttHit
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
-                        tte->save(posKey, value_to_tt(value, ss->ply), ttPv,
+                        tte->save(posKey, value_to_tt(value, ss->ply), sing_extended, ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
                     return value;
@@ -1080,6 +1082,13 @@ moves_loop: // When in check, search starts from here
           && (tte->bound() & BOUND_LOWER)
           &&  tte->depth() >= depth - 3)
       {
+          if (sing_extended) {
+            extension = 1;
+            singularQuietLMR = !ttCapture;
+            sing_extended = false; // reset: redo search on next iteration
+          }
+          else
+          {
           Value singularBeta = ttValue - ((formerPv + 4) * depth) / 2;
           Depth singularDepth = (depth - 1 + 3 * formerPv) / 2;
           ss->excludedMove = move;
@@ -1090,6 +1099,7 @@ moves_loop: // When in check, search starts from here
           {
               extension = 1;
               singularQuietLMR = !ttCapture;
+              sing_extended = value < singularBeta - 40;
           }
 
           // Multi-cut pruning
@@ -1110,6 +1120,7 @@ moves_loop: // When in check, search starts from here
 
               if (value >= beta)
                   return beta;
+          }
           }
       }
 
@@ -1384,7 +1395,7 @@ moves_loop: // When in check, search starts from here
         ss->ttPv = ss->ttPv && (ss+1)->ttPv;
 
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        tte->save(posKey, value_to_tt(bestValue, ss->ply), sing_extended, ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
@@ -1486,7 +1497,7 @@ moves_loop: // When in check, search starts from here
         if (bestValue >= beta)
         {
             if (!ss->ttHit)
-                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
+                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
             return bestValue;
@@ -1612,7 +1623,7 @@ moves_loop: // When in check, search starts from here
         return mated_in(ss->ply); // Plies to mate from the root
     }
 
-    tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
+    tte->save(posKey, value_to_tt(bestValue, ss->ply), false, pvHit,
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestValue > oldAlpha  ? BOUND_EXACT : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval);
