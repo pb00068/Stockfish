@@ -606,7 +606,7 @@ namespace {
     bool formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR,
-         sing_extended; // when true then extend also on next iteration without search
+         sing_extend; // when true then don't research at same depth
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -673,7 +673,8 @@ namespace {
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
-    sing_extended = ss->ttHit  ? depth <= tte->depth() + 1 && tte->wasSingularExtended() : false;
+    sing_extend = ss->ttHit ? tte->wasSingularExtended() : false;
+
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
     formerPv = ss->ttPv && !PvNode;
@@ -756,7 +757,7 @@ namespace {
                 if (    b == BOUND_EXACT
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
-                    tte->save(posKey, value_to_tt(value, ss->ply), sing_extended, ss->ttPv, b,
+                    tte->save(posKey, value_to_tt(value, ss->ply), sing_extend, ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
 
@@ -806,7 +807,7 @@ namespace {
         else
             ss->staticEval = eval = -(ss-1)->staticEval + 2 * Tempo;
 
-        tte->save(posKey, VALUE_NONE, sing_extended, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, sing_extend, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Step 7. Razoring (~1 Elo)
@@ -942,7 +943,7 @@ namespace {
                     if ( !(ss->ttHit
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
-                        tte->save(posKey, value_to_tt(value, ss->ply), sing_extended, ttPv,
+                        tte->save(posKey, value_to_tt(value, ss->ply), sing_extend, ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
                     return value;
@@ -1082,7 +1083,7 @@ moves_loop: // When in check, search starts from here
           && (tte->bound() & BOUND_LOWER)
           &&  tte->depth() >= depth - 3)
       {
-          if (sing_extended) {
+          if (sing_extend && tte->depth() >= depth) {
             extension = 1;
             singularQuietLMR = !ttCapture;
           }
@@ -1098,7 +1099,7 @@ moves_loop: // When in check, search starts from here
           {
               extension = 1;
               singularQuietLMR = !ttCapture;
-              sing_extended = value < singularBeta - 40;
+              sing_extend = true;
           }
 
           // Multi-cut pruning
@@ -1394,7 +1395,7 @@ moves_loop: // When in check, search starts from here
         ss->ttPv = ss->ttPv && (ss+1)->ttPv;
 
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        tte->save(posKey, value_to_tt(bestValue, ss->ply), sing_extended, ss->ttPv,
+        tte->save(posKey, value_to_tt(bestValue, ss->ply), sing_extend, ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
