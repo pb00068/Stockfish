@@ -1356,8 +1356,11 @@ moves_loop: // When in check, search starts from here
           else if (!captureOrPromotion)
           {
 
-             if (depth < 5 && !givesCheck && !ss->inCheck && -((ss+1)->staticEval + ss->staticEval - 2 * Tempo) > stat_bonus(depth + 1))
-               thisThread->mainHistory[us][from_to(move)] << stat_bonus(depth);
+             if (depth < 6 && !givesCheck && !ss->inCheck)
+             {
+               int bonus = - depth * 2 * ((ss+1)->staticEval + ss->staticEval - 2 * Tempo);
+               thisThread->mainHistory[us][from_to(move)] << bonus;
+             }
              if (quietCount < 64)
                quietsSearched[quietCount++] = move;
           }
