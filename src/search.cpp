@@ -1357,7 +1357,7 @@ moves_loop: // When in check, search starts from here
           {
 
              if (depth < 5 && !givesCheck && !ss->inCheck && -((ss+1)->staticEval + ss->staticEval - 2 * Tempo) > stat_bonus(depth))
-               thisThread->mainHistory[us][from_to(move)] << stat_bonus(depth/2);
+               thisThread->mainHistory[us][from_to(move)] << (depth == 1 ? 8 : stat_bonus(depth/2));
              else if (quietCount < 64)
                quietsSearched[quietCount++] = move;
           }
