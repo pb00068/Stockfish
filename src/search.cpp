@@ -1356,7 +1356,7 @@ moves_loop: // When in check, search starts from here
           {
               if (depth < 6 && !givesCheck && !ss->inCheck)
               {
-                  int bonus = std::clamp(- depth * 2 * int((ss+1)->staticEval + ss->staticEval - 2 * Tempo), -1000, 1000);
+                  int bonus = std::clamp(- 8 * int((ss+1)->staticEval + ss->staticEval - 2 * Tempo), -10692, 10692);
                   thisThread->mainHistory[us][from_to(move)] << bonus;
               }
               if (quietCount < 64)
