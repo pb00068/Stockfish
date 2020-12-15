@@ -1408,7 +1408,7 @@ moves_loop: // When in check, search starts from here
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
     {
         if (PvNode && bestMove && bestValue < beta)
-            ss->staticEval = bestValue;
+            ss->staticEval = (ss->staticEval + bestValue) / 2;
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
