@@ -722,7 +722,7 @@ namespace {
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
         {
-            if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
+            if (is_ok((ss-1)->currentMove) && !ss->inCheck && !(ss-1)->inCheck && !priorCapture && tte->eval() != VALUE_NONE)
             {
                 int bonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + tte->eval() - 2 * Tempo), -1000, 1000);
                 thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
