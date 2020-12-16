@@ -722,8 +722,8 @@ namespace {
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
         {
-            if (ttValue >= beta
-                && (tte->bound() & BOUND_LOWER)
+            if (ttValue < beta
+                && (tte->bound() & BOUND_UPPER)
                 && is_ok((ss-1)->currentMove)
                 && !ss->inCheck
                 && !(ss-1)->inCheck
