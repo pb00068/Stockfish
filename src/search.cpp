@@ -848,7 +848,7 @@ namespace {
         && (ss-1)->statScore < 22977
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + priorCapture * 100 + 128
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + priorCapture * 80 + 148
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
