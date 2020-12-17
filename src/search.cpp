@@ -816,7 +816,7 @@ namespace {
     }
 
     // Use static evaluation difference to improve quiet move ordering
-    if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture && abs((ss-1)->staticEval + ss->staticEval) > 60) {
+    if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture && abs((ss-1)->staticEval + ss->staticEval) > 30) {
         int bonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1000, 1000);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
     }
