@@ -821,7 +821,7 @@ namespace {
         int bonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1000, 1000);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
 
-        if (ttMove)
+        if (ttMove && !cutNode)
           update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), -bonus);
     }
 
