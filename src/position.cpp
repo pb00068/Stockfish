@@ -488,6 +488,11 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
+Bitboard Position::slider_attackers_to(Square s, Bitboard occupied) const {
+  return  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN));
+}
+
 
 /// Position::legal() tests whether a pseudo-legal move is legal
 

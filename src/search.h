@@ -50,7 +50,6 @@ struct Stack {
   bool inCheck;
   bool ttPv;
   bool ttHit;
-  Square captureTarget;
 };
 
 

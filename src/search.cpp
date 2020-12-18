@@ -654,7 +654,6 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->captureTarget = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -706,7 +705,6 @@ namespace {
                 // Bonus for a quiet ttMove that fails high
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else ss->captureTarget = to_sq(ttMove);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1068,11 +1066,10 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (lmrDepth < 2 || !pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
-                  if (ss->captureTarget != SQ_NONE && occupied_after_see == 66)
-                    occupied_after_see = 0; // dummy logic to use occupied_after_see so that compiler does no optmimize it away
-                  continue;
+                  if (!(pos.slider_attackers_to(pos.square<KING>(~us), occupied_after_see) & pos.pieces(us) & occupied_after_see))
+                    continue;
               }
           }
           else
@@ -1743,7 +1740,6 @@ moves_loop: // When in check, search starts from here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        ss->captureTarget = to_sq(bestMove);
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
