@@ -608,6 +608,7 @@ namespace {
          ttCapture, singularQuietLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
+    Bitboard occupied_after_see;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -653,6 +654,7 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->captureTarget = SQ_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -704,6 +706,7 @@ namespace {
                 // Bonus for a quiet ttMove that fails high
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                else ss->captureTarget = to_sq(ttMove);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1065,8 +1068,12 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              {
+                  if (ss->captureTarget != SQ_NONE && occupied_after_see == 66)
+                    occupied_after_see = 0; // dummy logic to use occupied_after_see so that compiler does no optmimize it away
                   continue;
+              }
           }
           else
           {
@@ -1077,7 +1084,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-213) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, occupied_after_see, Value(-213) * depth)) // (~25 Elo)
                   continue;
           }
       }
@@ -1133,7 +1140,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move)))
+               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move, occupied_after_see)))
           extension = 1;
 
       // Last captures extension
@@ -1220,7 +1227,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~2 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
+                       && !pos.see_ge(reverse_move(move), occupied_after_see))
                   r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1439,6 +1446,7 @@ moves_loop: // When in check, search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool pvHit, givesCheck, captureOrPromotion;
     int moveCount;
+    Bitboard occupied_after_see;
 
     if (PvNode)
     {
@@ -1566,7 +1574,7 @@ moves_loop: // When in check, search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, occupied_after_see, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1575,7 +1583,7 @@ moves_loop: // When in check, search starts from here
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          && !pos.see_ge(move, occupied_after_see))
           continue;
 
       // Speculative prefetch as early as possible
@@ -1732,8 +1740,11 @@ moves_loop: // When in check, search starts from here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        ss->captureTarget = to_sq(bestMove);
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.

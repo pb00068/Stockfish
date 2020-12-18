@@ -154,6 +154,7 @@ private:
   Depth depth;
   int ply;
   ExtMove moves[MAX_MOVES];
+  Bitboard occupied_after_see;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

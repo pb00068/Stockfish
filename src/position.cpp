@@ -1063,7 +1063,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+bool Position::see_ge(Move m, Bitboard &occupied, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1081,7 +1081,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (swap <= 0)
       return true;
 
-  Bitboard occupied = pieces() ^ from ^ to;
+  occupied = pieces() ^ from ^ to;
   Color stm = color_of(piece_on(from));
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
