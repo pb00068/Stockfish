@@ -1066,9 +1066,9 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (lmrDepth < 2 || !pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
-                  if (!(pos.slider_attackers_to(pos.square<KING>(~us), occupied_after_see) & pos.pieces(us) & occupied_after_see))
+                  if (lmrDepth < 2 || !(pos.slider_attackers_to(pos.square<KING>(~us), occupied_after_see) & pos.pieces(us) & occupied_after_see))
                     continue;
               }
           }
