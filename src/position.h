@@ -118,7 +118,7 @@ public:
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
-  Bitboard slider_attackers_to(Square s, Bitboard occupied) const;
+  Bitboard slider_attackers_to(Bitboard squares, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
 
   // Properties of moves

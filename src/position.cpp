@@ -488,9 +488,15 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
-Bitboard Position::slider_attackers_to(Square s, Bitboard occupied) const {
-  return  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
-        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN));
+Bitboard Position::slider_attackers_to(Bitboard squares, Bitboard occupied) const {
+  Bitboard b=0;
+  squares &= occupied;
+  for (; squares;) {
+       Square s = pop_lsb(&squares);
+       b |=  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
+           | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN));
+  }
+  return b;
 }
 
 
