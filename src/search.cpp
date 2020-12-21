@@ -1069,10 +1069,7 @@ moves_loop: // When in check, search starts from here
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
-                  if (type_of(movedPiece) >= QUEEN
-                     || lmrDepth < 4
-                     || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see)
-                     ||  (pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), pos.pieces()) & pos.pieces(us)))
+                  if (type_of(movedPiece) >= QUEEN || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see))
                     continue;
               }
           }
@@ -1088,10 +1085,7 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, occupied_after_see, Value(-213) * depth)) // (~25 Elo)
               {
                   occupied_after_see = occupied_after_see | to_sq(move);
-                  if (type_of(movedPiece) >= QUEEN
-                    ||  depth < 4
-                    ||  !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see)
-                    ||   (pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), pos.pieces()) & pos.pieces(us)))
+                  if (type_of(movedPiece) >= QUEEN || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see))
                      continue;
               }
           }
