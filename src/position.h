@@ -54,7 +54,8 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
-  Bitboard   occupied; // set by each see_ge call
+  Bitboard   occupied;         // set by each see_ge call
+  Bitboard   reserveAttackers;  // set by each see_ge call
   int        repetition;
 
   // Used by NNUE

@@ -490,7 +490,7 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 
 Bitboard Position::slider_attackers_to(Bitboard squares, Bitboard occupied) const {
   Bitboard b=0;
-  squares &= occupied;
+  squares &= occupied & ~st->reserveAttackers;
   for (; squares;) {
        Square s = pop_lsb(&squares);
        b |=  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
@@ -1086,6 +1086,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       return VALUE_ZERO >= threshold;
 
   Square from = from_sq(m), to = to_sq(m);
+  st->reserveAttackers = 0;
 
   int swap = PieceValue[MG][piece_on(to)] - threshold;
   if (swap < 0)
@@ -1108,8 +1109,6 @@ bool Position::see_ge(Move m, Value threshold) const {
       attackers &= st->occupied;
 
       stmAttackers = attackers & pieces(stm);
-      if (stmAttackers && (blockers_for_king(stm) & from) && !aligned(square<KING>(stm), from, to)) // discovering check
-          stmAttackers &= square<KING>(stm); // king captures
       // If stm has no more attackers then give up: stm loses
       if (!(stmAttackers))
           break;
@@ -1123,6 +1122,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           break;
 
       res ^= 1;
+      st->reserveAttackers = stmAttackers;
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' any X-ray attackers behind it.
@@ -1131,7 +1131,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = PawnValueMg - swap) < res)
               break;
 
-          st->occupied ^= from = lsb(bb);
+          st->occupied ^= lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1140,7 +1140,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = KnightValueMg - swap) < res)
               break;
 
-          st->occupied ^= from = lsb(bb);
+          st->occupied ^= lsb(bb);
       }
 
       else if ((bb = stmAttackers & pieces(BISHOP)))
@@ -1148,7 +1148,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = BishopValueMg - swap) < res)
               break;
 
-          st->occupied ^= from = lsb(bb);
+          st->occupied ^= lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1157,7 +1157,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = RookValueMg - swap) < res)
               break;
 
-          st->occupied ^= from = lsb(bb);
+          st->occupied ^= lsb(bb);
           attackers |= attacks_bb<ROOK>(to, st->occupied) & pieces(ROOK, QUEEN);
       }
 
@@ -1166,7 +1166,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = QueenValueMg - swap) < res)
               break;
 
-          st->occupied ^= from = lsb(bb);
+          st->occupied ^= lsb(bb);
           attackers |=  (attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, st->occupied) & pieces(ROOK  , QUEEN));
       }
