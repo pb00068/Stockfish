@@ -1108,8 +1108,8 @@ bool Position::see_ge(Move m, Value threshold) const {
       attackers &= st->occupied;
 
       stmAttackers = attackers & pieces(stm);
-//      if (stmAttackers && (blockers_for_king(stm) & from) && !aligned(square<KING>(stm), from, to)) // discovering check
-//          stmAttackers &= square<KING>(stm); // king captures
+      if (stmAttackers && (blockers_for_king(stm) & from) && !aligned(square<KING>(stm), from, to)) // discovering check
+          stmAttackers &= square<KING>(stm); // king captures
       // If stm has no more attackers then give up: stm loses
       if (!(stmAttackers))
           break;
@@ -1131,7 +1131,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = PawnValueMg - swap) < res)
               break;
 
-          st->occupied ^= lsb(bb);
+          st->occupied ^= from = lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1140,7 +1140,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = KnightValueMg - swap) < res)
               break;
 
-          st->occupied ^= lsb(bb);
+          st->occupied ^= from = lsb(bb);
       }
 
       else if ((bb = stmAttackers & pieces(BISHOP)))
@@ -1148,7 +1148,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = BishopValueMg - swap) < res)
               break;
 
-          st->occupied ^= lsb(bb);
+          st->occupied ^= from = lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1157,7 +1157,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = RookValueMg - swap) < res)
               break;
 
-          st->occupied ^= lsb(bb);
+          st->occupied ^= from = lsb(bb);
           attackers |= attacks_bb<ROOK>(to, st->occupied) & pieces(ROOK, QUEEN);
       }
 
@@ -1166,7 +1166,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = QueenValueMg - swap) < res)
               break;
 
-          st->occupied ^= lsb(bb);
+          st->occupied ^= from = lsb(bb);
           attackers |=  (attacks_bb<BISHOP>(to, st->occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, st->occupied) & pieces(ROOK  , QUEEN));
       }
@@ -1174,7 +1174,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? st->occupied ^= stmAttackers, res ^ 1 : res;
+          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
   }
 
   return bool(res);
