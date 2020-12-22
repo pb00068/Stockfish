@@ -54,6 +54,7 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
+  Bitboard   occupied; // set by each see_ge call
   int        repetition;
 
   // Used by NNUE
@@ -113,6 +114,7 @@ public:
   Bitboard blockers_for_king(Color c) const;
   Bitboard check_squares(PieceType pt) const;
   Bitboard pinners(Color c) const;
+  Bitboard occupied_after_see() const;
   bool is_discovery_check_on_king(Color c, Move m) const;
 
   // Attacks to/from a given square
@@ -144,7 +146,7 @@ public:
   void undo_null_move();
 
   // Static Exchange Evaluation
-  bool see_ge(Move m, Bitboard &occupied, Value threshold = VALUE_ZERO) const;
+  bool see_ge(Move m, Value threshold = VALUE_ZERO) const;
 
   // Accessing hash keys
   Key key() const;

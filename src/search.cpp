@@ -608,7 +608,6 @@ namespace {
          ttCapture, singularQuietLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
-    Bitboard occupied_after_see;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -994,6 +993,7 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    bool queenCaptureTried = false;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1067,9 +1067,9 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, occupied_after_see, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
-                  if (type_of(movedPiece) >= QUEEN || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see))
+                  if (type_of(movedPiece) >= QUEEN || queenCaptureTried || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), pos.occupied_after_see()) & pos.pieces(us) & pos.occupied_after_see()))
                     continue;
               }
           }
@@ -1082,10 +1082,10 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, occupied_after_see, Value(-213) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-213) * depth)) // (~25 Elo)
               {
-                  occupied_after_see = occupied_after_see | to_sq(move);
-                  if (type_of(movedPiece) >= QUEEN || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), occupied_after_see) & pos.pieces(us) & occupied_after_see))
+                  Bitboard b = pos.occupied_after_see() | to_sq(move);
+                  if (type_of(movedPiece) >= QUEEN || queenCaptureTried || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b))
                      continue;
               }
           }
@@ -1142,7 +1142,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move, occupied_after_see)))
+               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move)))
           extension = 1;
 
       // Last captures extension
@@ -1229,7 +1229,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~2 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move), occupied_after_see))
+                       && !pos.see_ge(reverse_move(move)))
                   r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1361,6 +1361,8 @@ moves_loop: // When in check, search starts from here
           }
       }
 
+      queenCaptureTried = queenCaptureTried || (captureOrPromotion && type_of(pos.piece_on(to_sq(move))) == QUEEN);
+
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
@@ -1448,7 +1450,6 @@ moves_loop: // When in check, search starts from here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool pvHit, givesCheck, captureOrPromotion;
     int moveCount;
-    Bitboard occupied_after_see;
 
     if (PvNode)
     {
@@ -1576,7 +1577,7 @@ moves_loop: // When in check, search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, occupied_after_see, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1585,7 +1586,7 @@ moves_loop: // When in check, search starts from here
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move, occupied_after_see))
+          && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible
