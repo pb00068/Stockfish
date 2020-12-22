@@ -1087,6 +1087,8 @@ moves_loop: // When in check, search starts from here
                   Bitboard b = pos.occupied_after_see() | to_sq(move);
                   if (type_of(movedPiece) >= QUEEN || queenCaptureTried || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b))
                      continue;
+                  else if (move == make_move(SQ_E4, SQ_F2) && (pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b))
+                  	sync_cout << pos << UCI::move(move, pos.is_chess960()) << Bitboards::pretty(b)   << Bitboards::pretty(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b) << sync_endl;
               }
           }
       }
