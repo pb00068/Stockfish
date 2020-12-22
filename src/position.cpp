@@ -1092,8 +1092,11 @@ bool Position::see_ge(Move m, Value threshold) const {
       stm = ~stm;
       attackers &= occupied;
 
+      stmAttackers = attackers & pieces(stm);
+      if (stmAttackers && (blockers_for_king(stm) & from) && !aligned(square<KING>(stm), from, to)) // discovering check
+          stmAttackers &= square<KING>(stm); // king captures
       // If stm has no more attackers then give up: stm loses
-      if (!(stmAttackers = attackers & pieces(stm)))
+      if (!stmAttackers)
           break;
 
       // Don't allow pinned pieces to attack (except the king) as long as
@@ -1113,7 +1116,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = PawnValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          occupied ^= from = lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1122,7 +1125,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = KnightValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          occupied ^= from = lsb(bb);
       }
 
       else if ((bb = stmAttackers & pieces(BISHOP)))
@@ -1130,7 +1133,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = BishopValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          occupied ^= from = lsb(bb);
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
@@ -1139,7 +1142,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = RookValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          occupied ^= from = lsb(bb);
           attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
       }
 
@@ -1148,7 +1151,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = QueenValueMg - swap) < res)
               break;
 
-          occupied ^= lsb(bb);
+          occupied ^= from = lsb(bb);
           attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK  , QUEEN));
       }
