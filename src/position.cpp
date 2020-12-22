@@ -1098,8 +1098,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   st->occupied = pieces() ^ from ^ to;
   Color stm = color_of(piece_on(from));
   Bitboard attackers = attackers_to(to, st->occupied);
-  if (attackers && (blockers_for_king(~stm) & from) && !aligned(square<KING>(~stm), from, to)) // discovering check
-      attackers &= (pieces(stm) | square<KING>(~stm));
+
   Bitboard stmAttackers, bb;
   int res = 1;
 
@@ -1108,8 +1107,11 @@ bool Position::see_ge(Move m, Value threshold) const {
       stm = ~stm;
       attackers &= st->occupied;
 
+      stmAttackers = attackers & pieces(stm);
+//      if (stmAttackers && (blockers_for_king(stm) & from) && !aligned(square<KING>(stm), from, to)) // discovering check
+//          stmAttackers &= square<KING>(stm); // king captures
       // If stm has no more attackers then give up: stm loses
-      if (!(stmAttackers = attackers & pieces(stm)))
+      if (!(stmAttackers))
           break;
 
       // Don't allow pinned pieces to attack (except the king) as long as
@@ -1172,7 +1174,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? st->occupied ^= lsb(attackers & ~pieces(stm)), res ^ 1 : res;
+          return (attackers & ~pieces(stm)) ? st->occupied ^= stmAttackers, res ^ 1 : res;
   }
 
   return bool(res);
