@@ -492,7 +492,8 @@ Bitboard Position::kingInCheckAfterSee(Square to) const {
   Square s = square<KING>(~sideToMove);
   if (!(st->occupied & s)) // king moved away from orig. position
      return 0;
-  st->occupied |= to;
+  if (to != SQ_NONE)
+      st->occupied |= to;
   Bitboard b  =  (attacks_bb<  ROOK>(s, st->occupied) & pieces(  ROOK, QUEEN))
                | (attacks_bb<BISHOP>(s, st->occupied) & pieces(BISHOP, QUEEN));
   b &= pieces(sideToMove) & st->occupied;

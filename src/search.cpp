@@ -1066,8 +1066,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
-                 continue;
+              if (!pos.see_ge(move, Value(-(28 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              {
+                 if (lmrDepth < 2 || type_of(movedPiece) >= QUEEN || !pos.kingInCheckAfterSee(SQ_NONE))
+                     continue;
+              }
           }
           else
           {
