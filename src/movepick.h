@@ -152,7 +152,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   Depth depth;
-  int ply;
+  int ply,exchanges;
   ExtMove moves[MAX_MOVES];
 };
 

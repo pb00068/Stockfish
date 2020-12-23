@@ -1077,10 +1077,11 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Value threshold) const {
+bool Position::see_ge(Move m, int &exchanges, Value threshold) const {
 
   assert(is_ok(m));
 
+  exchanges = 1;
   // Only deal with normal moves, assume others pass a simple see
   if (type_of(m) != NORMAL)
       return VALUE_ZERO >= threshold;
@@ -1123,6 +1124,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       res ^= 1;
       st->reserveAttackers = stmAttackers;
+      exchanges++;
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' any X-ray attackers behind it.
@@ -1174,7 +1176,17 @@ bool Position::see_ge(Move m, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+          if (attackers & ~pieces(stm))
+          {
+              //we "capture" with the king but opponent still has attackers, reverse the result.
+              exchanges--; // king can't take
+              return res ^ 1;
+          }
+          else {
+             if (exchanges < 3)
+                st->occupied ^= stmAttackers;
+             return res;
+          }
   }
 
   return bool(res);

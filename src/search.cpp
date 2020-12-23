@@ -1067,9 +1067,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              int exchanges;
+              if (!pos.see_ge(move, exchanges, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
                   if (lmrDepth < 3
+                      || exchanges < 3
                       || type_of(movedPiece) >= QUEEN
                       || queenCaptureTried
                       || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), pos.occupied_after_see()) & pos.pieces(us) & pos.occupied_after_see()))
@@ -1085,10 +1087,13 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-213) * depth)) // (~25 Elo)
+              int exchanges;
+              if (!pos.see_ge(move, exchanges, Value(-213) * depth)) // (~25 Elo)
               {
+                  if (depth < 3 || exchanges < 3 || queenCaptureTried || type_of(movedPiece) >= QUEEN)
+                      continue;
                   Bitboard b = pos.occupied_after_see() | to_sq(move);
-                  if (type_of(movedPiece) >= QUEEN || queenCaptureTried || !(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b))
+                  if (!(pos.slider_attackers_to(pos.pieces(~us, KING, QUEEN), b) & pos.pieces(us) & b))
                      continue;
               }
           }
@@ -1101,6 +1106,7 @@ moves_loop: // When in check, search starts from here
       // then that move is singular and should be extended. To verify this we do
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin, then we will extend the ttMove.
+      int i;
       if (    depth >= 7
           &&  move == ttMove
           && !rootNode
@@ -1145,7 +1151,7 @@ moves_loop: // When in check, search starts from here
 
       // Check extension (~2 Elo)
       else if (    givesCheck
-               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move)))
+               && (pos.is_discovery_check_on_king(~us, move) || pos.see_ge(move, i)))
           extension = 1;
 
       // Last captures extension
@@ -1232,7 +1238,7 @@ moves_loop: // When in check, search starts from here
               // castling moves, because they are coded as "king captures rook" and
               // hence break make_move(). (~2 Elo)
               else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
+                       && !pos.see_ge(reverse_move(move), ss->statScore))
                   r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1580,7 +1586,8 @@ moves_loop: // When in check, search starts from here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          int i;
+          if (futilityBase <= alpha && !pos.see_ge(move, i, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1588,8 +1595,9 @@ moves_loop: // When in check, search starts from here
       }
 
       // Do not search moves with negative SEE values
+      int i;
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          && !pos.see_ge(move, i))
           continue;
 
       // Speculative prefetch as early as possible
