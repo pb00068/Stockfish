@@ -1097,7 +1097,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard attackers = attackers_to(to, st->occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
-  int exchanges = 0;
   while (true)
   {
       stm = ~stm;
@@ -1116,7 +1115,6 @@ bool Position::see_ge(Move m, Value threshold) const {
           break;
 
       res ^= 1;
-      exchanges++;
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' any X-ray attackers behind it.
@@ -1168,14 +1166,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          if (attackers & ~pieces(stm))
-              return res ^ 1;
-          else
-          {
-               if (exchanges < 2)
-                   st->occupied ^= stmAttackers;
-               return res;
-          }
+          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
   }
 
   return bool(res);

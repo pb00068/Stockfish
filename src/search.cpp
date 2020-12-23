@@ -1068,7 +1068,7 @@ moves_loop: // When in check, search starts from here
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
-                  if (lmrDepth < 3 || type_of(movedPiece) >= QUEEN || !pos.kingInCheckAfterSee(SQ_NONE))
+                  if (lmrDepth < 3 || type_of(movedPiece) >= QUEEN || distance(pos.square<KING>(~us), to_sq(move)) == 1 || !pos.kingInCheckAfterSee(SQ_NONE))
                     continue;
               }
           }
@@ -1083,7 +1083,7 @@ moves_loop: // When in check, search starts from here
               // SEE based pruning
               if (!pos.see_ge(move, Value(-213) * depth)) // (~25 Elo)
               {
-                  if (type_of(movedPiece) >= QUEEN || !pos.kingInCheckAfterSee(to_sq(move)))
+                  if (type_of(movedPiece) >= QUEEN || distance(pos.square<KING>(~us), to_sq(move)) == 1 || !pos.kingInCheckAfterSee(to_sq(move)))
                      continue;
               }
           }
