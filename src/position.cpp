@@ -495,7 +495,10 @@ Bitboard Position::kingInCheckAfterSee(Square to) const {
   st->occupied |= to;
   Bitboard b  =  (attacks_bb<  ROOK>(s, st->occupied) & pieces(  ROOK, QUEEN))
                | (attacks_bb<BISHOP>(s, st->occupied) & pieces(BISHOP, QUEEN));
-  return b & pieces(sideToMove) & st->occupied;
+  b &= pieces(sideToMove) & st->occupied;
+  if (b && (st->oppAttackers & s) && more_than_one(st->oppAttackers))
+    return 0; // king can take
+  return b;
 }
 
 
@@ -1077,6 +1080,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   assert(is_ok(m));
 
+  st->oppAttackers = 0;
   // Only deal with normal moves, assume others pass a simple see
   if (type_of(m) != NORMAL)
       return VALUE_ZERO >= threshold;
@@ -1102,8 +1106,11 @@ bool Position::see_ge(Move m, Value threshold) const {
       stm = ~stm;
       attackers &= st->occupied;
 
+      stmAttackers = attackers & pieces(stm);
+      if (stm != sideToMove)
+        st->oppAttackers = stmAttackers;
       // If stm has no more attackers then give up: stm loses
-      if (!(stmAttackers = attackers & pieces(stm)))
+      if (!stmAttackers)
           break;
 
       // Don't allow pinned pieces to attack (except the king) as long as

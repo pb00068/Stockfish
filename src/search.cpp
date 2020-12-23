@@ -1078,9 +1078,9 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-190) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-210) * depth)) // (~25 Elo)
               {
-                  if (type_of(movedPiece) >= ROOK || !pos.kingInCheckAfterSee(to_sq(move)))
+                  if (type_of(movedPiece) >= QUEEN || !pos.kingInCheckAfterSee(to_sq(move)))
                      continue;
               }
           }
