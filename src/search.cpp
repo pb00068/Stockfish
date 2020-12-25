@@ -1066,7 +1066,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(28 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
               {
                   if (type_of(movedPiece) >= ROOK || pos.seeResultTrustworth(SQ_NONE))
                      continue;
@@ -1081,9 +1081,9 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-213) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-200) * depth)) // (~25 Elo)
               {
-                  if (type_of(movedPiece) >= QUEEN || pos.seeResultTrustworth(to_sq(move)))
+                  if (type_of(movedPiece) >= ROOK || pos.seeResultTrustworth(to_sq(move)))
                      continue;
               }
           }
