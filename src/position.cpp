@@ -314,8 +314,14 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+	Bitboard b = pieces(BLACK);
+  si->blockersForKing[WHITE] = slider_blockers(b, square<KING>(WHITE), si->pinners[BLACK]);
+  if (sideToMove == BLACK)
+     st->sliderBlockers = b;
+  b = pieces(WHITE);
+  si->blockersForKing[BLACK] = slider_blockers(b, square<KING>(BLACK), si->pinners[WHITE]);
+  if (sideToMove == WHITE)
+       st->sliderBlockers = b;
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -449,7 +455,7 @@ const string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard &sliders, Square s, Bitboard& pinners) const {
 
   Bitboard blockers = 0;
   pinners = 0;
@@ -458,12 +464,12 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
   Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
                       | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & sliders;
   Bitboard occupancy = pieces() ^ snipers;
-
+  sliders=0;
   while (snipers)
   {
     Square sniperSq = pop_lsb(&snipers);
     Bitboard b = between_bb(s, sniperSq) & occupancy;
-
+    sliders |= b;
     if (b && !more_than_one(b))
     {
         blockers |= b;
@@ -488,18 +494,23 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
-Bitboard Position::kingInCheckAfterSee(Square to) const {
+bool Position::seeResultTrustworth(Square to) const {
+  if (!st->sliderBlockers || (st->sliderBlockers & st->occupied ) == st->sliderBlockers )
+     return true; // no snipers around or snipers still blocked
   Square s = square<KING>(~sideToMove);
   if (!(st->occupied & s)) // king moved away from orig. position
-     return 0;
+     return true;
+
+  if ((st->oppAttackers & s) && more_than_one(st->oppAttackers))
+    return true; // king can take
+
   if (to != SQ_NONE)
       st->occupied |= to;
+
   Bitboard b  =  (attacks_bb<  ROOK>(s, st->occupied) & pieces(  ROOK, QUEEN))
                | (attacks_bb<BISHOP>(s, st->occupied) & pieces(BISHOP, QUEEN));
   b &= pieces(sideToMove) & st->occupied;
-  if (b && (st->oppAttackers & s) && more_than_one(st->oppAttackers))
-    return 0; // king can take
-  return b;
+  return b != 0;
 }
 
 
