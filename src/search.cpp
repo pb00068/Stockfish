@@ -974,6 +974,7 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Bitboard triedFromSquares = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1073,7 +1074,7 @@ moves_loop: // When in check, search starts from here
               // SEE based pruning
               if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
               {
-                  if (!givesCheck || type_of(movedPiece) != PAWN || !pos.is_discovery_check_on_king(~us, move))
+                  if (!givesCheck || (triedFromSquares & from_sq(move)) || !pos.is_discovery_check_on_king(~us, move))
                      continue;
               }
           }
@@ -1283,6 +1284,8 @@ moves_loop: // When in check, search starts from here
 
       // Step 17. Undo move
       pos.undo_move(move);
+
+      triedFromSquares |= from_sq(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
