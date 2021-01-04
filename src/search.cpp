@@ -821,7 +821,7 @@ namespace {
        for (int y = 1; y<4; y++)
        {
            if (is_ok((ss-y)->currentMove) && !(ss-y)->inCheck) {
-              int bonus = std::clamp(-z * depth * 4 * int(z * (ss-y)->staticEval + ss->staticEval - (z + 1) * Tempo), -1000, 1000);
+              int bonus = std::clamp(-z * depth * 6 * int(z * (ss-y)->staticEval + ss->staticEval - (z + 1) * Tempo), -2000, 2000);
               thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
               break;
            }
