@@ -1072,7 +1072,10 @@ moves_loop: // When in check, search starts from here
 
               // SEE based pruning
               if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
-                  continue;
+              {
+                  if (!givesCheck || type_of(movedPiece) != PAWN || !pos.is_discovery_check_on_king(~us, move))
+                     continue;
+              }
           }
       }
 
