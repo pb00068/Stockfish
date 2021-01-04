@@ -1060,7 +1060,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - 6 * bool(triedFromSquares & from_sq(move)) - std::min(lmrDepth, 18) ) * lmrDepth * lmrDepth)))
+              if (((triedFromSquares & from_sq(move)) && !pos.see_ge(move)) || !pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18) ) * lmrDepth * lmrDepth)))
                   continue;
           }
           else
@@ -1072,7 +1072,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218 + 120 * bool(triedFromSquares & from_sq(move)) ) * depth)) // (~25 Elo)
+              if (((triedFromSquares & from_sq(move)) && !pos.see_ge(move)) || !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                  continue;
           }
       }
