@@ -1060,7 +1060,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth +  bool(triedFromSquares & from_sq(move)) * 90)))
+              if (!pos.see_ge(move, Value(-(30 - 6 * bool(triedFromSquares & from_sq(move)) - std::min(lmrDepth, 18) ) * lmrDepth * lmrDepth)))
                   continue;
           }
           else
@@ -1072,7 +1072,7 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218 ) * depth + bool(triedFromSquares & from_sq(move)) * 90)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-218 + 120 * bool(triedFromSquares & from_sq(move)) ) * depth)) // (~25 Elo)
                  continue;
           }
       }
@@ -1282,8 +1282,6 @@ moves_loop: // When in check, search starts from here
       // Step 17. Undo move
       pos.undo_move(move);
 
-      triedFromSquares |= from_sq(move);
-
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 18. Check for a new best move
@@ -1342,6 +1340,8 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
+          else
+            triedFromSquares |= from_sq(move);
       }
 
       // If the move is worse than some previously searched move, remember it to update its stats later
