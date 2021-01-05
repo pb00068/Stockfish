@@ -840,14 +840,13 @@ namespace {
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
         && (ss-1)->statScore < 22977
-        &&  eval >= beta - 4
-        &&  eval >= ss->staticEval - 4
+        &&  eval >= beta - 8
+        &&  eval >= ss->staticEval - 8
         &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
-        assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and value
         Depth R = (1015 + 85 * depth) / 256 + (eval > beta ? std::min(int(eval - beta) / 191, 3) : 0);
