@@ -781,7 +781,7 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        eval = VALUE_NONE;
         improving = false;
         goto moves_loop;
     }
@@ -825,8 +825,8 @@ namespace {
     // We define position as improving if static evaluation of position is better
     // Than the previous static evaluation at our turn
     // In case of us being in check at our previous move we look at move prior to it
-    improving =  (ss-2)->staticEval == VALUE_NONE
-               ? ss->staticEval > (ss-4)->staticEval || (ss-4)->staticEval == VALUE_NONE
+    improving =  (ss-2)->inCheck
+               ? ss->staticEval > (ss-4)->staticEval || (ss-4)->inCheck
                : ss->staticEval > (ss-2)->staticEval;
 
     // Step 7. Futility pruning: child node (~50 Elo)
@@ -1157,7 +1157,7 @@ moves_loop: // When in check, search starts from here
           &&  moveCount > 1 + 2 * rootNode
           && (  !captureOrPromotion
               || moveCountPruning
-              || ss->staticEval + PieceValue[EG][pos.captured_piece()] <= alpha
+              || (ss->staticEval + PieceValue[EG][pos.captured_piece()] <= alpha && !ss->inCheck)
               || cutNode
               || (!PvNode && !formerPv && thisThread->captureHistory[movedPiece][to_sq(move)][type_of(pos.captured_piece())] < 4506)
               || thisThread->ttHitAverage < 432 * TtHitAverageResolution * TtHitAverageWindow / 1024))
@@ -1231,7 +1231,7 @@ moves_loop: // When in check, search starts from here
           else
           {
               // Unless giving check, this capture is likely bad
-              if (   !givesCheck
+              if (   !givesCheck && !ss->inCheck
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
           }
@@ -1472,7 +1472,6 @@ moves_loop: // When in check, search starts from here
     // Evaluate the position statically
     if (ss->inCheck)
     {
-        ss->staticEval = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
     }
     else
