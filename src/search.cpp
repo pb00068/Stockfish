@@ -364,7 +364,7 @@ void Thread::search() {
   contempt = (us == WHITE ?  make_score(ct, ct / 2)
                           : -make_score(ct, ct / 2));
 
-  int searchAgainCounter = 0;
+  int searchAgainCounter = 0, prevseldepth;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -398,7 +398,7 @@ void Thread::search() {
           }
 
           // Reset UCI info selDepth for each depth and each PV line
-          selDepth = 0;
+          selDepth = prevseldepth = 0;
 
           // Reset aspiration window starting size
           if (rootDepth >= 4)
@@ -422,6 +422,7 @@ void Thread::search() {
           while (true)
           {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
+              prevseldepth = selDepth;
               selDepth = 0;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
@@ -460,8 +461,9 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta + 2 * std::max(selDepth - rootDepth, 0), VALUE_INFINITE);
-                  ++failedHighCnt;
+                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (selDepth >= prevseldepth)
+                      ++failedHighCnt;
               }
               else
                   break;
