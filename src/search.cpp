@@ -465,7 +465,7 @@ void Thread::search() {
               else
                   break;
 
-              delta += delta / 4 + 5;
+              delta +=  delta / std::max(4, (rootDepth + failedHighCnt) / 3) + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
