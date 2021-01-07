@@ -459,13 +459,15 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (failedHighCnt)
+                     alpha =  (alpha + beta) / 2;
+                  beta = std::min(bestValue + delta + 4 * failedHighCnt, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
                   break;
 
-              delta +=  delta / std::max(4, (rootDepth + failedHighCnt) / 3) + 5;
+              delta +=  delta / std::max(4, rootDepth / 3) + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
