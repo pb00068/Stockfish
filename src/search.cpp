@@ -455,18 +455,18 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
-                  delta += delta / 4 + 5;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta + std::max(selDepth - rootDepth, 0), VALUE_INFINITE);
+                  beta = std::min(bestValue + delta + 2 * std::max(selDepth - rootDepth, 0), VALUE_INFINITE);
                   ++failedHighCnt;
-                  delta += 5;
               }
               else
                   break;
+
+              delta += delta / 4 + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
