@@ -461,9 +461,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (selDepth >= prevseldepth)
-                      ++failedHighCnt;
+                  beta = std::min(bestValue + delta + 5 * bool(selDepth >= prevseldepth), VALUE_INFINITE);
+                  ++failedHighCnt;
               }
               else
                   break;
