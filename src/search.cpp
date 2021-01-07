@@ -461,13 +461,13 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta + 5 * bool(selDepth >= prevseldepth), VALUE_INFINITE);
+                  beta = std::min(bestValue + delta + std::clamp(selDepth - prevseldepth, 0, rootDepth/2), VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
                   break;
 
-              delta += delta / 4 + 5;
+              delta +=  delta / std::max(4, rootDepth) + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
