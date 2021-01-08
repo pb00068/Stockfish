@@ -418,7 +418,9 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          failedHighCnt = failedLowCnt = 0;
+          failedHighCnt = 0;
+          int failedLowCnt = 0;
+          bool instability = false;
           while (true)
           {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
@@ -450,11 +452,12 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  if (!failedHighCnt)
-                      beta = (alpha + beta) / 2;
-                  alpha = std::max(alpha - std::min(3, failedLowCnt) * (alpha - bestValue) - delta, -VALUE_INFINITE);
-
+                  if (failedLowCnt)
+                       beta = (alpha + beta) / 2;
                   ++failedLowCnt;
+                  alpha = std::max(alpha - std::min(3, failedLowCnt) * (alpha - bestValue) - delta, -VALUE_INFINITE);
+                  if (failedHighCnt)
+                    instability= true;
                   failedHighCnt = 0;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
@@ -462,15 +465,17 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   if (failedHighCnt > 1)
-                     alpha =  (alpha + 3 * beta) / 4;
+                     alpha =  (alpha + beta) / 2;
                   ++failedHighCnt;
+                  if (failedLowCnt)
+                     instability= true;
                   failedLowCnt = 0;
                   beta = std::min(beta + std::min(3, failedHighCnt) * (bestValue - beta) + delta, VALUE_INFINITE);
               }
               else
                   break;
 
-              delta +=  delta / std::max(4, rootDepth / 4) + 4;
+              delta +=  delta / std::max(4, rootDepth / 4) + instability ? 10 : 2;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
