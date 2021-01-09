@@ -841,13 +841,13 @@ namespace {
     // Step 8. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 22977 + 10 * std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -1000, 1000)
-        && thisThread->nmpStat[(ss-1)->currentMove] >= -500
+        && (ss-1)->statScore < 22977 + std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -1000, 1000)
         &&  eval >= beta
         &&  eval >= ss->staticEval
         &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168
         && !excludedMove
         &&  pos.non_pawn_material(us)
+        && thisThread->nmpStat[(ss-1)->currentMove]++ >= -10
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
@@ -875,7 +875,7 @@ namespace {
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
             {
-                thisThread->nmpStat[(ss-1)->currentMove]++;
+                thisThread->nmpStat[(ss-1)->currentMove]+=10;
                 return nullValue;
             }
 
@@ -892,11 +892,11 @@ namespace {
 
             if (v >= beta)
             {
-                thisThread->nmpStat[(ss-1)->currentMove]++;
+                thisThread->nmpStat[(ss-1)->currentMove]+=10;
                 return nullValue;
             }
         }
-        thisThread->nmpStat[(ss-1)->currentMove]--;
+        thisThread->nmpStat[(ss-1)->currentMove]-=10;
     }
 
     probCutBeta = beta + 194 - 49 * improving;
