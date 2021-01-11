@@ -419,6 +419,7 @@ void Thread::search() {
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
           failedHighCnt = 0;
+          int failedLowCnt = 0;
           while (true)
           {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
@@ -450,15 +451,20 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
+                  if (!failedLowCnt && bestValue <  alpha - 200)
+                     bestValue = alpha - 200;
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
+                  failedLowCnt++;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
               else if (bestValue >= beta)
               {
+                  if (!failedHighCnt && bestValue > beta + 200)
+                      bestValue = beta + 200;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
