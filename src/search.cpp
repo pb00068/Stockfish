@@ -841,16 +841,17 @@ namespace {
     // Step 8. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 22977 + std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -1000, 1000)
+        && (ss-1)->statScore < 22977
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -100, 100)
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        && thisThread->nmpStat[(ss-1)->currentMove]++ >= -10
+        && thisThread->nmpStat[(ss-1)->currentMove] >= -20
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
+        thisThread->nmpStat[(ss-1)->currentMove]++;
         //dbg_mean_of(abs(thisThread->nmpStat[(ss-1)->currentMove] ));
         //if (abs(thisThread->nmpStat[(ss-1)->currentMove] ) > 300)
         //sync_cout << "info " <<  thisThread->nmpStat[(ss-1)->currentMove] << " " << (ss-1)->currentMove << sync_endl;
@@ -874,10 +875,7 @@ namespace {
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
-            {
-                thisThread->nmpStat[(ss-1)->currentMove]+=10;
                 return nullValue;
-            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
@@ -891,12 +889,9 @@ namespace {
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
-            {
-                thisThread->nmpStat[(ss-1)->currentMove]+=10;
                 return nullValue;
-            }
         }
-        thisThread->nmpStat[(ss-1)->currentMove]-=10;
+        thisThread->nmpStat[(ss-1)->currentMove]-=2; // move wasn't weak
     }
 
     probCutBeta = beta + 194 - 49 * improving;
