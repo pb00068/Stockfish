@@ -841,10 +841,10 @@ namespace {
     // Step 8. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 24000
+        && (ss-1)->statScore < 25000
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -50, 50)
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -100, 0)
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && thisThread->nmpStat[(ss-1)->currentMove] >= -50
