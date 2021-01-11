@@ -844,10 +844,10 @@ namespace {
         && (ss-1)->statScore < 24000
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove]/8, 0, 100)
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -110, 110)
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        && thisThread->nmpStat[(ss-1)->currentMove] >= -2000
+        && thisThread->nmpStat[(ss-1)->currentMove] >= -250
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
@@ -857,7 +857,7 @@ namespace {
 
         // Null move dynamic reduction based on depth and value
         Depth R = (1015 + 85 * depth) / 256 + std::min(int(eval - beta) / 191, 3);
-        thisThread->nmpStat[(ss-1)->currentMove]+=4*R;
+        thisThread->nmpStat[(ss-1)->currentMove]+=R;
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
@@ -891,7 +891,7 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        thisThread->nmpStat[(ss-1)->currentMove]-= 3*R; // move wasn't weak
+        thisThread->nmpStat[(ss-1)->currentMove]-= 2*R; // move wasn't weak
     }
 
     probCutBeta = beta + 194 - 49 * improving;
