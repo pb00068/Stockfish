@@ -461,13 +461,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  if (failedHighCnt && !failedLowCnt && rootDepth >= 4)
-                  {
-                      if (failedHighCnt > 1)
+                  if (failedHighCnt == 2 && !failedLowCnt && rootDepth >= 4)
                          alpha = (alpha + beta) / 2;
-                      else
-                         alpha = (3 * alpha + beta) / 4;
-                  }
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
 
