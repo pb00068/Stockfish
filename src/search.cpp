@@ -844,10 +844,10 @@ namespace {
         && (ss-1)->statScore < 22977
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -100, 100)
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 - std::clamp(thisThread->nmpStat[(ss-1)->currentMove], -150, 150)
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        && thisThread->nmpStat[(ss-1)->currentMove] >= -20
+        && thisThread->nmpStat[(ss-1)->currentMove] >= -40
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
