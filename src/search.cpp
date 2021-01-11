@@ -449,10 +449,10 @@ void Thread::search() {
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (bestValue <= alpha) // mean diff on bench ~ 25
               {
-                  if (!failedLowCnt && bestValue <  alpha - 200)
-                     bestValue = alpha - 200;
+                  if (!failedLowCnt && bestValue <  alpha - 50)
+                     bestValue = alpha - 50;
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
@@ -461,10 +461,10 @@ void Thread::search() {
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
-              else if (bestValue >= beta)
+              else if (bestValue >= beta) // mean diff on bench ~ 135
               {
-                  if (!failedHighCnt && bestValue > beta + 200)
-                      bestValue = beta + 200;
+                  if (!failedHighCnt && bestValue > beta + 270)
+                      bestValue = beta + 270;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
