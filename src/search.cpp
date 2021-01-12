@@ -841,17 +841,22 @@ namespace {
     // Step 8. Null move search with verification search (~40 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 26000
+        && (ss-1)->statScore < 23500
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + 4 * thisThread->nmpStat[(ss-1)->currentMove]
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + (!pos.captured_piece() ? thisThread->nmpStat[(ss-1)->currentMove]/2 : 0)
         && !excludedMove
+        && (pos.captured_piece() || thisThread->nmpStat[(ss-1)->currentMove] < 100)
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
-        if (std::abs(thisThread->nmpStat[(ss-1)->currentMove]) < 50)
-           thisThread->nmpStat[(ss-1)->currentMove]--;
+        Move weakmove = (ss-1)->currentMove;
+        if (!pos.captured_piece())
+        {
+           thisThread->nmpStat[weakmove] = (3 * thisThread->nmpStat[weakmove]) / 4; // out-age old values
+           thisThread->nmpStat[weakmove]-= 12; // assume prune success
+        }
 
         // Null move dynamic reduction based on depth and value
         Depth R = (1015 + 85 * depth) / 256 + std::min(int(eval - beta) / 191, 3);
@@ -888,8 +893,9 @@ namespace {
             if (v >= beta)
                 return nullValue;
         }
-        if (std::abs(thisThread->nmpStat[(ss-1)->currentMove]) < 50)
-            thisThread->nmpStat[(ss-1)->currentMove]+=2; // move wasn't weak
+        // pruning not made, move wasn't weak enough
+        if (!pos.captured_piece())
+            thisThread->nmpStat[weakmove]+=42; // push up value
     }
 
     probCutBeta = beta + 194 - 49 * improving;
