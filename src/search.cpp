@@ -826,8 +826,10 @@ namespace {
     // Than the previous static evaluation at our turn
     // In case of us being in check at our previous move we look at move prior to it
     improving =  (ss-2)->staticEval == VALUE_NONE
-               ? ss->staticEval > (ss-4)->staticEval || (ss-4)->staticEval == VALUE_NONE
-               : ss->staticEval > (ss-2)->staticEval;
+               ? std::min(ss->staticEval, eval) > (ss-4)->staticEval || (ss-4)->staticEval == VALUE_NONE
+               : std::min(ss->staticEval, eval) > (ss-2)->staticEval;
+
+
 
     // Step 7. Futility pruning: child node (~50 Elo)
     if (   !PvNode
