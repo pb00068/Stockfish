@@ -844,9 +844,9 @@ namespace {
         && (ss-1)->statScore < 23500
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + (!pos.captured_piece() ? thisThread->nmpStat[(ss-1)->currentMove]/2 : 0)
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + (!pos.captured_piece() ? thisThread->nmpStat[(ss-1)->currentMove] : 0)
         && !excludedMove
-        && (pos.captured_piece() || thisThread->nmpStat[(ss-1)->currentMove] < 100)
+        && (pos.captured_piece() || thisThread->nmpStat[(ss-1)->currentMove] < 110)
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
