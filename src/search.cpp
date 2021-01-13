@@ -970,9 +970,9 @@ namespace {
 moves_loop: // When in check, search starts from here
 
     PieceToHistory* nop = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-0)->inCheck ? nop : (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-0)->inCheck || (ss-2)->inCheck ? nop : (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-0)->inCheck || (ss-2)->inCheck || (ss-4)->inCheck ? nop :(ss-6)->continuationHistory };
+    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
+                                          nullptr                   , (ss-2)->inCheck ? nop : (ss-4)->continuationHistory,
+                                          nullptr                   , (ss-2)->inCheck || (ss-4)->inCheck ? nop :(ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
@@ -1520,9 +1520,9 @@ moves_loop: // When in check, search starts from here
     }
 
     PieceToHistory* nop = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-0)->inCheck ? nop : (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-0)->inCheck || (ss-2)->inCheck ? nop : (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-0)->inCheck || (ss-2)->inCheck || (ss-4)->inCheck ? nop : (ss-6)->continuationHistory };
+    const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
+                                          nullptr                   , (ss-2)->inCheck ? nop : (ss-4)->continuationHistory,
+                                          nullptr                   , (ss-2)->inCheck || (ss-4)->inCheck ? nop : (ss-6)->continuationHistory };
 
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
