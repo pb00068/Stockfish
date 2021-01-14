@@ -989,7 +989,7 @@ moves_loop: // When in check, search starts from here
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
-    Value bigcapturediff = VALUE_ZERO;
+    Value bestGain = VALUE_ZERO;
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1201,12 +1201,8 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
 
-              if (!givesCheck && cutNode)
-              {
-                  Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedPiece];
-                  if (bigcapturediff > diff)
-                      r += (bigcapturediff - diff) / 930;
-              }
+              if (!givesCheck && cutNode && bestGain > KnightValueMg - PawnValueMg && !pos.see_ge(move, bestGain))
+                  r ++;
           }
           else
           {
@@ -1362,8 +1358,10 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion)
           {
               Value diff =  PieceValue[MG][pos.piece_on(to_sq(move))] - PieceValue[MG][movedPiece];
-              if (diff > bigcapturediff)
-                  bigcapturediff = diff;
+              if (diff < 0 && quietCount < 4)
+                    diff += PieceValue[MG][movedPiece]; // good capture, so assume that there is no recapture
+              if (diff > bestGain)
+                  bestGain = diff;
               if (captureCount < 32)
                 capturesSearched[captureCount++] = move;
           }
