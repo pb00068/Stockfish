@@ -989,7 +989,7 @@ moves_loop: // When in check, search starts from here
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
-    Value bigcapturediff = VALUE_ZERO;
+    Value bestGain = VALUE_ZERO;
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1204,7 +1204,7 @@ moves_loop: // When in check, search starts from here
           else
           {
               // Increase reduction if ttMove is a capture (~5 Elo)
-              if (ttCapture || (cutNode && !givesCheck && bigcapturediff >= RookValueMg - PawnValueMg))
+              if (ttCapture || (!givesCheck && bestGain >= RookValueMg))
                   r++;
 
               // Increase reduction at root if failing high
@@ -1355,8 +1355,10 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion)
           {
               Value diff =  PieceValue[MG][pos.piece_on(to_sq(move))] - PieceValue[MG][movedPiece];
-              if (diff > bigcapturediff)
-                  bigcapturediff = diff;
+              if (diff < 0 && quietCount < 4)
+                  diff += PieceValue[MG][movedPiece]; // good capture, so assume that there is no recapture
+              if (diff > bestGain)
+                 bestGain = diff;
               if (captureCount < 32)
                 capturesSearched[captureCount++] = move;
           }
