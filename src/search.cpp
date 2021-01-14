@@ -1201,7 +1201,10 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
               else if (!givesCheck && bestGain > KnightValueMg && !pos.see_ge(move, bestGain - BishopValueMg))
-                  r++;
+              {
+                  r += 1 + bool(quietCount > 4); // even more reduction for 'bad captures'
+                  bestGain += QueenValueMg;      // assume all subsequent captures even worser, so short-cut see_ge
+              }
           }
           else
           {
