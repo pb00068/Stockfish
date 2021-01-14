@@ -1201,9 +1201,12 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
 
-              Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedPiece];
-              if (!givesCheck && bigcapturediff > diff)
-                r += (bigcapturediff - diff) / 930;
+              if (!givesCheck && cutNode)
+              {
+                  Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedPiece];
+                  if (bigcapturediff > diff)
+                      r += (bigcapturediff - diff) / 930;
+              }
           }
           else
           {
