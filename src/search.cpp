@@ -989,6 +989,7 @@ moves_loop: // When in check, search starts from here
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
+    Value bigcapturediff = VALUE_ZERO;
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1023,6 +1024,7 @@ moves_loop: // When in check, search starts from here
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
+
       givesCheck = pos.gives_check(move);
 
       // Calculate new depth for this move
@@ -1198,6 +1200,10 @@ moves_loop: // When in check, search starts from here
               if (   !givesCheck
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
+
+              Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedPiece];
+              if (!givesCheck && bigcapturediff > diff)
+                r += (bigcapturediff - diff) / 930;
           }
           else
           {
@@ -1350,8 +1356,14 @@ moves_loop: // When in check, search starts from here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
-          if (captureOrPromotion && captureCount < 32)
-              capturesSearched[captureCount++] = move;
+          if (captureOrPromotion)
+          {
+              Value diff =  PieceValue[MG][pos.piece_on(to_sq(move))] - PieceValue[MG][movedPiece];
+              if (diff > bigcapturediff)
+                  bigcapturediff = diff;
+              if (captureCount < 32)
+                capturesSearched[captureCount++] = move;
+          }
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
