@@ -97,6 +97,7 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+  int maxscore = -30000;
 
   for (auto& m : *this)
       if (Type == CAPTURES)
@@ -112,8 +113,10 @@ void MovePicker::score() {
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
+          maxscore = std::max(maxscore, m.value);
+
           if (from_sq(m) == recaptureSquare)
-             m.value += std::max(500, std::abs(m.value)/2);
+             m.value += maxscore/2;
       }
 
       else // Type == EVASIONS
