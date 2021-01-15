@@ -1284,6 +1284,11 @@ moves_loop: // When in check, search starts from here
                               std::min(maxNextDepth, newDepth), false);
       }
 
+      if (captureOrPromotion && quietCount < 2 && value <= alpha && depth > 1 && (ss+2)->inCheck && is_ok((ss+1)->currentMove) && (pos.pieces(~us) & from_sq((ss+1)->currentMove)))
+      	if (!(pos.check_squares(type_of(pos.piece_on(from_sq((ss+1)->currentMove)))) & to_sq((ss+1)->currentMove)))
+       sync_cout << pos << " move: " << UCI::move(move, pos.is_chess960()) << " next" << UCI::move((ss+1)->currentMove, pos.is_chess960()) << sync_endl;
+			//dbg_hit_on(pos.check_squares(type_of(pos.piece_on(from_sq((ss+1)->currentMove)))) & to_sq((ss+1)->currentMove));
+
       // Step 17. Undo move
       pos.undo_move(move);
 
@@ -1352,6 +1357,7 @@ moves_loop: // When in check, search starts from here
       {
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
+
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
