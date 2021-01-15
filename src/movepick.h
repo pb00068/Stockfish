@@ -134,6 +134,7 @@ public:
                                            const Move*,
                                            int);
   Move next_move(bool skipQuiets = false);
+  void setRecapSquare(Square s);
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

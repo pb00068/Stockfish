@@ -60,7 +60,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
              ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl) {
 
   assert(d > 0);
-
+  recaptureSquare = SQ_NONE;
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
 }
@@ -104,12 +104,17 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
+      {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    + 2 * (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+
+          if (from_sq(m) == recaptureSquare)
+             m.value += std::max(500, std::abs(m.value)/2);
+      }
 
       else // Type == EVASIONS
       {
@@ -139,6 +144,10 @@ Move MovePicker::select(Pred filter) {
       cur++;
   }
   return MOVE_NONE;
+}
+
+void MovePicker::setRecapSquare(Square s){
+    recaptureSquare = s;
 }
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
