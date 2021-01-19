@@ -134,6 +134,8 @@ public:
                                            const Move*,
                                            int);
   Move next_move(bool skipQuiets = false);
+  bool revokeKiller(Move k, int i);
+  int getStage() { return stage; }
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

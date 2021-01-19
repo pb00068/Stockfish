@@ -90,6 +90,13 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
                              && pos.see_ge(ttm, threshold));
 }
 
+bool MovePicker::revokeKiller(Move k, int i) {
+    if (refutations[i] != k)
+      return false;
+
+    refutations[i] = MOVE_NONE;
+    return true;
+}
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
