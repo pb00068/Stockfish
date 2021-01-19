@@ -651,7 +651,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+4)->killers[2] = MOVE_NONE;
+    (ss+2)->killers[0] = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1151,22 +1151,14 @@ moves_loop: // When in check, search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
-      if (mp.getStage() == 3 && move == ss->killers[0] && ss->killers[0] == ss->killers[2] && pos.see_ge(reverse_move(move))) // killer did escape but does'nt it anymore
+      if (mp.getStage() == 3 && move == ss->killers[0] && ss->killers[0] == ss->killers[2] && pos.see_ge(reverse_move(move)))
       {
+          // killer did escape a capture but does'nt anymore
           bool res = mp.revokeKiller(move, 0); // process this move later among normal quiets move stage
           if (res)
           {
             pos.undo_move(move);
             continue;
-          }
-      }
-      else if (mp.getStage() == 3 && move == ss->killers[1] && ss->killers[1] == ss->killers[2] && pos.see_ge(reverse_move(move))) // killer did escape but does'nt it anymore
-      {
-          bool res = mp.revokeKiller(move, 1); // process this move later among normal quiets move stage
-          if (res)
-          {
-             pos.undo_move(move);
-             continue;
           }
       }
 
