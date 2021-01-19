@@ -1151,15 +1151,30 @@ moves_loop: // When in check, search starts from here
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
-      if (mp.getStage() == 3 && move == ss->killers[0] && ss->killers[0] == ss->killers[2] && pos.see_ge(reverse_move(move)))
+      if (mp.getStage() == 3)
       {
-          // killer did escape a capture but does'nt anymore
-          if (mp.revokeKiller(move, 0)) // process this move later among normal quiets move stage
-          {
-            thisThread->mainHistory[us][from_to(move)] << -stat_bonus(depth);
-            pos.undo_move(move);
-            continue;
-          }
+           if (move == ss->killers[0] && ss->killers[0] == ss->killers[2] && pos.see_ge(reverse_move(move)))
+           {
+              // killer did escape a capture but does'nt anymore
+               if (mp.revokeKiller(move, 0)) // process this move later among normal quiets move stage
+               {
+                   thisThread->mainHistory[us][from_to(move)] << -stat_bonus(depth);
+                   ss->killers[2] = MOVE_NONE;
+                   pos.undo_move(move);
+                   continue;
+               }
+           }
+           else if (move == ss->killers[1] && ss->killers[1] == ss->killers[2] && pos.see_ge(reverse_move(move)))
+           {
+              // killer did escape a capture but does'nt anymore
+               if (mp.revokeKiller(move, 1)) // process this move later among normal quiets move stage
+               {
+                   thisThread->mainHistory[us][from_to(move)] << -stat_bonus(depth);
+                   ss->killers[2] = MOVE_NONE;
+                   pos.undo_move(move);
+                   continue;
+               }
+           }
       }
 
       // Step 15. Reduced depth search (LMR, ~200 Elo). If the move fails high it will be
@@ -1294,6 +1309,9 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
       }
+
+      if (value > alpha && !captureOrPromotion && type_of(move) == NORMAL && !pos.see_ge(reverse_move(move)))
+         ss->killers[2] = move;
 
       // Step 17. Undo move
       pos.undo_move(move);
