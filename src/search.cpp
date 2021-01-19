@@ -1154,9 +1154,9 @@ moves_loop: // When in check, search starts from here
       if (mp.getStage() == 3 && move == ss->killers[0] && ss->killers[0] == ss->killers[2] && pos.see_ge(reverse_move(move)))
       {
           // killer did escape a capture but does'nt anymore
-          bool res = mp.revokeKiller(move, 0); // process this move later among normal quiets move stage
-          if (res)
+          if (mp.revokeKiller(move, 0)) // process this move later among normal quiets move stage
           {
+            thisThread->mainHistory[us][from_to(move)] << -stat_bonus(depth);
             pos.undo_move(move);
             continue;
           }
