@@ -776,7 +776,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
-    int diffbonus = 0;
+    int statDiffPrevMove = 0;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -816,12 +816,9 @@ namespace {
     }
 
 
-    // Use static evaluation difference to improve quiet move ordering
+    // Use static evaluation difference for statScore
     if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
-    {
-        diffbonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1024, 1024);
-        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << diffbonus;
-    }
+        statDiffPrevMove = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1024, 1024);
 
     // Set up improving flag that is used in various pruning heuristics
     // We define position as improving if static evaluation of position is better
@@ -844,7 +841,7 @@ namespace {
         && (ss-1)->statScore < 22977
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + (diffbonus / 64)
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -1222,6 +1219,7 @@ moves_loop: // When in check, search starts from here
                   r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
+                             + statDiffPrevMove
                              + (*contHist[0])[movedPiece][to_sq(move)]
                              + (*contHist[1])[movedPiece][to_sq(move)]
                              + (*contHist[3])[movedPiece][to_sq(move)]
