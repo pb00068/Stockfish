@@ -1225,11 +1225,13 @@ moves_loop: // When in check, search starts from here
                              + (*contHist[3])[movedPiece][to_sq(move)]
                              - 5287;
 
+              //dbg_mean_of(ss->statScore); // Mean -8433.23 at bench w/depth 16, -10339.7 w/ depth 18
+
               // Decrease/increase reduction by comparing opponent's stat score (~10 Elo)
-              if (ss->statScore >= -105 && (ss-1)->statScore < -103)
+              if (ss->statScore >= -105 && (ss-1)->statScore < -103 - 4000)
                   r--;
 
-              else if ((ss-1)->statScore >= -122 && ss->statScore < -129)
+              else if ((ss-1)->statScore >= -122 && ss->statScore < -129 - 4000)
                   r++;
 
               // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
