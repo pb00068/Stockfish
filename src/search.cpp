@@ -604,7 +604,7 @@ namespace {
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool formerPv, givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
-         ttCapture, singularQuietLMR;
+         ttCapture, probablyAllNode, singularQuietLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
@@ -986,6 +986,7 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
+    probablyAllNode = false;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1202,7 +1203,7 @@ moves_loop: // When in check, search starts from here
           else
           {
               // Increase reduction if ttMove is a capture (~5 Elo)
-              if (ttCapture)
+              if (ttCapture || probablyAllNode)
                   r++;
 
               // Increase reduction at root if failing high
@@ -1345,6 +1346,8 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
+          else probablyAllNode |= captureOrPromotion && moveCount == 1 && !ttCapture && !ss->inCheck && pos.see_ge(move, BishopValueMg);
+
       }
 
       // If the move is worse than some previously searched move, remember it to update its stats later
