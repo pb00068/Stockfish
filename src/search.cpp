@@ -986,7 +986,7 @@ moves_loop: // When in check, search starts from here
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
     ttCapture = ttMove && pos.capture_or_promotion(ttMove);
-    probablyAllNode = false;
+    probablyAllNode = !cutNode && ss->ttHit && !ttMove && tte->depth() > 6;
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
@@ -1346,7 +1346,7 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-          else probablyAllNode |= captureOrPromotion && moveCount == 1 && !ttCapture && !ss->inCheck && pos.see_ge(move, BishopValueMg);
+          else probablyAllNode |= captureOrPromotion && moveCount == 1 && !ttCapture && !ss->inCheck && pos.see_ge(move, cutNode ? BishopValueMg : RookValueMg);
 
       }
 
