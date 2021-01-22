@@ -307,7 +307,8 @@ void Thread::search() {
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
-      (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
+    for (int z = 1; z > 0; z--)
+      (ss-i)->continuationHistory = &this->continuationHistory[0][0][z][NO_PIECE][0]; // Use as a sentinel
 
   ss->pv = pv;
 
@@ -853,7 +854,7 @@ namespace {
         Depth R = (1015 + 85 * depth) / 256 + std::min(int(eval - beta) / 191, 3);
 
         ss->currentMove = MOVE_NULL;
-        ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->continuationHistory = &thisThread->continuationHistory[0][0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
 
@@ -933,7 +934,8 @@ namespace {
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
-                                                                          [to_sq(move)];
+                                                                          [to_sq(move)]
+                                                                          [ss->ply < 4];
 
                 pos.do_move(move, st);
 
@@ -1146,7 +1148,7 @@ moves_loop: // When in check, search starts from here
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
-                                                                [to_sq(move)];
+                                                                [to_sq(move)][ss->ply < 4];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1587,7 +1589,7 @@ moves_loop: // When in check, search starts from here
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [captureOrPromotion]
                                                                 [pos.moved_piece(move)]
-                                                                [to_sq(move)];
+                                                                [to_sq(move)][ss->ply < 4];
 
       // CounterMove based pruning
       if (  !captureOrPromotion

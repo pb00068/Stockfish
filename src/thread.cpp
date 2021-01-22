@@ -62,11 +62,13 @@ void Thread::clear() {
 
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
+      	for (int z : { 0, 1 })
       {
-          for (auto& to : continuationHistory[inCheck][c])
+          for (auto& to : continuationHistory[inCheck][c][z])
                 for (auto& h : to)
                       h->fill(0);
-          continuationHistory[inCheck][c][NO_PIECE][0]->fill(Search::CounterMovePruneThreshold - 1);
+          continuationHistory[inCheck][c][0][NO_PIECE][0]->fill(Search::CounterMovePruneThreshold - 1);
+          continuationHistory[inCheck][c][1][NO_PIECE][0]->fill(Search::CounterMovePruneThreshold - 1);
       }
 }
 
