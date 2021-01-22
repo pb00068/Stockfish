@@ -854,7 +854,7 @@ namespace {
         Depth R = (1015 + 85 * depth) / 256 + std::min(int(eval - beta) / 191, 3);
 
         ss->currentMove = MOVE_NULL;
-        ss->continuationHistory = &thisThread->continuationHistory[0][0][ss->ply < 8][NO_PIECE][0];
+        ss->continuationHistory = &thisThread->continuationHistory[0][0][0][NO_PIECE][ss->ply < 8];
 
         pos.do_null_move(st);
 
