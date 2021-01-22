@@ -935,7 +935,7 @@ namespace {
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)]
-                                                                          [ss->ply < 4];
+                                                                          [ss->ply < 8];
 
                 pos.do_move(move, st);
 
@@ -1148,7 +1148,7 @@ moves_loop: // When in check, search starts from here
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
-                                                                [to_sq(move)][ss->ply < 4];
+                                                                [to_sq(move)][ss->ply < 8];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
