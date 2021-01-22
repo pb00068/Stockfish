@@ -308,7 +308,10 @@ void Thread::search() {
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
     for (int z = 1; z > 0; z--)
+    {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][z][NO_PIECE][0]; // Use as a sentinel
+      (ss-i)->continuationHistoryAlt = &this->continuationHistory[0][0][z][NO_PIECE][0]; // Use as a sentinel
+    }
 
   ss->pv = pv;
 
@@ -855,6 +858,7 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][0][NO_PIECE][ss->ply < 8];
+        ss->continuationHistoryAlt = &thisThread->continuationHistory[0][0][0][NO_PIECE][ss->ply >= 8];
 
         pos.do_null_move(st);
 
@@ -936,6 +940,12 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)]
                                                                           [ss->ply < 8];
+
+                ss->continuationHistoryAlt = &thisThread->continuationHistory[ss->inCheck]
+                                                                             [captureOrPromotion]
+                                                                             [pos.moved_piece(move)]
+                                                                             [to_sq(move)]
+                                                                             [ss->ply >= 8];
 
                 pos.do_move(move, st);
 
@@ -1149,6 +1159,11 @@ moves_loop: // When in check, search starts from here
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)][ss->ply < 8];
+
+      ss->continuationHistoryAlt = &thisThread->continuationHistory[ss->inCheck]
+                                                                [captureOrPromotion]
+                                                                [movedPiece]
+                                                                [to_sq(move)][ss->ply >= 8];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1591,6 +1606,11 @@ moves_loop: // When in check, search starts from here
                                                                 [pos.moved_piece(move)]
                                                                 [to_sq(move)][ss->ply < 8];
 
+      ss->continuationHistoryAlt = &thisThread->continuationHistory[ss->inCheck]
+                                                                [captureOrPromotion]
+                                                                [pos.moved_piece(move)]
+                                                                 [to_sq(move)][ss->ply >= 8];
+
       // CounterMove based pruning
       if (  !captureOrPromotion
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1759,7 +1779,11 @@ moves_loop: // When in check, search starts from here
         if (ss->inCheck && i > 2)
             break;
         if (is_ok((ss-i)->currentMove))
+        {
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
+            if (ss->ply < 8)
+              (*(ss-i)->continuationHistoryAlt)[pc][to] << bonus;
+        }
     }
   }
 
