@@ -975,6 +975,9 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
+    if (!ss->killers[0] && (ss-2)->killers[0] != countermove && (ss-2)->killers[0] != ss->killers[1])
+         ss->killers[0] =  (ss-2)->killers[0];
+
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
