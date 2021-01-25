@@ -973,8 +973,7 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
-    int ply = thisThread->counterMovesPly[pos.piece_on(prevSq)][prevSq];
-    Move countermove = std::abs(ss->ply - ply) > 8 ? MOVE_NONE : thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
@@ -1356,7 +1355,19 @@ moves_loop: // When in check, search starts from here
               capturesSearched[captureCount++] = move;
 
           else if (!captureOrPromotion && quietCount < 64)
+          {
               quietsSearched[quietCount++] = move;
+              if (move == countermove)
+              {
+                  thisThread->counterMoveFails[pos.piece_on(prevSq)][prevSq]=thisThread->counterMoveFails[pos.piece_on(prevSq)][prevSq] + 1;
+                  if (thisThread->counterMoveFails[pos.piece_on(prevSq)][prevSq] > 5)
+                  {
+                    thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = MOVE_NONE;
+                    thisThread->counterMoveFails[pos.piece_on(prevSq)][prevSq]=0;
+                  }
+              }
+
+          }
       }
     }
 
@@ -1789,7 +1800,7 @@ moves_loop: // When in check, search starts from here
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
-        thisThread->counterMovesPly[pos.piece_on(prevSq)][prevSq] = ss->ply;
+        thisThread->counterMoveFails[pos.piece_on(prevSq)][prevSq] = ss->ply;
     }
 
     // Update low ply history
