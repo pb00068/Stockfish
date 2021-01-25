@@ -974,7 +974,7 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     int ply = thisThread->counterMovesPly[pos.piece_on(prevSq)][prevSq];
-    Move countermove = (abs(ss->ply - ply) > 8) ? MOVE_NONE : thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    Move countermove = std::abs(ss->ply - ply) > 8 ? MOVE_NONE : thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
