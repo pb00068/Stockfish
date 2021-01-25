@@ -821,6 +821,9 @@ namespace {
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
     }
 
+    if (!ss->killers[0])
+         ss->killers[0] = (ss-2)->killers[0];
+
     // Set up improving flag that is used in various pruning heuristics
     // We define position as improving if static evaluation of position is better
     // Than the previous static evaluation at our turn
@@ -974,9 +977,6 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-
-    if (!ss->killers[0] && (ss-2)->killers[0] != countermove && (ss-2)->killers[0] != ss->killers[1])
-         ss->killers[0] =  (ss-2)->killers[0];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
