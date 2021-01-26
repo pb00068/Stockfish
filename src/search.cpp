@@ -1720,9 +1720,9 @@ moves_loop: // When in check, search starts from here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        // decrease also quiet moves when capture was scored among 'bad captures' but is quite SEE positive in current pos
+        // decrease also quiet moves when capture was scored among 'bad captures' but is SEE positive in current pos
         // without this good capture this node would probably have become an all-node
-        if (captureCount < 3 && (quietCount <= 1 || !pos.see_ge(bestMove, KnightValueMg - PawnValueMg)))
+        if ((quietCount <= 1 || !pos.see_ge(bestMove, BishopValueMg - KnightValueMg)))
             quietCount = 0;
     }
 
