@@ -715,7 +715,12 @@ namespace {
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
+
         }
+
+
+        if (pos.capture(ttMove) && to_sq(ttMove) == to_sq((ss-1)->currentMove))
+              (ss-1)->freeCapture = false;
 
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
@@ -1293,6 +1298,9 @@ moves_loop: // When in check, search starts from here
       // Step 17. Undo move
       pos.undo_move(move);
 
+      if (!(ss+1)->moveCount)
+      	ss->freeCapture = false; // no free capture if no oppenent move was tried
+
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 18. Check for a new best move
@@ -1338,8 +1346,12 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (captureOrPromotion && ss->freeCapture)
+              if (captureOrPromotion && ss->freeCapture )
+              {
                  freecapturemove = bestMove;
+                 //if (!pos.is_discovered_check_on_king(~us, bestMove) && !ss->inCheck && depth > 1 && !pos.see_ge(freecapturemove, PieceValue[MG][pos.piece_on(to_sq(freecapturemove))]) )
+                 // sync_cout << pos << UCI::move(bestMove, pos.is_chess960()) << sync_endl;
+              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1444,7 +1456,6 @@ moves_loop: // When in check, search starts from here
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool pvHit, givesCheck, captureOrPromotion;
-    int moveCount;
 
     if (PvNode)
     {
@@ -1457,7 +1468,7 @@ moves_loop: // When in check, search starts from here
     (ss+1)->ply = ss->ply + 1;
     bestMove = MOVE_NONE;
     ss->inCheck = pos.checkers();
-    moveCount = 0;
+    ss->moveCount = 0;
 
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
@@ -1556,7 +1567,7 @@ moves_loop: // When in check, search starts from here
               (ss-1)->freeCapture = false;
       }
 
-      moveCount++;
+      ss->moveCount++;
 
       // Futility pruning
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1567,7 +1578,7 @@ moves_loop: // When in check, search starts from here
           assert(type_of(move) != EN_PASSANT); // Due to !pos.advanced_pawn_push
 
           // moveCount pruning
-          if (moveCount > 2)
+          if (ss->moveCount > 2)
               continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
@@ -1596,7 +1607,7 @@ moves_loop: // When in check, search starts from here
       // Check for legality just before making the move
       if (!pos.legal(move))
       {
-          moveCount--;
+          ss->moveCount--;
           continue;
       }
 
@@ -1745,7 +1756,7 @@ moves_loop: // When in check, search starts from here
     }
     else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? bonus1 : stat_bonus(depth + 2));
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? stat_bonus(depth) : bonus1);
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
