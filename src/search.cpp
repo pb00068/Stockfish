@@ -651,7 +651,7 @@ namespace {
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+4)->killers[0] = (ss+4)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -820,9 +820,6 @@ namespace {
         int bonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1000, 1000);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
     }
-
-    if (!ss->killers[0])
-         ss->killers[0] = (ss-2)->killers[0];
 
     // Set up improving flag that is used in various pruning heuristics
     // We define position as improving if static evaluation of position is better
@@ -1774,6 +1771,13 @@ moves_loop: // When in check, search starts from here
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
+    }
+
+    if (!ss->inCheck) {
+        if (!(ss+2)->killers[0])
+             (ss+2)->killers[0] = move;
+        else if (!(ss+2)->killers[1] && (ss+2)->killers[0] && move != (ss+2)->killers[0])
+             (ss+2)->killers[1] = move;
     }
 
     Color us = pos.side_to_move();
