@@ -50,6 +50,7 @@ struct Stack {
   bool inCheck;
   bool ttPv;
   bool ttHit;
+  bool freeCapture; // true if after a capture there was no recapture attempt
 };
 
 

@@ -599,7 +599,7 @@ namespace {
 
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove, bestMove, freecapturemove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool formerPv, givesCheck, improving, didLMR, priorCapture;
@@ -650,7 +650,7 @@ namespace {
 
     (ss+1)->ply = ss->ply + 1;
     (ss+1)->ttPv = false;
-    (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    (ss+1)->excludedMove = bestMove = freecapturemove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
@@ -1022,6 +1022,12 @@ moves_loop: // When in check, search starts from here
 
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
+      if (captureOrPromotion)
+      {
+          ss->freeCapture = type_of(move) != PROMOTION;
+          if (ss->freeCapture && to_sq(move) == to_sq((ss-1)->currentMove))
+             (ss-1)->freeCapture = false;
+      }
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -1332,6 +1338,8 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              if (captureOrPromotion && ss->freeCapture)
+                 freecapturemove = bestMove;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1379,8 +1387,11 @@ moves_loop: // When in check, search starts from here
 
     // If there is a move which produces search value greater than alpha we update stats of searched moves
     else if (bestMove)
+    {
+        ss->freeCapture = bestMove == freecapturemove;
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
@@ -1538,6 +1549,12 @@ moves_loop: // When in check, search starts from here
 
       givesCheck = pos.gives_check(move);
       captureOrPromotion = pos.capture_or_promotion(move);
+      if (captureOrPromotion)
+      {
+          ss->freeCapture = type_of(move) != PROMOTION;
+          if (ss->freeCapture && to_sq(move) == to_sq((ss-1)->currentMove))
+              (ss-1)->freeCapture = false;
+      }
 
       moveCount++;
 
@@ -1728,7 +1745,7 @@ moves_loop: // When in check, search starts from here
     }
     else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? stat_bonus(depth) : bonus1);
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
