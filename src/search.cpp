@@ -1388,7 +1388,7 @@ moves_loop: // When in check, search starts from here
     // If there is a move which produces search value greater than alpha we update stats of searched moves
     else if (bestMove)
     {
-        ss->freeCapture = bestMove == freecapturemove;
+        ss->freeCapture = bestMove == freecapturemove && !pos.is_discovered_check_on_king(~us, bestMove);
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
     }
@@ -1745,7 +1745,7 @@ moves_loop: // When in check, search starts from here
     }
     else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? stat_bonus(depth) : bonus1);
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? bonus1 : stat_bonus(depth + 2));
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
