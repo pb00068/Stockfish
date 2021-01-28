@@ -1083,7 +1083,10 @@ moves_loop: // When in check, search starts from here
 
               // Prune moves with negative SEE (~20 Elo)
               if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              {
+                  (ss-1)->freeCapture = bool(pos.captured_piece() && to_sq(move) == to_sq((ss-1)->currentMove));
                   continue;
+              }
           }
       }
 
