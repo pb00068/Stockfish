@@ -584,6 +584,8 @@ namespace {
             return alpha;
     }
 
+    ss->freeCapture = false;
+
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
         return qsearch<NT>(pos, ss, alpha, beta);
@@ -1027,12 +1029,6 @@ moves_loop: // When in check, search starts from here
 
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
-      if (captureOrPromotion)
-      {
-          ss->freeCapture = type_of(move) != PROMOTION;
-          if (ss->freeCapture && to_sq(move) == to_sq((ss-1)->currentMove))
-             (ss-1)->freeCapture = false;
-      }
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -1161,6 +1157,13 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+
+      ss->freeCapture = bool(pos.captured_piece());
+      if (ss->freeCapture)
+      {
+          if (to_sq(move) == to_sq((ss-1)->currentMove))
+             (ss-1)->freeCapture = false;
+      }
 
       // Step 15. Reduced depth search (LMR, ~200 Elo). If the move fails high it will be
       // re-searched at full depth.
@@ -1299,7 +1302,7 @@ moves_loop: // When in check, search starts from here
       pos.undo_move(move);
 
       if (!(ss+1)->moveCount)
-      	ss->freeCapture = false; // no free capture if no oppenent move was tried
+      	ss->freeCapture = false; // no free capture if no opponent move was tried
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1346,7 +1349,7 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
-              if (captureOrPromotion && ss->freeCapture )
+              if (ss->freeCapture )
               {
                  freecapturemove = bestMove;
                  //if (!pos.is_discovered_check_on_king(~us, bestMove) && !ss->inCheck && depth > 1 && !pos.see_ge(freecapturemove, PieceValue[MG][pos.piece_on(to_sq(freecapturemove))]) )
@@ -1560,12 +1563,6 @@ moves_loop: // When in check, search starts from here
 
       givesCheck = pos.gives_check(move);
       captureOrPromotion = pos.capture_or_promotion(move);
-      if (captureOrPromotion)
-      {
-          ss->freeCapture = type_of(move) != PROMOTION;
-          if (ss->freeCapture && to_sq(move) == to_sq((ss-1)->currentMove))
-              (ss-1)->freeCapture = false;
-      }
 
       ss->moveCount++;
 
@@ -1756,7 +1753,7 @@ moves_loop: // When in check, search starts from here
     }
     else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture ? stat_bonus(depth) : bonus1);
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << (ss->freeCapture && captured >= BISHOP ? stat_bonus(depth) : bonus1);
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
