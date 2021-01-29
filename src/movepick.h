@@ -50,6 +50,12 @@ public:
 
     assert(abs(entry) <= D);
   }
+
+  void operator|=(int lastbit) {
+
+    entry -= entry % 2; //do zero last bit: make it even
+    entry |= lastbit;
+  }
 };
 
 /// Stats is a generic N-dimensional array used to store various statistics.
