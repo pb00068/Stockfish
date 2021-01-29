@@ -104,7 +104,7 @@ void MovePicker::score() {
           int histval = (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + histval
-                   - (bool(histval & 1) ? 0 : 2 * int(PieceValue[MG][pos.moved_piece(m)]));
+                   - (bool(histval & 1) ? 0 : 4 * int(PieceValue[MG][pos.moved_piece(m)]));
       }
 
       else if (Type == QUIETS)
