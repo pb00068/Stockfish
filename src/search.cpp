@@ -652,6 +652,7 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->attacked = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -715,6 +716,9 @@ namespace {
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
+
+            if (pos.capture(ttMove))
+               ss->attacked |= to_sq(ttMove);
         }
 
         // Partial workaround for the graph history interaction problem
@@ -1150,6 +1154,9 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+
+      if (pos.captured_piece())
+         ss->attacked |= to_sq(move);
 
       // Step 15. Reduced depth search (LMR, ~200 Elo). If the move fails high it will be
       // re-searched at full depth.
@@ -1730,7 +1737,7 @@ moves_loop: // When in check, search starts from here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        captureHistory[moved_piece][to_sq(bestMove)][captured] |= pos.see_ge(bestMove, PieceValue[MG][captured]);
+        captureHistory[moved_piece][to_sq(bestMove)][captured] |= bool((ss+1)->attacked & to_sq(bestMove));
     }
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1744,7 +1751,7 @@ moves_loop: // When in check, search starts from here
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] |= pos.see_ge(capturesSearched[i], PieceValue[MG][captured]);
+        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] |= bool((ss+1)->attacked & to_sq(capturesSearched[i]));
     }
   }
 
