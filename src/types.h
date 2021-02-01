@@ -432,6 +432,11 @@ constexpr Rank relative_rank(Color c, Rank r) {
   return Rank(r ^ (c * 7));
 }
 
+constexpr int reductPieceType(PieceType t) {
+  //Pawn/no piece:0   Knight/Bishop:1 Rook:2 Queen:3
+  return t < PAWN ? 0 : t >= ROOK ? t - 2 : 1;
+}
+
 constexpr Rank relative_rank(Color c, Square s) {
   return relative_rank(c, rank_of(s));
 }
