@@ -96,7 +96,7 @@ typedef Stats<int16_t, 10692, MAX_LPH, int(SQUARE_NB) * int(SQUARE_NB)> LowPlyHi
 /// move, see www.chessprogramming.org/Countermove_Heuristic
 typedef Stats<Move, NOT_USED, PIECE_NB, SQUARE_NB> CounterMoveHistory;
 
-/// CapturePieceToHistory is addressed by a move's [piece][to][captured piece type][forward/backward]
+/// CapturePieceToHistory is addressed by a move's [piece][to][captured piece type][new]
 typedef Stats<int16_t, 10692, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB, 2> CapturePieceToHistory;
 
 /// PieceToHistory is like ButterflyHistory but is addressed by a move's [piece][to]
