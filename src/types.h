@@ -448,6 +448,12 @@ constexpr Square to_sq(Move m) {
   return Square(m & 0x3F);
 }
 
+constexpr bool towardsMiddleFiles(Move m) {
+  Square from = from_sq(m);
+  Square to   = to_sq(m);
+  return file_of(to) == FILE_D || file_of(to) == FILE_E || abs(file_of(from) - 4) > abs(file_of(to) - 4);
+}
+
 constexpr int from_to(Move m) {
  return m & 0xFFF;
 }

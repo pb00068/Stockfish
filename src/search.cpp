@@ -1045,7 +1045,7 @@ moves_loop: // When in check, search starts from here
               // Capture history based pruning when the move doesn't give check
               if (   !givesCheck
                   && lmrDepth < 1
-                  && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][relative_rank(us, to_sq(move)) > relative_rank(us, from_sq(move))] < 0)
+                  && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][towardsMiddleFiles(move)] < 0)
                   continue;
 
               // SEE based pruning
@@ -1160,7 +1160,7 @@ moves_loop: // When in check, search starts from here
               || ss->staticEval + PieceValue[EG][pos.captured_piece()] <= alpha
               || cutNode
               || (!PvNode && !formerPv && captureHistory[movedPiece][to_sq(move)][type_of(pos.captured_piece())]
-                                                        [relative_rank(us, to_sq(move)) > relative_rank(us, from_sq(move))] < 4506)
+                                                        [towardsMiddleFiles(move)] < 4506)
               || thisThread->ttHitAverage < 432 * TtHitAverageResolution * TtHitAverageWindow / 1024))
       {
           Depth r = reduction(improving, depth, moveCount);
@@ -1727,11 +1727,9 @@ moves_loop: // When in check, search starts from here
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
-    else {
-        bool forward = relative_rank(us, to_sq(bestMove)) > relative_rank(us, from_sq(bestMove));
+    else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured][forward] << bonus1;
-    }
+        captureHistory[moved_piece][to_sq(bestMove)][captured][towardsMiddleFiles(bestMove)] << bonus1;
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1744,8 +1742,7 @@ moves_loop: // When in check, search starts from here
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        bool forward = relative_rank(us, to_sq(capturesSearched[i])) > relative_rank(us, from_sq(capturesSearched[i]));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured][forward] << -bonus1;
+        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured][towardsMiddleFiles(capturesSearched[i])] << -bonus1;
     }
   }
 
