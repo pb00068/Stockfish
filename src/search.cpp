@@ -1195,12 +1195,12 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion)
           {
               // Unless giving check, this capture is likely bad
-              if (   !givesCheck
+              if (   !givesCheck && type_of(move) != PROMOTION
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
               {
                   r++;
                   if (quietCount > 3 && type_of(pos.captured_piece()) < type_of(movedPiece))
-                    r++;  // on top of that a 'bad'-capture, so probably a loosing exchange and thus very far from reaching alpha
+                     r++;  // on top of that a 'bad'-capture, so probably a loosing exchange and thus very far from reaching alpha
               }
           }
           else
