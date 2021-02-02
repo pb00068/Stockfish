@@ -1148,6 +1148,8 @@ moves_loop: // When in check, search starts from here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      bool realbadCapture = captureOrPromotion && quietCount > 4 && depth >= 3 && type_of(move) != PROMOTION && !pos.see_ge(move);
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1197,11 +1199,7 @@ moves_loop: // When in check, search starts from here
               // Unless giving check, this capture is likely bad
               if (   !givesCheck
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
-              {
-                  r++;
-                  if (quietCount > 3 && type_of(pos.captured_piece()) < type_of(movedPiece))
-                    r++;  // on top of that a 'bad'-capture, so probably a loosing exchange and thus very far from reaching alpha
-              }
+                  r+= 1 + realbadCapture;
           }
           else
           {
