@@ -1195,13 +1195,9 @@ moves_loop: // When in check, search starts from here
           if (captureOrPromotion)
           {
               // Unless giving check, this capture is likely bad
-              if (   !givesCheck && type_of(move) != PROMOTION
-                  && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 200 * depth <= alpha)
-              {
+              if (   !givesCheck
+                  && ss->staticEval + PieceValue[EG][pos.captured_piece() ? type_of(pos.captured_piece()) : ROOK] + 195 * depth <= alpha)
                   r++;
-                  if(captureCount >= 2 && depth <=3)
-                    r++;
-              }
           }
           else
           {
