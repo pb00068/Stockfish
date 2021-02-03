@@ -1135,9 +1135,9 @@ moves_loop: // When in check, search starts from here
                && pos.non_pawn_material() <= 2 * RookValueMg)
           extension = 1;
 
-      else if (pos.captured_piece()
-          && captureOrPromotion
+      else if (captureOrPromotion
           && to_sq(move) == to_sq((ss-1)->currentMove)
+          && PieceValue[EG][pos.piece_on(to_sq(move))] > PieceValue[EG][pos.captured_piece()]
           && ss->staticEval + PieceValue[EG][pos.piece_on(to_sq(move))] - PieceValue[EG][movedPiece] >= beta)
             extension = -1;
 
