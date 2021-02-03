@@ -1248,7 +1248,7 @@ moves_loop: // When in check, search starts from here
 
           doFullDepthSearch = value > alpha && d != newDepth;
 
-          if (doFullDepthSearch && value > alpha + 200 && d == newDepth - 1)
+          if (!extension && value > alpha + 200 && d == newDepth - 1)
               doFullDepthSearch=false;
 
           didLMR = true;
