@@ -1135,12 +1135,6 @@ moves_loop: // When in check, search starts from here
                && pos.non_pawn_material() <= 2 * RookValueMg)
           extension = 1;
 
-      else if (captureOrPromotion
-          && to_sq(move) == to_sq((ss-1)->currentMove)
-          && PieceValue[EG][pos.piece_on(to_sq(move))] > PieceValue[EG][pos.captured_piece()]
-          && ss->staticEval + PieceValue[EG][pos.piece_on(to_sq(move))] - PieceValue[EG][movedPiece] >= beta)
-            extension = -1;
-
       // Add extension to new depth
       newDepth += extension;
 
@@ -1204,6 +1198,11 @@ moves_loop: // When in check, search starts from here
               if (   !givesCheck
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
+              // also reduct if capture is likely to produce a cut off
+              else if (captureCount < 2 && to_sq(move) == to_sq((ss-1)->currentMove)
+                  && PieceValue[EG][pos.captured_piece()] > PieceValue[EG][movedPiece]
+                  && ss->staticEval + PieceValue[EG][pos.captured_piece()] - PieceValue[EG][movedPiece] >= beta)
+                   r++;
           }
           else
           {
