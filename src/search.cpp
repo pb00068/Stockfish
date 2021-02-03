@@ -1199,10 +1199,8 @@ moves_loop: // When in check, search starts from here
                   && ss->staticEval + PieceValue[EG][pos.captured_piece()] + 210 * depth <= alpha)
                   r++;
               // also reduct if capture is likely to produce a cut off
-              else if (captureCount < 2 && to_sq(move) == to_sq((ss-1)->currentMove)
-                  && PieceValue[EG][pos.captured_piece()] > PieceValue[EG][movedPiece]
-                  && ss->staticEval + PieceValue[EG][pos.captured_piece()] - PieceValue[EG][movedPiece] >= beta)
-                   r++;
+              else if (ss->staticEval + PieceValue[EG][pos.captured_piece()] - PieceValue[EG][movedPiece] - 100 * depth >= beta)
+                  r++;
           }
           else
           {
