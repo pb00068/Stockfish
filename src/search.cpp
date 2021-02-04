@@ -306,9 +306,8 @@ void Thread::search() {
   int iterIdx = 0;
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
-  for (int i = 7; i > 0; i--) {
+  for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
-  }
 
   ss->pv = pv;
 
@@ -1347,10 +1346,15 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (depth < 3 && moveCount < 5 && givesCheck && (pos.check_squares(type_of(movedPiece)) & to_sq(move)) && type_of(movedPiece) != KNIGHT)
+                  if (givesCheck
+                      && moveCount < 5
+                      && !captureOrPromotion
+                      && depth < 3
+                      && type_of(movedPiece) > KNIGHT
+                      && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
                   {
                      Bitboard b = between_bb(to_sq(move),pos.square<KING>(~us));
-                     if (!(b & from_sq((ss-1)->currentMove)))
+                     if (b && !(b & from_sq((ss-1)->currentMove)))
                          (ss-1)->checkLine = b;
                          //sync_cout << pos << "goes to check " << UCI::move(move, pos.is_chess960()) << " check line : " << Bitboards::pretty(b) <<sync_endl;
                   }
