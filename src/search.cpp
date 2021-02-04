@@ -1349,7 +1349,7 @@ moves_loop: // When in check, search starts from here
                   if (givesCheck
                       && moveCount < 5
                       && !captureOrPromotion
-                      && depth < 3
+                      && depth < 5
                       && type_of(movedPiece) > KNIGHT
                       && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
                   {
