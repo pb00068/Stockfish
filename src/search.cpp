@@ -306,8 +306,9 @@ void Thread::search() {
   int iterIdx = 0;
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
-  for (int i = 7; i > 0; i--)
+  for (int i = 7; i > 0; i--) {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
+  }
 
   ss->pv = pv;
 
@@ -974,6 +975,7 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
+    ss->checkLine = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1024,6 +1026,9 @@ moves_loop: // When in check, search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+
+      //dbg_hit_on(pos.captured_piece(), captureOrPromotion && givesCheck);
+
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1342,6 +1347,13 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
+                  if (depth < 3 && moveCount < 5 && givesCheck && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+                  {
+                     Bitboard b = between_bb(to_sq(move),pos.square<KING>(~us));
+                     if (!(b & from_sq((ss-1)->currentMove)))
+                         (ss-1)->checkLine = b;
+                         //sync_cout << pos << "goes to check " << UCI::move(move, pos.is_chess960()) << " check line : " << Bitboards::pretty(b) <<sync_endl;
+                  }
                   break;
               }
           }
@@ -1355,6 +1367,8 @@ moves_loop: // When in check, search starts from here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          mp.setCheckingLine(ss->checkLine);
       }
     }
 

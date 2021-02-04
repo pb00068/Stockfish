@@ -17,7 +17,10 @@
 */
 
 #include <cassert>
+#include <iostream>
 
+#include "misc.h"
+#include "uci.h"
 #include "movepick.h"
 
 namespace {
@@ -63,6 +66,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+  checkLine = 0;
 }
 
 /// MovePicker constructor for quiescence search
@@ -104,12 +108,21 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
+      {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+          if (checkLine & to_sq(m))
+          {
+               m.value +=  type_of(pos.moved_piece(m)) == KING ? -1000 : 500; // malus for king moving along check-line, bonus for interfering with another piece
+               //sync_cout << pos << "goes to checkline " << Bitboards::pretty(checkLine) << " " << UCI::move(m, pos.is_chess960()) << " check sq : " << UCI::move(make_move(recaptureSquare,recaptureSquare), pos.is_chess960()) <<sync_endl;
+          }
+          else if (checkLine && type_of(pos.moved_piece(m)) == KING)
+               m.value += 500; // bonus for king moving away from check-line
+      }
 
       else // Type == EVASIONS
       {
