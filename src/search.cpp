@@ -1347,7 +1347,8 @@ moves_loop: // When in check, search starts from here
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
                   if (givesCheck
-                      && !cutNode
+                      && (ss-1)->moveCount < 4
+                      && depth < 4
                       && !captureOrPromotion
                       && type_of(movedPiece) > KNIGHT
                       && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))

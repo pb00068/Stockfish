@@ -101,7 +101,7 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
-  int max = -10000;
+  int max = -0;
 
   for (auto& m : *this)
   {
@@ -139,13 +139,13 @@ void MovePicker::score() {
            if (checkLine & to_sq(m))
            {
                 // bonus for interfering with another piece
-                if (type_of(pos.moved_piece(m)) != KING && m.value >= -100)
+                if (type_of(pos.moved_piece(m)) != KING && m.value >= -max/16)
                    m.value +=  max/2 ;
            }
            else if (checkLine
                 && type_of(pos.moved_piece(m)) == KING
                 && !( LineBB[lsb(checkLine)][msb(checkLine)] & to_sq(m)))
-             m.value = max-10; // bonus for king moving away from check-line
+             m.value += max/2; // bonus for king moving away from check-line
       }
   }
 }
