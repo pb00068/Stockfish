@@ -1348,7 +1348,7 @@ moves_loop: // When in check, search starts from here
                   ss->statScore = 0;
                   if (givesCheck
                       && (ss-1)->moveCount < 4
-                      && depth < 4
+                      && depth < 5
                       && !captureOrPromotion
                       && type_of(movedPiece) > KNIGHT
                       && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))

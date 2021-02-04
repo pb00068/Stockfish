@@ -140,12 +140,12 @@ void MovePicker::score() {
            {
                 // bonus for interfering with another piece
                 if (type_of(pos.moved_piece(m)) != KING && m.value >= -max/16)
-                   m.value +=  max/2 ;
+                   m.value +=  max/4 ;
            }
            else if (checkLine
                 && type_of(pos.moved_piece(m)) == KING
                 && !( LineBB[lsb(checkLine)][msb(checkLine)] & to_sq(m)))
-             m.value += max/2; // bonus for king moving away from check-line
+             m.value += max/4; // bonus for king moving away from check-line
       }
   }
 }
