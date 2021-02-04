@@ -1347,7 +1347,7 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (depth < 3 && moveCount < 5 && givesCheck && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+                  if (depth < 3 && moveCount < 5 && givesCheck && (pos.check_squares(type_of(movedPiece)) & to_sq(move)) && type_of(movedPiece) != KNIGHT)
                   {
                      Bitboard b = between_bb(to_sq(move),pos.square<KING>(~us));
                      if (!(b & from_sq((ss-1)->currentMove)))

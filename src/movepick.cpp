@@ -118,7 +118,8 @@ void MovePicker::score() {
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
           if (checkLine & to_sq(m))
           {
-               m.value +=  type_of(pos.moved_piece(m)) == KING ? -max/2 : max/2; // malus for king moving along check-line, bonus for interfering with another piece
+               // malus for king moving along check-line, bonus for interfering with another piece
+               m.value +=  type_of(pos.moved_piece(m)) == KING ? -max/2 : (m.value >= 0 ? max/2 : 0);
                //sync_cout << pos << "goes to checkline " << Bitboards::pretty(checkLine) << " " << UCI::move(m, pos.is_chess960()) << " check sq : " << UCI::move(make_move(recaptureSquare,recaptureSquare), pos.is_chess960()) <<sync_endl;
           }
           else if (checkLine && type_of(pos.moved_piece(m)) == KING)
