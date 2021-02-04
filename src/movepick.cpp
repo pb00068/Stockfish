@@ -101,6 +101,7 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+  int max = 100;
 
   for (auto& m : *this)
       if (Type == CAPTURES)
@@ -117,11 +118,12 @@ void MovePicker::score() {
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
           if (checkLine & to_sq(m))
           {
-               m.value +=  type_of(pos.moved_piece(m)) == KING ? -1000 : 500; // malus for king moving along check-line, bonus for interfering with another piece
+               m.value +=  type_of(pos.moved_piece(m)) == KING ? -max/2 : max/2; // malus for king moving along check-line, bonus for interfering with another piece
                //sync_cout << pos << "goes to checkline " << Bitboards::pretty(checkLine) << " " << UCI::move(m, pos.is_chess960()) << " check sq : " << UCI::move(make_move(recaptureSquare,recaptureSquare), pos.is_chess960()) <<sync_endl;
           }
           else if (checkLine && type_of(pos.moved_piece(m)) == KING)
-               m.value += 500; // bonus for king moving away from check-line
+               m.value += max/2; // bonus for king moving away from check-line
+          max = std::max(max, m.value);
       }
 
       else // Type == EVASIONS
