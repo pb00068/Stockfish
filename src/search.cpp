@@ -1041,16 +1041,6 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-          if (ss->checkLine & to_sq(move))
-          {
-               // further reduce if king is moving along check-line, decrease reducing when interfering with another piece
-               lmrDepth +=  type_of(movedPiece) == KING ? -1 : 1;
-          }
-          else if (ss->checkLine
-                && type_of(movedPiece) == KING
-                && !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
-                  lmrDepth += 1; // decrease reducing for king moving away from check-line
-
           if (   captureOrPromotion
               || givesCheck)
           {
@@ -1216,6 +1206,16 @@ moves_loop: // When in check, search starts from here
               // Increase reduction if ttMove is a capture (~5 Elo)
               if (ttCapture)
                   r++;
+
+              if ((ss->checkLine & to_sq(move)) && type_of(movedPiece) != KING)
+              {
+                   // decrease reducing when interfering with another piece
+                   r--;
+              }
+              else if (ss->checkLine
+                    && type_of(movedPiece) == KING
+                    && !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
+                      r--; // decrease reducing for king moving away from check-line
 
               // Increase reduction at root if failing high
               r += rootNode ? thisThread->failedHighCnt * thisThread->failedHighCnt * moveCount / 512 : 0;
