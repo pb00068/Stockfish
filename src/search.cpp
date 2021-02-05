@@ -1043,6 +1043,16 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
+          if (ss->checkLine & to_sq(move))
+          {
+               // further reduce if king is moving along check-line, decrease reducing when interfering with another piece
+               lmrDepth +=  type_of(movedPiece) == KING ? -1 : 1;
+          }
+          else if (ss->checkLine
+                && type_of(movedPiece) == KING
+                && !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
+                  lmrDepth += 1; // decrease reducing for king moving away from check-line
+
           if (   captureOrPromotion
               || givesCheck)
           {
@@ -1347,15 +1357,13 @@ moves_loop: // When in check, search starts from here
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
                   if (givesCheck
-                      && (ss-1)->moveCount < 4
-                      && depth < 5
                       && !captureOrPromotion
                       && type_of(movedPiece) > KNIGHT
                       && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
                   {
-                     Bitboard b = between_bb(to_sq(move),pos.square<KING>(~us));
+                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
                      if (b && !(b & from_sq((ss-1)->currentMove)))
-                         (ss-1)->checkLine = b;
+                         (ss-1)->checkLine |= b;
                          //sync_cout << pos << "goes to check " << UCI::move(move, pos.is_chess960()) << " check line : " << Bitboards::pretty(b) <<sync_endl;
                   }
                   break;
@@ -1371,8 +1379,6 @@ moves_loop: // When in check, search starts from here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
-
-          mp.setCheckingLine(ss->checkLine);
       }
     }
 

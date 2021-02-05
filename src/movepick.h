@@ -134,9 +134,6 @@ public:
                                            const Move*,
                                            int);
   Move next_move(bool skipQuiets = false);
-  void setCheckingLine(Bitboard line) {
-  	checkLine = line;
-  }
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -157,7 +154,6 @@ private:
   Depth depth;
   int ply;
   ExtMove moves[MAX_MOVES];
-  Bitboard checkLine;
 };
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

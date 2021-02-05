@@ -66,7 +66,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
-  checkLine = 0;
 }
 
 /// MovePicker constructor for quiescence search
@@ -101,7 +100,6 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
-  int max = -0;
 
   for (auto& m : *this)
   {
@@ -110,15 +108,12 @@ void MovePicker::score() {
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if (Type == QUIETS)
-      {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
-          max = std::max(max, m.value);
-      }
 
       else // Type == EVASIONS
       {
@@ -129,23 +124,6 @@ void MovePicker::score() {
               m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                        + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
-      }
-  }
-
-  if (Type == QUIETS && checkLine!=0)
-  {
-      for (auto& m : *this)
-      {
-           if (checkLine & to_sq(m))
-           {
-                // bonus for interfering with another piece
-                if (type_of(pos.moved_piece(m)) != KING && m.value >= -max/16)
-                   m.value +=  max/4 ;
-           }
-           else if (checkLine
-                && type_of(pos.moved_piece(m)) == KING
-                && !( LineBB[lsb(checkLine)][msb(checkLine)] & to_sq(m)))
-             m.value += max/4; // bonus for king moving away from check-line
       }
   }
 }
