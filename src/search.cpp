@@ -1356,12 +1356,13 @@ moves_loop: // When in check, search starts from here
                   ss->statScore = 0;
                   if (givesCheck
                       && !captureOrPromotion
+                      && !(ss-1)->checkLine
                       && type_of(movedPiece) > KNIGHT
                       && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
                   {
                      Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
                      if (b && !(b & from_sq((ss-1)->currentMove)))
-                         (ss-1)->checkLine |= b;
+                         (ss-1)->checkLine = b;
                   }
                   break;
               }
