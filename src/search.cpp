@@ -1026,8 +1026,6 @@ moves_loop: // When in check, search starts from here
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
-      //dbg_hit_on(pos.captured_piece(), captureOrPromotion && givesCheck);
-
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1364,7 +1362,6 @@ moves_loop: // When in check, search starts from here
                      Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
                      if (b && !(b & from_sq((ss-1)->currentMove)))
                          (ss-1)->checkLine |= b;
-                         //sync_cout << pos << "goes to check " << UCI::move(move, pos.is_chess960()) << " check line : " << Bitboards::pretty(b) <<sync_endl;
                   }
                   break;
               }

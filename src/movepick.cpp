@@ -17,10 +17,7 @@
 */
 
 #include <cassert>
-#include <iostream>
 
-#include "misc.h"
-#include "uci.h"
 #include "movepick.h"
 
 namespace {
@@ -102,7 +99,6 @@ void MovePicker::score() {
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
   for (auto& m : *this)
-  {
       if (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
@@ -125,7 +121,6 @@ void MovePicker::score() {
                        + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
-  }
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
