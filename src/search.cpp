@@ -1044,11 +1044,11 @@ moves_loop: // When in check, search starts from here
           if ((ss->checkLine & to_sq(move)) && type_of(movedPiece) != KING)
           {
               // decrease reducing when interfering with another piece
-              lmrDepth += 2;
+              lmrDepth += 3;
           }
           else if (ss->checkLine && type_of(movedPiece) == KING)
                //&& !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
-               lmrDepth += 2; // decrease reducing for king moving away from check-line (or stepping back along)
+               lmrDepth += 3; // decrease reducing for king moving away from check-line (or stepping back along)
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1343,6 +1343,16 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              if (givesCheck
+                  && !captureOrPromotion
+                  && !(ss-1)->checkLine
+                  && type_of(movedPiece) > KNIGHT
+                  && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+                  {
+                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
+                     if (b && !(b & from_sq((ss-1)->currentMove)))
+                      (ss-1)->checkLine = b;
+                  }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1353,16 +1363,6 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (givesCheck
-                      && !captureOrPromotion
-                      && !(ss-1)->checkLine
-                      && type_of(movedPiece) > KNIGHT
-                      && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
-                  {
-                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
-                     if (b && !(b & from_sq((ss-1)->currentMove)))
-                         (ss-1)->checkLine = b;
-                  }
                   break;
               }
           }
