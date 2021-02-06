@@ -1041,15 +1041,14 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-          if (ss->checkLine & to_sq(move))
+          if ((ss->checkLine & to_sq(move)) && type_of(movedPiece) != KING)
           {
-               // further reduce if king is moving along check-line, decrease reducing when interfering with another piece
-               lmrDepth +=  type_of(movedPiece) == KING ? -1 : 1;
+              // decrease reducing when interfering with another piece
+              lmrDepth += 2;
           }
-          else if (ss->checkLine
-                && type_of(movedPiece) == KING
-                && !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
-                  lmrDepth += 1; // decrease reducing for king moving away from check-line
+          else if (ss->checkLine && type_of(movedPiece) == KING)
+               //&& !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
+               lmrDepth += 2; // decrease reducing for king moving away from check-line (or stepping back along)
 
           if (   captureOrPromotion
               || givesCheck)
