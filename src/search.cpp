@@ -652,7 +652,7 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+6)->checkLine = (ss+6)->betwCheck = 0;
+    (ss+4)->checkLine = (ss+4)->betwCheck = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1358,11 +1358,9 @@ moves_loop: // When in check, search starts from here
                      {
                          (ss-1)->checkLine |= b;
                          (ss-3)->checkLine |= b;
-                         (ss-5)->checkLine |= b;
                          b = LineBB[to_sq(move)][pos.square<KING>(~us)];
                          (ss-1)->betwCheck |= b;
                          (ss-3)->betwCheck |= b;
-                         (ss-5)->betwCheck |= b;
                      }
                   }
                   break;
