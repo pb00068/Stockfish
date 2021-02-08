@@ -616,6 +616,7 @@ namespace {
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue = -VALUE_INFINITE;
     maxValue = VALUE_INFINITE;
+    ss->checkLine = ss->betwCheck = 0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -652,7 +653,6 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+4)->checkLine = (ss+4)->betwCheck = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -991,7 +991,7 @@ moves_loop: // When in check, search starts from here
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
 
-    bool avoidCheck = (ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us)));
+    bool avoidCheck = ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1364,18 +1364,15 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (directCheck && depth > 2 && !captureOrPromotion && type_of(movedPiece) > KNIGHT)
+                  if (directCheck && depth > 1 && !captureOrPromotion && type_of(movedPiece) > KNIGHT
+                      && pos.count<PAWN>(~us) >= 4)
                   {
-                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
+                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us)) | to_sq(move);
                      if (b && !(b & from_sq((ss-1)->currentMove)))
                      {
                          (ss-1)->betwCheck |= b;
-                         (ss-3)->betwCheck |= b;
                         // sync_cout << pos << UCI::move(move, pos.is_chess960()) << " checks  between" << Bitboards::pretty(b) <<  sync_endl;
-                         b = LineBB[to_sq(move)][pos.square<KING>(~us)];
-                         (ss-1)->checkLine |= b;
-                         (ss-3)->checkLine |= b;
-
+                         (ss-1)->checkLine |= LineBB[to_sq(move)][pos.square<KING>(~us)];
                      }
                   }
                   break;
