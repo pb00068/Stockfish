@@ -602,7 +602,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool formerPv, givesCheck, improving, didLMR, priorCapture;
+    bool formerPv, givesCheck, directCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
@@ -652,6 +652,7 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+6)->checkLine = (ss+6)->betwCheck = 0;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -974,7 +975,6 @@ moves_loop: // When in check, search starts from here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    ss->checkLine = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1024,7 +1024,7 @@ moves_loop: // When in check, search starts from here
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, directCheck);
 
 
       // Calculate new depth for this move
@@ -1041,14 +1041,12 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-          if ((ss->checkLine & to_sq(move)) && type_of(movedPiece) != KING)
-          {
-              // decrease reducing when interfering with another piece
-              lmrDepth += 2;
-          }
-          else if (ss->checkLine && type_of(movedPiece) == KING)
-               //&& !( LineBB[lsb(ss->checkLine)][msb(ss->checkLine)] & to_sq(move)))
-               lmrDepth += 2; // decrease reducing for king moving away from check-line (or stepping back along)
+          if (type_of(movedPiece) == KING)
+               // increase lmrDepth when king moves away from upcoming check-line
+              lmrDepth += bool(ss->checkLine & from_sq(move)) && !bool(ss->checkLine & to_sq(move));
+          else
+              // increase lmrDepth when interfering upcoming check with another piece
+              lmrDepth += bool(ss->betwCheck & to_sq(move));
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1353,15 +1351,19 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (givesCheck
-                      && !captureOrPromotion
-                      && !(ss-1)->checkLine
-                      && type_of(movedPiece) > KNIGHT
-                      && (pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+                  if (depth > 2 && directCheck && type_of(movedPiece) > KNIGHT)
                   {
                      Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
                      if (b && !(b & from_sq((ss-1)->currentMove)))
-                         (ss-1)->checkLine = b;
+                     {
+                         (ss-1)->checkLine |= b;
+                         (ss-3)->checkLine |= b;
+                         (ss-5)->checkLine |= b;
+                         b = LineBB[to_sq(move)][pos.square<KING>(~us)];
+                         (ss-1)->betwCheck |= b;
+                         (ss-3)->betwCheck |= b;
+                         (ss-5)->betwCheck |= b;
+                     }
                   }
                   break;
               }
@@ -1453,7 +1455,7 @@ moves_loop: // When in check, search starts from here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool pvHit, givesCheck, captureOrPromotion;
+    bool pvHit, givesCheck, directCheck, captureOrPromotion;
     int moveCount;
 
     if (PvNode)
@@ -1557,7 +1559,7 @@ moves_loop: // When in check, search starts from here
     {
       assert(is_ok(move));
 
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, directCheck);
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;

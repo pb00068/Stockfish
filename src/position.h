@@ -126,7 +126,7 @@ public:
   bool pseudo_legal(const Move m) const;
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
-  bool gives_check(Move m) const;
+  bool gives_check(Move m, bool& direct) const;
   bool advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   Piece captured_piece() const;
@@ -415,7 +415,8 @@ inline void Position::move_piece(Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt) {
-  do_move(m, newSt, gives_check(m));
+  bool direct;
+  do_move(m, newSt, gives_check(m, direct));
 }
 
 inline StateInfo* Position::state() const {
