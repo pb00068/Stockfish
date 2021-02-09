@@ -1042,7 +1042,7 @@ moves_loop: // When in check, search starts from here
 
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
-
+          int mlrorig = lmrDepth;
           if (avoidCheck)
           {
               if (type_of(movedPiece) == KING)
@@ -1059,6 +1059,8 @@ moves_loop: // When in check, search starts from here
                    //if (bool(ss->betwCheck & to_sq(move)))
                    //   sync_cout << pos << UCI::move(move, pos.is_chess960()) << "intefer " << Bitboards::pretty(ss->betwCheck) <<  sync_endl;
               }
+              dbg_hit_on(mlrorig != lmrDepth);
+              lmrDepth = mlrorig;
           }
 
           if (   captureOrPromotion
