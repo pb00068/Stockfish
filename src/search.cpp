@@ -991,7 +991,8 @@ moves_loop: // When in check, search starts from here
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
 
-    bool avoidCheck = ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
+     // set to true if a new best move might be found preventing an upcoming check
+    bool avoidCheck = ss->staticEval + 60 > alpha && ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1042,26 +1043,8 @@ moves_loop: // When in check, search starts from here
 
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
-          int mlrorig = lmrDepth;
-          if (avoidCheck)
-          {
-              if (type_of(movedPiece) == KING)
-              {
-                   // increase lmrDepth when king moves away from upcoming check-line
-                   lmrDepth += 2 * (bool(ss->checkLine & from_sq(move)) && !bool(ss->checkLine & to_sq(move)));
-                   //if (bool(ss->checkLine & from_sq(move)) && !bool(ss->checkLine & to_sq(move)))
-                   //sync_cout << pos << UCI::move(move, pos.is_chess960()) << "king-escape " << Bitboards::pretty(ss->checkLine) <<  sync_endl;
-              }
-              else
-              {
-                   // increase lmrDepth when interfering upcoming check with another piece
-                   lmrDepth +=  bool(ss->betwCheck & to_sq(move)) && type_of(movedPiece) != QUEEN;
-                   //if (bool(ss->betwCheck & to_sq(move)))
-                   //   sync_cout << pos << UCI::move(move, pos.is_chess960()) << "intefer " << Bitboards::pretty(ss->betwCheck) <<  sync_endl;
-              }
-              dbg_hit_on(mlrorig != lmrDepth);
-              lmrDepth = mlrorig;
-          }
+          if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
+              lmrDepth+=2;
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1229,6 +1212,11 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
+              if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
+                   r--; // when moving away from upcoming check-ray
+              else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)))
+                   r--; // when interfering upcoming check with another piece
+
               // Increase reduction at root if failing high
               r += rootNode ? thisThread->failedHighCnt * thisThread->failedHighCnt * moveCount / 512 : 0;
 
@@ -1373,7 +1361,6 @@ moves_loop: // When in check, search starts from here
                      if (b && !(b & from_sq((ss-1)->currentMove)))
                      {
                          (ss-1)->betwCheck |= b;
-                        // sync_cout << pos << UCI::move(move, pos.is_chess960()) << " checks  between" << Bitboards::pretty(b) <<  sync_endl;
                          (ss-1)->checkLine |= LineBB[to_sq(move)][pos.square<KING>(~us)];
                      }
                   }
