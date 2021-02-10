@@ -992,7 +992,7 @@ moves_loop: // When in check, search starts from here
     ThreadHolding th(thisThread, posKey, ss->ply);
 
      // set to true if a new best move might be found preventing an upcoming check
-    bool avoidCheck = ss->staticEval + 60 > alpha && ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
+    bool avoidCheck = !cutNode && ss->staticEval + 60 > alpha && ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
 
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1043,8 +1043,6 @@ moves_loop: // When in check, search starts from here
 
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
-          if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
-              lmrDepth+=2;
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1212,10 +1210,6 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
-              if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
-                   r--; // when moving away from upcoming check-ray
-              else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)))
-                   r--; // when interfering upcoming check with another piece
 
               // Increase reduction at root if failing high
               r += rootNode ? thisThread->failedHighCnt * thisThread->failedHighCnt * moveCount / 512 : 0;
@@ -1223,13 +1217,21 @@ moves_loop: // When in check, search starts from here
               // Increase reduction for cut nodes (~10 Elo)
               if (cutNode)
                   r += 2;
+              else
+              {
+                // Decrease reduction for moves that escape a capture. Filter out
+                // castling moves, because they are coded as "king captures rook" and
+                // hence break make_move(). (~2 Elo)
+                if (    type_of(move) == NORMAL
+                         && !pos.see_ge(reverse_move(move)))
+                    r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
+                if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
+                      r--; // when moving away from upcoming check-ray
+                else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)))
+                      r--; // when interfering upcoming check with another piece
+              }
 
-              // Decrease reduction for moves that escape a capture. Filter out
-              // castling moves, because they are coded as "king captures rook" and
-              // hence break make_move(). (~2 Elo)
-              else if (    type_of(move) == NORMAL
-                       && !pos.see_ge(reverse_move(move)))
-                  r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
+
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
