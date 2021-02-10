@@ -1226,8 +1226,13 @@ moves_loop: // When in check, search starts from here
                     r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
                 // set to true if a new best move might be found preventing an upcoming check
-                if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
+                if (avoidCheck && type_of(movedPiece) == KING)
+                {
+                   if ((ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
                       r--; // when moving away from upcoming check-ray
+                   else if (ss->checkLine & to_sq(move))
+                      r++;
+                }
                 else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)) && (ss->checkLine & pos.square<KING>(us)))
                       r--; // when interfering upcoming check with another piece
               }
