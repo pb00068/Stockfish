@@ -1150,7 +1150,7 @@ moves_loop: // When in check, search starts from here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
-      bool avoidCheck = ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces());
+      bool avoidCheck = type_of(movedPiece) == KING && ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces());
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1225,18 +1225,10 @@ moves_loop: // When in check, search starts from here
                          && !pos.see_ge(reverse_move(move)))
                     r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
-                // set to true if a new best move might be found preventing an upcoming check
-                if (avoidCheck && type_of(movedPiece) == KING)
-                {
-                   if ((ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
-                      r--; // when moving away from upcoming check-ray
-                   else if (ss->checkLine & to_sq(move))
-                      r++;
-                }
-                else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)) && (ss->checkLine & pos.square<KING>(us)))
-                      r--; // when interfering upcoming check with another piece
+                // less reduction when king move might prevent/escape well an upcoming check
+                if (avoidCheck && (ss->checkLine & from_sq(move)))
+                   r--;
               }
-
 
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1362,9 +1354,9 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (directCheck && depth > 1 && !captureOrPromotion && type_of(movedPiece) > KNIGHT)
+                  if (directCheck && newDepth > 1 && !captureOrPromotion && type_of(movedPiece) > KNIGHT)
                   {
-                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us)) | to_sq(move);
+                     Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us));
                      if (b && !(b & from_sq((ss-1)->currentMove)))
                      {
                          (ss-1)->betwCheck |= b;
