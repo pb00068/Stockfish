@@ -991,9 +991,6 @@ moves_loop: // When in check, search starts from here
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
 
-     // set to true if a new best move might be found preventing an upcoming check
-    bool avoidCheck = !cutNode && ss->staticEval + 60 > alpha && ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces()) && (ss->checkLine & pos.square<KING>(us));
-
     // Step 11. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1153,6 +1150,8 @@ moves_loop: // When in check, search starts from here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      bool avoidCheck = ss->betwCheck != 0 && !(ss->betwCheck & pos.pieces());
+
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1225,9 +1224,11 @@ moves_loop: // When in check, search starts from here
                 if (    type_of(move) == NORMAL
                          && !pos.see_ge(reverse_move(move)))
                     r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
+
+                // set to true if a new best move might be found preventing an upcoming check
                 if (avoidCheck && type_of(movedPiece) == KING && (ss->checkLine & from_sq(move)) && !(ss->checkLine & to_sq(move)))
                       r--; // when moving away from upcoming check-ray
-                else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)))
+                else if (avoidCheck && type_of(movedPiece) < QUEEN  && (ss->betwCheck & to_sq(move)) && (ss->checkLine & pos.square<KING>(us)))
                       r--; // when interfering upcoming check with another piece
               }
 
@@ -1356,8 +1357,7 @@ moves_loop: // When in check, search starts from here
               {
                   assert(value >= beta); // Fail high
                   ss->statScore = 0;
-                  if (directCheck && depth > 1 && !captureOrPromotion && type_of(movedPiece) > KNIGHT
-                      && pos.count<PAWN>(~us) >= 4)
+                  if (directCheck && depth > 1 && !captureOrPromotion && type_of(movedPiece) > KNIGHT)
                   {
                      Bitboard b = between_bb(to_sq(move), pos.square<KING>(~us)) | to_sq(move);
                      if (b && !(b & from_sq((ss-1)->currentMove)))
