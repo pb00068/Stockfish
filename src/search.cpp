@@ -712,9 +712,9 @@ namespace {
             else if (!pos.capture_or_promotion(ttMove))
             {
                 int penalty = -stat_bonus(depth);
-                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/2 + 0) % 6] << penalty;
-                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/2 + 1) % 6] << penalty/2;
-                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/2 - 1) % 6] << penalty/2;
+                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/4 + 0) % 6] << penalty;
+                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/4 + 1) % 6] << penalty/2;
+                thisThread->mainHistory[us][from_to(ttMove)][(pos.game_ply()/4 - 1) % 6] << penalty/2;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
@@ -820,9 +820,9 @@ namespace {
     if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
     {
         int bonus = std::clamp(-depth * 4 * int((ss-1)->staticEval + ss->staticEval - 2 * Tempo), -1000, 1000);
-        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/2 + 0) % 6] << bonus;
-        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/2 - 1) % 6] << bonus/2;
-        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/2 + 1) % 6] << bonus/2;
+        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/4 + 0) % 6] << bonus;
+        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/4 - 1) % 6] << bonus/2;
+        thisThread->mainHistory[~us][from_to((ss-1)->currentMove)][(pos.game_ply()/4 + 1) % 6] << bonus/2;
     }
 
     // Set up improving flag that is used in various pruning heuristics
@@ -1232,7 +1232,7 @@ moves_loop: // When in check, search starts from here
                        && !pos.see_ge(reverse_move(move)))
                   r -= 2 + ss->ttPv - (type_of(movedPiece) == PAWN);
 
-              ss->statScore =  thisThread->mainHistory[us][from_to(move)][(pos.game_ply()/2) % 6]
+              ss->statScore =  thisThread->mainHistory[us][from_to(move)][(pos.game_ply()/4) % 6]
                              + (*contHist[0])[movedPiece][to_sq(move)]
                              + (*contHist[1])[movedPiece][to_sq(move)]
                              + (*contHist[3])[movedPiece][to_sq(move)]
@@ -1249,7 +1249,7 @@ moves_loop: // When in check, search starts from here
               // If we are not in check use statScore, if we are in check
               // use sum of main history and first continuation history with an offset
               if (ss->inCheck)
-                  r -= (thisThread->mainHistory[us][from_to(move)][(pos.game_ply()/2) % 6]
+                  r -= (thisThread->mainHistory[us][from_to(move)][(pos.game_ply()/4) % 6]
                      + (*contHist[0])[movedPiece][to_sq(move)] - 4341) / 16384;
               else
                   r -= ss->statScore / 14382;
@@ -1732,9 +1732,9 @@ moves_loop: // When in check, search starts from here
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2, depth);
 
-        int j = (pos.game_ply()/2 - 0) % 6;
-        int k = (pos.game_ply()/2 + 1) % 6;
-        int l = (pos.game_ply()/2 - 1) % 6;
+        int j = (pos.game_ply()/4 - 0) % 6;
+        int k = (pos.game_ply()/4 + 1) % 6;
+        int l = (pos.game_ply()/4 - 1) % 6;
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1794,9 +1794,9 @@ moves_loop: // When in check, search starts from here
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    int i = (pos.game_ply()/2 + 0) % 6;
-    int j = (pos.game_ply()/2 + 1) % 6;
-    int k = (pos.game_ply()/2 - 1) % 6;
+    int i = (pos.game_ply()/4 + 0) % 6;
+    int j = (pos.game_ply()/4 + 1) % 6;
+    int k = (pos.game_ply()/4 - 1) % 6;
     thisThread->mainHistory[us][from_to(move)][i] << bonus;
     thisThread->mainHistory[us][from_to(move)][j] << bonus/2;
     thisThread->mainHistory[us][from_to(move)][k] << bonus/2;
