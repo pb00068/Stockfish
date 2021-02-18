@@ -1363,7 +1363,11 @@ moves_loop: // When in check, search starts from here
               capturesSearched[captureCount++] = move;
 
           else if (!captureOrPromotion && quietCount < 64)
+          {
               quietsSearched[quietCount++] = move;
+              if (value < alpha - QueenValueEg && quietCount < 64)
+                quietsSearched[quietCount++] = move;
+          }
       }
     }
 
