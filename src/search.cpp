@@ -1025,7 +1025,13 @@ moves_loop: // When in check, search starts from here
 
       // Check for legality
       if (!rootNode && !pos.legal(move))
+      {
+          if (!rootNode && type_of(move) == CASTLING && (pos.castlingWayAttackers() & prevSq) &&
+               !(LineBB[lsb(pos.castlingWayAttackers())][msb(pos.castlingWayAttackers())] & from_sq((ss-1)->currentMove)) ) // castling way free but some square on the way is now attacked
+             dbg_hit_on(true), dbg_mean_of(moveCount),
+          	sync_cout << pos << UCI::move(move, pos.is_chess960()) << " not allowed because of " << UCI::move((ss-1)->currentMove, pos.is_chess960()) << sync_endl;
           continue;
+      }
 
       ss->moveCount = ++moveCount;
 
