@@ -501,8 +501,8 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
-Bitboard Position::castlingWayAttackers() const {
-    return st->castlingWayAttackers;
+Bitboard Position::castlingWayAttackers(bool right) const {
+    return st->castlingWayAttackers[right] && st->previous->previous != nullptr && st->previous->previous->castlingWayAttackers[right] != st->castlingWayAttackers[right];
 }
 
 /// Position::legal() tests whether a pseudo-legal move is legal
@@ -528,20 +528,6 @@ bool Position::legal(Move m) const {
   // enemy attacks, it is delayed at a later time: now!
   if (type_of(m) == CASTLING)
   {
-      st->castlingWayAttackers = 0;
-      // After castling, the rook and king final positions are the same in
-      // Chess960 as they would be in standard chess.
-      to = relative_square(us, to > from ? SQ_G1 : SQ_C1);
-      Direction step = to > from ? WEST : EAST;
-
-      for (Square s = to; s != from; s += step)
-          if (attackers_to(s) & pieces(~us))
-          {
-              st->castlingWayAttackers |= lsb(attackers_to(s) & pieces(~us));
-              st->castlingWayAttackers |= s;
-              return false;
-          }
-
       // In case of Chess960, verify if the Rook blocks some checks
       // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
       return !chess960 || !(blockers_for_king(us) & to_sq(m));
@@ -558,6 +544,9 @@ bool Position::legal(Move m) const {
       || aligned(from, to, square<KING>(us));
 }
 
+void Position::setCastlingWayAttackers(bool right, Bitboard b) const {
+    st->castlingWayAttackers[right] = b;
+}
 
 /// Position::pseudo_legal() takes a random move and tests whether the move is
 /// pseudo legal. It is used to validate moves from TT that can be corrupted
