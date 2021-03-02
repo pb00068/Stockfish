@@ -66,8 +66,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
   }
 
   os << "   a   b   c   d   e   f   g   h\n"
-     << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase
-     << std::setfill('0') << std::setw(16) << pos.key()
+     << "\nFen: " << pos.fen() << "\nKey: " <<  pos.key()
      << std::setfill(' ') << std::dec << "\nCheckers: ";
 
   for (Bitboard b = pos.checkers(); b; )
@@ -338,6 +337,22 @@ void Position::set_check_info(StateInfo* si) const {
   si->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
   si->checkSquares[QUEEN]  = si->checkSquares[BISHOP] | si->checkSquares[ROOK];
   si->checkSquares[KING]   = 0;
+
+  si->castlingWayAttackers[0] = si->castlingWayAttackers[1] = 0;
+  ksq = square<KING>(sideToMove);
+  if (can_castle(sideToMove & ANY_CASTLING))
+    for (CastlingRights cr : { sideToMove & KING_SIDE, sideToMove & QUEEN_SIDE } )
+      if (!castling_impeded(cr) && can_castle(cr))
+      {
+        Square to = relative_square(sideToMove, castling_rook_square(cr) > ksq ? SQ_G1 : SQ_C1);
+        Direction step = to > ksq ? WEST : EAST;
+        Square s;
+        for (s = to; s != ksq; s += step)
+           si->castlingWayAttackers[to > ksq] |= attackers_to(s) & pieces(~sideToMove);
+      }
+
+
+
 }
 
 
@@ -505,8 +520,12 @@ void Position::setCastlingWayAttackers(bool right, Bitboard b) const {
     st->castlingWayAttackers[right] = b;
 }
 
-Bitboard Position::castlingWayAttackers(bool right) const {
-    return st->castlingWayAttackers[right];// &&
+bool Position::castlingNowSuppressed() const {
+	if (st->previous->previous == nullptr)
+     return false;
+
+    return (st->castlingWayAttackers[0] && st->previous->previous->castlingWayAttackers[0] == 0) ||
+    		   (st->castlingWayAttackers[1] && st->previous->previous->castlingWayAttackers[1] == 0);
 }
 
 /// Position::legal() tests whether a pseudo-legal move is legal
@@ -532,12 +551,16 @@ bool Position::legal(Move m) const {
   {
       // After castling, the rook and king final positions are the same in
       // Chess960 as they would be in standard chess.
-      if (castlingWayAttackers(to > from))
-          return false;
+      to = relative_square(us, to > from ? SQ_G1 : SQ_C1);
+      Direction step = to > from ? WEST : EAST;
+
+      for (Square s = to; s != from; s += step)
+          if (attackers_to(s) & pieces(~us))
+              return false;
 
       // In case of Chess960, verify if the Rook blocks some checks
       // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
-      else return !chess960 || !(blockers_for_king(us) & to_sq(m));
+      return !chess960 || !(blockers_for_king(us) & to_sq(m));
   }
 
   // If the moving piece is a king, check whether the destination square is

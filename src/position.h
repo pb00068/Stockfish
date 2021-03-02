@@ -108,7 +108,7 @@ public:
   // Castling
   CastlingRights castling_rights(Color c) const;
   bool can_castle(CastlingRights cr) const;
-  bool castling_impeded(CastlingRights cr) const;
+  Bitboard castling_impeded(CastlingRights cr) const;
   Square castling_rook_square(CastlingRights cr) const;
 
   // Checking
@@ -122,7 +122,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
-  Bitboard castlingWayAttackers(bool right) const;
+  bool castlingNowSuppressed() const;
   void setCastlingWayAttackers(bool right, Bitboard b) const;
 
   // Properties of moves
@@ -273,10 +273,10 @@ inline CastlingRights Position::castling_rights(Color c) const {
   return c & CastlingRights(st->castlingRights);
 }
 
-inline bool Position::castling_impeded(CastlingRights cr) const {
+inline Bitboard Position::castling_impeded(CastlingRights cr) const {
   assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
 
-  return pieces() & castlingPath[cr];
+  return castlingPath[cr] & pieces();
 }
 
 inline Square Position::castling_rook_square(CastlingRights cr) const {
