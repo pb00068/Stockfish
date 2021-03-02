@@ -55,6 +55,7 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
+  Bitboard   castlingWayAttackers[2];
   int        repetition;
 
 
@@ -121,6 +122,8 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  Bitboard castlingWayAttackers(bool right) const;
+  void setCastlingWayAttackers(bool right, Bitboard b) const;
 
   // Properties of moves
   bool legal(Move m) const;

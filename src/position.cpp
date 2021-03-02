@@ -501,7 +501,13 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
+void Position::setCastlingWayAttackers(bool right, Bitboard b) const {
+    st->castlingWayAttackers[right] = b;
+}
 
+Bitboard Position::castlingWayAttackers(bool right) const {
+    return st->castlingWayAttackers[right];// &&
+}
 
 /// Position::legal() tests whether a pseudo-legal move is legal
 
@@ -526,10 +532,12 @@ bool Position::legal(Move m) const {
   {
       // After castling, the rook and king final positions are the same in
       // Chess960 as they would be in standard chess.
+      if (castlingWayAttackers(to > from))
+          return false;
 
       // In case of Chess960, verify if the Rook blocks some checks
       // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
-      return !chess960 || !(blockers_for_king(us) & to_sq(m));
+      else return !chess960 || !(blockers_for_king(us) & to_sq(m));
   }
 
   // If the moving piece is a king, check whether the destination square is
