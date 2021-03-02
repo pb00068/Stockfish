@@ -520,12 +520,12 @@ void Position::setCastlingWayAttackers(bool right, Bitboard b) const {
     st->castlingWayAttackers[right] = b;
 }
 
-bool Position::castlingNowSuppressed() const {
+int Position::castlingNowSuppressed() const {
 	if (st->previous->previous == nullptr)
-     return false;
+     return 0;
 
-    return (st->castlingWayAttackers[0] && st->previous->previous->castlingWayAttackers[0] == 0) ||
-    		   (st->castlingWayAttackers[1] && st->previous->previous->castlingWayAttackers[1] == 0);
+    return bool(st->castlingWayAttackers[0] && st->previous->previous->castlingWayAttackers[0] == 0) +
+    		   bool(st->castlingWayAttackers[1] && st->previous->previous->castlingWayAttackers[1] == 0);
 }
 
 /// Position::legal() tests whether a pseudo-legal move is legal

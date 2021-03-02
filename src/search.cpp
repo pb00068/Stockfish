@@ -1197,8 +1197,7 @@ moves_loop: // When in check, search starts from here
           if (thisThread->ttHitAverage > 537 * TtHitAverageResolution * TtHitAverageWindow / 1024)
               r--;
 
-          if (pos.castlingNowSuppressed())
-              r--;
+          r-= pos.castlingNowSuppressed();
 
           // Increase reduction if other threads are searching this position
           if (th.marked())
