@@ -1006,6 +1006,7 @@ moves_loop: // When in check, search starts from here
 
     // Mark this node as being searched
     ThreadHolding th(thisThread, posKey, ss->ply);
+    bool lessReduce = false;
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1027,9 +1028,14 @@ moves_loop: // When in check, search starts from here
       // Check for legality
       if (!rootNode && !pos.legal(move))
       {
-          if (!rootNode && type_of(move) == CASTLING && pos.castlingWayAttackers(to_sq(move) > from_sq(move))) // castling way free but some square on the way is now attacked
-             dbg_hit_on(true), dbg_mean_of(moveCount),
-          	sync_cout << pos << UCI::move(move, pos.is_chess960()) << " not allowed because of " << UCI::move((ss-1)->currentMove, pos.is_chess960()) << sync_endl;
+          bool dir = to_sq(move) > from_sq(move);
+          if (!rootNode && type_of(move) == CASTLING && (pos.castlingWayAttackers(dir) & to_sq((ss-1)->currentMove))
+             && !(LineBB[lsb(pos.castlingWayAttackers(dir))] [msb(pos.castlingWayAttackers(dir))] & from_sq((ss-1)->currentMove))) // last move prevents castling
+          {
+              lessReduce = true;
+          //	sync_cout << pos << UCI::move(move, pos.is_chess960()) << " not allowed because of " << UCI::move((ss-1)->currentMove, pos.is_chess960()) << sync_endl;
+
+          }
           continue;
       }
 
@@ -1067,7 +1073,7 @@ moves_loop: // When in check, search starts from here
           moveCountPruning = moveCount >= futility_move_count(improving, depth);
 
           // Reduced depth of the next LMR search
-          int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
+          int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0) + lessReduce;
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1200,6 +1206,9 @@ moves_loop: // When in check, search starts from here
 
           // Decrease reduction if the ttHit running average is large
           if (thisThread->ttHitAverage > 537 * TtHitAverageResolution * TtHitAverageWindow / 1024)
+              r--;
+
+          if (lessReduce)
               r--;
 
           // Increase reduction if other threads are searching this position

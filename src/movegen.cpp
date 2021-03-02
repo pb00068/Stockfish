@@ -17,6 +17,9 @@
 */
 
 #include <cassert>
+#include <iostream>
+
+#include "misc.h"
 
 #include "movegen.h"
 #include "position.h"
@@ -246,14 +249,14 @@ namespace {
 
         if ((Type != CAPTURES) && pos.can_castle(Us & ANY_CASTLING))
             for (CastlingRights cr : { Us & KING_SIDE, Us & QUEEN_SIDE } )
+            {
+                b = 0;
+                Direction step = cr == (Us & KING_SIDE) ? WEST : EAST;
                 if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 {
                   // After castling, the rook and king final positions are the same in
                   // Chess960 as they would be in standard chess.
                   Square to = relative_square(Us, pos.castling_rook_square(cr) > ksq ? SQ_G1 : SQ_C1);
-                  Direction step = to > ksq ? WEST : EAST;
-
-                  b = 0;
                   Square s;
                   for (s = to; s != ksq; s += step)
                   {
@@ -261,13 +264,14 @@ namespace {
                       {
                           b |= lsb(pos.attackers_to(s) & pos.pieces(~Us));
                           b |= s;
-                          pos.setCastlingWayAttackers(step == EAST, b);
                           break;
                       }
                   }
-                  if (s == ksq)
+
                     *moveList++ = make<CASTLING>(ksq, pos.castling_rook_square(cr));
                 }
+                pos.setCastlingWayAttackers(step == WEST, b);
+            }
     }
 
     return moveList;
