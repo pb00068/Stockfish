@@ -1282,7 +1282,7 @@ moves_loop: // When in check, search starts from here
           // If the son is reduced and fails high it will be re-searched at full depth
           doFullDepthSearch = value > alpha && d < newDepth;
           if (value <= alpha && !captureOrPromotion && d > 1)
-              update_continuation_histories(ss, movedPiece, to_sq(move), -stat_bonus(d-1));
+              update_continuation_histories(ss, movedPiece, to_sq(move), -stat_bonus(d - 1));
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
