@@ -1282,7 +1282,7 @@ moves_loop: // When in check, search starts from here
 
           if (moveCount != 1)
           {
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, !cutNode || moveCount > 1);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           // If the son is reduced and fails high it will be re-searched at full depth
           doFullDepthSearch = value > alpha && d < newDepth;
