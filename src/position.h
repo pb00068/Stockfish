@@ -123,7 +123,7 @@ public:
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
   int castlingNowSuppressed() const;
-  Bitboard castlingWayAttackers(bool idx) const;
+  Bitboard castlingWayAttackers() const;
 
   // Properties of moves
   bool legal(Move m) const;
