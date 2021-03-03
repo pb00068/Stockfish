@@ -602,11 +602,11 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool formerPv, givesCheck, improving, didLMR, priorCapture;
+    bool formerPv, givesCheck, improving, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, didLMR;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -1281,12 +1281,12 @@ moves_loop: // When in check, search starts from here
 
           // If the son is reduced and fails high it will be re-searched at full depth
           doFullDepthSearch = value > alpha && d < newDepth;
-          didLMR = true;
+          didLMR = d;
       }
       else
       {
           doFullDepthSearch = !PvNode || moveCount > 1;
-          didLMR = false;
+          didLMR = 0;
       }
 
       // Step 17. Full depth search when LMR is skipped or fails high
@@ -1297,8 +1297,8 @@ moves_loop: // When in check, search starts from here
           // If the move passed LMR update its stats
           if (didLMR && !captureOrPromotion)
           {
-              int bonus = value > alpha ?  stat_bonus(newDepth)
-                                        : -stat_bonus(newDepth);
+              int bonus = value > alpha ?  stat_bonus(didLMR)
+                                        : -stat_bonus(didLMR);
 
               update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
