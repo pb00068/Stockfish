@@ -1198,7 +1198,10 @@ moves_loop: // When in check, search starts from here
               r--;
 
           if (pos.castlingNowSuppressed() && (pos.castlingWayAttackers() & to_sq(move)))
-              r-= 2 * pos.castlingNowSuppressed();
+           r-= 1 + 2 * (captureOrPromotion && distance(pos.square<KING>(~us), to_sq(move)) <= 1);
+           // sacrifices forcing the opponent king to recapture, thus ruining the possibility to castle
+           // need a larger horizon and should therefore not be reduced to much
+           //sync_cout << pos << UCI::move(move, pos.is_chess960()) << sync_endl;
 
           // Increase reduction if other threads are searching this position
           if (th.marked())
