@@ -516,8 +516,8 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
-Bitboard Position::castlingWayAttackers() const {
-    return st->castlingWayAttackers[0] | st->castlingWayAttackers[1];
+Bitboard Position::castlingWayAttackers(bool idx) const {
+    return st->castlingWayAttackers[idx];
 }
 
 int Position::castlingNowSuppressed() const {
