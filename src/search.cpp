@@ -81,7 +81,7 @@ namespace {
 
   // History and stats update bonus, based on depth
   int stat_bonus(Depth d) {
-    return d > 14 ? 66 : 6 * d * d + 231 * d - 206;
+    return d > 14 ? 4200 : 6 * d * d + 231 * d - 206;
   }
 
   // Add a small random component to draw evaluations to avoid 3-fold blindness
@@ -1743,7 +1743,7 @@ moves_loop: // When in check, search starts from here
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
 
     bonus1 = stat_bonus(depth + 1);
-    bonus2 = bestValue > beta + PawnValueMg || ss->distanceFromPv == 1 ? bonus1// larger bonus
+    bonus2 = bestValue > beta + PawnValueMg || ss->distanceFromPv <= 2 ? bonus1// larger bonus
                                             : std::min(bonus1, stat_bonus(depth));   // smaller bonus
 
     if (!pos.capture_or_promotion(bestMove))
