@@ -703,7 +703,7 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high
                 if (!pos.capture_or_promotion(ttMove))
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth + bool((ss+1)->distanceFromPv <= 3 && depth < 8)), depth);
+                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth + bool(ss->distanceFromPv <= 2 && depth < 8)), depth);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1743,7 +1743,7 @@ moves_loop: // When in check, search starts from here
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
 
     bonus1 = stat_bonus(depth + 1);
-    bonus2 = bestValue > beta + PawnValueMg || ((ss+1)->distanceFromPv <= 3  && depth < 8) ? bonus1// larger bonus
+    bonus2 = bestValue > beta + PawnValueMg || (ss->distanceFromPv <= 2 && depth < 8) ? bonus1// larger bonus
                                             : std::min(bonus1, stat_bonus(depth));   // smaller bonus
 
     if (!pos.capture_or_promotion(bestMove))
