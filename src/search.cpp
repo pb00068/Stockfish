@@ -496,10 +496,9 @@ void Thread::search() {
           Threads.stop = true;
 
       if (failedHighCnt > 1
-          && rootDepth > 3
-          && multiPV == 1
-          && !recoverFromFH)
-         recoverFromFH++; // after resolving with reduced depth, avoid a to big jump forward in adjustedDepth
+          && rootDepth > 5
+          && multiPV == 1)
+         recoverFromFH += failedHighCnt/2; // after resolving with reduced depth, avoid a to big jump forward in adjustedDepth
 
       if (!mainThread)
           continue;
