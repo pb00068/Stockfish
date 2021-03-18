@@ -367,6 +367,7 @@ void Thread::search() {
                           : -make_score(ct, ct / 2));
 
   int searchAgainCounter = 0;
+  int recoverFromFH = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -423,7 +424,7 @@ void Thread::search() {
           failedHighCnt = 0;
           while (true)
           {
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter - recoverFromFH);
               bestValue = Stockfish::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -446,7 +447,7 @@ void Thread::search() {
                   && multiPV == 1
                   && (bestValue <= alpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+                  sync_cout << UCI::pv(rootPos, std::max(1, rootDepth - recoverFromFH), alpha, beta) << sync_endl;
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
@@ -481,7 +482,7 @@ void Thread::search() {
       }
 
       if (!Threads.stop)
-          completedDepth = rootDepth;
+          completedDepth = rootDepth - recoverFromFH;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
          lastBestMove = rootMoves[0].pv[0];
@@ -497,8 +498,8 @@ void Thread::search() {
       if (failedHighCnt > 1
           && rootDepth > 3
           && multiPV == 1
-          && !searchAgainCounter)
-          searchAgainCounter++; // after resolving with reduced depth, don't take a giant step forward
+          && !recoverFromFH)
+         recoverFromFH++; // after resolving with reduced depth, avoid a to big jump forward in adjustedDepth
 
       if (!mainThread)
           continue;
