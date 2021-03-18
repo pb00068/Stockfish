@@ -367,7 +367,8 @@ void Thread::search() {
                           : -make_score(ct, ct / 2));
 
   int searchAgainCounter = 0;
-  int failedLowCnt = 0;
+  int failedLowCnt;
+  int afterLowCnt = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -422,9 +423,10 @@ void Thread::search() {
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
           failedHighCnt = 0;
+          failedLowCnt = 0;
           while (true)
           {
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - failedLowCnt - searchAgainCounter);
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - failedLowCnt - afterLowCnt - searchAgainCounter);
               bestValue = Stockfish::search<PV>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -468,7 +470,10 @@ void Thread::search() {
                   failedLowCnt=0;
               }
               else
-                  break;
+              {
+                 afterLowCnt = failedLowCnt/2;
+                 break;
+              }
 
               delta += delta / 4 + 5;
 
@@ -496,9 +501,6 @@ void Thread::search() {
           && bestValue >= VALUE_MATE_IN_MAX_PLY
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
-
-      if (failedLowCnt >  0)
-          failedLowCnt--;
 
       if (!mainThread)
           continue;
