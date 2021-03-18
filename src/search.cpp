@@ -494,6 +494,12 @@ void Thread::search() {
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
 
+      if (failedHighCnt > 1
+          && rootDepth > 3
+          && multiPV == 1
+          && !searchAgainCounter)
+          searchAgainCounter++; // after resolving with reduced depth, don't take a giant step forward
+
       if (!mainThread)
           continue;
 
