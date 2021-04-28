@@ -573,6 +573,7 @@ namespace {
     constexpr bool PvNode = NT == PV;
     const bool rootNode = PvNode && ss->ply == 0;
     const Depth maxNextDepth = rootNode ? depth : depth + 1;
+    ss->zugZwang = false;
 
     // Check if we have an upcoming move which draws by repetition, or
     // if the opponent had an alternative move earlier to this position.
@@ -883,8 +884,12 @@ namespace {
 
             thisThread->nmpMinPly = 0;
 
+
             if (v >= beta)
                 return nullValue;
+
+            ss->zugZwang = true;
+
         }
     }
 
@@ -1812,9 +1817,12 @@ moves_loop: // When in check, search starts from here
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
-    // Penalty for reversed move in case of moved piece not being a pawn
+    // Penalty for reversed move in case of moved piece not being a pawn,
+    // exception ZugZwang: if the opponent is in ZugZwang it might be good for us to repeat moves
     if (type_of(pos.moved_piece(move)) != PAWN)
-        thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
+    {
+        thisThread->mainHistory[us][from_to(reverse_move(move))] << ((ss+1)->zugZwang ? bonus : -bonus);
+    }
 
     // Update countermove history
     if (is_ok((ss-1)->currentMove))
