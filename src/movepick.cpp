@@ -111,6 +111,7 @@ void MovePicker::score() {
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                   +     (clearanceSquare < 0 && from_sq(m) == -clearanceSquare ? 1000 : 0)
                    + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
@@ -184,6 +185,8 @@ top:
           || refutations[1].move == refutations[2].move)
           --endMoves;
 
+      clearanceSquare = ttMove ? from_sq(ttMove) : SQ_NONE;
+
       ++stage;
       [[fallthrough]];
 
@@ -191,7 +194,14 @@ top:
       if (select<Next>([&](){ return    *cur != MOVE_NONE
                                     && !pos.capture(*cur)
                                     &&  pos.pseudo_legal(*cur); }))
+      {
+          if (clearanceSquare == SQ_NONE)
+              clearanceSquare = from_sq((cur-1)->move);
+          else if (clearanceSquare == from_sq((cur-1)->move))
+              clearanceSquare = (Square)-clearanceSquare;
+
           return *(cur - 1);
+      }
       ++stage;
       [[fallthrough]];
 
