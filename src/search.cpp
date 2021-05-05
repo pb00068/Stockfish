@@ -778,6 +778,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
+    ss->nullmovepruned = MOVE_NONE;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -870,7 +871,10 @@ namespace {
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
+            {
+                (ss-1)->nullmovepruned = (ss-1)->currentMove;
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
@@ -883,8 +887,10 @@ namespace {
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta) {
+                (ss-1)->nullmovepruned = (ss-1)->currentMove;
                 return nullValue;
+            }
         }
     }
 
@@ -1017,6 +1023,9 @@ moves_loop: // When in check, search starts from here
 
       if (move == excludedMove)
           continue;
+
+      if ((ss-1)->currentMove == MOVE_NULL && move == (ss-2)->nullmovepruned)
+         continue; // swapped sequence did'nt succeed so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
