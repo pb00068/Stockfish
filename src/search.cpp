@@ -855,6 +855,7 @@ namespace {
         Depth R = (1062 + 68 * depth) / 256 + std::min(int(eval - beta) / 190, 3);
 
         ss->currentMove = MOVE_NULL;
+        ss->kingMove = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -933,6 +934,7 @@ namespace {
                 probCutCount++;
 
                 ss->currentMove = move;
+                ss->kingMove = type_of(pos.moved_piece(move)) == KING;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
@@ -1001,7 +1003,7 @@ moves_loop: // When in check, search starts from here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->ply);
+                                      ss->ply, 2 * (ss-2)->kingMove + (ss-4)->kingMove);
 
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
@@ -1163,6 +1165,7 @@ moves_loop: // When in check, search starts from here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->kingMove = type_of(movedPiece) == KING;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
