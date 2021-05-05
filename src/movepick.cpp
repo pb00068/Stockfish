@@ -56,10 +56,10 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
+MovePicker::MovePicker(const Position& p, Move ttm, Square last, Depth d, const ButterflyHistory* mh, const ButterflyHistory* wh, const LowPlyHistory* lp,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, int pl)
-           : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl) {
+           : pos(p), mainHistory(mh), walkHistory(wh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, recaptureSquare(last), depth(d), ply(pl) {
 
   assert(d > 0);
 
@@ -107,6 +107,7 @@ void MovePicker::score() {
 
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
+                   +     ( from_sq(m) == recaptureSquare ? (*walkHistory)[pos.side_to_move()][from_to(m)] : 0)
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]

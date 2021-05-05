@@ -715,6 +715,8 @@ namespace {
             {
                 int penalty = -stat_bonus(depth);
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
+                if (is_ok((ss-2)->currentMove) && to_sq((ss-2)->currentMove) == from_sq(ttMove))
+                    thisThread->walkHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
@@ -995,7 +997,8 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, is_ok((ss-2)->currentMove) ? to_sq((ss-2)->currentMove) : SQ_NONE, depth, &thisThread->mainHistory,
+                                      &thisThread->walkHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
                                       contHist,
@@ -1752,6 +1755,8 @@ moves_loop: // When in check, search starts from here
         for (int i = 0; i < quietCount; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
+            if (is_ok((ss-2)->currentMove) && to_sq((ss-2)->currentMove) == from_sq(quietsSearched[i]))
+               thisThread->walkHistory[us][from_to(quietsSearched[i])] << -bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
@@ -1805,6 +1810,8 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
+    if (is_ok((ss-2)->currentMove) && to_sq((ss-2)->currentMove) == from_sq(move))
+       thisThread->walkHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     // Penalty for reversed move in case of moved piece not being a pawn
