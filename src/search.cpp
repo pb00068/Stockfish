@@ -873,7 +873,7 @@ namespace {
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
             {
                 (ss-1)->nullmovepruned = (ss-1)->currentMove;
-                (ss-1)->nmpstatic = ss->staticEval;
+                (ss-1)->nmpbeta = beta;
                 return nullValue;
             }
 
@@ -890,7 +890,7 @@ namespace {
 
             if (v >= beta) {
                 (ss-1)->nullmovepruned = (ss-1)->currentMove;
-                (ss-1)->nmpstatic = ss->staticEval;
+                (ss-1)->nmpbeta = beta;
                 return nullValue;
             }
         }
@@ -1028,7 +1028,7 @@ moves_loop: // When in check, search starts from here
 
       if ((ss-1)->currentMove == MOVE_NULL
           && move == (ss-2)->nullmovepruned
-          && (ss-2)->nmpstatic >= (ss-1)->staticEval)
+          && (ss-2)->nmpbeta >= -beta)
          continue; // swapped sequence did'nt succeed so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
