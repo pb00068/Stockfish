@@ -875,10 +875,11 @@ namespace {
                 Stack* s = (ss-1);
                 s->nullmovepruned[2] = s->nullmovepruned[1];
                 s->nullmovepruned[1] = s->nullmovepruned[0];
-                s->nmpbeta[2] = s->nmpbeta[1];
-                s->nmpbeta[1] = s->nmpbeta[0];
+                s->nmpstatic[2] = s->nmpstatic[1];
+                s->nmpstatic[1] = s->nmpstatic[0];
+
                 s->nullmovepruned[0] = s->currentMove;
-                s->nmpbeta[0] = beta;
+                s->nmpstatic[0] = ss->staticEval;
                 return nullValue;
             }
 
@@ -1029,9 +1030,9 @@ moves_loop: // When in check, search starts from here
           continue;
 
       if ((ss-1)->currentMove == MOVE_NULL && (
-           (move == (ss-2)->nullmovepruned[0] && beta > -(ss-2)->nmpbeta[0]) ||
-           (move == (ss-2)->nullmovepruned[1] && beta > -(ss-2)->nmpbeta[1]) ||
-           (move == (ss-2)->nullmovepruned[2] && beta > -(ss-2)->nmpbeta[2]) ))
+           (move == (ss-2)->nullmovepruned[0] && (ss-2)->nmpstatic[0] <= (ss-1)->staticEval) ||
+           (move == (ss-2)->nullmovepruned[1] && (ss-2)->nmpstatic[1] <= (ss-1)->staticEval) ||
+           (move == (ss-2)->nullmovepruned[2] && (ss-2)->nmpstatic[2] <= (ss-1)->staticEval) ))
            continue; // swapped sequence did'nt refute the null-move so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
