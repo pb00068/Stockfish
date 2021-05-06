@@ -1028,7 +1028,7 @@ moves_loop: // When in check, search starts from here
 
       if ((ss-1)->currentMove == MOVE_NULL
           && move == (ss-2)->nullmovepruned
-          && (ss-2)->nmpstatic < (ss-1)->staticEval)
+          && (ss-2)->nmpstatic >= (ss-1)->staticEval)
          continue; // swapped sequence did'nt succeed so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
