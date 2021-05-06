@@ -45,8 +45,8 @@ struct Stack {
   int ply;
   Move currentMove;
   Move excludedMove;
-  Move nullmovepruned;
-  Value nmpbeta;
+  Move nullmovepruned[3];
+  Value nmpbeta[3];
   Move killers[2];
   Value staticEval;
   int statScore;

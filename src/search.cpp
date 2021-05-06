@@ -778,7 +778,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
-    ss->nullmovepruned = MOVE_NONE;
+    ss->nullmovepruned[0] = ss->nullmovepruned[1] = ss->nullmovepruned[2] = MOVE_NONE;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -872,8 +872,13 @@ namespace {
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
             {
-                (ss-1)->nullmovepruned = (ss-1)->currentMove;
-                (ss-1)->nmpbeta = beta;
+                Stack* s = (ss-1);
+                s->nullmovepruned[2] = s->nullmovepruned[1];
+                s->nullmovepruned[1] = s->nullmovepruned[0];
+                s->nmpbeta[2] = s->nmpbeta[1];
+                s->nmpbeta[1] = s->nmpbeta[0];
+                s->nullmovepruned[0] = s->currentMove;
+                s->nmpbeta[0] = beta;
                 return nullValue;
             }
 
@@ -888,11 +893,8 @@ namespace {
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta) {
-                (ss-1)->nullmovepruned = (ss-1)->currentMove;
-                (ss-1)->nmpbeta = beta;
+            if (v >= beta)
                 return nullValue;
-            }
         }
     }
 
@@ -1026,10 +1028,11 @@ moves_loop: // When in check, search starts from here
       if (move == excludedMove)
           continue;
 
-      if ((ss-1)->currentMove == MOVE_NULL
-          && move == (ss-2)->nullmovepruned
-          && (ss-2)->nmpbeta >= -beta)
-         continue; // swapped sequence did'nt succeed so also this one won't
+      if ((ss-1)->currentMove == MOVE_NULL && (
+           (move == (ss-2)->nullmovepruned[0] && beta > -(ss-2)->nmpbeta[0]) ||
+           (move == (ss-2)->nullmovepruned[1] && beta > -(ss-2)->nmpbeta[1]) ||
+           (move == (ss-2)->nullmovepruned[2] && beta > -(ss-2)->nmpbeta[2]) ))
+           continue; // swapped sequence did'nt refute the null-move so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
       // Move List. As a consequence any illegal move is also skipped. In MultiPV
