@@ -49,7 +49,6 @@ struct Stack {
   Value staticEval;
   int statScore;
   int moveCount;
-  int nmpMovecount;
   bool inCheck;
   bool ttPv;
   bool ttHit;

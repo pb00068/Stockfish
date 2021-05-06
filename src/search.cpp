@@ -615,7 +615,7 @@ namespace {
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
-    moveCount          = captureCount = quietCount = ss->moveCount = ss->nmpMovecount = 0;
+    moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -869,9 +869,6 @@ namespace {
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
 
-            if ((ss-1)->nmpMovecount == 0)
-                (ss-1)->nmpMovecount = (ss-1)->moveCount;
-
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
                 return nullValue;
 
@@ -1035,7 +1032,7 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if ((ss-1)->currentMove == MOVE_NULL && (ss-2)->nmpMovecount > 0 && moveCount > (ss-2)->nmpMovecount)
+      if ((ss-1)->currentMove == MOVE_NULL && moveCountPruning)
          break;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
