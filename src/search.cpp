@@ -869,7 +869,8 @@ namespace {
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
 
-            ss->nmpMovecount = (ss-1)->moveCount;
+            if ((ss-1)->nmpMovecount == 0)
+                (ss-1)->nmpMovecount = (ss-1)->moveCount;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
                 return nullValue;
@@ -1034,7 +1035,7 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if ((ss-1)->currentMove == MOVE_NULL && moveCount > (ss-1)->nmpMovecount)
+      if ((ss-1)->currentMove == MOVE_NULL && (ss-2)->nmpMovecount > 0 && moveCount > (ss-2)->nmpMovecount)
          break;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
