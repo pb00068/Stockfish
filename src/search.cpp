@@ -778,7 +778,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
-    ss->nullmovepruned[0] = ss->nullmovepruned[1] = MOVE_NONE;
+    ss->nullmovepruned = MOVE_NONE;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -872,8 +872,8 @@ namespace {
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
             {
-                (ss-1)->nullmovepruned[1] = (ss-1)->nullmovepruned[0];
-                (ss-1)->nullmovepruned[0] = (ss-1)->currentMove;
+                (ss-1)->nullmovepruned = (ss-1)->currentMove;
+                (ss-1)->nmpstatic = ss->staticEval;
                 return nullValue;
             }
 
@@ -889,8 +889,8 @@ namespace {
             thisThread->nmpMinPly = 0;
 
             if (v >= beta) {
-                (ss-1)->nullmovepruned[1] = (ss-1)->nullmovepruned[0];
-                (ss-1)->nullmovepruned[0] = (ss-1)->currentMove;
+                (ss-1)->nullmovepruned = (ss-1)->currentMove;
+                (ss-1)->nmpstatic = ss->staticEval;
                 return nullValue;
             }
         }
@@ -1026,7 +1026,9 @@ moves_loop: // When in check, search starts from here
       if (move == excludedMove)
           continue;
 
-      if ((ss-1)->currentMove == MOVE_NULL && (move == (ss-2)->nullmovepruned[0] || move == (ss-2)->nullmovepruned[1]))
+      if ((ss-1)->currentMove == MOVE_NULL
+          && move == (ss-2)->nullmovepruned
+          && (ss-2)->nmpstatic < (ss-1)->staticEval)
          continue; // swapped sequence did'nt succeed so also this one won't
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
