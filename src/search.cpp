@@ -841,10 +841,12 @@ namespace {
         return eval;
 
     // Step 8. Null move search with verification search (~40 Elo)
-    nmpcandidate = (ss-1)->nmpruned[0] == (ss-1)->currentMove || (ss-1)->nmpruned[1] == (ss-1)->currentMove;
+    nmpcandidate = (ss-1)->nmpruned[0] == (ss-1)->currentMove
+                || (ss-1)->nmpruned[1] == (ss-1)->currentMove
+                || (ss-1)->nmpruned[2] == (ss-1)->currentMove;
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 24185 + nmpcandidate * 6000
+        && (ss-1)->statScore < 24185 + nmpcandidate * 8000
         &&  eval >= beta
         &&  eval >= ss->staticEval
         &&  ss->staticEval >= beta - 24 * depth - 34 * improving + 162 * ss->ttPv + 159 - 300 * nmpcandidate
@@ -868,18 +870,20 @@ namespace {
 
         if (nullValue >= beta)
         {
-            if ((ss-1)->nmpruned[0] != (ss-1)->currentMove)
-            {
-                (ss-1)->nmpruned[1] = (ss-1)->nmpruned[0];
-                (ss-1)->nmpruned[0] = (ss-1)->currentMove;
-            }
-
             // Do not return unproven mate or TB scores
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
+            {
+                if ((ss-1)->nmpruned[0] != (ss-1)->currentMove && (ss-1)->nmpruned[1] != (ss-1)->currentMove)
+                {
+                   (ss-1)->nmpruned[2] = (ss-1)->nmpruned[1];
+                   (ss-1)->nmpruned[1] = (ss-1)->nmpruned[0];
+                   (ss-1)->nmpruned[0] = (ss-1)->currentMove;
+                }
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
