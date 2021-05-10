@@ -654,6 +654,7 @@ namespace {
     (ss+1)->ttPv = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->nmpruned[0] = (ss+2)->nmpruned[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -778,6 +779,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
+    bool nmpcandidate;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -839,12 +841,13 @@ namespace {
         return eval;
 
     // Step 8. Null move search with verification search (~40 Elo)
+    nmpcandidate = (ss-1)->nmpruned[0] == (ss-1)->currentMove || (ss-1)->nmpruned[1] == (ss-1)->currentMove;
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 24185
+        && (ss-1)->statScore < 24185 + nmpcandidate * 6000
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 24 * depth - 34 * improving + 162 * ss->ttPv + 159
+        &&  ss->staticEval >= beta - 24 * depth - 34 * improving + 162 * ss->ttPv + 159 - 300 * nmpcandidate
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -865,6 +868,12 @@ namespace {
 
         if (nullValue >= beta)
         {
+            if ((ss-1)->nmpruned[0] != (ss-1)->currentMove)
+            {
+                (ss-1)->nmpruned[1] = (ss-1)->nmpruned[0];
+                (ss-1)->nmpruned[0] = (ss-1)->currentMove;
+            }
+
             // Do not return unproven mate or TB scores
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
