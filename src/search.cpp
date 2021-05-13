@@ -1521,7 +1521,8 @@ moves_loop: // When in check, search starts from here
           }
 
           if (futilityBase <= alpha &&
-              !pos.see_ge(move, VALUE_ZERO +  (type_of(pos.piece_on(to_sq(move))) == PAWN && relative_rank(pos.side_to_move() , to_sq(move)) < 4 ? 0 : 1)))
+              !pos.see_ge(move, VALUE_ZERO +  (type_of(pos.piece_on(to_sq(move))) == PAWN &&
+               relative_rank(pos.side_to_move() , to_sq(move)) < 5 ? 0 : 1)))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
