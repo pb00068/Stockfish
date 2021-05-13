@@ -1069,7 +1069,10 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   Square from = from_sq(m), to = to_sq(m);
 
-  int swap = PieceValue[MG][piece_on(to)] - threshold;
+  int swap = PieceValue[MG][piece_on(to)];
+  if (swap == PawnValueMg && relative_rank(sideToMove, to) < 4)
+      swap += relative_rank(sideToMove, to) == 3 ? 40 : 90;
+  swap -= threshold;
   if (swap < 0)
       return false;
 
