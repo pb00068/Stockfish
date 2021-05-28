@@ -128,7 +128,7 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Square);
-  MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
+  MovePicker(const Position&, Move, Depth, const ButterflyHistory*, const ButterflyHistory*,
                                            const LowPlyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
@@ -145,6 +145,7 @@ private:
 
   const Position& pos;
   const ButterflyHistory* mainHistory;
+  const ButterflyHistory* checkingHistory;
   const LowPlyHistory* lowPlyHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
