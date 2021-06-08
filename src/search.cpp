@@ -1165,9 +1165,9 @@ moves_loop: // When in check, search starts from here
           // Decrease reduction for moves that escape a capture. Filter out
           // castling moves, because they are coded as "king captures rook" and
           // hence break reverse_move()
-          else if (    newDepth - r < 4 && type_of(move) == NORMAL
+          else if (    newDepth - r < 3 && type_of(move) == NORMAL
                       && !pos.see_ge(reverse_move(move)))
-              r -= 2;
+              r -= 2 + ss->ttPv;
 
           if (!captureOrPromotion)
           {
