@@ -622,7 +622,7 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     if (!excludedMove)
-        ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+        ss->ttPv = (PvNode && depth > 2) || (ss->ttHit && tte->is_pv());
 
     // Update low ply history for previous move if we are near root and position is or has been in PV
     if (   ss->ttPv
