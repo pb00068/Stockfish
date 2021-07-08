@@ -401,7 +401,13 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  alpha =  bestValue - delta;
+                  if (rootDepth > 6)
+                  {
+                      beta  -= beta  % 4;
+                      alpha += alpha % 4;
+                  }
+                  alpha = std::max(alpha, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -409,7 +415,10 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  beta = bestValue + delta;
+                  if (rootDepth > 6)
+                     beta -= beta % 4;
+                  beta = std::min(beta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
