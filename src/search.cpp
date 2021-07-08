@@ -603,6 +603,7 @@ namespace {
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
+    bool deep_ttPv;
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -622,10 +623,13 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     if (!excludedMove)
+    {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+        deep_ttPv =  (PvNode && depth > 8) || (ss->ttHit && tte->is_deep_pv());
+    }
 
     // Update low ply history for previous move if we are near root and position is or has been in PV
-    if (   ss->ttPv
+    if (deep_ttPv
         && depth > 12
         && ss->ply - 1 < MAX_LPH
         && !priorCapture
@@ -706,7 +710,7 @@ namespace {
                 if (    b == BOUND_EXACT
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
-                    tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
+                    tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, deep_ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
 
@@ -760,7 +764,7 @@ namespace {
             ss->staticEval = eval = -(ss-1)->staticEval;
 
         // Save static evaluation into transposition table
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, ss->ttPv, deep_ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     // Use static evaluation difference to improve quiet move ordering
@@ -892,7 +896,7 @@ namespace {
                     if ( !(ss->ttHit
                        && tte->depth() >= depth - 3
                        && ttValue != VALUE_NONE))
-                        tte->save(posKey, value_to_tt(value, ss->ply), ttPv,
+                        tte->save(posKey, value_to_tt(value, ss->ply), ttPv, deep_ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
                     return value;
@@ -1125,7 +1129,7 @@ moves_loop: // When in check, search starts from here
           &&  moveCount > 1 + 2 * rootNode
           && (  !captureOrPromotion
               || (cutNode && (ss-1)->moveCount > 1)
-              || !ss->ttPv)
+              || (depth > 8 ? !deep_ttPv :  !ss->ttPv))
           && (!PvNode || ss->ply > 1 || thisThread->id() % 4 != 3))
       {
           Depth r = reduction(improving, depth, moveCount);
@@ -1139,7 +1143,7 @@ moves_loop: // When in check, search starts from here
 
           // Decrease reduction if position is or has been on the PV
           // and node is not likely to fail low. (~3 Elo)
-          if (   ss->ttPv
+          if (   (depth > 8 ? deep_ttPv : ss->ttPv)
               && !likelyFailLow)
               r -= 2;
 
@@ -1333,12 +1337,15 @@ moves_loop: // When in check, search starts from here
         ss->ttPv = ss->ttPv || ((ss-1)->ttPv && depth > 3);
     // Otherwise, a counter move has been found and if the position is the last leaf
     // in the search tree, remove the position from the search tree.
-    else if (depth > 3)
+    else if (depth > 3) {
         ss->ttPv = ss->ttPv && (ss+1)->ttPv;
+        if (depth > 8)
+           deep_ttPv = deep_ttPv && (ss+1)->ttPv;
+    }
 
     // Write gathered information in transposition table
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, deep_ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
                   depth, bestMove, ss->staticEval);
@@ -1370,7 +1377,7 @@ moves_loop: // When in check, search starts from here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool pvHit, givesCheck, captureOrPromotion;
+    bool pvHit, deepPvHit, givesCheck, captureOrPromotion;
     int moveCount;
 
     if (PvNode)
@@ -1403,6 +1410,7 @@ moves_loop: // When in check, search starts from here
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit = ss->ttHit && tte->is_pv();
+    deepPvHit = ss->ttHit && tte->is_deep_pv();
 
     if (  !PvNode
         && ss->ttHit
@@ -1443,7 +1451,7 @@ moves_loop: // When in check, search starts from here
         {
             // Save gathered info in transposition table
             if (!ss->ttHit)
-                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
+                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
             return bestValue;
@@ -1568,7 +1576,7 @@ moves_loop: // When in check, search starts from here
     }
 
     // Save gathered info in transposition table
-    tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
+    tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit, deepPvHit,
               bestValue >= beta ? BOUND_LOWER :
               PvNode && bestValue > oldAlpha  ? BOUND_EXACT : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval);
