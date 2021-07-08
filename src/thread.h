@@ -75,6 +75,8 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
   Score trend;
+  int boundsIndex[2];
+  Value asp_alpha[40],asp_beta[40];
 };
 
 

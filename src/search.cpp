@@ -374,6 +374,13 @@ void Thread::search() {
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
+              if (rootDepth > 6) {
+                 asp_alpha[boundsIndex[0]++]= alpha;
+                 asp_beta [boundsIndex[1]++]= beta;
+                 boundsIndex[0] = boundsIndex[0] % 40;
+                 boundsIndex[1] = boundsIndex[1] % 40;
+              }
+
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
               // first and eventually the new best one are set to -VALUE_INFINITE
@@ -402,6 +409,21 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  if (rootDepth > 6 && alpha != -VALUE_INFINITE)
+                  {
+                     int i;
+                     for (i=0; i<40; i++)
+                       if (asp_alpha[i] == alpha)
+                         break;
+                     if (i==40) {
+                       for (i=0; i<40; i++)
+                          if (asp_alpha[i] > alpha &&  asp_alpha[i] - alpha <= 4)
+                          {
+                            alpha =  asp_alpha[i];
+                            break;
+                          }
+                     }
+                  }
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -410,6 +432,21 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (rootDepth > 6 && beta != VALUE_INFINITE)
+                  {
+                    int i;
+                    for (i=0; i<40; i++)
+                      if (asp_beta[i] == beta)
+                        break;
+                    if (i==40) {
+                        for (i=0; i<40; i++)
+                          if (asp_beta[i] < beta && beta - asp_beta[i] <= 4)
+                          {
+                             beta =  asp_beta[i];
+                             break;
+                          }
+                      }
+                  }
                   ++failedHighCnt;
               }
               else

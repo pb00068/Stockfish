@@ -62,6 +62,10 @@ void Thread::clear() {
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
 
+  for (int i=0;i<40;i++)
+     asp_alpha[i] = asp_beta[i] = VALUE_INFINITE;
+  boundsIndex[0] = boundsIndex[1] = 0;
+
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
       {
