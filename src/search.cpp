@@ -1278,7 +1278,8 @@ moves_loop: // When in check, search starts from here
               else
               {
                   assert(value >= beta); // Fail high
-                  ss->ttPv = false;
+                  if (depth > 3)
+                      ss->ttPv = false;
                   break;
               }
           }
