@@ -1278,6 +1278,7 @@ moves_loop: // When in check, search starts from here
               else
               {
                   assert(value >= beta); // Fail high
+                  ss->ttPv = false;
                   break;
               }
           }
@@ -1331,9 +1332,6 @@ moves_loop: // When in check, search starts from here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || ((ss-1)->ttPv && depth > 3);
-    // Position no longer on the PV when it gets refused (Fail high)
-    else if (depth > 5 && bestValue >= beta)
-        ss->ttPv = false;
 
     // Write gathered information in transposition table
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
