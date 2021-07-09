@@ -1277,7 +1277,7 @@ moves_loop: // When in check, search starts from here
               {
                   alpha = value;
                   if (ss->ply == 1 && moveCount > 1)
-                    thisThread->bestMoveChanges+=4;
+                    thisThread->bestMoveChanges+=3;
               }
               else
               {
