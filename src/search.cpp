@@ -953,6 +953,7 @@ moves_loop: // When in check, search starts from here
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    ss->goodCaptures = 0;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -983,6 +984,7 @@ moves_loop: // When in check, search starts from here
 
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
+      ss->goodCaptures += bool(captureOrPromotion && quietCount < 2);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -1032,7 +1034,11 @@ moves_loop: // When in check, search starts from here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              int d = lmrDepth;
+              if (!pos.captured_piece() && (ss-1)->goodCaptures && (ss-2)->goodCaptures)
+              // might be a very sharp/tactical position
+                 d += 3;
+              if (!pos.see_ge(move, Value(-(30 - std::min(d, 18)) * d * d)))
                   continue;
           }
       }
