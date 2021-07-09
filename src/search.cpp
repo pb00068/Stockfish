@@ -473,9 +473,9 @@ void Thread::search() {
           double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability;
 
           if (rootPos.game_ply() < 12 &&
-              totBestMoveChanges &&
-              (type_of(rootMoves[0].pv[0]) == CASTLING || type_of(rootPos.moved_piece(rootMoves[0].pv[0])) == PAWN))
-               totalTime *= 1.2;
+              !totBestMoveChanges &&
+              (type_of(rootMoves[0].pv[0]) != CASTLING && type_of(rootPos.moved_piece(rootMoves[0].pv[0])) != PAWN))
+               totalTime *= 0.94;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
