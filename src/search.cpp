@@ -1713,16 +1713,6 @@ moves_loop: // When in check, search starts from here
         ss->killerHits[1] = 1;
     }
 
-    if (ss->killerHits[1] > ss->killerHits[0])
-    {  // swap
-       Move m = ss->killers[1];
-       ss->killers[1] = ss->killers[0];
-       ss->killers[0] = m;
-       int h = ss->killerHits[1] ;
-       ss->killerHits[1] = ss->killerHits[0];
-       ss->killerHits[0] = h;
-    }
-
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
@@ -1732,11 +1722,23 @@ moves_loop: // When in check, search starts from here
     if (type_of(pos.moved_piece(move)) != PAWN)
         thisThread->mainHistory[us][from_to(reverse_move(move))] << -bonus;
 
+    Move current_counter = MOVE_NONE;
     // Update countermove history
     if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
+        current_counter = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+    }
+
+    if (ss->killerHits[1] > ss->killerHits[0] && (current_counter == MOVE_NONE || ss->killers[0] != current_counter))
+    {  // swap
+       Move m = ss->killers[1];
+       ss->killers[1] = ss->killers[0];
+       ss->killers[0] = m;
+       int h = ss->killerHits[1] ;
+       ss->killerHits[1] = ss->killerHits[0];
+       ss->killerHits[0] = h;
     }
 
     // Update low ply history
