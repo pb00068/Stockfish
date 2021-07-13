@@ -74,6 +74,7 @@ public:
   LowPlyHistory lowPlyHistory;
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
+  int gamePlyTriggers[SQUARE_NB][COLOR_NB];
   Score trend;
 };
 
