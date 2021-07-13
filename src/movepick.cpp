@@ -112,12 +112,11 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
-                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
+                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
+                   + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
-          if (m.value > 0 && pos.this_thread()->gamePlyTriggers[from_sq(m)][pos.side_to_move()] > pos.game_ply() + 6)
-              m.value /= 16; // to early in the game to apply bonus
-
-          m.value += (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+          if (m.value > 0 && pos.this_thread()->gamePlyTriggers[from_sq(m)][pos.moved_piece(m)] > pos.game_ply() + 4)
+              m.value -= (m.value/2 + 1000);
       }
 
       else // Type == EVASIONS

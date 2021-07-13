@@ -1714,8 +1714,8 @@ moves_loop: // When in check, search starts from here
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
-    if (thisThread->gamePlyTriggers[from_sq(move)][us] > pos.game_ply())
-        thisThread->gamePlyTriggers[from_sq(move)][us] = pos.game_ply();
+    if (thisThread->gamePlyTriggers[from_sq(move)][pos.moved_piece(move)] > pos.game_ply())
+        thisThread->gamePlyTriggers[from_sq(move)][pos.moved_piece(move)] = pos.game_ply();
 
     // Penalty for reversed move in case of moved piece not being a pawn
     if (type_of(pos.moved_piece(move)) != PAWN)
