@@ -114,8 +114,8 @@ void MovePicker::score() {
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
 
-          if (m.value > -15000 && pos.this_thread()->gamePlyTriggers[from_sq(m)][pos.side_to_move()] > pos.game_ply() + 6)
-              m.value -= (m.value + 15000) / 4; // to early in the game to apply bonus
+          if (m.value > 0 && pos.this_thread()->gamePlyTriggers[from_sq(m)][pos.side_to_move()] > pos.game_ply() + 6)
+              m.value /= 16; // to early in the game to apply bonus
 
           m.value += (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
       }
