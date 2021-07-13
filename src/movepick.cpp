@@ -78,12 +78,13 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
+  ply = MAX_LPH;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
-           : pos(p), captureHistory(cph), ttMove(ttm), threshold(th) {
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph,  const LowPlyHistory* lp, int pl)
+           : pos(p), lowPlyHistory(lp), captureHistory(cph), ttMove(ttm), threshold(th), ply(pl) {
 
   assert(!pos.checkers());
 
@@ -103,7 +104,8 @@ void MovePicker::score() {
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
-                   + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+                   + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
+                   + (ply < MAX_LPH && (*lowPlyHistory)[ply][from_to(m)] % 2 == 0 ? 4 * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
@@ -111,7 +113,7 @@ void MovePicker::score() {
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   + (ply < MAX_LPH ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
+                   + (ply < MAX_LPH && (*lowPlyHistory)[ply][from_to(m)] % 2 != 0 ? std::min(4, depth / 3) * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS
       {

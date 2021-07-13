@@ -112,7 +112,7 @@ namespace {
   Value value_from_tt(Value v, int ply, int r50c);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth);
+  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
 
@@ -628,7 +628,6 @@ namespace {
     if (   ss->ttPv
         && depth > 12
         && ss->ply - 1 < MAX_LPH
-        && !priorCapture
         && is_ok((ss-1)->currentMove))
         thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
 
@@ -651,7 +650,11 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high
                 if (!pos.capture_or_promotion(ttMove))
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+
+                // Update low ply history
+                if (depth > 11 && ss->ply < MAX_LPH)
+                    thisThread->lowPlyHistory[ss->ply][from_to(ttMove)] << stat_bonus(depth - 7);
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -854,7 +857,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory, &thisThread->lowPlyHistory, ss->ply);
         int probCutCount = 0;
         bool ttPv = ss->ttPv;
         ss->ttPv = false;
@@ -1652,7 +1655,7 @@ moves_loop: // When in check, search starts from here
     if (!pos.capture_or_promotion(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove, bonus2, depth);
+        update_quiet_stats(pos, ss, bestMove, bonus2);
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1664,6 +1667,16 @@ moves_loop: // When in check, search starts from here
     else
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+
+    // Update low ply history
+    if (depth > 11 && ss->ply < MAX_LPH)
+    {
+        thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] << stat_bonus(depth - 7);
+        if (captured) // make it even
+          thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] += thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] % 2;
+        else // make it odd
+          thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] += (thisThread->lowPlyHistory[ss->ply][from_to(bestMove)] % 2) - (short)1;
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1699,7 +1712,7 @@ moves_loop: // When in check, search starts from here
 
   // update_quiet_stats() updates move sorting heuristics
 
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth) {
+  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
     // Update killers
     if (ss->killers[0] != move)
@@ -1723,10 +1736,6 @@ moves_loop: // When in check, search starts from here
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
-
-    // Update low ply history
-    if (depth > 11 && ss->ply < MAX_LPH)
-        thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves

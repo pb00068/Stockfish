@@ -40,6 +40,7 @@ class StatsEntry {
 
 public:
   void operator=(const T& v) { entry = v; }
+  void operator+=(const T& v) { entry += v; }
   T* operator&() { return &entry; }
   T* operator->() { return &entry; }
   operator const T&() const { return entry; }
@@ -123,7 +124,7 @@ class MovePicker {
 public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
-  MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
+  MovePicker(const Position&, Move, Value, const CapturePieceToHistory*, const LowPlyHistory*, int);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
