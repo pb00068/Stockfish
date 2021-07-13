@@ -624,8 +624,8 @@ namespace {
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
-    // Update low ply history for previous move if we are near root and position is or has been in PV
-    if ( ss->ttHit
+    // Update low ply history for previous move if we are near root and position has been in PV
+    if (ss->ttHit
         && tte->is_pv()
         && depth > 12
         && !excludedMove
