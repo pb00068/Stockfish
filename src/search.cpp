@@ -286,6 +286,8 @@ void Thread::search() {
               mainThread->iterValue[i] = mainThread->bestPreviousScore;
   }
 
+  if (completedDepth > 15) // history populated mainly with values from far leafs: just cause noise now near the root, so empty it
+      mainHistory.fill(0);
   std::copy(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, &lowPlyHistory[0][0]);
   std::fill(&lowPlyHistory[MAX_LPH - 2][0], &lowPlyHistory.back().back() + 1, 0);
 
