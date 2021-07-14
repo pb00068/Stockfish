@@ -1165,6 +1165,10 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
+              if (thisThread->gamePlyTriggers[from_sq(move)][movedPiece] != 1000
+               && thisThread->gamePlyTriggers[from_sq(move)][movedPiece] > pos.game_ply() + 7)
+                  r++;
+
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
                              + (*contHist[1])[movedPiece][to_sq(move)]
