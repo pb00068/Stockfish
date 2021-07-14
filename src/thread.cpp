@@ -62,7 +62,7 @@ void Thread::clear() {
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
   for (int i=0; i < SQUARE_NB; i++) {
-    for (int j=0; j < PIECE_NB; j++) {
+    for (int j=0; j < COLOR_NB; j++) {
       gamePlyTriggers[i][j]= 1000;
     }
   }
