@@ -505,15 +505,15 @@ void Thread::search() {
       iterIdx = (iterIdx + 1) & 3;
   }
 
-  if (!mainThread)
-      return;
-
-  mainThread->previousTimeReduction = timeReduction;
-
   baseContinuationHistories[0] = (ss-4)->continuationHistory;
   baseContinuationHistories[1] = (ss-2)->continuationHistory;
   baseContinuationHistories[2] = (ss-0)->continuationHistory;
   baseContinuationHistories[3] = (ss+1)->continuationHistory;
+
+  if (!mainThread)
+      return;
+
+  mainThread->previousTimeReduction = timeReduction;
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
