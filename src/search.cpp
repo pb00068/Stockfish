@@ -268,8 +268,10 @@ void Thread::search() {
   for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
 
-  if (moveBeforeRoot)
+  if (moveBeforeRoot) {
      (ss-1)->continuationHistory = &this->continuationHistory[0][bool(rootPos.captured_piece())][rootPos.piece_on(to_sq(moveBeforeRoot))][to_sq(moveBeforeRoot)];
+     (ss-1)->currentMove = moveBeforeRoot;
+  }
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
       (ss+i)->ply = i;
