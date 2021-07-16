@@ -49,9 +49,9 @@ namespace {
   // or the starting position ("startpos") and then makes the moves given in the
   // following move list ("moves").
 
-  Move position(Position& pos, istringstream& is, StateListPtr& states) {
+  void position(Position& pos, istringstream& is, StateListPtr& states, Move* lastMoves, Piece* lastPieces) {
 
-    Move m,last = MOVE_NONE;
+    Move m;
     string token, fen;
 
     is >> token;
@@ -65,7 +65,7 @@ namespace {
         while (is >> token && token != "moves")
             fen += token + " ";
     else
-        return last;
+        return;
 
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
     pos.set(fen, Options["UCI_Chess960"], &states->back(), Threads.main());
@@ -74,10 +74,20 @@ namespace {
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
         states->emplace_back();
+        bool ok = lastMoves != nullptr && !pos.capture(m) && !pos.checkers();
         pos.do_move(m, states->back());
-        last = pos.checkers() ? MOVE_NONE : m;
+        if (lastMoves != nullptr)
+        {
+          for (int i=5; i>0; i--)
+          {
+            lastMoves[i] = lastMoves[i-1];
+            lastPieces [i] = lastPieces [i-1];
+          }
+          lastMoves[0] = ok ? m: MOVE_NONE;
+          lastPieces [0] = ok ? pos.piece_on(to_sq(m)) : NO_PIECE;
+        }
     }
-    return last;
+    return;
   }
 
   // trace_eval() prints the evaluation for the current position, consistent with the UCI
@@ -123,7 +133,7 @@ namespace {
   // the thinking time and other parameters from the input string, then starts
   // the search.
 
-  void go(Position& pos, istringstream& is, StateListPtr& states, Move lastmove) {
+  void go(Position& pos, istringstream& is, StateListPtr& states, Move* lastmoves, Piece* lastPieces) {
 
     Search::LimitsType limits;
     string token;
@@ -149,7 +159,7 @@ namespace {
         else if (token == "infinite")  limits.infinite = 1;
         else if (token == "ponder")    ponderMode = true;
 
-    Threads.start_thinking(pos, states, limits, lastmove, ponderMode);
+    Threads.start_thinking(pos, states, limits, lastmoves, lastPieces, ponderMode);
   }
 
 
@@ -157,7 +167,7 @@ namespace {
   // a list of UCI commands is setup according to bench parameters, then
   // it is run one by one printing a summary at the end.
 
-  void bench(Position& pos, istream& args, StateListPtr& states) {
+  void bench(Position& pos, istream& args, StateListPtr& states, Move* lastMoves, Piece* lastPieces) {
 
     string token;
     uint64_t num, nodes = 0, cnt = 1;
@@ -177,7 +187,7 @@ namespace {
             cerr << "\nPosition: " << cnt++ << '/' << num << " (" << pos.fen() << ")" << endl;
             if (token == "go")
             {
-               go(pos, is, states, MOVE_NONE);
+               go(pos, is, states, lastMoves, lastPieces);
                Threads.main()->wait_for_search_finished();
                nodes += Threads.nodes_searched();
             }
@@ -185,7 +195,7 @@ namespace {
                trace_eval(pos);
         }
         else if (token == "setoption")  setoption(is);
-        else if (token == "position")   position(pos, is, states);
+        else if (token == "position")   position(pos, is, states, lastMoves, lastPieces);
         else if (token == "ucinewgame") { Search::clear(); elapsed = now(); } // Search::clear() may take some while
     }
 
@@ -240,7 +250,12 @@ void UCI::loop(int argc, char* argv[]) {
 
   for (int i = 1; i < argc; ++i)
       cmd += std::string(argv[i]) + " ";
-  Move lastMove = MOVE_NONE;
+  Move lastMoves[6];
+  Piece  lastPieces[6];
+  for (int i = 1; i < 6; ++i) {
+  	lastMoves[i] = MOVE_NONE;
+  	lastPieces[6]= NO_PIECE;
+  }
 
   do {
       if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
@@ -268,15 +283,15 @@ void UCI::loop(int argc, char* argv[]) {
                     << "\nuciok"  << sync_endl;
 
       else if (token == "setoption")  setoption(is);
-      else if (token == "go")         go(pos, is, states, lastMove);
-      else if (token == "position")   lastMove = position(pos, is, states);
+      else if (token == "go")         go(pos, is, states, lastMoves, lastPieces);
+      else if (token == "position")   position(pos, is, states, lastMoves, lastPieces);
       else if (token == "ucinewgame") Search::clear();
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
 
       // Additional custom non-UCI commands, mainly for debugging.
       // Do not use these commands during a search!
       else if (token == "flip")     pos.flip();
-      else if (token == "bench")    bench(pos, is, states);
+      else if (token == "bench")    bench(pos, is, states, lastMoves, lastPieces);
       else if (token == "d")        sync_cout << pos << sync_endl;
       else if (token == "eval")     trace_eval(pos);
       else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
