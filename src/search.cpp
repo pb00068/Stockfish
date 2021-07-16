@@ -268,6 +268,12 @@ void Thread::search() {
   for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
 
+  // Takeover continuationHistory pointers from previous search shifted down by 2 plies
+  (ss-6)->continuationHistory = baseContinuationHistories[0];
+  (ss-4)->continuationHistory = baseContinuationHistories[1];
+  (ss-2)->continuationHistory = baseContinuationHistories[2];
+  (ss-1)->continuationHistory = baseContinuationHistories[3];
+
   for (int i = 0; i <= MAX_PLY + 2; ++i)
       (ss+i)->ply = i;
 
@@ -503,6 +509,11 @@ void Thread::search() {
       return;
 
   mainThread->previousTimeReduction = timeReduction;
+
+  baseContinuationHistories[0] = (ss-4)->continuationHistory;
+  baseContinuationHistories[1] = (ss-2)->continuationHistory;
+  baseContinuationHistories[2] = (ss-0)->continuationHistory;
+  baseContinuationHistories[3] = (ss+1)->continuationHistory;
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
