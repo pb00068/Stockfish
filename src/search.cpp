@@ -265,14 +265,10 @@ void Thread::search() {
   int iterIdx = 0;
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
-  for (int i = 7; i > 0; i--)
-      (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
 
-  // Takeover continuationHistory pointers from previous search shifted down by 2 plies
-  (ss-6)->continuationHistory = baseContinuationHistories[0];
-  (ss-4)->continuationHistory = baseContinuationHistories[1];
-  (ss-2)->continuationHistory = baseContinuationHistories[2];
-  (ss-1)->continuationHistory = baseContinuationHistories[3];
+  // Takeover continuationHistory pointers from previous search 2 plies above
+  for (int i = 0; i < 6; i++)
+    (ss +i -6)->continuationHistory = baseContinuationHistories[i];
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
       (ss+i)->ply = i;
@@ -505,10 +501,8 @@ void Thread::search() {
       iterIdx = (iterIdx + 1) & 3;
   }
 
-  baseContinuationHistories[0] = (ss-4)->continuationHistory;
-  baseContinuationHistories[1] = (ss-2)->continuationHistory;
-  baseContinuationHistories[2] = (ss-0)->continuationHistory;
-  baseContinuationHistories[3] = (ss+1)->continuationHistory;
+  for (int i=0;i<6;i++)
+     baseContinuationHistories[i] = (ss +i -4)->continuationHistory;
 
   if (!mainThread)
       return;

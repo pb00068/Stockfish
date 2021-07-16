@@ -62,7 +62,7 @@ void Thread::clear() {
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
 
-  for (int i=0;i<4;i++) {
+  for (int i=0;i<6;i++) {
   	baseContinuationHistories[i] = &this->continuationHistory[0][0][NO_PIECE][0];
   }
 
