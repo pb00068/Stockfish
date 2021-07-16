@@ -61,6 +61,7 @@ void Thread::clear() {
   mainHistory.fill(0);
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
+  quieteBeforeRoot = MOVE_NONE;
 
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
@@ -170,7 +171,7 @@ void ThreadPool::clear() {
 /// returns immediately. Main thread will wake up other threads and start the search.
 
 void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
-                                const Search::LimitsType& limits, bool ponderMode) {
+                                const Search::LimitsType& limits, Move lastMove, bool ponderMode) {
 
   main()->wait_for_search_finished();
 
@@ -207,6 +208,8 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);
       th->rootState = setupStates->back();
+      if (lastMove && !pos.captured_piece())
+        th->quieteBeforeRoot = lastMove;
   }
 
   main()->start_searching();

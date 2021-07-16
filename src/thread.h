@@ -68,6 +68,7 @@ public:
   Position rootPos;
   StateInfo rootState;
   Search::RootMoves rootMoves;
+  Move quieteBeforeRoot;
   Depth rootDepth, completedDepth;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
@@ -102,7 +103,7 @@ struct MainThread : public Thread {
 
 struct ThreadPool : public std::vector<Thread*> {
 
-  void start_thinking(Position&, StateListPtr&, const Search::LimitsType&, bool = false);
+  void start_thinking(Position&, StateListPtr&, const Search::LimitsType&, Move m, bool = false);
   void clear();
   void set(size_t);
 

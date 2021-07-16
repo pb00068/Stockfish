@@ -49,9 +49,9 @@ namespace {
   // or the starting position ("startpos") and then makes the moves given in the
   // following move list ("moves").
 
-  void position(Position& pos, istringstream& is, StateListPtr& states) {
+  Move position(Position& pos, istringstream& is, StateListPtr& states) {
 
-    Move m;
+    Move m,last = MOVE_NONE;
     string token, fen;
 
     is >> token;
@@ -65,7 +65,7 @@ namespace {
         while (is >> token && token != "moves")
             fen += token + " ";
     else
-        return;
+        return last;
 
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
     pos.set(fen, Options["UCI_Chess960"], &states->back(), Threads.main());
@@ -75,7 +75,9 @@ namespace {
     {
         states->emplace_back();
         pos.do_move(m, states->back());
+        last = pos.checkers() ? MOVE_NONE : m;
     }
+    return last;
   }
 
   // trace_eval() prints the evaluation for the current position, consistent with the UCI
@@ -121,7 +123,7 @@ namespace {
   // the thinking time and other parameters from the input string, then starts
   // the search.
 
-  void go(Position& pos, istringstream& is, StateListPtr& states) {
+  void go(Position& pos, istringstream& is, StateListPtr& states, Move lastmove) {
 
     Search::LimitsType limits;
     string token;
@@ -147,7 +149,7 @@ namespace {
         else if (token == "infinite")  limits.infinite = 1;
         else if (token == "ponder")    ponderMode = true;
 
-    Threads.start_thinking(pos, states, limits, ponderMode);
+    Threads.start_thinking(pos, states, limits, lastmove, ponderMode);
   }
 
 
@@ -175,7 +177,7 @@ namespace {
             cerr << "\nPosition: " << cnt++ << '/' << num << " (" << pos.fen() << ")" << endl;
             if (token == "go")
             {
-               go(pos, is, states);
+               go(pos, is, states, MOVE_NONE);
                Threads.main()->wait_for_search_finished();
                nodes += Threads.nodes_searched();
             }
@@ -238,6 +240,7 @@ void UCI::loop(int argc, char* argv[]) {
 
   for (int i = 1; i < argc; ++i)
       cmd += std::string(argv[i]) + " ";
+  Move lastMove = MOVE_NONE;
 
   do {
       if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
@@ -265,8 +268,8 @@ void UCI::loop(int argc, char* argv[]) {
                     << "\nuciok"  << sync_endl;
 
       else if (token == "setoption")  setoption(is);
-      else if (token == "go")         go(pos, is, states);
-      else if (token == "position")   position(pos, is, states);
+      else if (token == "go")         go(pos, is, states, lastMove);
+      else if (token == "position")   lastMove = position(pos, is, states);
       else if (token == "ucinewgame") Search::clear();
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
 
