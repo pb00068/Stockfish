@@ -662,8 +662,8 @@ namespace {
             {
                 int penalty = -stat_bonus(depth);
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
-                if (ss->ply < 5)
-                   thisThread->lowPlyHistory2[us][from_to(ttMove)] << -stat_bonus(std::min(11, depth));
+                if (ss->ply < 11)
+                   thisThread->lowPlyHistory2[us][from_to(ttMove)] << -stat_bonus(std::min(12, depth));
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
@@ -934,7 +934,7 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, ss->ply < 5 && depth > 14 ? &thisThread->lowPlyHistory2 : &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, ss->ply < 5 && depth - ss->ply > 16 ? &thisThread->lowPlyHistory2 : &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
                                       contHist,
@@ -1659,8 +1659,8 @@ moves_loop: // When in check, search starts from here
         for (int i = 0; i < quietCount; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
-            if (ss->ply < 5)
-              thisThread->lowPlyHistory2[us][from_to(quietsSearched[i])] << -stat_bonus(std::min(11, depth));
+            if (ss->ply < 11)
+              thisThread->lowPlyHistory2[us][from_to(quietsSearched[i])] << -stat_bonus(std::min(12, depth));
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
@@ -1714,8 +1714,8 @@ moves_loop: // When in check, search starts from here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
-    if (ss->ply < 5)
-      thisThread->lowPlyHistory2[us][from_to(move)] << stat_bonus(std::min(11, depth));
+    if (ss->ply < 11)
+      thisThread->lowPlyHistory2[us][from_to(move)] << stat_bonus(std::min(12, depth));
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     // Penalty for reversed move in case of moved piece not being a pawn
