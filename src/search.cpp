@@ -934,7 +934,7 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, ss->ply < 5 && depth - ss->ply > 16 ? &thisThread->lowPlyHistory2 : &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, ss->ply < 5 && depth - ss->ply > 12 ? &thisThread->lowPlyHistory2 : &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
                                       contHist,
