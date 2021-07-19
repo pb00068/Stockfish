@@ -272,6 +272,7 @@ void Thread::search() {
       (ss+i)->ply = i;
 
   ss->pv = pv;
+  ss->continuationHistory =  &this->continuationHistory[0][0][ROOT_CONT][0];  // special for root pos
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -432,6 +433,9 @@ void Thread::search() {
           completedDepth = rootDepth;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
+         if (rootDepth > 4 && lastBestMove != MOVE_NONE && !rootPos.capture_or_promotion(lastBestMove))
+              // might be still a good candidate for a top position in root move order.
+              (*ss->continuationHistory)[rootPos.moved_piece(lastBestMove)][to_sq(lastBestMove)] << stat_bonus(rootDepth);
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
@@ -1254,11 +1258,14 @@ moves_loop: // When in check, search starts from here
               if (moveCount > 1)
                   ++thisThread->bestMoveChanges;
           }
-          else
+          else {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              if (depth > 5 && rm.pv[0] != MOVE_NONE)
+                 (*ss->continuationHistory)[pos.moved_piece(rm.pv[0])][to_sq(rm.pv[0])] << -stat_bonus(depth);
+          }
       }
 
       if (value > bestValue)
