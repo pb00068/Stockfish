@@ -432,9 +432,14 @@ void Thread::search() {
           completedDepth = rootDepth;
 
       if (rootMoves[0].pv[0] != lastBestMove) {
-         if (lastBestMove != MOVE_NONE && !rootPos.capture_or_promotion(lastBestMove))
+         if (rootDepth > 4 && lastBestMove != MOVE_NONE && !rootPos.capture_or_promotion(lastBestMove))
+         {
             // might be a good candidate as next move to be played, so boost it
-            mainHistory[us][from_to(lastBestMove)] << stat_bonus(rootDepth);
+            mainHistory[us][from_to(lastBestMove)] << stat_bonus(rootDepth-2);
+            Move m = rootMoves[0].pv[0];
+            PieceToHistory* ch = &continuationHistory[ss->inCheck][rootPos.capture_or_promotion(m)][rootPos.moved_piece(m)][to_sq(m)];
+            (*ch)[rootPos.moved_piece(lastBestMove)][to_sq(lastBestMove)] << stat_bonus(rootDepth-2);
+         }
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
