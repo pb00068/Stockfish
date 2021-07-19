@@ -1165,6 +1165,13 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
+              if (type_of(movedPiece) == KING &&
+                    is_ok((ss-2)->currentMove) &&
+                    type_of(pos.piece_on(to_sq((ss-2)->currentMove))) == PAWN &&
+                    from_sq((ss-2)->currentMove) != to_sq(move) &&
+                    distance(from_sq((ss-2)->currentMove), from_sq(move)) <= 1)
+                r--;
+
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
                              + (*contHist[1])[movedPiece][to_sq(move)]
