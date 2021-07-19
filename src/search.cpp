@@ -434,7 +434,7 @@ void Thread::search() {
       if (rootMoves[0].pv[0] != lastBestMove) {
          if (lastBestMove != MOVE_NONE && !rootPos.capture_or_promotion(lastBestMove))
             // might be a good candidate as next move to be played, so boost it
-            update_quiet_stats(rootPos, ss, lastBestMove, stat_bonus(rootDepth), rootDepth);
+            mainHistory[us][from_to(lastBestMove)] << stat_bonus(rootDepth);
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
