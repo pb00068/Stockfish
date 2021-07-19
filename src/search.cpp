@@ -499,10 +499,20 @@ void Thread::search() {
       iterIdx = (iterIdx + 1) & 3;
   }
 
+  uint64_t i=0;
+  for(auto & elem : rootMoves)
+  {
+     if (rootDepth > 10 && is_ok(elem.pv[0]) && !rootPos.capture_or_promotion(elem.pv[0]))
+          mainHistory[us][from_to(elem.pv[0])] << stat_bonus(rootDepth-2);
+     if (i++ > bestMoveChanges + 2)
+        break;
+  }
+
   if (!mainThread)
       return;
 
   mainThread->previousTimeReduction = timeReduction;
+
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
