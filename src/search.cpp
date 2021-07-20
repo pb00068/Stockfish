@@ -933,8 +933,8 @@ moves_loop: // When in check, search starts from here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    if (!countermove)
-         countermove = thisThread->counterMovesFrom[pos.piece_on(prevSq)][prevSqFrom];
+    if (!countermove && thisThread->counterMovesFromConf[pos.piece_on(prevSq)][prevSqFrom])
+         countermove =  thisThread->counterMovesFrom[pos.piece_on(prevSq)][prevSqFrom];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->lowPlyHistory,
@@ -1724,8 +1724,11 @@ moves_loop: // When in check, search starts from here
     if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
+        Square prevSqFrom = from_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
-        thisThread->counterMovesFrom[pos.piece_on(prevSq)][from_sq((ss-1)->currentMove)] = move;
+        thisThread->counterMovesFromConf[pos.piece_on(prevSq)][from_sq((ss-1)->currentMove)]=
+           (thisThread->counterMovesFrom[pos.piece_on(prevSq)][prevSqFrom] == move);
+            thisThread->counterMovesFrom[pos.piece_on(prevSq)][prevSqFrom] = move;
     }
 
     // Update low ply history
