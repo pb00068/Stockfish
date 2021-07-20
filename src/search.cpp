@@ -1525,13 +1525,12 @@ moves_loop: // When in check, search starts from here
 
       // Continuation history based pruning
       if (  !captureOrPromotion
-          && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
+          && bestValue > VALUE_TB_LOSS_IN_MAX_PLY
+          && (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
       {
-          if ((*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
-          &&  (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
+          if ((*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
            continue;
-          if (   (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
-              && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 1000
+          if ((*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 1000
               && thisThread->mainHistory[pos.side_to_move()][from_to(move)] < -8200)
            continue;
       }
