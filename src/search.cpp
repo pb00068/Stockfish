@@ -1530,9 +1530,9 @@ moves_loop: // When in check, search starts from here
           if ((*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
           &&  (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
            continue;
-          if (((*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
-             ||(*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold) &&
-               thisThread->mainHistory[pos.side_to_move()][from_to(move)] < -2000)
+          if (   (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
+              && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 1000
+              && thisThread->mainHistory[pos.side_to_move()][from_to(move)] < -8200)
            continue;
       }
 
