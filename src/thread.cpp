@@ -61,9 +61,7 @@ void Thread::clear() {
   mainHistory.fill(0);
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
-  moveBeforeRoot[0] = moveBeforeRoot[1] = moveBeforeRoot[2] =moveBeforeRoot[3] = moveBeforeRoot[4] = moveBeforeRoot[5] = MOVE_NONE;
-  movedPieceBeforeRoot[0] = movedPieceBeforeRoot[1] = movedPieceBeforeRoot[2] =movedPieceBeforeRoot[3]
-     = movedPieceBeforeRoot[4] = movedPieceBeforeRoot[5] = NO_PIECE;
+  moveBeforeRoot = MOVE_NONE;
 
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
@@ -173,7 +171,7 @@ void ThreadPool::clear() {
 /// returns immediately. Main thread will wake up other threads and start the search.
 
 void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
-                                const Search::LimitsType& limits, Move* lastMoves, Piece *lastPieces, bool ponderMode) {
+                                const Search::LimitsType& limits, Move lastMove, bool ponderMode) {
 
   main()->wait_for_search_finished();
 
@@ -210,11 +208,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);
       th->rootState = setupStates->back();
-      if (lastMoves != nullptr && lastPieces != nullptr)
-      for (int i=0;i<6;i++) {
-        th->moveBeforeRoot[i] = lastMoves[i];
-        th->movedPieceBeforeRoot[i] = lastPieces[i];
-      }
+      th->moveBeforeRoot = lastMove;
   }
 
   main()->start_searching();
