@@ -271,6 +271,7 @@ void Thread::search() {
   for (int i = 0; i < 6; i++)
     if (moveBeforeRoot[i] != MOVE_NONE && movedPieceBeforeRoot[i] != NO_PIECE) {
      (ss-1-i)->continuationHistory = &this->continuationHistory[0][0][movedPieceBeforeRoot[i]][to_sq(moveBeforeRoot[i])];
+     (ss-1-i)->currentMove = moveBeforeRoot[i];
     }
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
