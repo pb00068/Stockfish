@@ -603,6 +603,7 @@ namespace {
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
+    std::memset(ss->babySitfromSq, 0, 64 * sizeof(int));
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -1142,6 +1143,9 @@ moves_loop: // When in check, search starts from here
               && !likelyFailLow)
               r -= 2;
 
+          if ( ss->babySitfromSq[from_sq(move)] >=3)
+            r+=ss->babySitfromSq[from_sq(move)] / 3;
+
           // Increase reduction at root and non-PV nodes when the best move does not change frequently
           if (   (rootNode || !PvNode)
               && thisThread->bestMoveChanges <= 2)
@@ -1268,6 +1272,7 @@ moves_loop: // When in check, search starts from here
           if (value > alpha)
           {
               bestMove = move;
+              ss->babySitfromSq[from_sq(move)] = -10;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1280,6 +1285,9 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
+      }
+      else if (value < alpha - 50) {
+         ss->babySitfromSq[from_sq(move)]++;
       }
 
       // If the move is worse than some previously searched move, remember it to update its stats later
