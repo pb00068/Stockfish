@@ -1144,7 +1144,7 @@ moves_loop: // When in check, search starts from here
               r -= 2;
 
           if ( ss->babySitfromSq[from_sq(move)] >=3)
-            r+=ss->babySitfromSq[from_sq(move)] / 3;
+            r++;
 
           // Increase reduction at root and non-PV nodes when the best move does not change frequently
           if (   (rootNode || !PvNode)
@@ -1286,7 +1286,7 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
-      else if (value < alpha - 50) {
+      else if (value < alpha - 100) {
          ss->babySitfromSq[from_sq(move)]++;
       }
 
