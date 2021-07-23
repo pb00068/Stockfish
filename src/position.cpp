@@ -549,6 +549,12 @@ bool Position::legal(Move m) const {
       || aligned(from, to, square<KING>(us));
 }
 
+bool Position::protectsOwnPiece(Square from, Square to) const {
+  PieceType pc = type_of(piece_on(from));
+  if (pc == PAWN)
+     return false;
+  return (attacks_bb(pc, from, pieces()) & to) && color_of(piece_on(from)) == color_of(piece_on(to));
+}
 
 /// Position::pseudo_legal() takes a random move and tests whether the move is
 /// pseudo legal. It is used to validate moves from TT that can be corrupted

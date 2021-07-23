@@ -1166,8 +1166,8 @@ moves_loop: // When in check, search starts from here
               if (ttCapture)
                   r++;
 
-              if (ss->babySitfromSq[from_sq(move)] >=3)
-                  r++;
+              if (!givesCheck && ss->babySitfromSq[from_sq(move)] >=3)
+                  r+= ss->babySitfromSq[from_sq(move)]/3;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                              + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1223,9 +1223,6 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
       }
-
-      if (value < alpha - 200 && pos.capture((ss+1)->currentMove))
-         ss->babySitfromSq[from_sq(move)]++;
 
       // Step 18. Undo move
       pos.undo_move(move);
@@ -1289,6 +1286,10 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
+      else if (value < alpha - 100 && pos.capture((ss+1)->currentMove) &&
+        (ss->babySitfromSq[from_sq(move)] > 0 || pos.protectsOwnPiece(from_sq(move), to_sq((ss+1)->currentMove))))
+         ss->babySitfromSq[from_sq(move)]++;
+
 
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
