@@ -1143,9 +1143,6 @@ moves_loop: // When in check, search starts from here
               && !likelyFailLow)
               r -= 2;
 
-          if ( ss->babySitfromSq[from_sq(move)] >=3)
-            r++;
-
           // Increase reduction at root and non-PV nodes when the best move does not change frequently
           if (   (rootNode || !PvNode)
               && thisThread->bestMoveChanges <= 2)
@@ -1167,6 +1164,9 @@ moves_loop: // When in check, search starts from here
           {
               // Increase reduction if ttMove is a capture (~3 Elo)
               if (ttCapture)
+                  r++;
+
+              if (ss->babySitfromSq[from_sq(move)] >=3)
                   r++;
 
               ss->statScore =  thisThread->mainHistory[us][from_to(move)]
@@ -1223,6 +1223,9 @@ moves_loop: // When in check, search starts from here
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
       }
+
+      if (value < alpha - 200 && pos.capture((ss+1)->currentMove))
+         ss->babySitfromSq[from_sq(move)]++;
 
       // Step 18. Undo move
       pos.undo_move(move);
@@ -1285,9 +1288,6 @@ moves_loop: // When in check, search starts from here
                   break;
               }
           }
-      }
-      else if (value < alpha - 100) {
-         ss->babySitfromSq[from_sq(move)]++;
       }
 
       // If the move is worse than some previously searched move, remember it to update its stats later
