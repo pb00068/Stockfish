@@ -1286,7 +1286,7 @@ moves_loop: // When in check, search starts from here
               }
           }
       }
-      else if (value < alpha - 100 && pos.capture((ss+1)->currentMove) &&
+      else if (value < alpha - 100 && is_ok((ss+1)->currentMove) && pos.capture((ss+1)->currentMove) &&
         (ss->babySitfromSq[from_sq(move)] > 0 || pos.protectsOwnPiece(from_sq(move), to_sq((ss+1)->currentMove))))
          ss->babySitfromSq[from_sq(move)]++;
 
