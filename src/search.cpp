@@ -1524,7 +1524,7 @@ moves_loop: // When in check, search starts from here
           if ((*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
            continue;
           if ((*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 1000
-              && thisThread->mainHistory[pos.side_to_move()][from_to(move)] < -8200)
+             && thisThread->mainHistory[pos.side_to_move()][from_to(move)] < -8200)
            continue;
       }
 
