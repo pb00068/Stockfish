@@ -1288,6 +1288,9 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (givesCheck)
+             ss->futileQsCheck = move;
       }
     }
 
