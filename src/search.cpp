@@ -600,7 +600,7 @@ namespace {
 
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+4)->futileQsCheck = MOVE_NONE;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
@@ -1264,6 +1264,8 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (ss->futileQsCheck == move)
+                  ss->futileQsCheck = MOVE_NONE;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1519,9 +1521,16 @@ moves_loop: // When in check, search starts here
       // Continuation history based pruning
       if (  !captureOrPromotion
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
-          && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
-          continue;
+          && (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
+      {
+          if ((*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
+            continue;
+          if (move == ss->futileQsCheck)
+          {
+          	dbg_hit_on(true);
+          	continue;
+          }
+      }
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
@@ -1538,6 +1547,8 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (ss->futileQsCheck == move)
+                  ss->futileQsCheck = MOVE_NONE;
 
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1548,6 +1559,8 @@ moves_loop: // When in check, search starts here
                   break; // Fail high
           }
        }
+       else if (!captureOrPromotion) // checking move failed low
+         ss->futileQsCheck = move;
     }
 
     // All legal moves have been searched. A special case: if we're in check
