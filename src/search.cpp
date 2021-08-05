@@ -870,7 +870,7 @@ namespace {
                 probCutCount++;
 
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || ((ss-2)->inCheck && type_of(pos.moved_piece(move)) == KING)]
+                ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || ((ss-2)->inCheck &&  type_of(pos.moved_piece(move)) == KING)]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
