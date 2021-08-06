@@ -1104,7 +1104,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck || ((ss-2)->inCheck &&  type_of(pos.moved_piece(move)) == KING)]
                                                                 [captureOrPromotion]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
