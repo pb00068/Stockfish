@@ -779,8 +779,10 @@ namespace {
                ? ss->staticEval > (ss-4)->staticEval || (ss-4)->staticEval == VALUE_NONE
                : ss->staticEval > (ss-2)->staticEval;
 
-    // Step 7. Futility pruning: child node (~50 Elo)
+    // Step 7. Futility pruning: child node (~50 Elo).
+    // The depth condition is important for mate finding.
     if (   !PvNode
+        &&  depth < 9
         &&  eval - futility_margin(depth, improving) >= beta
         &&  eval < VALUE_KNOWN_WIN) // Do not return unproven wins
         return eval;
@@ -989,7 +991,7 @@ moves_loop: // When in check, search starts here
       // Calculate new depth for this move
       newDepth = depth - 1;
 
-      // Step 13. Pruning at shallow depth (~200 Elo)
+      // Step 13. Pruning at shallow depth (~200 Elo). Depth conditions are important for mate finding.
       if (  !rootNode
           && pos.non_pawn_material(us)
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -1023,11 +1025,12 @@ moves_loop: // When in check, search starts here
 
               // Futility pruning: parent node (~5 Elo)
               if (   !ss->inCheck
+                  && lmrDepth < 7
                   && ss->staticEval + 174 + 157 * lmrDepth <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value(-(30 - std::min(lmrDepth, 18)) * lmrDepth * lmrDepth)))
+              if (!pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
           }
       }
