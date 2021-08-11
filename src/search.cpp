@@ -605,6 +605,7 @@ namespace {
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
     Square clFrom = SQ_NONE;
+    bool clConfirmed = false;
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -1265,9 +1266,9 @@ moves_loop: // When in check, search starts here
 
           if (value > alpha)
           {
-              if (from_sq(bestMove) == from_sq(move))
-                 clFrom = from_sq(move);
+              clConfirmed = clFrom == from_sq(move);
               bestMove = move;
+              clFrom = from_sq(move);
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1316,7 +1317,7 @@ moves_loop: // When in check, search starts here
     // If there is a move which produces search value greater than alpha we update stats of searched moves
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
-                         quietsSearched, quietCount, capturesSearched, captureCount, depth, clFrom);
+                         quietsSearched, quietCount, capturesSearched, captureCount, depth, clConfirmed ? clFrom : SQ_NONE);
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
