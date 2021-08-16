@@ -1507,7 +1507,7 @@ moves_loop: // When in check, search starts here
       {
           Value threshold = VALUE_ZERO;
           if (ss->qscaptKiller && to_sq(ss->qscaptKiller) != to_sq(move) && from_sq(ss->qscaptKiller) != to_sq(move))
-              threshold = std::max(VALUE_ZERO, PieceValue[MG][pos.piece_on(to_sq(ss->qscaptKiller))] - PieceValue[MG][pos.piece_on(to_sq(move))]);
+              threshold = std::max(VALUE_ZERO, (PieceValue[MG][pos.piece_on(to_sq(ss->qscaptKiller))] - PieceValue[MG][pos.piece_on(to_sq(move))])/2);
           if (!pos.see_ge(move, threshold))
               continue;
       }
