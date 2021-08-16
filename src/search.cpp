@@ -1463,6 +1463,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       to_sq((ss-1)->currentMove));
     // Loop through the moves until no moves remain or a beta cutoff occurs
+    //bool cut = false;
     while ((move = mp.next_move()) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -1514,6 +1515,8 @@ moves_loop: // When in check, search starts here
               && color_of(pos.piece_on(to_sq(ss->qscaptKiller))) == pos.side_to_move())
                  threshold = std::max(VALUE_ZERO, ss->qscaptVal - PieceValue[MG][pos.piece_on(to_sq(move))]);
 
+          //cut = !pos.see_ge(move, threshold);
+
           if (!pos.see_ge(move, threshold))
               continue;
       }
@@ -1550,15 +1553,18 @@ moves_loop: // When in check, search starts here
           {
               bestMove = move;
 
+              //if (cut)
+              //sync_cout << pos << UCI::move(move,true) << "   " <<  UCI::move(ss->qscaptKiller,true) << "   was: " << UCI::move(ss->qscaptPrev,true) << sync_endl;
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else {
-                  if (captureOrPromotion)
+                  if (captureOrPromotion && is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(move))
                   {
                      (ss-1)->qscaptKiller = move;
+                     //(ss-1)->qscaptPrev = (ss-1)->currentMove;
                      (ss-1)->qscaptVal = PieceValue[MG][pos.piece_on(to_sq(move))] - PieceValue[MG][pos.piece_on(from_sq(move))];
                   }
                   break; // Fail high
