@@ -1378,6 +1378,7 @@ moves_loop: // When in check, search starts here
     bestMove = MOVE_NONE;
     ss->inCheck = pos.checkers();
     moveCount = 0;
+    ss->qscaptKiller = MOVE_NONE;
 
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
@@ -1502,9 +1503,14 @@ moves_loop: // When in check, search starts here
       }
 
       // Do not search moves with negative SEE values
-      if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
-          continue;
+      if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
+      {
+          Value threshold = VALUE_ZERO;
+          if (ss->qscaptKiller && to_sq(ss->qscaptKiller) != to_sq(move) && from_sq(ss->qscaptKiller) != to_sq(move))
+              threshold = std::max(VALUE_ZERO, PieceValue[MG][pos.piece_on(to_sq(ss->qscaptKiller))] - PieceValue[MG][pos.piece_on(to_sq(move))]);
+          if (!pos.see_ge(move, threshold))
+              continue;
+      }
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
@@ -1543,8 +1549,11 @@ moves_loop: // When in check, search starts here
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
-              else
+              else {
+                  if (captureOrPromotion)
+                     (ss-1)->qscaptKiller = move;
                   break; // Fail high
+              }
           }
        }
     }
