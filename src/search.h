@@ -47,6 +47,7 @@ struct Stack {
   Move excludedMove;
   Move killers[2];
   Move qscaptKiller;
+  Value qscaptVal;
   Value staticEval;
   int statScore;
   int moveCount;
