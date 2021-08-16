@@ -1506,7 +1506,8 @@ moves_loop: // When in check, search starts here
       if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           Value threshold = VALUE_ZERO;
-          if (!givesCheck && ss->qscaptKiller && to_sq(ss->qscaptKiller) != to_sq(move) && from_sq(ss->qscaptKiller) != to_sq(move))
+          if (!givesCheck && !ss->inCheck &&
+               ss->qscaptKiller && to_sq(ss->qscaptKiller) != to_sq(move) && from_sq(ss->qscaptKiller) != to_sq(move))
               threshold = std::max(VALUE_ZERO, PieceValue[MG][pos.piece_on(to_sq(ss->qscaptKiller))] - PieceValue[MG][pos.piece_on(to_sq(move))]);
           if (!pos.see_ge(move, threshold))
               continue;
