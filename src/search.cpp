@@ -1463,7 +1463,8 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       to_sq((ss-1)->currentMove));
     // Loop through the moves until no moves remain or a beta cutoff occurs
-    //bool cut = false;
+    bool cut = false;
+    ss->recap=false;
     while ((move = mp.next_move()) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -1476,6 +1477,7 @@ moves_loop: // When in check, search starts here
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
+      Value threshold = VALUE_ZERO;
 
       // Futility pruning and moveCount pruning
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1483,7 +1485,6 @@ moves_loop: // When in check, search starts here
           &&  futilityBase > -VALUE_KNOWN_WIN
           &&  type_of(move) != PROMOTION)
       {
-
           if (moveCount > 2)
               continue;
 
@@ -1500,26 +1501,23 @@ moves_loop: // When in check, search starts here
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
-      }
-
-      // Do not search moves with negative SEE values
-      if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
-      {
-          Value threshold = VALUE_ZERO;
-          if (   !givesCheck
-              && !ss->inCheck
-              && ss->qscaptKiller
-              && to_sq(ss->qscaptKiller) != to_sq(move)
-              && to_sq(ss->qscaptKiller) != from_sq(move)
-              && from_sq(ss->qscaptKiller) != to_sq(move)
-              && color_of(pos.piece_on(to_sq(ss->qscaptKiller))) == pos.side_to_move())
+          if (     ss->qscaptKiller
+                && to_sq(ss->qscaptKiller) != to_sq(move)
+                && to_sq(ss->qscaptKiller) != from_sq(move)
+                && from_sq(ss->qscaptKiller) != to_sq(move)
+                && color_of(pos.piece_on(to_sq(ss->qscaptKiller))) == pos.side_to_move())
+              //  && !(between_bb(from_sq(ss->qscaptKiller),to_sq(ss->qscaptKiller)) & pos.pieces()))
                  threshold = std::max(VALUE_ZERO, ss->qscaptVal - PieceValue[MG][pos.piece_on(to_sq(move))]);
 
-          //cut = !pos.see_ge(move, threshold);
-
-          if (!pos.see_ge(move, threshold))
-              continue;
+          cut = !pos.see_ge(move, threshold);
+          dbg_hit_on(cut);
       }
+      else cut = false;
+
+      // Do not search moves with negative SEE values
+      if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && !pos.see_ge(move))
+         continue;
+
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
@@ -1537,6 +1535,8 @@ moves_loop: // When in check, search starts here
           && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
           continue;
 
+      if (captureOrPromotion && is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) == to_sq(move))
+          ss->recap=true;
       // Make and search the move
       pos.do_move(move, st, givesCheck);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
@@ -1553,19 +1553,23 @@ moves_loop: // When in check, search starts here
           {
               bestMove = move;
 
-              //if (cut)
-              //sync_cout << pos << UCI::move(move,true) << "   " <<  UCI::move(ss->qscaptKiller,true) << "   was: " << UCI::move(ss->qscaptPrev,true) << sync_endl;
+              if (cut)
+              {
+              sync_cout << pos << "cut " << UCI::move(move,true) << "  killer " <<  UCI::move(ss->qscaptKiller,true) << "   prev was: " << UCI::move(ss->qscaptPrev,true) << " killerval " << ss->qscaptVal << sync_endl;
+              abort();
+              }
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else {
-                  if (captureOrPromotion && is_ok((ss-1)->currentMove) && to_sq((ss-1)->currentMove) != to_sq(move))
+                  if (captureOrPromotion && to_sq((ss-1)->currentMove) != to_sq(move))
                   {
                      (ss-1)->qscaptKiller = move;
-                     //(ss-1)->qscaptPrev = (ss-1)->currentMove;
-                     (ss-1)->qscaptVal = PieceValue[MG][pos.piece_on(to_sq(move))] - PieceValue[MG][pos.piece_on(from_sq(move))];
+                     (ss-1)->qscaptPrev = (ss-1)->currentMove;
+                     (ss-1)->qscaptVal = PieceValue[MG][pos.piece_on(to_sq(move))] - ((ss+1)->recap ? PieceValue[MG][pos.piece_on(from_sq(move))]  : VALUE_ZERO);
+                     sync_cout << pos << "assign kmove " << UCI::move(move,true) << "   prev was: " << UCI::move((ss-1)->qscaptPrev,true) << " qscaptVal " << (ss-1)->qscaptVal << " piecev: " << PieceValue[MG][pos.piece_on(to_sq(move))] << sync_endl;
                   }
                   break; // Fail high
               }
