@@ -1461,8 +1461,9 @@ moves_loop: // When in check, search starts here
                                       &thisThread->captureHistory,
                                       contHist,
                                       to_sq((ss-1)->currentMove));
-   Square triedTarget = SQ_NONE;
-   Piece movedPiece = NO_PIECE;
+    Square triedTarget1 = SQ_NONE,
+           triedTarget2 = SQ_NONE;
+
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
     {
@@ -1483,10 +1484,13 @@ moves_loop: // When in check, search starts here
           &&  type_of(move) != PROMOTION)
       {
 
-          if (moveCount > 2 || (triedTarget == to_sq(move) && pos.moved_piece(move) >= movedPiece))
-              continue;
+          if (moveCount > 3 || (moveCount > 2 && triedTarget1 != to_sq(move) && triedTarget2 != to_sq(move)))
+             continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
+
+          triedTarget2 = triedTarget1;
+          triedTarget1 = to_sq(move);
 
           if (futilityValue <= alpha)
           {
@@ -1500,6 +1504,8 @@ moves_loop: // When in check, search starts here
               continue;
           }
       }
+      if (!givesCheck)
+          triedTarget1 = to_sq(move);
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1524,8 +1530,7 @@ moves_loop: // When in check, search starts here
 
       if (!givesCheck)
       {
-        triedTarget = to_sq(move);
-        movedPiece = pos.moved_piece(move);
+
       }
 
 
