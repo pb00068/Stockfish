@@ -1484,7 +1484,7 @@ moves_loop: // When in check, search starts here
           &&  type_of(move) != PROMOTION)
       {
 
-          if (moveCount > 3 || (moveCount > 2 && triedTarget1 != to_sq(move) && triedTarget2 != to_sq(move)))
+          if (moveCount > 3 || (moveCount > 2 && (to_sq(move) == triedTarget1 || to_sq(move) == triedTarget2)))
              continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
@@ -1504,8 +1504,8 @@ moves_loop: // When in check, search starts here
               continue;
           }
       }
-      if (!givesCheck)
-          triedTarget1 = to_sq(move);
+
+      triedTarget1 = to_sq(move);
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
