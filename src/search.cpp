@@ -1462,6 +1462,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       to_sq((ss-1)->currentMove));
    Square triedTarget = SQ_NONE;
+   Piece movedPiece = NO_PIECE;
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
     {
@@ -1482,7 +1483,7 @@ moves_loop: // When in check, search starts here
           &&  type_of(move) != PROMOTION)
       {
 
-          if (moveCount > 2 || triedTarget == to_sq(move))
+          if (moveCount > 2 || (triedTarget == to_sq(move) && pos.moved_piece(move) >= movedPiece))
               continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
@@ -1522,7 +1523,10 @@ moves_loop: // When in check, search starts here
           continue;
 
       if (!givesCheck)
+      {
         triedTarget = to_sq(move);
+        movedPiece = pos.moved_piece(move);
+      }
 
 
       // Make and search the move
