@@ -1510,7 +1510,7 @@ moves_loop: // When in check, search starts here
                  threshold = std::max(VALUE_ZERO, ss->qscaptVal - PieceValue[MG][pos.piece_on(to_sq(move))]);
 
           cut = !pos.see_ge(move, threshold);
-          dbg_hit_on(cut);
+          dbg_hit_on(threshold > 0, cut);
       }
       else cut = false;
 
@@ -1555,8 +1555,8 @@ moves_loop: // When in check, search starts here
 
               if (cut)
               {
-              sync_cout << pos << "cut " << UCI::move(move,true) << "  killer " <<  UCI::move(ss->qscaptKiller,true) << "   prev was: " << UCI::move(ss->qscaptPrev,true) << " killerval " << ss->qscaptVal << sync_endl;
-              abort();
+              sync_cout << pos << "cut!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << UCI::move(move,true) << "  killer " <<  UCI::move(ss->qscaptKiller,true) << "   prev was: " << UCI::move(ss->qscaptPrev,true) << " killerval " << ss->qscaptVal << sync_endl;
+
               }
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1569,7 +1569,7 @@ moves_loop: // When in check, search starts here
                      (ss-1)->qscaptKiller = move;
                      (ss-1)->qscaptPrev = (ss-1)->currentMove;
                      (ss-1)->qscaptVal = PieceValue[MG][pos.piece_on(to_sq(move))] - ((ss+1)->recap ? PieceValue[MG][pos.piece_on(from_sq(move))]  : VALUE_ZERO);
-                     sync_cout << pos << "assign kmove " << UCI::move(move,true) << "   prev was: " << UCI::move((ss-1)->qscaptPrev,true) << " qscaptVal " << (ss-1)->qscaptVal << " piecev: " << PieceValue[MG][pos.piece_on(to_sq(move))] << sync_endl;
+                    // sync_cout << pos << "assign kmove " << UCI::move(move,true) << "   prev was: " << UCI::move((ss-1)->qscaptPrev,true) << " qscaptVal " << (ss-1)->qscaptVal << " piecev: " << PieceValue[MG][pos.piece_on(to_sq(move))] << sync_endl;
                   }
                   break; // Fail high
               }
