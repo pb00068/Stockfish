@@ -1473,9 +1473,6 @@ moves_loop: // When in check, search starts here
 
       givesCheck = pos.gives_check(move);
       captureOrPromotion = pos.capture_or_promotion(move);
-      if (!givesCheck)
-         triedTarget = to_sq(move);
-
       moveCount++;
 
       // Futility pruning and moveCount pruning
@@ -1523,6 +1520,10 @@ moves_loop: // When in check, search starts here
           && (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold
           && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
           continue;
+
+      if (!givesCheck)
+        triedTarget = to_sq(move);
+
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
