@@ -1461,7 +1461,7 @@ moves_loop: // When in check, search starts here
                                       &thisThread->captureHistory,
                                       contHist,
                                       to_sq((ss-1)->currentMove));
-
+   Square triedTarget = SQ_NONE;
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
     {
@@ -1473,6 +1473,8 @@ moves_loop: // When in check, search starts here
 
       givesCheck = pos.gives_check(move);
       captureOrPromotion = pos.capture_or_promotion(move);
+      if (!givesCheck)
+         triedTarget = to_sq(move);
 
       moveCount++;
 
@@ -1483,7 +1485,7 @@ moves_loop: // When in check, search starts here
           &&  type_of(move) != PROMOTION)
       {
 
-          if (moveCount > 2)
+          if (moveCount > 2 || triedTarget == to_sq(move))
               continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
