@@ -1489,28 +1489,35 @@ moves_loop: // When in check, search starts here
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
 
-          triedTarget2 = triedTarget1;
-          triedTarget1 = to_sq(move);
+
 
           if (futilityValue <= alpha)
           {
               bestValue = std::max(bestValue, futilityValue);
+              triedTarget2 = triedTarget1;
+              triedTarget1 = to_sq(move);
               continue;
           }
 
           if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
+
+              triedTarget1 = to_sq(move);
               continue;
           }
       }
-      if (!givesCheck)
-          triedTarget1 = to_sq(move);
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          &&  (triedTarget1 == to_sq(move) || triedTarget2 == to_sq(move) || !pos.see_ge(move)))
           continue;
+
+      if (!givesCheck)
+      {
+          triedTarget2 = triedTarget1;
+          triedTarget1 = to_sq(move);
+      }
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
