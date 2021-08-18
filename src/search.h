@@ -53,6 +53,8 @@ struct Stack {
   bool ttPv;
   bool ttHit;
   int doubleExtensions;
+  Square qs_to_sq;
+  Piece qs_capturer;
 };
 
 

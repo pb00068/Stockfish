@@ -601,6 +601,8 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->qs_to_sq = SQ_NONE;
+    (ss+2)->qs_capturer = PIECE_NB;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
@@ -1461,8 +1463,7 @@ moves_loop: // When in check, search starts here
                                       &thisThread->captureHistory,
                                       contHist,
                                       to_sq((ss-1)->currentMove));
-    Square triedTarget = SQ_NONE;
-    Piece movedPiece = PIECE_NB;
+
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1495,10 +1496,13 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
-          if (futilityBase <= alpha && ((movedPiece <= pos.moved_piece(move) && to_sq(move) == triedTarget) || !pos.see_ge(move, VALUE_ZERO + 1) ))
+          if (futilityBase <= alpha && ((ss->qs_capturer <= pos.moved_piece(move) && to_sq(move) == ss->qs_to_sq) || !pos.see_ge(move, VALUE_ZERO + 1) ))
           {
-              triedTarget = to_sq(move);
-              movedPiece = pos.moved_piece(move);
+              if (ss->qs_capturer == NO_PIECE)
+              {
+                ss->qs_to_sq = to_sq(move);
+                ss->qs_capturer = pos.moved_piece(move);
+              }
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
@@ -1506,14 +1510,16 @@ moves_loop: // When in check, search starts here
 
 
       // Avoid futile see_ge calls/searches for the same target square, same or bigger moved piece
-      if (!givesCheck && movedPiece <= pos.moved_piece(move) && to_sq(move) == triedTarget)
+      if (!givesCheck && ss->qs_capturer <= pos.moved_piece(move) && to_sq(move) == ss->qs_to_sq)
          continue;
 
       // Do not search moves with negative SEE values
       if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && !pos.see_ge(move))
       {
-          triedTarget = to_sq(move);
-          movedPiece = pos.moved_piece(move);
+          if (moveCount == 1) {
+              ss->qs_to_sq = to_sq(move);
+              ss->qs_capturer = pos.moved_piece(move);
+          }
           continue;
       }
 
