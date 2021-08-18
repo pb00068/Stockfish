@@ -1503,9 +1503,9 @@ moves_loop: // When in check, search starts here
       }
 
 
-      // Avoid futile see_ge calls for the same target square, same or bigger moved piece
+      // Avoid futile see_ge calls/searches for the same target square, same or bigger moved piece
       if (!givesCheck && movedPiece <= pos.moved_piece(move) && to_sq(move) == triedTarget)
-         continue; // ca. 2540 in a normal bench run
+         continue;
 
       // Do not search moves with negative SEE values
       if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && !pos.see_ge(move))
@@ -1531,11 +1531,6 @@ moves_loop: // When in check, search starts here
           && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < CounterMovePruneThreshold)
           continue;
 
-      if (!givesCheck)
-      {
-
-      }
-
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
@@ -1560,6 +1555,11 @@ moves_loop: // When in check, search starts here
                   alpha = value;
               else
                   break; // Fail high
+          }
+          else if (!givesCheck)
+          {
+             triedTarget = to_sq(move);
+             movedPiece = pos.moved_piece(move);
           }
        }
     }
