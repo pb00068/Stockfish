@@ -1462,7 +1462,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       to_sq((ss-1)->currentMove));
     Square triedTarget = SQ_NONE;
-    Piece movedPiece = NO_PIECE;
+    Piece movedPiece = PIECE_NB;
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1495,8 +1495,10 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && ((movedPiece <= pos.moved_piece(move) && to_sq(move) == triedTarget) || !pos.see_ge(move, VALUE_ZERO + 1) ))
           {
+              triedTarget = to_sq(move);
+              movedPiece = pos.moved_piece(move);
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
@@ -1555,11 +1557,6 @@ moves_loop: // When in check, search starts here
                   alpha = value;
               else
                   break; // Fail high
-          }
-          else if (!givesCheck)
-          {
-             triedTarget = to_sq(move);
-             movedPiece = pos.moved_piece(move);
           }
        }
     }
