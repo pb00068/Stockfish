@@ -538,16 +538,9 @@ namespace {
     if (depth <= 0)
     {
         Value v = qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
-        if ((ss+1)->moveCount || !(ss+1)->captKiller || !pos.capture((ss+1)->captKiller))
+        if ((ss+1)->moveCount || !(ss+1)->captKiller || !pos.piece_on(to_sq((ss+1)->captKiller)) || !pos.piece_on(from_sq((ss+1)->captKiller)) )
           return v;
-        StateInfo st;
-        pos.do_null_move(st);
-        bool valid = pos.pseudo_legal((ss+1)->captKiller);
-        pos.undo_null_move();
-        if (valid)
-           depth = 1; // pos is not quiete yet, opponent can probably grasp a piece
-        else
-           return v;
+        depth = 1; // pos is not quiete yet, opponent can probably grasp a piece
     }
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
