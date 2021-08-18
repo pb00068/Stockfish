@@ -538,14 +538,14 @@ namespace {
     if (depth <= 0)
     {
         Value v = qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
-        if ((ss+1)->moveCount || !(ss+1)->captKiller || !pos.capture((ss+1)->captKiller))
+        if (ss->doubleExtensions || (ss+1)->moveCount || !(ss+1)->captKiller || !pos.capture((ss+1)->captKiller))
           return v;
         StateInfo st;
         pos.do_null_move(st);
-        bool valid = pos.pseudo_legal((ss+1)->captKiller);
+        bool valid = pos.pseudo_legal((ss+1)->captKiller) && pos.see_ge((ss+1)->captKiller, KnightValueMg);
         pos.undo_null_move();
         if (valid)
-           depth = 1; // pos is not quiete yet, opponent can probably grasp a piece
+           depth = ss->doubleExtensions = 1; // pos is not quiete yet, opponent can probably grasp a piece
         else
            return v;
     }
@@ -612,7 +612,7 @@ namespace {
 
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+2)->captKiller = MOVE_NONE;
+    (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+4)->captKiller = MOVE_NONE;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
@@ -664,7 +664,7 @@ namespace {
                 // Bonus for a quiet ttMove that fails high
                 if (!pos.capture_or_promotion(ttMove))
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
-                else if (to_sq((ss-1)->currentMove) != to_sq(ttMove))
+                else if (to_sq((ss-1)->currentMove) != to_sq(ttMove) && type_of(pos.piece_on(to_sq(ttMove))) >= KNIGHT)
                     ss->captKiller = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
@@ -1558,7 +1558,7 @@ moves_loop: // When in check, search starts here
                   alpha = value;
               else
               {
-                  if (captureOrPromotion && to_sq((ss-1)->currentMove) != to_sq(bestMove))
+                  if (captureOrPromotion && to_sq((ss-1)->currentMove) != to_sq(bestMove) && type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT)
                      ss->captKiller = bestMove;
                   break; // Fail high
               }
@@ -1673,7 +1673,8 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        ss->captKiller = bestMove;
+        if (to_sq((ss-1)->currentMove) != to_sq(bestMove) && type_of(pos.piece_on(to_sq(bestMove))) >= KNIGHT)
+           ss->captKiller = bestMove;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
