@@ -538,9 +538,10 @@ namespace {
     if (depth <= 0)
     {
         Value v = qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
-        if ((ss+1)->moveCount || !(ss+1)->captKiller || !pos.piece_on(to_sq((ss+1)->captKiller)) || !pos.piece_on(from_sq((ss+1)->captKiller)) )
+        if (ss->doubleExtensions || (ss+1)->moveCount || !(ss+1)->captKiller || !pos.capture((ss+1)->captKiller))
           return v;
-        depth = 1; // pos is not quiete yet, opponent can probably grasp a piece
+        depth = ss->doubleExtensions = 1; // pos is not quiete yet, opponent can probably grasp a piece, search on ply further
+
     }
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
