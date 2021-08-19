@@ -53,6 +53,7 @@ struct StateInfo {
   Bitboard   checkersBB;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
+  Bitboard   strongDiscoForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
   Piece      capturedPiece;
@@ -119,14 +120,14 @@ public:
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& strongdisco) const;
 
   // Properties of moves
   bool legal(Move m) const;
   bool pseudo_legal(const Move m) const;
   bool capture(Move m) const;
   bool capture_or_promotion(Move m) const;
-  bool gives_check(Move m) const;
+  bool gives_check(Move m, bool&) const;
   Piece moved_piece(Move m) const;
   Piece captured_piece() const;
 
@@ -406,7 +407,8 @@ inline void Position::move_piece(Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt) {
-  do_move(m, newSt, gives_check(m));
+  bool strongDisco;
+  do_move(m, newSt, gives_check(m, strongDisco));
 }
 
 inline StateInfo* Position::state() const {

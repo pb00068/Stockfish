@@ -552,7 +552,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, didLMR, priorCapture;
+    bool givesCheck, strongDiscoCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
@@ -986,7 +986,7 @@ moves_loop: // When in check, search starts here
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, strongDiscoCheck);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              if (!strongDiscoCheck && !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                   continue;
           }
           else
@@ -1094,7 +1094,7 @@ moves_loop: // When in check, search starts here
           }
       }
       else if (   givesCheck
-               && depth > 6
+               && (depth > 6 || strongDiscoCheck)
                && abs(ss->staticEval) > Value(100))
           extension = 1;
 
@@ -1364,7 +1364,7 @@ moves_loop: // When in check, search starts here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool pvHit, givesCheck, captureOrPromotion;
+    bool pvHit, givesCheck, strongDiscoCheck, captureOrPromotion;
     int moveCount;
 
     if (PvNode)
@@ -1471,7 +1471,7 @@ moves_loop: // When in check, search starts here
       if (!pos.legal(move))
           continue;
 
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, strongDiscoCheck);
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
@@ -1503,7 +1503,7 @@ moves_loop: // When in check, search starts here
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          && !strongDiscoCheck && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible

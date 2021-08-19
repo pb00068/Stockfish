@@ -21,6 +21,7 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -314,9 +315,12 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK], si->strongDiscoForKing[WHITE]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE], si->strongDiscoForKing[BLACK]);
 
+  //dbg_hit_on((si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) && !(si->pinners[BLACK]|si->pinners[WHITE]), (si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]));
+  //if (((si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) && !(si->pinners[BLACK]|si->pinners[WHITE]))  &&   !(si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]))
+    //sync_cout << "\n" << *this << "\n" << Bitboards::pretty(si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) << "\n" << Bitboards::pretty(si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]) << sync_endl;
   Square ksq = square<KING>(~sideToMove);
 
   si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
@@ -449,10 +453,10 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& strongdisco) const {
 
   Bitboard blockers = 0;
-  pinners = 0;
+  pinners = strongdisco = 0;
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
   Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
@@ -469,6 +473,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         blockers |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
+        else if (!(attackers_to(sniperSq, pieces()) & pieces(color_of(piece_on(s)))))
+            strongdisco |= b;
     }
   }
   return blockers;
@@ -626,13 +632,14 @@ bool Position::pseudo_legal(const Move m) const {
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
-bool Position::gives_check(Move m) const {
+bool Position::gives_check(Move m, bool& strongDiscoCheck) const {
 
   assert(is_ok(m));
   assert(color_of(moved_piece(m)) == sideToMove);
 
   Square from = from_sq(m);
   Square to = to_sq(m);
+  strongDiscoCheck = false;
 
   // Is there a direct check?
   if (check_squares(type_of(piece_on(from))) & to)
@@ -641,7 +648,10 @@ bool Position::gives_check(Move m) const {
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
+  {
+      strongDiscoCheck = st->strongDiscoForKing[~sideToMove];
       return true;
+  }
 
   switch (type_of(m))
   {
