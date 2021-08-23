@@ -557,6 +557,7 @@ namespace {
          ttCapture, singularQuietLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
+    Bitboard discoSnipers;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -986,7 +987,7 @@ moves_loop: // When in check, search starts here
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
-      givesCheck = pos.gives_check(move, strongDiscoCheck);
+      givesCheck = pos.gives_check(move, discoSnipers);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1005,6 +1006,7 @@ moves_loop: // When in check, search starts here
           if (   captureOrPromotion
               || givesCheck)
           {
+              if (givesCheck && discoSnipers & from_sq)
               // Capture history based pruning when the move doesn't give check
               if (   !givesCheck
                   && lmrDepth < 1
@@ -1364,8 +1366,9 @@ moves_loop: // When in check, search starts here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool pvHit, givesCheck, strongDiscoCheck, captureOrPromotion;
+    bool pvHit, givesCheck, captureOrPromotion;
     int moveCount;
+    Bitboard discoSnipers;
 
     if (PvNode)
     {
@@ -1471,7 +1474,7 @@ moves_loop: // When in check, search starts here
       if (!pos.legal(move))
           continue;
 
-      givesCheck = pos.gives_check(move, strongDiscoCheck);
+      givesCheck = pos.gives_check(move, discoSnipers);
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
@@ -1503,7 +1506,7 @@ moves_loop: // When in check, search starts here
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !strongDiscoCheck && !pos.see_ge(move))
+          && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible
