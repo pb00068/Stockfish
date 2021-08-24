@@ -730,7 +730,7 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        ss->staticEval = eval = Eval::useNNUE ? evaluate(pos) : VALUE_NONE;
         improving = false;
         goto moves_loop;
     }
