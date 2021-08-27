@@ -639,16 +639,27 @@ bool Position::gives_check(Move m, Bitboard& discoSnipers) const {
 
   Square from = from_sq(m);
   Square to = to_sq(m);
-  discoSnipers = st->discoSniperforKing[~sideToMove];
+
 
   // Is there a direct check?
   if (check_squares(type_of(piece_on(from))) & to)
+  {
+      if (!(blockers_for_king(~sideToMove) & from))
+         discoSnipers = 0;
+      else if (!aligned(from, to, square<KING>(~sideToMove)))
+         discoSnipers = st->discoSniperforKing[~sideToMove];
       return true;
+  }
 
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
+  {
+      discoSnipers = st->discoSniperforKing[~sideToMove];
       return true;
+  }
+
+  discoSnipers = 0;
 
   switch (type_of(m))
   {

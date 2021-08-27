@@ -552,7 +552,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, strongDiscoCheck, improving, didLMR, priorCapture;
+    bool givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
@@ -1006,15 +1006,24 @@ moves_loop: // When in check, search starts here
           if (   captureOrPromotion
               || givesCheck)
           {
-              if (givesCheck && discoSnipers & from_sq)
               // Capture history based pruning when the move doesn't give check
               if (   !givesCheck
                   && lmrDepth < 1
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
+              if (discoSnipers) {
+                 if (distance(pos.square<KING>(~us), to_sq(move)) == 1)
+                    discoSnipers = 0; // probably king can evade by capturing
+                 else if (distance(pos.square<KING>(~us), to_sq(move)) > distance(pos.square<KING>(~us), from_sq(move)))
+                    discoSnipers = 0; // disco checks are dangerous when the discoverer moves towards the king
+                 else if (lmrDepth > 0 && (pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
+                    discoSnipers = 0; // discovered attacker can be captured by opponent
+              }
+
               // SEE based pruning
-              if (!strongDiscoCheck && !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              // don't prune discovered checks with the sniper unattacked and the piece moving towards the opp. king
+              if (!discoSnipers && !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                   continue;
           }
           else
@@ -1096,7 +1105,7 @@ moves_loop: // When in check, search starts here
           }
       }
       else if (   givesCheck
-               && (depth > 6 || strongDiscoCheck)
+               && depth > 6
                && abs(ss->staticEval) > Value(100))
           extension = 1;
 
