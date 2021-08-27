@@ -1012,19 +1012,20 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
-              if (discoSnipers) {
-                 if (distance(pos.square<KING>(~us), to_sq(move)) == 1)
-                    discoSnipers = 0; // probably king can evade by capturing
-                 else if (distance(pos.square<KING>(~us), to_sq(move)) > distance(pos.square<KING>(~us), from_sq(move)))
-                    discoSnipers = 0; // disco checks are dangerous when the discoverer moves towards the king
-                 else if (lmrDepth > 0 && (pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
-                    discoSnipers = 0; // discovered attacker can be captured by opponent
-              }
 
               // SEE based pruning
-              // don't prune discovered checks with the sniper unattacked and the piece moving towards the opp. king
-              if (!discoSnipers && !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
-                  continue;
+              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              {
+                  if (!discoSnipers)
+                     continue;
+                  if (distance(pos.square<KING>(~us), to_sq(move)) == 1)
+                     continue; // probably king can evade by capturing
+                  if (distance(pos.square<KING>(~us), to_sq(move)) > distance(pos.square<KING>(~us), from_sq(move)))
+                     continue; // disco checks are dangerous when the discoverer moves towards the king
+                  if (lmrDepth > 0 && (pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
+                     continue; // discovered attacker can be captured by opponent
+                  // don't prune this discovered check with the sniper unattacked and the piece moving towards the opp. king
+              }
           }
           else
           {

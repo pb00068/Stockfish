@@ -120,7 +120,7 @@ public:
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& strongdisco) const;
+  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& disco) const;
 
   // Properties of moves
   bool legal(Move m) const;

@@ -515,8 +515,8 @@ namespace {
         if constexpr (Pt == QUEEN)
         {
             // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners, strong;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, strong))
+            Bitboard queenPinners, disco;
+            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, disco))
                 score -= WeakQueen;
         }
     }

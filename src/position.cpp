@@ -21,7 +21,6 @@
 #include <cstddef> // For offsetof()
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include "bitboard.h"
@@ -318,9 +317,6 @@ void Position::set_check_info(StateInfo* si) const {
   si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK], si->discoSniperforKing[WHITE]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE], si->discoSniperforKing[BLACK]);
 
-  //dbg_hit_on((si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) && !(si->pinners[BLACK]|si->pinners[WHITE]), (si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]));
-  //if (((si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) && !(si->pinners[BLACK]|si->pinners[WHITE]))  &&   !(si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]))
-    //sync_cout << "\n" << *this << "\n" << Bitboards::pretty(si->blockersForKing[WHITE] | si->blockersForKing[BLACK]) << "\n" << Bitboards::pretty(si->strongDiscoForKing[WHITE] | si->strongDiscoForKing[BLACK]) << sync_endl;
   Square ksq = square<KING>(~sideToMove);
 
   si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
@@ -473,7 +469,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         blockers |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
-        else //if (!(attackers_to(sniperSq, pieces()) & pieces(color_of(piece_on(s)))))
+        else
             discoSniper |= b;
     }
   }
@@ -639,7 +635,6 @@ bool Position::gives_check(Move m, Bitboard& discoSnipers) const {
 
   Square from = from_sq(m);
   Square to = to_sq(m);
-
 
   // Is there a direct check?
   if (check_squares(type_of(piece_on(from))) & to)
