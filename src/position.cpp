@@ -470,7 +470,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
         else
-            discoSniper |= b;
+            discoSniper |= sniperSq;
     }
   }
   return blockers;
