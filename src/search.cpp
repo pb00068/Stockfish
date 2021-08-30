@@ -1014,7 +1014,7 @@ moves_loop: // When in check, search starts here
 
               if (discoSnipers && depth < 8 && distance(pos.square<KING>(~us), to_sq(move)) == 1 &&
                   type_of(pos.piece_on(to_sq(move))) < type_of(movedPiece) &&
-                   (pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & (pos.pieces(us) ^ from_sq(move))))
+                   !(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & (pos.pieces(us) ^ from_sq(move))))
                     continue;  // king can evade by capturing and see would be negative
 
               // SEE based pruning
