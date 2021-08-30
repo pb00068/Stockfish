@@ -1013,12 +1013,10 @@ moves_loop: // When in check, search starts here
                   continue;
 
               if (discoSnipers) {
-                   if (lmrDepth < 1 || distance(pos.square<KING>(~us), to_sq(move)) == 1)
-                       discoSnipers = 0; // probably king can evade by capturing
-                   else if (distance(pos.square<KING>(~us), to_sq(move)) > distance(pos.square<KING>(~us), from_sq(move)))
-                       discoSnipers = 0; // disco checks are dangerous when the discoverer moves towards the king
-                   else if ((pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
-                       discoSnipers = 0; // discovered attacker can be captured by opponent
+                   if (distance(pos.square<KING>(~us), to_sq(move)) == 1 && !(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & pos.pieces(us)))
+                       continue;  // king can evade by capturing
+                   if (relative_rank(us, from_sq(move)) >= relative_rank(us, to_sq(move)) )
+                       discoSnipers = 0; // disco checks are dangerous when the discoverer moves forwards
               }
 
               // SEE based pruning
