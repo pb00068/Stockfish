@@ -1013,10 +1013,14 @@ moves_loop: // When in check, search starts here
                   continue;
 
               if (discoSnipers) {
-                   if (distance(pos.square<KING>(~us), to_sq(move)) == 1 && !(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & pos.pieces(us)))
-                       continue;  // king can evade by capturing
-                   if (relative_rank(us, from_sq(move)) >= relative_rank(us, to_sq(move)) )
-                       discoSnipers = 0; // disco checks are dangerous when the discoverer moves forwards
+                   if (depth < 8 && distance(pos.square<KING>(~us), to_sq(move)) == 1 &&
+                       type_of(pos.piece_on(to_sq(move))) < type_of(movedPiece) &&
+                       !(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & pos.pieces(us)))
+                         continue;  // king can evade by capturing and see would be negative
+
+                   // now don't prune the move if moving forward
+                   if (relative_rank(us, from_sq(move)) >= relative_rank(us, to_sq(move)))
+                       discoSnipers = 0;
               }
 
               // SEE based pruning
