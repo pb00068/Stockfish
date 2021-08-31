@@ -1025,9 +1025,9 @@ moves_loop: // When in check, search starts here
                  // prune  move if not moving forward
                  if (relative_rank(us, from_sq(move)) >= relative_rank(us, to_sq(move)))
                    continue;
-                 if ( captureOrPromotion && lmrDepth > 1 && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
-                     continue;
-                 if ((pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
+                 //if ( !givesCheck && lmrDepth > 1 && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
+                 // continue;
+                 if (!captureOrPromotion && (pos.attackers_to(lsb(discoSnipers), pos.pieces() | to_sq(move)) & pos.pieces(~us)))
                                 // discovered attacker can be captured by opponent
                    continue;
                  //sync_cout << pos << UCI::move(move, false) << "  depth : " << depth << Bitboards::pretty(discoSnipers) << sync_endl;
