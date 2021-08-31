@@ -556,7 +556,7 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, discoCount;
     Bitboard discoSnipers;
 
     // Step 1. Initialize node
@@ -564,7 +564,7 @@ namespace {
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
-    moveCount          = captureCount = quietCount = ss->moveCount = 0;
+    moveCount          = captureCount = quietCount = discoCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -1012,6 +1012,9 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
+              if (discoSnipers && discoCount >= 2 + cutNode)
+                 continue;
+
               if (discoSnipers && depth < 8 && distance(pos.square<KING>(~us), to_sq(move)) == 1 &&
                   type_of(pos.piece_on(to_sq(move))) < type_of(movedPiece) &&
                    !(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & (pos.pieces(us) ^ from_sq(move))))
@@ -1229,6 +1232,7 @@ moves_loop: // When in check, search starts here
       // Step 18. Undo move
       pos.undo_move(move);
 
+
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 19. Check for a new best move
@@ -1295,7 +1299,12 @@ moves_loop: // When in check, search starts here
               capturesSearched[captureCount++] = move;
 
           else if (!captureOrPromotion && quietCount < 64)
+          {
               quietsSearched[quietCount++] = move;
+              if (discoSnipers)
+                  discoCount++;
+          }
+
       }
     }
 
