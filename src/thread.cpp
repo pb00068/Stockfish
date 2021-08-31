@@ -62,6 +62,14 @@ void Thread::clear() {
   lowPlyHistory.fill(0);
   captureHistory.fill(0);
 
+  // give initial bonus for unexplored moves invading opponent territory
+  for (Square white=SQ_A1; white <= SQ_H4; ++white)
+     for (Square black=SQ_A5; black <= SQ_H8; ++black)
+     {
+         mainHistory[WHITE][from_to(make_move(white, black))] << 200;
+         mainHistory[BLACK][from_to(make_move(black, white))] << 200;
+     }
+
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
       {
