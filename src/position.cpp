@@ -629,7 +629,7 @@ bool Position::pseudo_legal(const Move m) const {
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
-bool Position::gives_check(Move m, Bitboard& discoSnipers) const {
+bool Position::gives_check(Move m) const {
 
   assert(is_ok(m));
   assert(color_of(moved_piece(m)) == sideToMove);
@@ -639,23 +639,12 @@ bool Position::gives_check(Move m, Bitboard& discoSnipers) const {
 
   // Is there a direct check?
   if (check_squares(type_of(piece_on(from))) & to)
-  {
-      if (!(blockers_for_king(~sideToMove) & from))
-         discoSnipers = 0;
-      else if (!aligned(from, to, square<KING>(~sideToMove)))
-         discoSnipers = st->discoSniperforKing[~sideToMove];
       return true;
-  }
-
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
       && !aligned(from, to, square<KING>(~sideToMove)))
-  {
-      discoSnipers = st->discoSniperforKing[~sideToMove];
       return true;
-  }
 
-  discoSnipers = 0;
 
   switch (type_of(m))
   {

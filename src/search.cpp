@@ -557,7 +557,6 @@ namespace {
          ttCapture, singularQuietLMR;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
-    Bitboard discoSnipers;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -987,7 +986,7 @@ moves_loop: // When in check, search starts here
       extension = 0;
       captureOrPromotion = pos.capture_or_promotion(move);
       movedPiece = pos.moved_piece(move);
-      givesCheck = pos.gives_check(move, discoSnipers);
+      givesCheck = pos.gives_check(move);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1013,7 +1012,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218 - bool(discoSnipers) * 40) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                    continue;
           }
           else
@@ -1368,7 +1367,6 @@ moves_loop: // When in check, search starts here
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
     bool pvHit, givesCheck, captureOrPromotion;
     int moveCount;
-    Bitboard discoSnipers;
 
     if (PvNode)
     {
@@ -1474,7 +1472,7 @@ moves_loop: // When in check, search starts here
       if (!pos.legal(move))
           continue;
 
-      givesCheck = pos.gives_check(move, discoSnipers);
+      givesCheck = pos.gives_check(move);
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
