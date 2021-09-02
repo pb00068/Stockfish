@@ -1163,8 +1163,11 @@ moves_loop: // When in check, search starts here
           if (ttCapture)
               r++;
 
-          if (captureOrPromotion && type_of(movedPiece) == BISHOP && type_of(pos.piece_on(to_sq(move))) == KNIGHT)
-              r--; // bishop vs knight trades need deeper analysis
+          if (captureOrPromotion && quietCount > 2
+             && type_of(movedPiece) == BISHOP
+             && type_of(pos.captured_piece()) == KNIGHT) //late/bad capture so bishop will probably be captured
+              r-=2; // bishop vs knight trades need deeper analysis
+
 
           ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                          + (*contHist[0])[movedPiece][to_sq(move)]
