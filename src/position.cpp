@@ -1118,7 +1118,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       if (stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
          !(blockers_for_king(stm) & occupied) &&
-           ( piece_on(to) || type_of(piece_on(lsb(blockers_for_king(stm)))) != PAWN ))
+          ( piece_on(to) || type_of(piece_on(lsb(blockers_for_king(stm)))) != PAWN ))
            stmAttackers = stmAttackers & square<KING>(stm);
       if (!stmAttackers)
           break;
