@@ -22,6 +22,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -1094,7 +1095,8 @@ bool Position::see_ge(Move m, Value threshold) const {
       return true;
 
   assert(color_of(piece_on(from)) == sideToMove);
-  Bitboard occupied = pieces() ^ from ^ to;
+  Bitboard occupied = pieces() ^ from;
+  occupied |= to; // always occupied regardless if capture or not
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
@@ -1114,6 +1116,10 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (pinners(~stm) & occupied)
           stmAttackers &= ~blockers_for_king(stm);
 
+      if (stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
+         !(blockers_for_king(stm) & occupied) &&
+           ( piece_on(to) || type_of(piece_on(lsb(blockers_for_king(stm)))) != PAWN ))
+           stmAttackers = stmAttackers & square<KING>(stm);
       if (!stmAttackers)
           break;
 
