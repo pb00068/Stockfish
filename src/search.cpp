@@ -1479,7 +1479,6 @@ moves_loop: // When in check, search starts here
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
-      bool doSee = true;
 
       // Futility pruning and moveCount pruning
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1504,9 +1503,6 @@ moves_loop: // When in check, search starts here
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
-          doSee = futilityBase > alpha;
-          dbg_hit_on(!doSee);
-          //dbg_hit_on(futilityBase <= alpha, pos.see_ge(move, VALUE_ZERO + 1)); // 250568
       }
 
       // Do not search moves with negative SEE values
