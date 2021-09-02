@@ -1011,7 +1011,7 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-198 - 50 * (bool)(ss->staticEval - 120 > alpha )) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-208 - 30 * (bool)(ss->staticEval - 140 > alpha )) * depth)) // (~25 Elo)
                   continue;
           }
           else
@@ -1030,7 +1030,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // Prune moves with negative SEE (~20 Elo)
-              if (!pos.see_ge(move, Value((-19 -6 * (bool)(ss->staticEval - 120 > alpha )) * lmrDepth * lmrDepth - 19 * lmrDepth)))
+              if (!pos.see_ge(move, Value((-20 -2 * (bool)(ss->staticEval - 140 > alpha )) * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;
           }
       }
