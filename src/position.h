@@ -114,6 +114,7 @@ public:
   // Checking
   Bitboard checkers() const;
   Bitboard blockers_for_king(Color c) const;
+  Bitboard disco_sniper_for_king(Color c) const;
   Bitboard check_squares(PieceType pt) const;
   Bitboard pinners(Color c) const;
 
@@ -292,6 +293,10 @@ inline Bitboard Position::checkers() const {
 
 inline Bitboard Position::blockers_for_king(Color c) const {
   return st->blockersForKing[c];
+}
+
+inline Bitboard Position::disco_sniper_for_king(Color c) const {
+  return st->discoSniperforKing[c];
 }
 
 inline Bitboard Position::pinners(Color c) const {

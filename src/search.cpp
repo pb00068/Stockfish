@@ -669,7 +669,11 @@ namespace {
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
+        {
+            if (ss->inCheck && pos.capture_or_promotion(ttMove))
+                ss->evasionCaptureSq = to_sq(ttMove);
             return ttValue;
+        }
     }
 
     // Step 5. Tablebases probe
@@ -1011,8 +1015,12 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
+              bool discoCheck = givesCheck && (pos.blockers_for_king(~us) & from_sq(move));
+              if  (discoCheck && (pos.disco_sniper_for_king(~us) & (ss+1)->evasionCaptureSq))
+                  continue;
+
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-218) * (depth + discoCheck))) // (~25 Elo)
                    continue;
           }
           else
@@ -1654,8 +1662,12 @@ moves_loop: // When in check, search starts here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (ss->inCheck)
+            ss->evasionCaptureSq = to_sq(bestMove);
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
