@@ -22,7 +22,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
-#include <iostream>
+//#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -470,7 +470,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         blockers |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
-        else
+        else if (!(attackers_to(sniperSq, pieces()) & pieces(color_of(piece_on(s)))))
             discoSniper |= sniperSq;
     }
   }
@@ -1105,10 +1105,20 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (pinners(~stm) & occupied)
           stmAttackers &= ~blockers_for_king(stm);
 
-      if (stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
+      if ( stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
          !(blockers_for_king(stm) & occupied) &&
           ( piece_on(to) || type_of(piece_on(lsb(blockers_for_king(stm)))) != PAWN ))
-           stmAttackers = stmAttackers & square<KING>(stm);
+      {
+             if (stmAttackers & square<KING>(stm))
+            	 return ((attackers & ~pieces(stm)) ? res : res ^ 1);
+             else break;
+//           stmAttackers = stmAttackers & square<KING>(stm);
+//           dbg_hit_on(true);
+//           sync_cout << *this << " move " << UCI::move(m, false) << " " << Bitboards::pretty(stmAttackers) << " stm " << stm << " th " << threshold << sync_endl;
+//           if (!stmAttackers)
+//          	 sync_cout <<  " ret " << bool(res) << sync_endl;
+//           else sync_cout <<  " ret " << ((attackers & ~pieces(stm)) ? res : res ^ 1) << sync_endl;
+      }
       if (!stmAttackers)
           break;
 
