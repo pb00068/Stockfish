@@ -1105,7 +1105,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (pinners(~stm) & occupied)
           stmAttackers &= ~blockers_for_king(stm);
 
-      if ( threshold > 0 && stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
+      if ( stmAttackers && (st->discoSniperforKing[stm] & occupied) &&
          !(blockers_for_king(stm) & occupied) &&
           ( piece_on(to) || type_of(piece_on(lsb(blockers_for_king(stm)))) != PAWN ))
       {
