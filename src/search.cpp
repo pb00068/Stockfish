@@ -1011,8 +1011,10 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
+              bool discoPawnPush = !captureOrPromotion && type_of(movedPiece) == PAWN && (pos.blockers_for_king(~us) & from_sq(move));
+
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              if (!discoPawnPush && !pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                    continue;
           }
           else
