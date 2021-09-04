@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(depth <= 2 ? -120 : -218) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(depth <= 4 ? -120 : -218) * depth)) // (~25 Elo)
               {
                   bool discoPawnPush = !captureOrPromotion && type_of(movedPiece) == PAWN && bool(pos.blockers_for_king(~us) & from_sq(move));
                   if (!discoPawnPush)
