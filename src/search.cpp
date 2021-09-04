@@ -558,7 +558,6 @@ namespace {
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
 
-
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
@@ -602,7 +601,6 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+1)->evasionCaptureSq = SQ_A1;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
@@ -1017,15 +1015,12 @@ moves_loop: // When in check, search starts here
                   && captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] < 0)
                   continue;
 
-              bool discoCheck = givesCheck && depth < 5 && (pos.blockers_for_king(~us) & from_sq(move));
+              bool discoCheck = givesCheck && (pos.blockers_for_king(~us) & from_sq(move));
               if  (discoCheck && (pos.disco_sniper_for_king(~us) & (ss+1)->evasionCaptureSq))
-              {
-                 //sync_cout <<  pos << UCI::move(move, false) << Bitboards::pretty(pos.disco_sniper_for_king(~us) & (ss+1)->evasionCaptureSq) << sync_endl;
                   continue;
-              }
 
               // SEE based pruning
-              if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
+              if (!pos.see_ge(move, Value(-218) * (depth + discoCheck))) // (~25 Elo)
                    continue;
           }
           else
