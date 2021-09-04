@@ -1510,7 +1510,12 @@ moves_loop: // When in check, search starts here
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
           && !pos.see_ge(move))
-          continue;
+      {
+         bool discoPawnPush = givesCheck && !captureOrPromotion && type_of(pos.moved_piece(move)) == PAWN && bool(pos.blockers_for_king(~pos.side_to_move()) & from_sq(move));
+         if (!discoPawnPush)
+             continue;
+      }
+
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
