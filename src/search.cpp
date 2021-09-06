@@ -953,6 +953,7 @@ moves_loop: // When in check, search starts here
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
 
+    int captureReduction= 1000;
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1171,6 +1172,17 @@ moves_loop: // When in check, search starts here
 
           // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
           r -= ss->statScore / 14721;
+
+          if (captureOrPromotion)
+          {
+             if (quietCount <= 1) // good captures
+              captureReduction = r;
+             else if (captureReduction != 1000)//  'bad' captures
+             {
+                if (PieceValue[MG][movedPiece] - PieceValue[MG][pos.captured_piece()] <= BishopValueMg - KnightValueMg)
+                   r = (r + captureReduction) / 2;
+             }
+          }
 
           // In general we want to cap the LMR depth search at newDepth. But if
           // reductions are really negative and movecount is low, we allow this move
