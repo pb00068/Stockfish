@@ -1185,7 +1185,7 @@ moves_loop: // When in check, search starts here
           {
              if (quietCount <= 1) // good captures
               captureReduction = r;
-             else if (captureReduction != 1000)//  'bad' captures after good ones
+             else if (captureReduction != 1000)// 'bad' captures after good ones
                    r = (r + captureReduction) / 2;
           }
 
