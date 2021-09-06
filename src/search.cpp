@@ -946,9 +946,9 @@ moves_loop: // When in check, search starts here
     singularQuietLMR = moveCountPruning = false;
     bool doubleExtension = false;
 
-    // Indicate PvNodes that will probably fail low if the node was searched
+    // Indicate PvNodes/excpected cut nodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
-    bool likelyFailLow =    PvNode
+    bool likelyFailLow =    (PvNode || cutNode)
                          && ttMove
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
