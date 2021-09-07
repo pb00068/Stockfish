@@ -556,14 +556,14 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture, singularQuietLMR;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount;
+    int moveCount, captureCount, quietCount, nonPwnDiscoCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
-    moveCount          = captureCount = quietCount = ss->moveCount = 0;
+    moveCount          = captureCount = quietCount = nonPwnDiscoCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -1014,6 +1014,8 @@ moves_loop: // When in check, search starts here
               // SEE based pruning
               if (!pos.see_ge(move, Value(-218) * depth)) // (~25 Elo)
                   continue;
+
+              nonPwnDiscoCount += (givesCheck && type_of(movedPiece) != PAWN && bool(pos.blockers_for_king(~us) & from_sq(move)));
           }
           else
           {
@@ -1104,6 +1106,7 @@ moves_loop: // When in check, search starts here
       // Check extensions
       else if (   givesCheck
                && depth > 6
+               && nonPwnDiscoCount < 4 // don't extend further discovering moves from the same square
                && abs(ss->staticEval) > Value(100))
           extension = 1;
 
@@ -1149,6 +1152,9 @@ moves_loop: // When in check, search starts here
           if (   ss->ttPv
               && !likelyFailLow)
               r -= 2;
+
+          if (givesCheck && nonPwnDiscoCount >= 4) // already tried 3 discoveries from_sq(move)
+              r += 2;
 
           // Increase reduction at root and non-PV nodes when the best move does not change frequently
           if (   (rootNode || !PvNode)
