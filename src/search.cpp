@@ -685,6 +685,8 @@ namespace {
                 // Bonus for a quiet ttMove that fails high
                 if (!ttCapture)
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                else if (is_ok((ss-1)->currentMove) && to_sq(ttMove) == to_sq((ss-1)->currentMove))
+                  thisThread->counterMoves[pos.piece_on(prevSq)][to_sq(ttMove)] = ttMove;
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1206,6 +1208,14 @@ moves_loop: // When in check, search starts here
                          + (*contHist[3])[movedPiece][to_sq(move)]
                          - 4923;
 
+          if (moveCount > 4 && !captureOrPromotion && ss->statScore < -12800)
+          {
+              Move cm = thisThread->counterMoves[movedPiece][to_sq(move)];
+              if (cm && to_sq(cm) == to_sq(move) && !pos.pseudo_legal(cm))
+              // sync_cout << pos << UCI::move(move, false)  << UCI::move(cm, false)  << sync_endl;
+                  r--; // search deeper if move is'nt stupid anymore (counter capture not feasible anymore)
+          }
+
           // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
           r -= ss->statScore / 14721;
 
@@ -1705,8 +1715,13 @@ moves_loop: // When in check, search starts here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (is_ok((ss-1)->currentMove) && to_sq(bestMove) == to_sq((ss-1)->currentMove))
+              thisThread->counterMoves[pos.piece_on(prevSq)][to_sq(bestMove)] = bestMove;
+
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
