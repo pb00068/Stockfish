@@ -684,7 +684,10 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high
                 if (!ttCapture)
+                {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                    thisThread->counterCaptures[pos.piece_on(prevSq)][to_sq(ttMove)] = MOVE_NONE;
+                }
                 else if (is_ok((ss-1)->currentMove) && to_sq(ttMove) == to_sq((ss-1)->currentMove))
                   thisThread->counterCaptures[pos.piece_on(prevSq)][to_sq(ttMove)] = ttMove;
 
@@ -1208,12 +1211,12 @@ moves_loop: // When in check, search starts here
                          + (*contHist[3])[movedPiece][to_sq(move)]
                          - 4923;
 
-          if (moveCount > 4 && !captureOrPromotion && ss->statScore < -12800)
+          if (!captureOrPromotion)
           {
               Move cc = thisThread->counterCaptures[movedPiece][to_sq(move)];
-              if (cc && !pos.pseudo_legal(cc))
+              if (cc)
               {
-                  r--; // search deeper if move is'nt stupid anymore (counter capture not feasible anymore)
+                  ss->statScore += pos.pseudo_legal(cc) ? -8000 : 8000;
                   thisThread->counterCaptures[movedPiece][to_sq(move)] = MOVE_NONE;
               }
           }
@@ -1715,6 +1718,7 @@ moves_loop: // When in check, search starts here
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
+        thisThread->counterCaptures[pos.piece_on(prevSq)][to_sq(bestMove)] = MOVE_NONE;
     }
     else
     {
