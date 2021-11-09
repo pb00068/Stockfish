@@ -1212,7 +1212,6 @@ moves_loop: // When in check, search starts here
           {
               Move cm = thisThread->counterMoves[movedPiece][to_sq(move)];
               if (cm && to_sq(cm) == to_sq(move) && !pos.pseudo_legal(cm))
-              // sync_cout << pos << UCI::move(move, false)  << UCI::move(cm, false)  << sync_endl;
                   r--; // search deeper if move is'nt stupid anymore (counter capture not feasible anymore)
           }
 
