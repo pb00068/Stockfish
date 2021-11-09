@@ -1211,12 +1211,13 @@ moves_loop: // When in check, search starts here
                          + (*contHist[3])[movedPiece][to_sq(move)]
                          - 4923;
 
-          if (!captureOrPromotion)
+          if (!captureOrPromotion && r > 0)
           {
               Move cc = thisThread->counterCaptures[movedPiece][to_sq(move)];
               if (cc)
               {
-                  ss->statScore += pos.pseudo_legal(cc) ? -8000 : 8000;
+                  //dbg_hit_on(!pos.pseudo_legal(cc), r <=0);
+                  ss->statScore += pos.pseudo_legal(cc) ? -4000 : 15000;
                   thisThread->counterCaptures[movedPiece][to_sq(move)] = MOVE_NONE;
               }
           }
