@@ -1762,6 +1762,7 @@ moves_loop: // When in check, search starts here
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
+    thisThread->counterMoves[pos.moved_piece(move)][to_sq(move)] = MOVE_NONE;
 
     // Update low ply history
     if (depth > 11 && ss->ply < MAX_LPH)
