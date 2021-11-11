@@ -682,8 +682,10 @@ namespace {
         {
             if (ttValue >= beta)
             {
-                // Bonus for a quiet ttMove that fails high
-                if (!ttCapture)
+                // Bonus for a ttMove that fails high
+                if (ttCapture)
+                    thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] << stat_bonus(depth + 1);
+                else
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
 
                 // Extra penalty for early quiet moves of the previous ply
