@@ -145,7 +145,7 @@ Move MovePicker::select(Pred filter) {
 
 
 bool MovePicker::hasMoreQuiets() {
-	return stage == QUIET && cur < endMoves - 2 && pos.legal(cur->move);
+	return stage == QUIET && cur < endMoves - 3;
 }
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
