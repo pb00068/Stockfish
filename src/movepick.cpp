@@ -143,6 +143,11 @@ Move MovePicker::select(Pred filter) {
   return MOVE_NONE;
 }
 
+
+bool MovePicker::hasMoreQuiets() {
+	return stage == QUIET && cur < endMoves - 2 && pos.legal(cur->move);
+}
+
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo-legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
