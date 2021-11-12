@@ -1025,8 +1025,9 @@ moves_loop: // When in check, search starts here
 
       // Step 13. Pruning at shallow depth (~200 Elo). Depth conditions are important for mate finding.
       if (  !rootNode
-          && pos.non_pawn_material(us)
-          && (bestValue > VALUE_TB_LOSS_IN_MAX_PLY || (moveCount == 1 && mp.hasMoreQuiets())))
+          && pos.non_pawn_material(us))
+      {
+      if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
           moveCountPruning = moveCount >= futility_move_count(improving, depth);
@@ -1066,6 +1067,9 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
           }
+      }
+      else if (moveCount == 1 && depth < 4 && mp.hasMoreQuiets() && !pos.see_ge(move, Value(-218) * depth))
+         continue;
       }
 
       // Step 14. Extensions (~75 Elo)
