@@ -49,9 +49,6 @@ namespace {
 } // namespace
 
 
-void MovePicker::setRS(Square rs) {
-	recaptureSquare = rs;
-}
 /// Constructors of the MovePicker class. As arguments we pass information
 /// to help it to return the (presumably) good moves first, to decide which
 /// moves to return (in the quiescence search, for instance, we only want to
@@ -115,7 +112,6 @@ void MovePicker::score() {
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +     (recaptureSquare != SQ_NONE && from_sq(m) == recaptureSquare ? 1000 : 0)
                    + (ply < MAX_LPH ? 6 * (*lowPlyHistory)[ply][from_to(m)] : 0);
 
       else // Type == EVASIONS

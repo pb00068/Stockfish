@@ -1036,6 +1036,9 @@ moves_loop: // When in check, search starts here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, rangeReduction > 2), 0);
 
+          if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
+             lmrDepth+=2;
+
           if (   captureOrPromotion
               || givesCheck)
           {
@@ -1340,7 +1343,6 @@ moves_loop: // When in check, search starts here
           if (quietCount + captureCount < 3) {
               if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
                   ss->recap = SQ_NONE;
-              mp.setRS(ss->recap);
           }
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
@@ -1715,9 +1717,8 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captured > BISHOP && (ss-1)->moveCount < 3 && to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
-            (type_of(moved_piece) <= KNIGHT || type_of(moved_piece) == KING ||
-               !(between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove))))
+        if (captured >= BISHOP && (ss-1)->moveCount < 3 && to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
+            (type_of(moved_piece) < BISHOP || type_of(moved_piece) == KING))
             (ss-1)->recap = to_sq(bestMove);
     }
 
