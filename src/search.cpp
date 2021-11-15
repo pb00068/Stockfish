@@ -887,7 +887,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, depth - 4, probCutBeta - ss->staticEval, &captureHistory);
         bool ttPv = ss->ttPv;
         ss->ttPv = false;
 
