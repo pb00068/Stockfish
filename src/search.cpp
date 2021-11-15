@@ -636,6 +636,7 @@ namespace {
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     ss->depth            = depth;
     Square prevSq        = to_sq((ss-1)->currentMove);
+    ss->recap = SQ_NONE;
 
     // Update the running average statistics for double extensions
     thisThread->doubleExtensionAverage[us].update(ss->depth > (ss-1)->depth);
@@ -697,6 +698,7 @@ namespace {
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
+            ss->currentMove = ttMove;
         }
 
         // Partial workaround for the graph history interaction problem
@@ -973,7 +975,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->ply);
+                                      ss->recap, ss->ply);
 
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
@@ -1705,8 +1707,12 @@ moves_loop: // When in check, search starts here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (captured > BISHOP)
+            (ss-1)->recap = to_sq(bestMove);
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
