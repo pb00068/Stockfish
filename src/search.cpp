@@ -1037,7 +1037,7 @@ moves_loop: // When in check, search starts here
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, rangeReduction > 2), 0);
 
           if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
-             lmrDepth+=2;
+             lmrDepth++;
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1071,6 +1071,9 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
           }
+
+          if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
+              ss->recap = SQ_NONE;
       }
 
       // Step 14. Extensions (~75 Elo)
