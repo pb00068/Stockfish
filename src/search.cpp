@@ -1707,7 +1707,7 @@ moves_loop: // When in check, search starts here
     else
     {
         // Increase stats for the best move in case it was a capture move
-        int bonus = (captureCount || captureHistory[moved_piece][to_sq(bestMove)][captured] <= 0) ? bonus1 : stat_bonus(depth);
+        int bonus = captureCount ? bonus1 : stat_bonus(depth);
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus;
     }
 
