@@ -975,7 +975,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->recap, ss->ply);
+                                      ss->ply);
 
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
@@ -1337,6 +1337,11 @@ moves_loop: // When in check, search starts here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
+          if (quietCount + captureCount < 3) {
+              if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
+                  ss->recap = SQ_NONE;
+              mp.setRS(ss->recap);
+          }
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
@@ -1710,7 +1715,9 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captured > BISHOP)
+        if (captured > BISHOP && (ss-1)->moveCount < 3 && to_sq(bestMove) != to_sq((ss-1)->currentMove) &&
+            (type_of(moved_piece) <= KNIGHT || type_of(moved_piece) == KING ||
+               !(between_bb(from_sq(bestMove), to_sq(bestMove)) & from_sq((ss-1)->currentMove))))
             (ss-1)->recap = to_sq(bestMove);
     }
 

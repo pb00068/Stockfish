@@ -49,6 +49,9 @@ namespace {
 } // namespace
 
 
+void MovePicker::setRS(Square rs) {
+	recaptureSquare = rs;
+}
 /// Constructors of the MovePicker class. As arguments we pass information
 /// to help it to return the (presumably) good moves first, to decide which
 /// moves to return (in the quiescence search, for instance, we only want to
@@ -57,14 +60,15 @@ namespace {
 
 /// MovePicker constructor for the main search
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const LowPlyHistory* lp,
-                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, Square rs, int pl)
+                       const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, int pl)
            : pos(p), mainHistory(mh), lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), recaptureSquare(rs), ply(pl){
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl){
 
   assert(d > 0);
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+  recaptureSquare = SQ_NONE;
 }
 
 /// MovePicker constructor for quiescence search
