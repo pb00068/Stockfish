@@ -1036,9 +1036,6 @@ moves_loop: // When in check, search starts here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, rangeReduction > 2), 0);
 
-          if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
-             lmrDepth++;
-
           if (   captureOrPromotion
               || givesCheck)
           {
@@ -1071,9 +1068,6 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
           }
-
-          if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
-              ss->recap = SQ_NONE;
       }
 
       // Step 14. Extensions (~75 Elo)
@@ -1343,10 +1337,8 @@ moves_loop: // When in check, search starts here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
-          if (quietCount + captureCount < 3) {
-              if (ss->recap != SQ_NONE && from_sq(move) == ss->recap)
-                  ss->recap = SQ_NONE;
-          }
+          if (!cutNode && captureCount + quietCount > 3 && ss->recap != SQ_NONE && from_sq(move) == ss->recap)
+              moveCountPruning =  moveCount + 4 >= futility_move_count(improving, depth);
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
