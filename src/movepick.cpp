@@ -170,7 +170,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Best>([&](){
-                       return pos.see_ge(*cur, Value(-69 * cur->value / 1024)) ?
+                       return (cur->value > 80 && type_of(pos.piece_on(to_sq(*cur))) == KNIGHT && type_of(pos.moved_piece(*cur)) == BISHOP) || pos.see_ge(*cur, Value(-69 * cur->value / 1024)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
           return *(cur - 1);
