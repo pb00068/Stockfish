@@ -637,6 +637,7 @@ namespace {
     ss->depth            = depth;
     Square prevSq        = to_sq((ss-1)->currentMove);
     ss->recap = SQ_NONE;
+    Square recap = SQ_NONE;
 
     // Update the running average statistics for double extensions
     thisThread->doubleExtensionAverage[us].update(ss->depth > (ss-1)->depth);
@@ -1337,8 +1338,13 @@ moves_loop: // When in check, search starts here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
-          if (!cutNode && captureCount + quietCount > 3 && ss->recap != SQ_NONE && from_sq(move) == ss->recap)
-              moveCountPruning =  moveCount + 4 >= futility_move_count(improving, depth);
+          if (!cutNode && ss->recap != SQ_NONE)
+          {
+             if (recap == ss->recap && from_sq(move) == ss->recap)
+                moveCountPruning =  moveCount + 4 >= futility_move_count(improving, depth);
+             else recap = ss->recap;
+          }
+
           if (captureOrPromotion && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
