@@ -268,7 +268,9 @@ top:
 
 int MovePicker::generatedEvasionMoves() {
   if (stage != EVASION_INIT)
-     return (endMoves - cur);
+  {
+     return (endMoves - moves);
+  }
   return 0;
 }
 

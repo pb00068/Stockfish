@@ -1023,7 +1023,7 @@ moves_loop: // When in check, search starts here
       if (ss->inCheck && depth > 6
           && (ss-1)->moveCount > 1
           && abs((ss-1)->staticEval) > 100    // there was a (not singular) check extension
-          && mp.generatedEvasionMoves() > 5)  // but evasion moves are many
+          && mp.generatedEvasionMoves() > 4)  // but evasion moves are many
             newDepth = depth - 2; // retire extension
       else
       // Calculate new depth for this move
@@ -1126,7 +1126,6 @@ moves_loop: // When in check, search starts here
       // Capture extensions for PvNodes and cutNodes
       else if (   (PvNode || cutNode)
                && captureOrPromotion
-               && quietCount < 2 // just for 'good' captures, exclude 'bad' ones
                && moveCount != 1)
           extension = 1;
 
