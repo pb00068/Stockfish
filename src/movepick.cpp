@@ -267,8 +267,9 @@ top:
 }
 
 int MovePicker::generatedEvasionMoves() {
-	if (stage != EVASION_TT)
-     return endMoves - cur;
-	return 0;
+  if (stage != EVASION_INIT)
+     return (endMoves - cur);
+  return 0;
 }
+
 } // namespace Stockfish
