@@ -1020,8 +1020,15 @@ moves_loop: // When in check, search starts here
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
+      if (ss->inCheck && depth > 6
+          && (ss-1)->moveCount > 1
+          && abs((ss-1)->staticEval) > 100    // there was a (not singular) check extension
+          && mp.generatedEvasionMoves() > 5)  // but evasion moves are many
+            newDepth = depth - 2; // retire extension
+      else
       // Calculate new depth for this move
       newDepth = depth - 1;
+
 
       // Step 13. Pruning at shallow depth (~200 Elo). Depth conditions are important for mate finding.
       if (  !rootNode

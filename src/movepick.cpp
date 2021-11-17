@@ -266,4 +266,9 @@ top:
   return MOVE_NONE; // Silence warning
 }
 
+int MovePicker::generatedEvasionMoves() {
+	if (stage != EVASION_TT)
+     return endMoves - cur;
+	return 0;
+}
 } // namespace Stockfish

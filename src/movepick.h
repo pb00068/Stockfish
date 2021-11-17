@@ -136,6 +136,7 @@ public:
                                            const Move*,
                                            int);
   Move next_move(bool skipQuiets = false);
+  int generatedEvasionMoves();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
