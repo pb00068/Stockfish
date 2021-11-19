@@ -1734,8 +1734,11 @@ moves_loop: // When in check, search starts here
         // Only update first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
             break;
-        if (is_ok((ss-i)->currentMove))
+        if (is_ok((ss-i)->currentMove)) {
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
+            while (i == 1 && bonus > 0 && (*(ss-1)->continuationHistory)[pc][to] < 0)
+               (*(ss-1)->continuationHistory)[pc][to] << bonus;
+        }
     }
   }
 
