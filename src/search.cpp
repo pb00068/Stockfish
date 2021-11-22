@@ -1699,7 +1699,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2, depth);
-        thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(bestMove)] << bonus1;
+        thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(bestMove)] << bonus2;
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
