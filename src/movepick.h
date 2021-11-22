@@ -125,11 +125,12 @@ class MovePicker {
 public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
-  MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
+  MovePicker(const Position&, Move, Value, const SequenceHistory*, const CapturePieceToHistory*, Square, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
+                                           const SequenceHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
-                                           Square);
+                                           Square, Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
                                            const SequenceHistory*,
                                            const LowPlyHistory*,
@@ -155,7 +156,6 @@ private:
   Move ttMove;
   ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
   int stage;
-  Square recaptureSquare;
   Value threshold;
   Depth depth;
   int ply;
