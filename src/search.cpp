@@ -1696,7 +1696,7 @@ moves_loop: // When in check, search starts here
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
 
-    thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(bestMove)] << bonus1;
+    thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(bestMove)] << bonus2;
     if (!pos.capture_or_promotion(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
@@ -1706,7 +1706,7 @@ moves_loop: // When in check, search starts here
         for (int i = 0; i < quietCount; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
-            thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][quietsSearched[i]] << -bonus2;
+            thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(quietsSearched[i])] << -bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
@@ -1726,7 +1726,7 @@ moves_loop: // When in check, search starts here
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
-        thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(capturesSearched[i])] << -bonus1;
+        thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(capturesSearched[i])] << -bonus2;
     }
   }
 
