@@ -689,7 +689,10 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high
                 if (!ttCapture)
+                {
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
+                    thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(ttMove)] << stat_bonus(depth);
+                }
 
                 // Extra penalty for early quiet moves of the previous ply
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
