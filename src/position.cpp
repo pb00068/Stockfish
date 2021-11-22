@@ -1114,7 +1114,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+          if ( pieces(BISHOP, QUEEN) & occupied)
+             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
       else if ((bb = stmAttackers & pieces(KNIGHT)))
@@ -1131,7 +1132,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+          if ( pieces(BISHOP, QUEEN) & occupied)
+              attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
       }
 
       else if ((bb = stmAttackers & pieces(ROOK)))
@@ -1140,7 +1142,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
+          if ( pieces(ROOK, QUEEN) & occupied)
+             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
       }
 
       else if ((bb = stmAttackers & pieces(QUEEN)))
@@ -1149,6 +1152,7 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
+
           attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK  , QUEEN));
       }
