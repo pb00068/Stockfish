@@ -973,12 +973,13 @@ moves_loop: // When in check, search starts here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+                                      &thisThread->seqHistory,
                                       &thisThread->lowPlyHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
                                       ss->killers,
-                                      ss->ply);
+                                      ss->ply, to_sq((ss-2)->currentMove), to_sq((ss-1)->currentMove));
 
     value = bestValue;
     singularQuietLMR = moveCountPruning = false;
@@ -1698,11 +1699,13 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2, depth);
+        thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][to_sq(bestMove)] << bonus1;
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2;
+            thisThread->seqHistory[us][to_sq((ss-2)->currentMove)][to_sq((ss-1)->currentMove)][quietsSearched[i]] << bonus2;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }

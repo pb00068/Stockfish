@@ -88,6 +88,8 @@ enum StatsType { NoCaptures, Captures };
 /// the move's from and to squares, see www.chessprogramming.org/Butterfly_Boards
 typedef Stats<int16_t, 14365, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyHistory;
 
+typedef Stats<int16_t, 14365, COLOR_NB, int(SQUARE_NB),int(SQUARE_NB), int(SQUARE_NB)> SequenceHistory;
+
 /// At higher depths LowPlyHistory records successful quiet moves near the root
 /// and quiet moves which are/were in the PV (ttPv). LowPlyHistory is populated during
 /// iterative deepening and at each new search the data is shifted down by 2 plies
@@ -129,12 +131,13 @@ public:
                                            const PieceToHistory**,
                                            Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
+                                           const SequenceHistory*,
                                            const LowPlyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
                                            const Move*,
-                                           int);
+                                           int, Square, Square);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -145,6 +148,7 @@ private:
 
   const Position& pos;
   const ButterflyHistory* mainHistory;
+  const SequenceHistory* seqHistory;
   const LowPlyHistory* lowPlyHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
@@ -155,6 +159,7 @@ private:
   Value threshold;
   Depth depth;
   int ply;
+  Square p_psq, p_sq;
   ExtMove moves[MAX_MOVES];
 };
 
