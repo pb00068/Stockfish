@@ -56,9 +56,9 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const SequenceHistory* conth, const LowPlyHistory* lp,
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const SequenceHistory* seqHist, const LowPlyHistory* lp,
                        const CapturePieceToHistory* cph, const PieceToHistory** ch, Move cm, const Move* killers, int pl, Square ppsq, Square psq)
-           : pos(p), mainHistory(mh), seqHistory(conth),  lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
+           : pos(p), mainHistory(mh), seqHistory(seqHist),  lowPlyHistory(lp), captureHistory(cph), continuationHistory(ch),
              ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ply(pl), p_psq(ppsq), p_sq(psq) {
 
   assert(d > 0);
