@@ -455,8 +455,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
   pinners = 0;
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
-  Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
-                      | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & sliders;
+  Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(STRAIGHTS))
+                      | (attacks_bb<BISHOP>(s) & pieces(DIAGONALS))) & sliders;
   Bitboard occupancy = pieces() ^ snipers;
 
   while (snipers)
@@ -483,8 +483,8 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
   return  (pawn_attacks_bb(BLACK, s)       & pieces(WHITE, PAWN))
         | (pawn_attacks_bb(WHITE, s)       & pieces(BLACK, PAWN))
         | (attacks_bb<KNIGHT>(s)           & pieces(KNIGHT))
-        | (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
-        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | (attacks_bb<  ROOK>(s, occupied) & pieces(STRAIGHTS))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(DIAGONALS))
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
@@ -516,8 +516,8 @@ bool Position::legal(Move m) const {
       assert(piece_on(capsq) == make_piece(~us, PAWN));
       assert(piece_on(to) == NO_PIECE);
 
-      return   !(attacks_bb<  ROOK>(ksq, occupied) & pieces(~us, QUEEN, ROOK))
-            && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(~us, QUEEN, BISHOP));
+      return   !(attacks_bb<  ROOK>(ksq, occupied) & pieces(~us, STRAIGHTS))
+            && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(~us, DIAGONALS));
   }
 
   // Castling moves generation does not check if the castling path is clear of
@@ -660,8 +660,8 @@ bool Position::gives_check(Move m) const {
       Square capsq = make_square(file_of(to), rank_of(from));
       Bitboard b = (pieces() ^ from ^ capsq) | to;
 
-      return  (attacks_bb<  ROOK>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, ROOK))
-            | (attacks_bb<BISHOP>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, BISHOP));
+      return  (attacks_bb<  ROOK>(square<KING>(~sideToMove), b) & pieces(sideToMove, STRAIGHTS))
+            | (attacks_bb<BISHOP>(square<KING>(~sideToMove), b) & pieces(sideToMove, DIAGONALS));
   }
   default: //CASTLING
   {
@@ -1114,8 +1114,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          if ( pieces(BISHOP, QUEEN) & occupied)
-             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+          if ( pieces(DIAGONALS) & occupied)
+             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(DIAGONALS);
       }
 
       else if ((bb = stmAttackers & pieces(KNIGHT)))
@@ -1132,8 +1132,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          if ( pieces(BISHOP, QUEEN) & occupied)
-              attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+          if ( pieces(DIAGONALS) & occupied)
+              attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(DIAGONALS);
       }
 
       else if ((bb = stmAttackers & pieces(ROOK)))
@@ -1142,8 +1142,8 @@ bool Position::see_ge(Move m, Value threshold) const {
               break;
 
           occupied ^= least_significant_square_bb(bb);
-          if ( pieces(ROOK, QUEEN) & occupied)
-             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
+          if ( pieces(STRAIGHTS) & occupied)
+             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(STRAIGHTS);
       }
 
       else if ((bb = stmAttackers & pieces(QUEEN)))
@@ -1153,8 +1153,8 @@ bool Position::see_ge(Move m, Value threshold) const {
 
           occupied ^= least_significant_square_bb(bb);
 
-          attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
-                      | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK  , QUEEN));
+          attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(DIAGONALS))
+                      | (attacks_bb<ROOK  >(to, occupied) & pieces(STRAIGHTS));
       }
 
       else // KING

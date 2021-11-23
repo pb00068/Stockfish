@@ -187,7 +187,7 @@ private:
 
   // Data members
   Piece board[SQUARE_NB];
-  Bitboard byTypeBB[PIECE_TYPE_NB];
+  Bitboard byTypeBB[PIECE_TYPE_NB + 1];
   Bitboard byColorBB[COLOR_NB];
   int pieceCount[PIECE_NB];
   int castlingRightsMask[SQUARE_NB];
@@ -375,6 +375,9 @@ inline void Position::put_piece(Piece pc, Square s) {
 
   board[s] = pc;
   byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
+
+  byTypeBB[DIAGONALS] = byTypeBB[QUEEN] | byTypeBB[BISHOP];
+  byTypeBB[STRAIGHTS] = byTypeBB[QUEEN] | byTypeBB[ROOK];
   byColorBB[color_of(pc)] |= s;
   pieceCount[pc]++;
   pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
@@ -386,6 +389,8 @@ inline void Position::remove_piece(Square s) {
   Piece pc = board[s];
   byTypeBB[ALL_PIECES] ^= s;
   byTypeBB[type_of(pc)] ^= s;
+  byTypeBB[DIAGONALS] = byTypeBB[QUEEN] | byTypeBB[BISHOP];
+  byTypeBB[STRAIGHTS] = byTypeBB[QUEEN] | byTypeBB[ROOK];
   byColorBB[color_of(pc)] ^= s;
   board[s] = NO_PIECE;
   pieceCount[pc]--;
@@ -399,6 +404,8 @@ inline void Position::move_piece(Square from, Square to) {
   Bitboard fromTo = from | to;
   byTypeBB[ALL_PIECES] ^= fromTo;
   byTypeBB[type_of(pc)] ^= fromTo;
+  byTypeBB[DIAGONALS] = byTypeBB[QUEEN] | byTypeBB[BISHOP];
+  byTypeBB[STRAIGHTS] = byTypeBB[QUEEN] | byTypeBB[ROOK];
   byColorBB[color_of(pc)] ^= fromTo;
   board[from] = NO_PIECE;
   board[to] = pc;
