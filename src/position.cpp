@@ -1153,8 +1153,10 @@ bool Position::see_ge(Move m, Value threshold) const {
 
           occupied ^= least_significant_square_bb(bb);
 
-          attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(DIAGONALS))
-                      | (attacks_bb<ROOK  >(to, occupied) & pieces(STRAIGHTS));
+          if ( pieces(DIAGONALS) & occupied)
+             attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(DIAGONALS));
+          if ( pieces(STRAIGHTS) & occupied)
+             attackers |=  (attacks_bb<ROOK  >(to, occupied) & pieces(STRAIGHTS));
       }
 
       else // KING
