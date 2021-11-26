@@ -1424,7 +1424,7 @@ moves_loop: // When in check, search starts here
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase;
     bool pvHit, givesCheck, captureOrPromotion;
-    int moveCount;
+    int moveCount,captCount;
 
     if (PvNode)
     {
@@ -1435,7 +1435,7 @@ moves_loop: // When in check, search starts here
     Thread* thisThread = pos.this_thread();
     bestMove = MOVE_NONE;
     ss->inCheck = pos.checkers();
-    moveCount = 0;
+    moveCount = captCount = 0;
 
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
@@ -1532,6 +1532,7 @@ moves_loop: // When in check, search starts here
       captureOrPromotion = pos.capture_or_promotion(move);
 
       moveCount++;
+      captCount += captureOrPromotion;
 
       // Futility pruning and moveCount pruning
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1601,10 +1602,15 @@ moves_loop: // When in check, search starts here
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
               else
+              {
+                  if (depth >= DEPTH_QS_NO_CHECKS && captCount > 1 && captureOrPromotion)
+                     thisThread->captureHistory[pos.moved_piece(bestMove)][to_sq(bestMove)][type_of(pos.piece_on(to_sq(bestMove)))] << stat_bonus(1);
                   break; // Fail high
+              }
           }
        }
     }
+
 
     // All legal moves have been searched. A special case: if we're in check
     // and no legal moves were found, it is checkmate.
