@@ -110,7 +110,8 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                     // consider the cleared square history if positive
-                   +     ((*continuationHistory[2])[pos.moved_piece(m)][to_sq(m)] > 0 ? (*continuationHistory[2])[pos.moved_piece(m)][to_sq(m)] : 0)
+                   +     ((*continuationHistory[2])[pos.moved_piece(m)][to_sq(m)] > 4000 && (*continuationHistory[2])[pos.moved_piece(m)][to_sq(m)] > (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)] ?
+                  		    (*continuationHistory[2])[pos.moved_piece(m)][to_sq(m)] - (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)] : 0)
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? 6 * (*lowPlyHistory)[ply][from_to(m)] : 0);
