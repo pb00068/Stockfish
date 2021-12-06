@@ -260,6 +260,7 @@ void MainThread::search() {
       bestThread = Threads.get_best_thread();
 
   bestPreviousScore = bestThread->rootMoves[0].score;
+  bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
@@ -491,7 +492,8 @@ void Thread::search() {
           && !Threads.stop
           && !mainThread->stopOnPonderhit)
       {
-          double fallingEval = (318 + 6 * (mainThread->bestPreviousScore - bestValue)
+          double fallingEval = (142 + 6 * (mainThread->bestPreviousScore - bestValue)
+                                    + 6 * (mainThread->bestPreviousAverageScore - bestValue)
                                     + 6 * (mainThread->iterValue[iterIdx] - bestValue)) / 825.0;
           fallingEval = std::clamp(fallingEval, 0.5, 1.5);
 
@@ -1203,9 +1205,8 @@ moves_loop: // When in check, search starts here
               && !likelyFailLow)
               r -= 2;
 
-          // Increase reduction at non-PV nodes when the best move does not change frequently
-          if (  !PvNode
-              && thisThread->bestMoveChanges <= 2)
+          // Increase reduction at non-PV nodes
+          if (!PvNode)
               r++;
 
           // Decrease reduction if opponent's move count is high (~1 Elo)
@@ -1395,7 +1396,15 @@ moves_loop: // When in check, search starts here
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
              && !priorCapture)
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth) * (1 + (PvNode || cutNode)));
+    {
+        //Assign extra bonus if current node is PvNode or cutNode
+        //or fail low was really bad
+        bool extraBonus =    PvNode
+                          || cutNode
+                          || bestValue < alpha - 94 * depth;
+
+        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth) * (1 + extraBonus));
+    }
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
