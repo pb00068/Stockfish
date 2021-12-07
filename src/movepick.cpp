@@ -105,13 +105,16 @@ void MovePicker::score() {
           m.value =  int(PieceValue[MG][pos.piece_on(to_sq(m))]) * 6
                    + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
-      else if constexpr (Type == QUIETS)
+      else if constexpr (Type == QUIETS) {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
                    + (ply < MAX_LPH ? 6 * (*lowPlyHistory)[ply][from_to(m)] : 0);
+          if (from_sq(m) ==  recaptureSquare)
+              m.value += 1500;
+      }
 
       else // Type == EVASIONS
       {
@@ -185,13 +188,20 @@ top:
           --endMoves;
 
       ++stage;
+      refutationFrom = recaptureSquare = SQ_NONE;
       [[fallthrough]];
 
   case REFUTATION:
       if (select<Next>([&](){ return    *cur != MOVE_NONE
                                     && !pos.capture(*cur)
                                     &&  pos.pseudo_legal(*cur); }))
+      {
+          if (recaptureSquare == from_sq((cur - 1)->move))
+             refutationFrom = recaptureSquare;
+          recaptureSquare = from_sq((cur - 1)->move);
           return *(cur - 1);
+      }
+      //dbg_hit_on(refutationFrom == recaptureSquare && refutationFrom != SQ_NONE);
       ++stage;
       [[fallthrough]];
 
