@@ -188,7 +188,8 @@ top:
           --endMoves;
 
       ++stage;
-      refutationFrom = recaptureSquare = ttMove ? from_sq(ttMove) : SQ_NONE;
+      refutationFrom = SQ_NONE;
+      recaptureSquare = ttMove ? from_sq(ttMove) : SQ_NONE;
       [[fallthrough]];
 
   case REFUTATION:
@@ -201,7 +202,6 @@ top:
           recaptureSquare = from_sq((cur - 1)->move);
           return *(cur - 1);
       }
-      //dbg_hit_on(refutationFrom == recaptureSquare && refutationFrom != SQ_NONE);
       ++stage;
       [[fallthrough]];
 
