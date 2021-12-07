@@ -188,7 +188,7 @@ top:
           --endMoves;
 
       ++stage;
-      refutationFrom = recaptureSquare = SQ_NONE;
+      refutationFrom = recaptureSquare = ttMove ? from_sq(ttMove) : SQ_NONE;
       [[fallthrough]];
 
   case REFUTATION:
