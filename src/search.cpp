@@ -1376,9 +1376,27 @@ moves_loop: // When in check, search starts here
                                  : VALUE_DRAW;
 
     // If there is a move which produces search value greater than alpha we update stats of searched moves
-    else if (bestMove)
+    else if (bestMove) {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
+
+        // when new cut-off bestMove has the same fromSquare as ttMove and a killer
+        // then it might generally be good to free this square
+        Square fBest = from_sq(bestMove);
+        if (!PvNode && ttMove && ttMove != bestMove && from_sq(ttMove) == fBest && !pos.capture_or_promotion(bestMove)
+            && (fBest == from_sq(ss->killers[0]) || fBest == from_sq(ss->killers[1]))) {
+            // so give a little bonus to all other quiet moves from this square which haven't been searched
+            while ((move = mp.next_move(false)) != MOVE_NONE) {
+              if (pos.capture_or_promotion(move))
+                 break;
+              if (from_sq(move) == fBest) {
+                  thisThread->mainHistory[us][from_to(move)] << stat_bonus(depth - 1);
+                  update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), stat_bonus(depth - 1));
+
+              }
+            }
+        }
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
