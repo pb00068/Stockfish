@@ -99,7 +99,6 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
-  dbg_hit_on(bonus > 3600);
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
@@ -188,7 +187,7 @@ top:
 
       ++stage;
       refutationFrom = SQ_NONE;
-      bonus = 1800;
+      bonus = 1200;
       recaptureSquare = ttMove ? from_sq(ttMove) : SQ_NONE;
       [[fallthrough]];
 
