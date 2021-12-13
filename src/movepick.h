@@ -136,7 +136,6 @@ public:
                                            const Move*,
                                            int);
   Move next_move(bool skipQuiets = false);
-  void setEscape(Square e) { escape = e; }
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -157,7 +156,6 @@ private:
   Depth depth;
   int ply;
   ExtMove moves[MAX_MOVES];
-  Square escape;
 };
 
 } // namespace Stockfish
