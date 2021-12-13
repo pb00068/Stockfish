@@ -155,6 +155,7 @@ private:
   Value threshold;
   Depth depth;
   int ply;
+  int bonus;
   ExtMove moves[MAX_MOVES];
 };
 
