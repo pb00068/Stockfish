@@ -597,6 +597,8 @@ namespace {
 
     // Step 1. Initialize node
     ss->inCheck        = pos.checkers();
+    ss->weakConfirm = 0;
+    ss->weakSq = SQ_NONE;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     moveCount          = bestMoveCount = captureCount = quietCount = ss->moveCount = 0;
@@ -1351,6 +1353,9 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (ss->weakConfirm)
+              mp.setEscape(ss->weakSq);
       }
     }
 
@@ -1723,9 +1728,15 @@ moves_loop: // When in check, search starts here
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
-    else
+    else {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        if (captured > type_of(moved_piece)) {
+           if ((ss-1)->weakSq == to_sq(bestMove))
+               (ss-1)->weakConfirm++;
+           (ss-1)->weakSq = to_sq(bestMove);
+        }
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
