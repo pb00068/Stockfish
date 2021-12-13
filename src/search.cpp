@@ -143,7 +143,7 @@ namespace {
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, bool* farBolowBest, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
+                        Move* quietsSearched, int* farBolowBest, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
   // to the given depth are generated and counted, and the sum is returned.
@@ -581,7 +581,7 @@ namespace {
     assert(!(PvNode && cutNode));
 
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
-    bool farBelowBest[64];
+    int farBelowBest[64];
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
@@ -1353,7 +1353,7 @@ moves_loop: // When in check, search starts here
           else if (!captureOrPromotion && quietCount < 64)
           {
               quietsSearched[quietCount] = move;
-              farBelowBest[quietCount++] = bestValue >= alpha - 10 ? value < alpha - 100 : false;
+              farBelowBest[quietCount++] = bestValue >= alpha - 10 && value < alpha - 10 ? std::min(int(alpha - value), 300) : 0;
           }
       }
     }
@@ -1702,7 +1702,7 @@ moves_loop: // When in check, search starts here
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, bool* farBelowBest, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
+                        Move* quietsSearched, int* farBelowBest, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
 
     int bonus1, bonus2;
     Color us = pos.side_to_move();
@@ -1723,7 +1723,7 @@ moves_loop: // When in check, search starts here
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2 - farBelowBest[i] * bonus2;
+            thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bonus2 - farBelowBest[i];
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
     }
