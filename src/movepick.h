@@ -129,12 +129,10 @@ public:
                                            const PieceToHistory**,
                                            Square);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
-                                           const LowPlyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           const Move*,
-                                           int);
+                                           const Move*);
   Move next_move(bool skipQuiets = false);
 
 private:
@@ -154,7 +152,6 @@ private:
   Square recaptureSquare;
   Value threshold;
   Depth depth;
-  int ply;
   ExtMove moves[MAX_MOVES];
 };
 
