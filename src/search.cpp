@@ -1354,7 +1354,7 @@ moves_loop: // When in check, search starts here
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
 
-          if (ss->weakConfirm)
+          if (ss->weakConfirm > 1)
               mp.setEscape(ss->weakSq);
       }
     }
@@ -1731,9 +1731,9 @@ moves_loop: // When in check, search starts here
     else {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captured > type_of(moved_piece)) {
+        if (captured > type_of(moved_piece) || bestValue > beta + PawnValueMg) {
            if ((ss-1)->weakSq == to_sq(bestMove))
-               (ss-1)->weakConfirm++;
+               (ss-1)->weakConfirm += 1 + (bestValue > beta + PawnValueMg);
            (ss-1)->weakSq = to_sq(bestMove);
         }
     }
