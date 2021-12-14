@@ -1357,8 +1357,6 @@ moves_loop: // When in check, search starts here
               quietsSearched[quietCount++] = move;
 
           mp.setEscape(ss->weakSq);
-         // if (ss->weakSq != SQ_NONE)
-         // 	sync_cout << pos << UCI::move(make_move(ss->weakSq,ss->weakSq), false) << sync_endl;
       }
     }
 
