@@ -994,11 +994,14 @@ moves_loop: // When in check, search starts here
 
     // Step 12. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
+    while ((move = mp.next_move(moveCountPruning && ss->weakSq == SQ_NONE)) != MOVE_NONE)
     {
       assert(is_ok(move));
 
       if (move == excludedMove)
+          continue;
+
+      if (moveCountPruning && from_sq(move) != ss->weakSq)
           continue;
 
       // At root obey the "searchmoves" option and skip moves not listed in Root
@@ -1354,6 +1357,8 @@ moves_loop: // When in check, search starts here
               quietsSearched[quietCount++] = move;
 
           mp.setEscape(ss->weakSq);
+         // if (ss->weakSq != SQ_NONE)
+         // 	sync_cout << pos << UCI::move(make_move(ss->weakSq,ss->weakSq), false) << sync_endl;
       }
     }
 
@@ -1729,7 +1734,7 @@ moves_loop: // When in check, search starts here
     else {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (bestValue > beta + PawnValueMg)
+        if (depth < 4 && captured > PAWN && bestValue > beta + KnightValueMg)
            (ss-1)->weakSq = to_sq(bestMove);
     }
 
