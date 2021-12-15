@@ -1548,6 +1548,8 @@ moves_loop: // When in check, search starts here
 
       moveCount++;
 
+
+      bool needVerify = true;
       // Futility pruning and moveCount pruning
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
           && !givesCheck
@@ -1566,16 +1568,21 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha)
           {
-              bestValue = std::max(bestValue, futilityBase);
-              continue;
+              if (pos.see_ge(move, VALUE_ZERO + 1))
+                 needVerify = false;
+              else
+              {
+                  bestValue = std::max(bestValue, futilityBase);
+                  continue;
+              }
           }
       }
 
       // Do not search moves with negative SEE values
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          && (needVerify && !pos.see_ge(move)))
           continue;
 
       // Speculative prefetch as early as possible
