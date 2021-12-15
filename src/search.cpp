@@ -1571,6 +1571,9 @@ moves_loop: // When in check, search starts here
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
+
+          if (moveCount && bestValue > alpha - 50 &&  !pos.see_ge(move))
+             continue;
       }
 
       // Do not search moves with negative SEE values
