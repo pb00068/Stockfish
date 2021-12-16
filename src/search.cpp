@@ -699,9 +699,8 @@ namespace {
             // Penalty for a quiet ttMove that fails low
             else if (!ttCapture)
             {
-                if (depth > 7 && thisThread->mainHistory[us][from_to(ttMove)] < -300 &&
-                    (*(ss-1)->continuationHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)] < -200 &&
-                    (*(ss-2)->continuationHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)] < -200)
+                if (thisThread->mainHistory[us][from_to(ttMove)] < -1100 && is_ok((ss-1)->currentMove) &&
+                    (*(ss-1)->continuationHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)] < -1100)
                    tte->resetMove();
                 else
                 {
