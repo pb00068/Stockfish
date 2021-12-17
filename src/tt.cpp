@@ -145,9 +145,6 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   return found = false, replace;
 }
 
-void TTEntry::resetMove() {
-      move16 = MOVE_NONE;
-}
 
 /// TranspositionTable::hashfull() returns an approximation of the hashtable
 /// occupation during a search. The hash is x permill full, as per UCI protocol.
