@@ -697,14 +697,14 @@ namespace {
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
             }
             // Penalty for a quiet ttMove that fails low
-            else if (!ttCapture && (thisThread->mainHistory[us][from_to(ttMove)] > -500 ||
-                    (*(ss-1)->continuationHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)] > -500 ||
-                    (*(ss-2)->continuationHistory)[pos.moved_piece(ttMove)][to_sq(ttMove)] > -500))
-                {
-                    int penalty = -stat_bonus(depth);
-                    thisThread->mainHistory[us][from_to(ttMove)] << penalty;
-                    update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
-                }
+            else if (!ttCapture)
+            {
+                int penalty = -stat_bonus(depth);
+                thisThread->mainHistory[us][from_to(ttMove)] << penalty;
+                update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
+                if (depth >= 8 && thisThread->mainHistory[us][from_to(ttMove)] < -2300)
+                    tte->resetMove();
+            }
         }
 
         // Partial workaround for the graph history interaction problem
