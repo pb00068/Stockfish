@@ -712,7 +712,6 @@ namespace {
             if (err != TB::ProbeState::FAIL)
             {
                 thisThread->tbHits.fetch_add(1, std::memory_order_relaxed);
-
                 int drawScore = TB::UseRule50 ? 1 : 0;
 
                 // use the range VALUE_MATE_IN_MAX_PLY to VALUE_TB_WIN_IN_MAX_PLY to score
