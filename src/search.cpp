@@ -1478,6 +1478,12 @@ moves_loop: // When in check, search starts here
             (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
                                              : -(ss-1)->staticEval;
 
+        if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !pos.captured_piece())
+        {
+            int bonus = std::clamp(-16 * int((ss-1)->staticEval + ss->staticEval), -2000, 2000);
+            thisThread->mainHistory[~pos.side_to_move()][from_to((ss-1)->currentMove)] << bonus;
+        }
+
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
         {
