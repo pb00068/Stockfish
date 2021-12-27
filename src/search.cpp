@@ -1353,17 +1353,24 @@ moves_loop: // When in check, search starts here
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
 
-    // Bonus for prior countermove that caused the fail low
-    else if (   (depth >= 3 || PvNode)
-             && !priorCapture)
+    else
     {
-        //Assign extra bonus if current node is PvNode or cutNode
-        //or fail low was really bad
-        bool extraBonus =    PvNode
+        if (ttMove && !ttCapture)
+        {
+             int penalty = -stat_bonus(depth);
+             thisThread->mainHistory[us][from_to(ttMove)] << penalty;
+             update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
+        }
+        // Bonus for prior countermove that caused the fail low
+        if (   (depth >= 3 || PvNode) && !priorCapture)
+        {
+             //Assign extra bonus if current node is PvNode or cutNode
+             //or fail low was really bad
+             bool extraBonus =    PvNode
                           || cutNode
                           || bestValue < alpha - 94 * depth;
-
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth) * (1 + extraBonus));
+            update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth) * (1 + extraBonus));
+        }
     }
 
     if (PvNode)
