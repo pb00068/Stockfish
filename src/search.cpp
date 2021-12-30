@@ -1551,7 +1551,7 @@ moves_loop: // When in check, search starts here
 
       // Do not search moves with negative SEE values (~5 Elo)
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move, Value(-69 * mp.getValue()/1024)))
+          && !pos.see_ge(move, Value(std::min(0, -69 * mp.getValue()/1024))))
           continue;
 
       // Speculative prefetch as early as possible
