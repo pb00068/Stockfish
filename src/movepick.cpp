@@ -83,6 +83,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
+  val = 0;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -147,6 +148,10 @@ Move MovePicker::select(Pred filter) {
   return MOVE_NONE;
 }
 
+
+int MovePicker::getValue() {
+   return val;
+}
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo-legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
@@ -246,7 +251,10 @@ top:
   case QCAPTURE:
       if (select<Best>([&](){ return   depth > DEPTH_QS_RECAPTURES
                                     || to_sq(*cur) == recaptureSquare; }))
+      {
+          val = (cur - 1)->value;
           return *(cur - 1);
+      }
 
       // If we did not find any move and we do not try checks, we have finished
       if (depth != DEPTH_QS_CHECKS)
