@@ -1703,7 +1703,6 @@ moves_loop: // When in check, search starts here
         for (int i = 0; i < quietCount; ++i)
         {
             int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus((3 * depth + (i < 4 ? depth : quietsDepthSearched[i]))/4);
-            //sync_cout << "info quiete count index: " << i << "  depth: " << depth << " searchedD: " << quietsDepthSearched[i] << "   used: " << ((3 * depth + (i < 4 ? depth : quietsDepthSearched[i]))/4) << sync_endl;
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << penalty;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), penalty);
         }
