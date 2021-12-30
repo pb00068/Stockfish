@@ -150,7 +150,7 @@ Move MovePicker::select(Pred filter) {
 
 
 int MovePicker::getValue() {
-   return val;
+    return val;
 }
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo-legal move every time it is called until there are no more
