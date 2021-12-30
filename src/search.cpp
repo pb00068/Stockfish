@@ -1323,6 +1323,12 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (!captureOrPromotion)
+          {
+             thisThread->mainHistory[us][from_to(move)] << ss->statDiff;
+             ss->statDiff = 0;
+          }
       }
     }
 
@@ -1746,11 +1752,6 @@ moves_loop: // When in check, search starts here
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    if (ss->statDiff)
-    {
-      thisThread->mainHistory[us][from_to(move)] << ss->statDiff;
-      ss->statDiff = 0;
-    }
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
