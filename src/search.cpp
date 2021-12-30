@@ -1213,7 +1213,8 @@ moves_loop: // When in check, search starts here
 
           // If the son is reduced and fails high it will be re-searched at full depth
           doFullDepthSearch = value > alpha && d < newDepth;
-          newDepth = d;
+          if (!doFullDepthSearch)
+              newDepth = d;
           doDeeperSearch = value > alpha + 88;
           didLMR = true;
       }
@@ -1236,6 +1237,7 @@ moves_loop: // When in check, search starts here
 
               update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
+          newDepth += doDeeperSearch;
       }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
@@ -1700,7 +1702,8 @@ moves_loop: // When in check, search starts here
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus(std::min(depth, quietsDepthSearched[i]));
+            int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus((3 * depth + (i < 4 ? depth : quietsDepthSearched[i]))/4);
+            //sync_cout << "info quiete count index: " << i << "  depth: " << depth << " searchedD: " << quietsDepthSearched[i] << "   used: " << ((3 * depth + (i < 4 ? depth : quietsDepthSearched[i]))/4) << sync_endl;
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << penalty;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), penalty);
         }
