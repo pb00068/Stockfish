@@ -1329,7 +1329,7 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
           {
-              quietsDepthSearched[quietCount] = std::max(depth, newDepth);
+              quietsDepthSearched[quietCount] = std::max(depth, newDepth + 1);
               quietsSearched[quietCount++] = move;
           }
       }
