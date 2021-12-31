@@ -1480,7 +1480,7 @@ moves_loop: // When in check, search starts here
 
         if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !pos.captured_piece())
         {
-               int bonus = std::clamp(-int((ss-1)->staticEval + ss->staticEval), -80, 80);
+               int bonus = std::clamp(-int((ss-1)->staticEval + ss->staticEval)/2, -160, 160);
                thisThread->mainHistory[~pos.side_to_move()][from_to((ss-1)->currentMove)] << bonus;
         }
 
