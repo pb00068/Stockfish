@@ -1693,7 +1693,7 @@ moves_loop: // When in check, search starts here
     if (!pos.capture_or_promotion(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove,  bestDepth > depth ? stat_bonus(bestDepth) : bonus2);
+        update_quiet_stats(pos, ss, bestMove,  bestDepth > depth ?  stat_bonus(bestDepth) : bonus2);
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
