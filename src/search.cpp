@@ -1687,13 +1687,13 @@ moves_loop: // When in check, search starts here
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
 
     bonus1 = stat_bonus(depth + 1);
-    bonus2 = bestValue > beta + PawnValueMg || bestDepth > depth ? bonus1               // larger bonus
+    bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
 
     if (!pos.capture_or_promotion(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove, bonus2);
+        update_quiet_stats(pos, ss, bestMove,  bestDepth > depth ? stat_bonus(bestDepth) : bonus2);
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
