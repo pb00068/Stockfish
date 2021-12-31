@@ -550,7 +550,7 @@ namespace {
     if (   ss->ply > 10
         && search_explosion(thisThread) == MUST_CALM_DOWN
         && depth > (ss-1)->depth)
-       depth = (ss-1)->depth;
+        depth = (ss-1)->depth;
 
     constexpr bool PvNode = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
@@ -1284,7 +1284,7 @@ moves_loop: // When in check, search starts here
                   rm.pv.push_back(*m);
 
               // We record how often the best move has been changed in each iteration.
-              // This information is used for time management and LMR. In MultiPV mode,
+              // This information is used for time management. In MultiPV mode,
               // we must take care to only do this for the first PV line.
               if (   moveCount > 1
                   && !thisThread->pvIdx)
@@ -1329,7 +1329,7 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
           {
-              quietsDepthSearched[quietCount] = newDepth;
+              quietsDepthSearched[quietCount] = std::max(depth, newDepth);
               quietsSearched[quietCount++] = move;
           }
       }
@@ -1702,7 +1702,7 @@ moves_loop: // When in check, search starts here
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus((3 * depth + (i < 4 ? depth : quietsDepthSearched[i]))/4);
+            int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus(quietsDepthSearched[i]);
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << penalty;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), penalty);
         }
