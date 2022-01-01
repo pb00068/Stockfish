@@ -1552,7 +1552,13 @@ moves_loop: // When in check, search starts here
       // Do not search moves with negative SEE values (~5 Elo)
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
           && !pos.see_ge(move))
-          continue;
+      {
+         if (!captureOrPromotion)
+             continue;
+         PieceType captured = type_of(pos.piece_on(to_sq(move)));
+         if (thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] <= 0)
+             continue;
+      }
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
