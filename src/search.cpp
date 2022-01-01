@@ -1556,7 +1556,8 @@ moves_loop: // When in check, search starts here
          if (!captureOrPromotion)
              continue;
          PieceType captured = type_of(pos.piece_on(to_sq(move)));
-         if (thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] <= 0)
+         //dbg_mean_of(thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured]);
+         if (thisThread->captureHistory[pos.moved_piece(move)][to_sq(move)][captured] <= 800)
              continue;
       }
 
