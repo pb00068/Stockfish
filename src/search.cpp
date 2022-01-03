@@ -143,7 +143,7 @@ namespace {
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, int quietCount, int* quietsDepthSearched, Move* capturesSearched, int captureCount, Depth depth);
+                        Move* quietsSearched, int quietCount, bool* quietsDeeperSearched, Move* capturesSearched, int captureCount, Depth depth);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
   // to the given depth are generated and counted, and the sum is returned.
@@ -578,14 +578,14 @@ namespace {
     assert(!(PvNode && cutNode));
 
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
-    int quietsDepthSearched[64];
+    bool quietsDeeperSearched[64];
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth extension, newDepth, bDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, didLMR, priorCapture;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning, ttCapture;
@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts here
       givesCheck = pos.gives_check(move);
 
       // Calculate new depth for this move
-      newDepth = depth - 1;
+      bDepth = newDepth = depth - 1;
 
       Value delta = beta - alpha;
 
@@ -1203,13 +1203,11 @@ moves_loop: // When in check, search starts here
 
           Depth d = std::clamp(newDepth - r, 1, newDepth + deeper);
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, bDepth = d, true);
 
           // If the son is reduced and fails high it will be re-searched at full depth
           doFullDepthSearch = value > alpha && d < newDepth;
-          if (!doFullDepthSearch)
-              newDepth = d;
-          doDeeperSearch = value > alpha + 88;
+          doDeeperSearch = value > (alpha + 62 + 20 * (newDepth - d));
           didLMR = true;
       }
       else
@@ -1221,7 +1219,7 @@ moves_loop: // When in check, search starts here
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
       {
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth + doDeeperSearch, !cutNode);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, bDepth = newDepth + doDeeperSearch, !cutNode);
 
           // If the move passed LMR update its stats
           if (didLMR && !captureOrPromotion)
@@ -1231,7 +1229,6 @@ moves_loop: // When in check, search starts here
 
               update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
-          newDepth += doDeeperSearch;
       }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
@@ -1243,7 +1240,7 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha,
-                              std::min(maxNextDepth, newDepth), false);
+             bDepth = std::min(maxNextDepth, newDepth), false);
       }
 
       // Step 18. Undo move
@@ -1323,7 +1320,7 @@ moves_loop: // When in check, search starts here
 
           else if (!captureOrPromotion && quietCount < 64)
           {
-              quietsDepthSearched[quietCount] = std::max(depth, newDepth + 1);
+              quietsDeeperSearched[quietCount] = bDepth + 1 > depth;
               quietsSearched[quietCount++] = move;
           }
       }
@@ -1352,7 +1349,7 @@ moves_loop: // When in check, search starts here
     // If there is a move which produces search value greater than alpha we update stats of searched moves
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
-                         quietsSearched, quietCount, quietsDepthSearched, capturesSearched, captureCount, depth);
+                         quietsSearched, quietCount, quietsDeeperSearched, capturesSearched, captureCount, depth);
 
     // Bonus for prior countermove that caused the fail low
     else if (   (depth >= 3 || PvNode)
@@ -1675,7 +1672,7 @@ moves_loop: // When in check, search starts here
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, int quietCount, int* quietsDepthSearched, Move* capturesSearched, int captureCount, Depth depth) {
+                        Move* quietsSearched, int quietCount, bool* quietsDeeperSearched, Move* capturesSearched, int captureCount, Depth depth) {
 
     int bonus1, bonus2;
     Color us = pos.side_to_move();
@@ -1696,7 +1693,7 @@ moves_loop: // When in check, search starts here
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
-            int penalty = bestValue > beta + PawnValueMg ? -bonus1 : -stat_bonus(quietsDepthSearched[i]);
+            int penalty = quietsDeeperSearched[i] ? -bonus1 : -bonus2;
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << penalty;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), penalty);
         }
