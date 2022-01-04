@@ -793,8 +793,8 @@ namespace {
         int bonus = std::clamp(-16 * int((ss-1)->staticEval + ss->staticEval), -2000, 2000);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
 
-        if (abs(bonus) >= 64)
-           update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, bonus/64);
+        if (depth > 6)
+           update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, bonus/8);
     }
 
     // Set up the improvement variable, which is the difference between the current
