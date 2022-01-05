@@ -142,7 +142,7 @@ namespace {
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
-  void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Square prevSq,
+  void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
@@ -792,6 +792,9 @@ namespace {
     {
         int bonus = std::clamp(-16 * int((ss-1)->staticEval + ss->staticEval), -2000, 2000);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
+
+        if (depth > 6)
+           update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, bonus/8);
     }
 
     // Set up the improvement variable, which is the difference between the current
@@ -1344,7 +1347,7 @@ moves_loop: // When in check, search starts here
 
     // If there is a move which produces search value greater than alpha we update stats of searched moves
     else if (bestMove)
-        update_all_stats(pos, ss, bestMove, prevSq,
+        update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
                          quietsSearched, quietCount, capturesSearched, captureCount, depth);
 
     // Bonus for prior countermove that caused the fail low
@@ -1667,7 +1670,7 @@ moves_loop: // When in check, search starts here
 
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
-  void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Square prevSq,
+  void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
 
     int bonus1, bonus2;
@@ -1678,7 +1681,8 @@ moves_loop: // When in check, search starts here
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
 
     bonus1 = stat_bonus(depth + 1);
-    bonus2 = stat_bonus(depth);   // smaller bonus
+    bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
+                                            : stat_bonus(depth);   // smaller bonus
 
     if (!pos.capture_or_promotion(bestMove))
     {
