@@ -83,6 +83,11 @@ namespace {
     return std::min((6 * d + 229) * d - 215 , 2000);
   }
 
+  // Capture History and stats update bonus, based on depth
+  int captStat_bonus(Depth d) {
+      return (6 * d + 229) * d - 215;
+  }
+
   // Add a small random component to draw evaluations to avoid 3-fold blindness
   Value value_draw(Thread* thisThread) {
     return VALUE_DRAW + Value(2 * (thisThread->nodes & 1) - 1);
@@ -1695,7 +1700,7 @@ moves_loop: // When in check, search starts here
     }
     else
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << captStat_bonus(depth + 1);
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1708,7 +1713,7 @@ moves_loop: // When in check, search starts here
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
+        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -captStat_bonus(depth + 1);
     }
   }
 
