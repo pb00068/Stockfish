@@ -85,7 +85,7 @@ namespace {
 
   // Capture History and stats update bonus, based on depth
   int captStat_bonus(Depth d) {
-      return std::min(2 * d * d + 512 * d, 8000);
+      return std::min(8 * d * d + 128 * d, 10692);
   }
 
   // Add a small random component to draw evaluations to avoid 3-fold blindness
