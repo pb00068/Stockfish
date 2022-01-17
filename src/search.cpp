@@ -1064,8 +1064,11 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 138 + 137 * lmrDepth + history / 64 <= alpha)
                   continue;
 
+              bool doSee = true;
+              if (lmrDepth < 4 && type_of(movedPiece) < BISHOP &&  (pos.unattacked(us) & to_sq(move)))
+                 doSee = false;
               // Prune moves with negative SEE (~3 Elo)
-              if (!pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
+              if (doSee && !pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
           }
       }

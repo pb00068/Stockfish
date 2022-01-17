@@ -316,6 +316,7 @@ void Position::set_check_info(StateInfo* si) const {
 
   si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+  si->notAttacked[BLACK] = si->notAttacked[WHITE] = 0;
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -1084,8 +1085,11 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard occupied = pieces() ^ from ^ to;
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
+
+  //if ((attackers & pieces(~stm)) && (st->notAttacked[~stm] & to))
+  //sync_cout << *this << UCI::move(m, false) << Bitboards::pretty(st->notAttacked[~stm]) << sync_endl;
   Bitboard stmAttackers, bb;
-  int res = 1;
+  int res = 1, exchanges = 0;
 
   while (true)
   {
@@ -1094,7 +1098,12 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // If stm has no more attackers then give up: stm loses
       if (!(stmAttackers = attackers & pieces(stm)))
-          break;
+      {
+           if (exchanges < 2) // toSq isn't attacked for sidetoMove, remember it
+             st->notAttacked[stm] |= to;
+           break;
+      }
+
 
       // Don't allow pinned pieces to attack as long as there are
       // pinners on their original square.
@@ -1157,6 +1166,8 @@ bool Position::see_ge(Move m, Value threshold) const {
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
           return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+
+      exchanges++;
   }
 
   return bool(res);
