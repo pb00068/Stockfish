@@ -1065,8 +1065,17 @@ moves_loop: // When in check, search starts here
                   continue;
 
               bool doSee = true;
-              if (lmrDepth < 4 && type_of(movedPiece) < BISHOP &&  (pos.unattacked(us) & to_sq(move)))
-                 doSee = false;
+              if (lmrDepth < 4 && (pos.unattacked(us) & to_sq(move)))
+              {
+                 if (type_of(movedPiece) == KNIGHT  || type_of(movedPiece) == KING)
+                   doSee = false;
+                 else if (file_of(from_sq(move)) == file_of(to_sq(move)) && !(LineBB[from_sq(move)][to_sq(move)] & pos.pieces(~us, ROOK, QUEEN)))
+                   doSee = false;
+                 else if (rank_of(from_sq(move)) == rank_of(to_sq(move)) && !(LineBB[from_sq(move)][to_sq(move)] & pos.pieces(~us, ROOK, QUEEN)))
+                   doSee = false;
+                 else if (type_of(movedPiece) == BISHOP && !(LineBB[from_sq(move)][to_sq(move)] & pos.pieces(~us, BISHOP, QUEEN) ))
+                   doSee = false;
+              }
               // Prune moves with negative SEE (~3 Elo)
               if (doSee && !pos.see_ge(move, Value(-21 * lmrDepth * lmrDepth - 21 * lmrDepth)))
                   continue;
