@@ -791,7 +791,7 @@ namespace {
     // The depth condition is important for mate finding.
     if (   !ss->ttPv
         &&  depth < 8
-        &&  ss->bigFailLows < 3
+        &&  (ss+1)->bigFailLows < 2
         &&  eval - futility_margin(depth, improving) - (ss-1)->statScore / 256 >= beta
         &&  eval >= beta
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
@@ -1324,7 +1324,7 @@ moves_loop: // When in check, search starts here
       }
       else {
          ss->cutoffCnt = 0;
-         if (value < alpha - 400 && alpha - 400 > -VALUE_KNOWN_WIN)
+         if (value < alpha - 1000 && alpha - 1000 > -VALUE_KNOWN_WIN)
             ss->bigFailLows++;
       }
 
