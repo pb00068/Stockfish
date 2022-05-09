@@ -604,6 +604,7 @@ namespace {
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
+    (ss+2)->bigFailLows = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     ss->depth            = depth;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -790,6 +791,7 @@ namespace {
     // The depth condition is important for mate finding.
     if (   !ss->ttPv
         &&  depth < 8
+        &&  ss->bigFailLows < 3
         &&  eval - futility_margin(depth, improving) - (ss-1)->statScore / 256 >= beta
         &&  eval >= beta
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
@@ -1320,8 +1322,11 @@ moves_loop: // When in check, search starts here
               }
           }
       }
-      else
+      else {
          ss->cutoffCnt = 0;
+         if (value < alpha - 400 && alpha - 400 > -VALUE_KNOWN_WIN)
+            ss->bigFailLows++;
+      }
 
 
       // If the move is worse than some previously searched move, remember it to update its stats later
