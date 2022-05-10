@@ -122,14 +122,13 @@ void MovePicker::score() {
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
-      //also blocker attackers on our Queen behind single opponent  are dangerous
-      Bitboard b1 =  pos.pieces(us, QUEEN) & ~threatenedByRook;
+      //also encourage move blockers to discover an attack on opponent queen
+      Bitboard b1 =  pos.pieces(~us, QUEEN);
       while (b1)
       {
-              Square s = pop_lsb(b1);
-              Bitboard queenPinners;
-              if (pos.slider_blockers(pos.pieces(~us, ROOK, BISHOP), s, queenPinners) & pos.pieces(~us))
-                  threatened|=s;
+          Square s = pop_lsb(b1);
+          Bitboard queenPinners;
+          threatened|=pos.slider_blockers(pos.pieces(us, ROOK, BISHOP), s, queenPinners);
       }
   }
   else
