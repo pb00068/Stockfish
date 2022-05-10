@@ -121,15 +121,6 @@ void MovePicker::score() {
       threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-
-      //also encourage move blockers to discover an attack on opponent queen
-      Bitboard b1 =  pos.pieces(~us, QUEEN);
-      while (b1)
-      {
-          Square s = pop_lsb(b1);
-          Bitboard queenPinners;
-          threatened|=pos.slider_blockers(pos.pieces(us, ROOK, BISHOP), s, queenPinners);
-      }
   }
   else
   {
@@ -156,7 +147,8 @@ void MovePicker::score() {
                           : type_of(pos.moved_piece(m)) == ROOK  && !(to_sq(m) & threatenedByMinor) ? 25000
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
-                          :                                                                           0);
+                          :                                                                           0)
+                   +     (((pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) && !(to_sq(m) & threatenedByMinor)) ? 10000 : 0);
 
       else // Type == EVASIONS
       {
