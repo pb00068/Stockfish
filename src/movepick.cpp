@@ -106,7 +106,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
+  Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedByOpp;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
@@ -116,6 +116,7 @@ void MovePicker::score() {
       threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       // squares threatened by rooks, minors or pawns
       threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+      threatenedByOpp   = pos.attacks_by<QUEEN>(~us)| threatenedByRook;
 
       // pieces threatened by pieces of lesser material value
       threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
@@ -129,6 +130,7 @@ void MovePicker::score() {
       (void) threatenedByPawn;
       (void) threatenedByMinor;
       (void) threatenedByRook;
+      (void) threatenedByOpp;
   }
 
   for (auto& m : *this)
@@ -148,7 +150,7 @@ void MovePicker::score() {
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0)
-                   +     (((pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) && !(to_sq(m) & threatenedByMinor)) ? 10000 : 0);
+                   +     (((pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) && !(to_sq(m) & threatenedByOpp)) ? 5000 : 0);
 
       else // Type == EVASIONS
       {

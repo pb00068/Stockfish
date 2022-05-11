@@ -644,7 +644,7 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high (~3 Elo)
                 if (!ttCapture)
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                    update_quiet_stats(pos, ss, ttMove, (pos.check_squares(type_of(pos.moved_piece(ttMove))) & to_sq(ttMove)) && depth > 1 ?  stat_bonus(depth-1) : stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo)
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
@@ -1704,7 +1704,7 @@ moves_loop: // When in check, search starts here
     if (!pos.capture(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove, bonus2);
+        update_quiet_stats(pos, ss, bestMove, (pos.check_squares(type_of(moved_piece)) & to_sq(bestMove)) && depth > 1 ?  stat_bonus(depth-1) : bonus2);
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
