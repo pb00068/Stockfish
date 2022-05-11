@@ -644,7 +644,7 @@ namespace {
             {
                 // Bonus for a quiet ttMove that fails high (~3 Elo)
                 if (!ttCapture)
-                    update_quiet_stats(pos, ss, ttMove, (pos.check_squares(type_of(pos.moved_piece(ttMove))) & to_sq(ttMove)) ?  stat_bonus(depth)/8 : stat_bonus(depth));
+                    update_quiet_stats(pos, ss, ttMove, ((pos.check_squares(type_of(pos.moved_piece(ttMove))) & to_sq(ttMove)) && pos.legal(ttMove)) ? stat_bonus(depth)/8 : stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo)
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
