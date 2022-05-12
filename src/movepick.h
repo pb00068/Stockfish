@@ -132,6 +132,7 @@ public:
 private:
   template<PickType T, typename Pred> Move select(Pred);
   template<GenType> void score();
+  void getThreats();
   ExtMove* begin() { return cur; }
   ExtMove* end() { return endMoves; }
 
@@ -146,6 +147,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
 };
 
 } // namespace Stockfish
