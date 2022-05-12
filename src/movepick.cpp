@@ -167,7 +167,7 @@ void MovePicker::score() {
 }
 
 bool MovePicker::currentIsHarakiri() {
-   return stage == QUIET && (cur - 1)->bad;
+   return (stage == QUIET || stage == BAD_CAPTURE) && (cur - 1)->bad;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.

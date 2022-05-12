@@ -1028,8 +1028,8 @@ moves_loop: // When in check, search starts here
           }
           else
           {
-              if (lmrDepth < 4 && mp.currentIsHarakiri())
-                  continue;
+              if (lmrDepth < 3 && mp.currentIsHarakiri())
+               continue;
               int history =   (*contHist[0])[movedPiece][to_sq(move)]
                             + (*contHist[1])[movedPiece][to_sq(move)]
                             + (*contHist[3])[movedPiece][to_sq(move)];
@@ -1048,7 +1048,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // Prune moves with negative SEE (~3 Elo)
-              if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
+              if (lmrDepth >=3 && !pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;
           }
       }
