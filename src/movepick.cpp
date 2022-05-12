@@ -207,18 +207,27 @@ top:
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
 
+      getThreats();
+      if (threatened)
+      {
+          if (!(threatened & from_sq(refutations[0].move)))
+              refutations[0].move = MOVE_NONE;
+          if (!(threatened & from_sq(refutations[1].move)))
+              refutations[1].move = MOVE_NONE;
+          if (!(threatened & from_sq(refutations[2].move)))
+              refutations[2].move = MOVE_NONE;
+      }
+
       // If the countermove is the same as a killer, skip it
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
           --endMoves;
 
       ++stage;
-      getThreats();
       [[fallthrough]];
 
   case REFUTATION:
       if (select<Next>([&](){ return    *cur != MOVE_NONE
-                                    && (!threatened || (threatened & from_sq(cur->move)))
                                     && !pos.capture(*cur)
                                     &&  pos.pseudo_legal(*cur); }))
           return *(cur - 1);
