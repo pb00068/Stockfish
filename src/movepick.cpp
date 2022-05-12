@@ -61,9 +61,9 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
-                                                             const Move* killers)
+                                                             const Move* killers, bool eva)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), evade(eva)
 {
   assert(d > 0);
 
@@ -207,14 +207,15 @@ top:
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
 
-      getThreats();
+      if (evade)
+         getThreats();
+      else
+         threatened = 0;
       if (threatened)
       {
-          if (!(threatened & from_sq(refutations[0].move)))
-              refutations[0].move = MOVE_NONE;
-          if (!(threatened & from_sq(refutations[1].move)))
+          if (refutations[1].move && !(threatened & from_sq(refutations[1].move)) && !(pos.check_squares(type_of(pos.moved_piece(refutations[1]))) & to_sq(refutations[1])))
               refutations[1].move = MOVE_NONE;
-          if (!(threatened & from_sq(refutations[2].move)))
+          if (refutations[2].move && !(threatened & from_sq(refutations[2].move)) && !(pos.check_squares(type_of(pos.moved_piece(refutations[2]))) & to_sq(refutations[2])))
               refutations[2].move = MOVE_NONE;
       }
 
