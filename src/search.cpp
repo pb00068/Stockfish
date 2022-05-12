@@ -946,7 +946,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, pos.non_pawn_material() > 4000);
+                                      ss->killers);
 
     value = bestValue;
     moveCountPruning = false;
