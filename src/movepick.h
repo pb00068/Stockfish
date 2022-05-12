@@ -128,6 +128,7 @@ public:
                                            Square);
   MovePicker(const Position&, Move, Value, Depth, const CapturePieceToHistory*);
   Move next_move(bool skipQuiets = false);
+  bool currentIsHarakiri();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);

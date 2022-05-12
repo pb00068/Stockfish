@@ -136,7 +136,7 @@ void MovePicker::score() {
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
-      else if constexpr (Type == QUIETS)
+      else if constexpr (Type == QUIETS) {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
@@ -148,6 +148,11 @@ void MovePicker::score() {
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0);
+          m.bad =  !(threatened & from_sq(m)) &&
+                   ((type_of(pos.moved_piece(m)) >= KNIGHT && (to_sq(m) & threatenedByPawn)) ||
+                    (type_of(pos.moved_piece(m)) == QUEEN  && (to_sq(m) & threatenedByRook)) ||
+                    (type_of(pos.moved_piece(m)) == ROOK   && (to_sq(m) & threatenedByMinor)));
+      }
 
       else // Type == EVASIONS
       {
@@ -159,6 +164,10 @@ void MovePicker::score() {
                        + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
+}
+
+bool MovePicker::currentIsHarakiri() {
+   return stage == QUIET && (cur - 1)->bad;
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
