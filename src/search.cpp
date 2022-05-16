@@ -896,7 +896,7 @@ namespace {
                 if (value >= probCutBeta) {
                     bool furtherReduce = type_of(pos.captured_piece()) >= ROOK &&
                                          PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] > RookValueMg - BishopValueMg;
-                    Depth d = furtherReduce ? (depth * 2 / 3) - 2  : depth - 4;
+                    Depth d = furtherReduce ? (depth * 3 / 4) - 2  : depth - 4;
                     value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, d, !cutNode);
                 }
 
