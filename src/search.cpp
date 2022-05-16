@@ -899,7 +899,7 @@ namespace {
                 value = -qsearch<NonPV>(pos, ss+1, -probCutB, -probCutB+1);
 
                 // If the qsearch held, perform the regular search
-                if (value >= probCutB) {
+                if (value >= probCutB)
                     value = -search<NonPV>(pos, ss+1, -probCutB, -probCutB+1, depth - 4, !cutNode);
 
                 pos.undo_move(move);
