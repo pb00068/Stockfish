@@ -84,6 +84,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
+  captKiller = MOVE_NONE;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -96,6 +97,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, Depth d, const Cap
   stage = PROBCUT_TT + !(ttm && pos.capture(ttm)
                              && pos.pseudo_legal(ttm)
                              && pos.see_ge(ttm, threshold));
+  captKiller = MOVE_NONE;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used

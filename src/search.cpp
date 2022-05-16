@@ -1720,7 +1720,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captureCount > 1 && capturesSearched[0] != bestMove)
+        //if (captureCount > 1 && capturesSearched[0] != bestMove)
            ss->killers[2] = bestMove;
     }
 
