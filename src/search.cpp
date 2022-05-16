@@ -885,24 +885,26 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
+                Value probCutB = probCutBeta;
                 Piece movedP = pos.moved_piece(move);
 
                 pos.do_move(move, st);
 
+                if (probCutB + 100 < VALUE_INFINITE
+                    &&  type_of(pos.captured_piece()) >= ROOK
+                    &&   PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] > RookValueMg - BishopValueMg)
+                   probCutB += 100;
+
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1);
+                value = -qsearch<NonPV>(pos, ss+1, -probCutB, -probCutB+1);
 
                 // If the qsearch held, perform the regular search
-                if (value >= probCutBeta) {
-                    bool furtherReduce = type_of(pos.captured_piece()) >= ROOK &&
-                                         PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] > RookValueMg - BishopValueMg;
-                    Depth d = furtherReduce ? (depth * 3 / 4) - 2  : depth - 4;
-                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, d, !cutNode);
-                }
+                if (value >= probCutB) {
+                    value = -search<NonPV>(pos, ss+1, -probCutB, -probCutB+1, depth - 4, !cutNode);
 
                 pos.undo_move(move);
 
-                if (value >= probCutBeta)
+                if (value >= probCutB)
                 {
                     // if transposition table doesn't have equal or more deep info write probCut data into it
                     if ( !(ss->ttHit
