@@ -1110,7 +1110,8 @@ moves_loop: // When in check, search starts here
           // Check extensions (~1 Elo)
           else if (   givesCheck
                    && depth > 9
-                   && abs(ss->staticEval) > 71)
+                   && abs(ss->staticEval) > 71
+                   && (pos.see_ge(move) || (pos.blockers_for_king(~us) & from_sq(move)))) //don't extend sacrifice checks
               extension = 1;
 
           // Quiet ttMove extensions (~0 Elo)
