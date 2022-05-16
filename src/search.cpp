@@ -885,7 +885,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                PieceType movedPT = type_of(pos.moved_piece(move));
+                Piece movedP = pos.moved_piece(move);
 
                 pos.do_move(move, st);
 
@@ -894,8 +894,10 @@ namespace {
 
                 // If the qsearch held, perform the regular search
                 if (value >= probCutBeta) {
-                    bool furtherReduce = depth > 5 && beta > -500 && type_of(pos.captured_piece()) >= ROOK && movedPT < ROOK;
-                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, depth - 4 - furtherReduce, !cutNode);
+                    bool furtherReduce = type_of(pos.captured_piece()) >= ROOK &&
+                                         PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] > RookValueMg - BishopValueMg;
+                    Depth d = furtherReduce ? (depth * 2 / 3) - 2  : depth - 4;
+                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, d, !cutNode);
                 }
 
                 pos.undo_move(move);
