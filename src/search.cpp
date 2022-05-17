@@ -664,8 +664,11 @@ namespace {
 
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
-        if (pos.rule50_count() < 90)
+        if (pos.rule50_count() < 90) {
+            if (ttCapture && !pos.see_ge(ttMove))
+               ss->killers[2] = ttMove;
             return ttValue;
+        }
     }
 
     // Step 5. Tablebases probe
@@ -1720,7 +1723,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captureCount > 1)
+        if (captureCount > 1 || quietCount > 2) // not first scored capture or 'bad' capture
            ss->killers[2] = bestMove;
     }
 
