@@ -660,7 +660,10 @@ namespace {
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
                 update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
+            if (ttCapture)
+               ss->killers[2] = ttMove;
         }
+
 
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
@@ -1602,7 +1605,7 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
-              if (capture && moveCount > 1)
+              if (capture)
                  ss->killers[2] = bestMove;
 
               if (PvNode) // Update pv even in fail-high case
@@ -1722,8 +1725,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (captureCount > 1 || quietCount > 1) // not first scored capture or 'bad' capture
-           ss->killers[2] = bestMove;
+        ss->killers[2] = bestMove;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
