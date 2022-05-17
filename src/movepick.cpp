@@ -135,7 +135,7 @@ void MovePicker::score() {
       if constexpr (Type == CAPTURES) {
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]
-                   +     (m.move == captKiller ? 5000 : 0);
+                   +     (m.move == captKiller ? 10000 : 0);
       }
 
       else if constexpr (Type == QUIETS)
