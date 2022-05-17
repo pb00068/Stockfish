@@ -889,11 +889,10 @@ namespace {
                 Piece movedP = pos.moved_piece(move);
 
                 pos.do_move(move, st);
+                Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP];
 
-                if (probCutB + 200 < VALUE_INFINITE
-                    &&  type_of(pos.captured_piece()) >= ROOK
-                    &&   PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] > RookValueMg - BishopValueMg)
-                   probCutB += 200;
+                if (probCutB +  diff/2 < VALUE_INFINITE &&  type_of(pos.captured_piece()) >= ROOK &&  diff > RookValueMg - BishopValueMg)
+                    probCutB += diff/2;
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -probCutB, -probCutB+1);
