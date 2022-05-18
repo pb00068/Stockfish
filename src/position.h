@@ -120,7 +120,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
-  template<PieceType Pt> Bitboard attacks_by(Color c) const;
+  template<PieceType Pt> Bitboard attacks_by(Color c, Bitboard) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -286,7 +286,7 @@ inline Bitboard Position::attackers_to(Square s) const {
 }
 
 template<PieceType Pt>
-inline Bitboard Position::attacks_by(Color c) const {
+inline Bitboard Position::attacks_by(Color c, Bitboard occ) const {
 
   if constexpr (Pt == PAWN)
       return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
@@ -296,7 +296,7 @@ inline Bitboard Position::attacks_by(Color c) const {
       Bitboard threats = 0;
       Bitboard attackers = pieces(c, Pt);
       while (attackers)
-          threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(~c, ROOK, QUEEN));
+          threats |= attacks_bb<Pt>(pop_lsb(attackers), occ);
       return threats;
   }
 }
