@@ -296,7 +296,7 @@ inline Bitboard Position::attacks_by(Color c) const {
       Bitboard threats = 0;
       Bitboard attackers = pieces(c, Pt);
       while (attackers)
-          threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(~c, QUEEN, ROOK));
+          threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(~c, ROOK, QUEEN));
       return threats;
   }
 }
