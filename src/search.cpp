@@ -885,25 +885,26 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                Value probCutB = probCutBeta;
                 Piece movedP = pos.moved_piece(move);
 
                 pos.do_move(move, st);
-                Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP];
+                Value diff = PieceValue[MG][pos.captured_piece()] - (3 * PieceValue[MG][movedP])/4;
 
-                if (probCutB +  diff/2 < VALUE_INFINITE &&  type_of(pos.captured_piece()) >= ROOK &&  diff > RookValueMg - BishopValueMg)
-                    probCutB += diff/2;
+                // if we are already in advantage the opponent probably does wrong offering us a capture/exchange
+                // so increase probCutBeta if we grab a valuable piece
+                if (diff > 0 && beta > 200 && beta + (3 * diff)/4 > probCutBeta && beta + (3 * diff)/4 < VALUE_INFINITE )
+                  probCutBeta = beta + (3 * diff)/4;
 
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss+1, -probCutB, -probCutB+1);
+                value = -qsearch<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1);
 
                 // If the qsearch held, perform the regular search
-                if (value >= probCutB)
-                    value = -search<NonPV>(pos, ss+1, -probCutB, -probCutB+1, depth - 4, !cutNode);
+                if (value >= probCutBeta)
+                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, depth - 4, !cutNode);
 
                 pos.undo_move(move);
 
-                if (value >= probCutB)
+                if (value >= probCutBeta)
                 {
                     // if transposition table doesn't have equal or more deep info write probCut data into it
                     if ( !(ss->ttHit
