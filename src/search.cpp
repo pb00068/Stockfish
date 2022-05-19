@@ -815,6 +815,7 @@ namespace {
         Depth R = std::min(int(eval - beta) / 147, 5) + depth / 3 + 4 - (complexity > 753);
 
         ss->currentMove = MOVE_NULL;
+        ss->cmCapture = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -880,6 +881,7 @@ namespace {
                 captureOrPromotion = true;
 
                 ss->currentMove = move;
+                ss->cmCapture = true;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [captureOrPromotion]
                                                                           [pos.moved_piece(move)]
@@ -940,8 +942,8 @@ moves_loop: // When in check, search starts here
 
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-6)->continuationHistory };
+    nullptr                                                         , (ss-1)->cmCapture ?  &thisThread->continuationHistory[0][0][NO_PIECE][0] : (ss-4)->continuationHistory,
+    nullptr               , (ss-1)->cmCapture || (ss-2)->cmCapture || (ss-3)->cmCapture ?  &thisThread->continuationHistory[0][0][NO_PIECE][0] : (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
@@ -1130,6 +1132,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->cmCapture = capture;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
@@ -1566,6 +1569,7 @@ moves_loop: // When in check, search starts here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
+      ss->cmCapture = capture;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [pos.moved_piece(move)]
@@ -1745,6 +1749,9 @@ moves_loop: // When in check, search starts here
     {
         // Only update first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
+            break;
+        // Only update first 2 continuation histories if we are in check
+        if (((ss-1)->cmCapture || (ss-i)->cmCapture) && i >= 2)
             break;
         if (is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
