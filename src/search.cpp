@@ -942,7 +942,7 @@ moves_loop: // When in check, search starts here
 
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-    nullptr                                                         , (ss-4)->continuationHistory,
+    nullptr                                                         , (ss-1)->cmCapture ?  thisThread->sentinel : (ss-4)->continuationHistory,
     nullptr                                   ,  (ss-1)->cmCapture || (ss-3)->cmCapture ?  thisThread->sentinel : (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
@@ -1505,7 +1505,7 @@ moves_loop: // When in check, search starts here
     }
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-    nullptr                                                         , (ss-4)->continuationHistory,
+    nullptr                                                         , (ss-1)->cmCapture ?  thisThread->sentinel : (ss-4)->continuationHistory,
     nullptr                                   ,  (ss-1)->cmCapture || (ss-3)->cmCapture ?  thisThread->sentinel : (ss-6)->continuationHistory };
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
@@ -1749,7 +1749,7 @@ moves_loop: // When in check, search starts here
         // Only update first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
             break;
-        if (i == 6 && ((ss-1)->cmCapture || (ss-3)->cmCapture))
+        if (i == 4 && ((ss-1)->cmCapture || (ss-3)->cmCapture))
             break;
         if (is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
