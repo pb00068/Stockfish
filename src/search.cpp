@@ -276,7 +276,7 @@ void Thread::search() {
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
-      (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
+      (ss-i)->continuationHistory = sentinel; // Use as a sentinel
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
       (ss+i)->ply = i;
@@ -816,7 +816,7 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->cmCapture = false;
-        ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->continuationHistory = thisThread->sentinel;
 
         pos.do_null_move(st);
 
@@ -942,8 +942,8 @@ moves_loop: // When in check, search starts here
 
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-    nullptr                                                         , (ss-1)->cmCapture ?  &thisThread->continuationHistory[0][0][NO_PIECE][0] : (ss-4)->continuationHistory,
-    nullptr               , (ss-1)->cmCapture || (ss-2)->cmCapture || (ss-3)->cmCapture ?  &thisThread->continuationHistory[0][0][NO_PIECE][0] : (ss-6)->continuationHistory };
+    nullptr                                                         , (ss-1)->cmCapture ?  thisThread->sentinel : (ss-4)->continuationHistory,
+    nullptr               , (ss-1)->cmCapture || (ss-2)->cmCapture || (ss-3)->cmCapture ?  thisThread->sentinel : (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
@@ -1745,15 +1745,14 @@ moves_loop: // When in check, search starts here
 
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
+    bool dirty = false; // captures in between the layers
     for (int i : {1, 2, 4, 6})
     {
         // Only update first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
             break;
-        // Only update first 2 continuation histories if we are in check
-        if (((ss-1)->cmCapture || (ss-i)->cmCapture) && i >= 2)
-            break;
-        if (is_ok((ss-i)->currentMove))
+        dirty |= (ss-i)->cmCapture || (ss-i-1)->cmCapture;
+        if (!dirty && is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
     }
   }
