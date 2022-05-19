@@ -888,12 +888,12 @@ namespace {
                 Piece movedP = pos.moved_piece(move);
 
                 pos.do_move(move, st);
-                Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP];
+                Value diff = PieceValue[MG][pos.captured_piece()] - PieceValue[MG][movedP] - 46 * improving;
 
                 // if we are already in advantage the opponent probably does wrong offering us a capture/exchange
                 // so increase probCutBeta if we grab a valuable piece
-                if (diff > 0 && beta > 200 && beta + diff/4 > probCutBeta && beta + diff/4 < VALUE_INFINITE )
-                  probCutBeta = beta + diff/4;
+                if (diff > 0 && beta > 200 && beta + diff/3 > probCutBeta && beta + diff/3 < VALUE_INFINITE )
+                  probCutBeta = beta + diff/3;
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1);
