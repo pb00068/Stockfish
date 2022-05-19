@@ -1505,9 +1505,8 @@ moves_loop: // When in check, search starts here
     }
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
-                                          nullptr                   , (ss-6)->continuationHistory };
-
+    nullptr                                                         , (ss-2)->cmCapture ?  thisThread->sentinel : (ss-4)->continuationHistory,
+    nullptr                                   ,  (ss-2)->cmCapture || (ss-4)->cmCapture ?  thisThread->sentinel : (ss-6)->continuationHistory };
     // Initialize a MovePicker object for the current position, and prepare
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
