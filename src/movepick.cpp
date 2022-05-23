@@ -106,16 +106,6 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  Bitboard threatenedByPawn;
-  if constexpr (Type == QUIETS)
-      threatenedByPawn  = pos.attacks_by_pawns(~pos.side_to_move());
-  else
-  {
-      // Silence unused variable warnings
-      (void) threatenedByPawn;
-
-  }
-
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
@@ -126,8 +116,7 @@ void MovePicker::score() {
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
-                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +     ((threatenedByPawn & from_sq(m)) && !(threatenedByPawn & to_sq(m))  ? 16000 : 0);
+                   +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)];
       else // Type == EVASIONS
       {
           if (pos.capture(m))

@@ -120,7 +120,6 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
-  Bitboard attacks_by_pawns(Color c) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -283,12 +282,6 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 
 inline Bitboard Position::attackers_to(Square s) const {
   return attackers_to(s, pieces());
-}
-
-
-inline Bitboard Position::attacks_by_pawns(Color c) const {
-      return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
-                        : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
 }
 
 inline Bitboard Position::checkers() const {
