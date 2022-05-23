@@ -110,20 +110,17 @@ void MovePicker::score() {
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
-      Bitboard occupied = pos.pieces() ^ pos.pieces(us, ROOK, QUEEN);
-      // squares threatened by pawns but don't consider attacks to our pawn protected pawns
-      threatenedByPawn  = pos.attacks_by<PAWN>(~us, occupied) & ~(pos.pieces(us, PAWN) & pos.attacks_by<PAWN>(us, occupied));
+      // squares threatened by pawns
+      threatenedByPawn  = pos.attacks_by<PAWN>(~us);
       // squares threatened by minors or pawns
-      threatsForRooks = pos.attacks_by<KNIGHT>(~us, occupied) | pos.attacks_by<BISHOP>(~us, occupied) | threatenedByPawn;
+      threatsForRooks = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       // squares threatened by rooks, minors or pawns
-      threatsForQueen  = pos.attacks_by<ROOK>(~us, occupied) | threatsForRooks;
+      threatsForQueen  = pos.attacks_by<ROOK>(~us) | threatsForRooks;
 
       // pieces threatened by pieces of lesser material value
       threatened =  (pos.pieces(us, QUEEN) & threatsForQueen)
                   | (pos.pieces(us, ROOK)  & threatsForRooks)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-      threatsForQueen  |= pos.attacks_by<QUEEN>(~us, occupied);
-      threatsForRooks  |= pos.attacks_by<ROOK>(~us, occupied);
   }
   else
   {

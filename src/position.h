@@ -120,7 +120,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
-  template<PieceType Pt> Bitboard attacks_by(Color c, Bitboard) const;
+  template<PieceType Pt> Bitboard attacks_by(Color c) const;
 
   // Properties of moves
   bool legal(Move m) const;
@@ -286,19 +286,31 @@ inline Bitboard Position::attackers_to(Square s) const {
 }
 
 template<PieceType Pt>
-inline Bitboard Position::attacks_by(Color c, Bitboard occ) const {
+inline Bitboard Position::attacks_by(Color c) const {
 
   if constexpr (Pt == PAWN)
       return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
                         : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
-  else
-  {
+  else if (Pt == KNIGHT) {
       Bitboard threats = 0;
       Bitboard attackers = pieces(c, Pt);
       while (attackers)
-          threats |= attacks_bb<Pt>(pop_lsb(attackers), occ);
+           threats |= PseudoAttacks[KNIGHT][pop_lsb(attackers)];
       return threats;
   }
+  else if (Pt == BISHOP) {
+      Bitboard threats = 0;
+      Bitboard attackers = pieces(c, Pt);
+      while (attackers)
+          threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(QUEEN));
+      return threats;
+  } else if (Pt == ROOK) {
+    Bitboard threats = 0;
+    Bitboard attackers = pieces(c, Pt);
+    while (attackers)
+        threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(~c, QUEEN, ROOK));
+    return threats;
+}
 }
 
 inline Bitboard Position::checkers() const {
