@@ -295,7 +295,7 @@ inline Bitboard Position::attacks_by(Color c) const {
       Bitboard threats = 0;
       Bitboard attackers = pieces(c, Pt);
       while (attackers)
-           threats |= PseudoAttacks[KNIGHT][pop_lsb(attackers)];
+           threats |= PseudoAttacks[Pt][pop_lsb(attackers)];
       return threats;
   }
   else if (Pt == BISHOP) {
