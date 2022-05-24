@@ -312,17 +312,25 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 /// Position::set_check_info() sets king attacks to detect if a move gives check
 
-void Position::set_check_info(StateInfo* si) const {
+void Position::set_check_info(StateInfo* si, bool needcalc) const {
+	if (needcalc) {
+     si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
+     si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+     Square ksq = square<KING>(~sideToMove);
 
-  Square ksq = square<KING>(~sideToMove);
+     si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
+     si->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
+     si->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
+     si->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
 
-  si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
-  si->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
-  si->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
-  si->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
+  }
+  else
+  {
+     si->checkSquares[PAWN]= si->checkSquares[KNIGHT] = si->checkSquares[BISHOP] =  si->checkSquares[ROOK]   = 0;
+     si->blockersForKing[WHITE] = si->blockersForKing[BLACK] = 0;
+  }
+
   si->checkSquares[QUEEN]  = si->checkSquares[BISHOP] | si->checkSquares[ROOK];
   si->checkSquares[KING]   = 0;
 }
@@ -340,7 +348,7 @@ void Position::set_state(StateInfo* si) const {
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
   si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
-  set_check_info(si);
+  set_check_info(si, true);
 
   for (Bitboard b = pieces(); b; )
   {
@@ -633,10 +641,14 @@ bool Position::gives_check(Move m) const {
 
   Square from = from_sq(m);
   Square to = to_sq(m);
+  PieceType movedPt = type_of(moved_piece(m));
 
   // Is there a direct check?
-  if (check_squares(type_of(piece_on(from))) & to)
+  if (check_squares(movedPt) & to)
       return true;
+
+  if (movedPt == KNIGHT)
+     return (blockers_for_king(~sideToMove) & from);
 
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
@@ -680,7 +692,7 @@ bool Position::gives_check(Move m) const {
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal
 /// moves should be filtered out before this function is called.
 
-void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
+void Position::do_move(Move m, StateInfo& newSt, bool givesCheck, bool needCheckcalc) {
 
   assert(is_ok(m));
   assert(&newSt != st);
@@ -868,7 +880,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   sideToMove = ~sideToMove;
 
   // Update king attacks used for fast check detection
-  set_check_info(st);
+  set_check_info(st, needCheckcalc);
 
   // Calculate the repetition info. It is the ply distance from the previous
   // occurrence of the same position, negative in the 3-fold case, or zero
@@ -1020,7 +1032,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   sideToMove = ~sideToMove;
 
-  set_check_info(st);
+  set_check_info(st, true);
 
   st->repetition = 0;
 

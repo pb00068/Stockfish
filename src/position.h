@@ -137,7 +137,7 @@ public:
 
   // Doing and undoing moves
   void do_move(Move m, StateInfo& newSt);
-  void do_move(Move m, StateInfo& newSt, bool givesCheck);
+  void do_move(Move m, StateInfo& newSt, bool givesCheck, bool needcalc);
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);
   void undo_null_move();
@@ -178,7 +178,7 @@ private:
   // Initialization helpers (used while setting up a position)
   void set_castling_right(Color c, Square rfrom);
   void set_state(StateInfo* si) const;
-  void set_check_info(StateInfo* si) const;
+  void set_check_info(StateInfo* si, bool) const;
 
   // Other helpers
   void move_piece(Square from, Square to);
@@ -417,7 +417,7 @@ inline void Position::move_piece(Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt) {
-  do_move(m, newSt, gives_check(m));
+  do_move(m, newSt, gives_check(m), true);
 }
 
 inline StateInfo* Position::state() const {

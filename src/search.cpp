@@ -1136,7 +1136,7 @@ moves_loop: // When in check, search starts here
                                                                 [to_sq(move)];
 
       // Step 16. Make the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, true);
 
       bool doDeeperSearch = false;
 
@@ -1509,6 +1509,7 @@ moves_loop: // When in check, search starts here
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
+
     Square prevSq = to_sq((ss-1)->currentMove);
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
@@ -1527,6 +1528,12 @@ moves_loop: // When in check, search starts here
           continue;
 
       givesCheck = pos.gives_check(move);
+
+//      if (depth <= DEPTH_QS_RECAPTURES && givesCheck)
+//      {
+//      	sync_cout << pos <<  " move " << UCI::move(move, false) << sync_endl;
+//      	abort();
+//      }
       capture = pos.capture(move);
 
       moveCount++;
@@ -1588,7 +1595,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Make and search the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, depth > DEPTH_QS_RECAPTURES);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
 
