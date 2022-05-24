@@ -291,26 +291,14 @@ inline Bitboard Position::attacks_by(Color c) const {
   if constexpr (Pt == PAWN)
       return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
                         : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
-  else if (Pt == KNIGHT) {
+  else
+  {
       Bitboard threats = 0;
       Bitboard attackers = pieces(c, Pt);
       while (attackers)
-           threats |= PseudoAttacks[Pt][pop_lsb(attackers)];
+          threats |= attacks_bb<Pt>(pop_lsb(attackers), Pt == KNIGHT ? 0 : pieces() ^ pieces(~c, QUEEN));
       return threats;
   }
-  else if (Pt == BISHOP) {
-      Bitboard threats = 0;
-      Bitboard attackers = pieces(c, Pt);
-      while (attackers)
-          threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(QUEEN));
-      return threats;
-  } else if (Pt == ROOK) {
-    Bitboard threats = 0;
-    Bitboard attackers = pieces(c, Pt);
-    while (attackers)
-        threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces() ^ pieces(~c, QUEEN, ROOK));
-    return threats;
-}
 }
 
 inline Bitboard Position::checkers() const {
