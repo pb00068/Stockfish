@@ -641,14 +641,10 @@ bool Position::gives_check(Move m) const {
 
   Square from = from_sq(m);
   Square to = to_sq(m);
-  PieceType movedPt = type_of(moved_piece(m));
 
   // Is there a direct check?
-  if (check_squares(movedPt) & to)
+  if (check_squares(type_of(piece_on(from))) & to)
       return true;
-
-  if (movedPt == KNIGHT)
-     return (blockers_for_king(~sideToMove) & from);
 
   // Is there a discovered check?
   if (   (blockers_for_king(~sideToMove) & from)
