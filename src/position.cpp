@@ -327,7 +327,7 @@ void Position::set_check_info(StateInfo* si, bool needcalc) const {
   }
   else
   {
-     si->checkSquares[PAWN]= si->checkSquares[KNIGHT] = si->checkSquares[BISHOP] =  si->checkSquares[ROOK]   = 0;
+     si->checkSquares[PAWN]= si->checkSquares[KNIGHT] = si->checkSquares[BISHOP] =  si->checkSquares[ROOK] = 0;
      si->blockersForKing[WHITE] = si->blockersForKing[BLACK] = 0;
   }
 
