@@ -786,7 +786,7 @@ namespace {
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
-            return value;
+            return alpha;
     }
 
     // Step 8. Futility pruning: child node (~25 Elo).
@@ -905,7 +905,7 @@ namespace {
                         tte->save(posKey, value_to_tt(value, ss->ply), ttPv,
                             BOUND_LOWER,
                             depth - 3, move, ss->staticEval);
-                    return value;
+                    return probCutBeta;
                 }
             }
          ss->ttPv = ttPv;
@@ -1096,7 +1096,7 @@ moves_loop: // When in check, search starts here
               // that multiple moves fail high, and we can prune the whole subtree by returning
               // a soft bound.
               else if (singularBeta >= beta)
-                  return singularBeta;
+                  return beta;
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension)
               else if (ttValue >= beta)
@@ -1393,7 +1393,7 @@ moves_loop: // When in check, search starts here
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
-    return bestValue;
+    return std::clamp(bestValue, alpha, beta);
   }
 
 
@@ -1492,7 +1492,7 @@ moves_loop: // When in check, search starts here
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
-            return bestValue;
+            return beta;
         }
 
         if (PvNode && bestValue > alpha)
@@ -1630,7 +1630,7 @@ moves_loop: // When in check, search starts here
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
-    return bestValue;
+    return std::clamp(bestValue, alpha, beta);
   }
 
 
