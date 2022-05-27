@@ -378,14 +378,13 @@ void Position::set_state(StateInfo* si) const {
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
 
-  if (si->previous == nullptr)
-  {
-     StateInfo stt;
-     std::memcpy(&stt, si, offsetof(StateInfo, key));
-     si->previous = &stt;
-     //stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
-     stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
-  }
+  // assuring st->previous->previous always != nullptr in do_move
+  StateInfo stt;
+  std::memcpy(&stt, si, offsetof(StateInfo, key));
+  si->previous = &stt;
+  //stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
+  stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
+
 }
 
 
