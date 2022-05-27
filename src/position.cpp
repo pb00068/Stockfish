@@ -381,7 +381,7 @@ void Position::set_state(StateInfo* si) const {
    //std::memcpy(&stt, si, offsetof(StateInfo, key));
    si->previous = &stt;
    stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
-   stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
+   stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 45677;
 }
 
 
