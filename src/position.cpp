@@ -380,10 +380,12 @@ void Position::set_state(StateInfo* si) const {
 
   // assuring st->previous->previous always != nullptr in do_move
   StateInfo stt;
-  std::memcpy(&stt, si, offsetof(StateInfo, key));
+  //std::memcpy(&stt, si, offsetof(StateInfo, key));
   si->previous = &stt;
-  //stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
+  stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
   stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
+  stt.checkSquares[PAWN] = stt.checkSquares[KNIGHT] = stt.checkSquares[BISHOP] = 0;
+  stt.checkSquares[ROOK] = stt.checkSquares[QUEEN] = stt.checkSquares[KING] = 0;
 
 }
 
