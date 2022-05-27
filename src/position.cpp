@@ -314,7 +314,7 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si, Square ksq, bool usePrevState) const {
 
-  si->blockersForKing[WHITE] = usePrevState && sideToMove == BLACK && !si->capturedPiece && !si->previous->capturedPiece ? si->previous->previous->blockersForKing[WHITE] : slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
 
   if (usePrevState) {
