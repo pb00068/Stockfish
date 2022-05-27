@@ -351,6 +351,7 @@ void Position::set_state(StateInfo* si) const {
   set_check_info(si, ksq, false);
 
   st->kingCrossOccupance[~sideToMove] = attacks_bb<  QUEEN>(ksq, pieces());
+  st->kingCrossOccupance[sideToMove] = 0;
 
   for (Bitboard b = pieces(); b; )
   {
@@ -382,6 +383,8 @@ void Position::set_state(StateInfo* si) const {
      StateInfo stt;
      std::memcpy(&stt, si, offsetof(StateInfo, key));
      si->previous = &stt;
+     //stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
+     stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
   }
 }
 
