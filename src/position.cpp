@@ -381,7 +381,7 @@ void Position::set_state(StateInfo* si) const {
    //std::memcpy(&stt, si, offsetof(StateInfo, key));
    si->previous = &stt;
    stt.blockersForKing[WHITE] = stt.blockersForKing[BLACK] = 0;
-   stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 45677;
+   stt.kingCrossOccupance[WHITE] = stt.kingCrossOccupance[BLACK] = 0;
 }
 
 
@@ -885,7 +885,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   Square ksq = square<KING>(~sideToMove);
   st->kingCrossOccupance[~sideToMove] = PseudoAttacks[QUEEN][ksq] & pieces();
-  bool usePrevState = (type_of(pc) != KING)
+  bool usePrevState = (type_of(pc) != KING) && st->previous->previous != nullptr
                       && st->previous->previous->kingCrossOccupance[~sideToMove] == st->kingCrossOccupance[~sideToMove];
   // Update king attacks used for fast check detection
   set_check_info(st, ksq, usePrevState);
@@ -1044,7 +1044,8 @@ void Position::do_null_move(StateInfo& newSt) {
   sideToMove = ~sideToMove;
   Square ksq = square<KING>(~sideToMove);
   st->kingCrossOccupance[~sideToMove] = PseudoAttacks[QUEEN][ksq] & pieces();
-  bool usePrevState =   st->previous->previous->kingCrossOccupance[~sideToMove] == st->kingCrossOccupance[~sideToMove];
+  bool usePrevState =   st->previous->previous != nullptr
+                        && st->previous->previous->kingCrossOccupance[~sideToMove] == st->kingCrossOccupance[~sideToMove];
   set_check_info(st, ksq, usePrevState);
 
   st->repetition = 0;
