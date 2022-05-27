@@ -377,8 +377,7 @@ void Position::set_state(StateInfo* si) const {
           si->materialKey ^= Zobrist::psq[pc][cnt];
 
   // assuring st->previous->previous always != nullptr in do_move
-  si->previous = (StateInfo*) malloc(sizeof(StateInfo));
-  si->previous->previous =  (StateInfo*) malloc(sizeof(StateInfo));
+  si->previous = st;
 }
 
 
