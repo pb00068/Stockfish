@@ -375,6 +375,13 @@ void Position::set_state(StateInfo* si) const {
   for (Piece pc : Pieces)
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
+
+  // assuring st->previous->previous always != nullptr in do_move
+  StateInfo* stt = new StateInfo();
+  si->previous = stt;
+  si->previous->kingCrossOccupance[0] = si->previous->kingCrossOccupance[1] = 0;
+  si->previous->previous = si;
+
 }
 
 
@@ -878,7 +885,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   Square ksq = square<KING>(sideToMove);
   st->kingCrossOccupance[sideToMove] = attacks_bb<QUEEN>(ksq, pieces());
-  bool usePrevState = (type_of(pc) != KING) && st->previous != nullptr && st->previous->previous != nullptr
+  bool usePrevState = (type_of(pc) != KING)
                       && st->previous->previous->kingCrossOccupance[sideToMove] == st->kingCrossOccupance[sideToMove];
   sideToMove = ~sideToMove;
   // Update king attacks used for fast check detection
@@ -1038,8 +1045,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   Square ksq = square<KING>(sideToMove);
   st->kingCrossOccupance[sideToMove] = attacks_bb<QUEEN>(ksq, pieces());
-  bool usePrevState =   st->previous != nullptr && st->previous->previous != nullptr
-                        && st->previous->previous->kingCrossOccupance[sideToMove] == st->kingCrossOccupance[sideToMove];
+  bool usePrevState = st->previous->previous->kingCrossOccupance[sideToMove] == st->kingCrossOccupance[sideToMove];
   sideToMove = ~sideToMove;
   set_check_info(st, ksq, usePrevState);
 
