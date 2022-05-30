@@ -865,31 +865,20 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Calculate checkers bitboard (if move gives check)
   st->checkersBB = givesCheck ? attackers_to(square<KING>(them)) & pieces(us) : 0;
 
-
-
-  Square ksq = square<KING>(sideToMove);
-  if (type_of(pc) == KING || type_of(m) == EN_PASSANT || (attacks_bb<QUEEN>(ksq) & from) || (attacks_bb<QUEEN>(ksq) & to))
-    st->blockersForKing[sideToMove] = slider_blockers(pieces(~sideToMove), square<KING>(sideToMove), st->pinners[~sideToMove]);
-  else
-  {
-     st->blockersForKing[sideToMove] = st->previous->blockersForKing[sideToMove];
-     st->pinners[~sideToMove] = st->previous->pinners[~sideToMove];
+  for (Color c : { WHITE, BLACK }) {
+     Square ksq= square<KING>(c);
+     if ((type_of(pc) == KING && c == sideToMove) || type_of(m) != NORMAL || (attacks_bb<QUEEN>(ksq) & from) || (attacks_bb<QUEEN>(ksq) & to))
+       st->blockersForKing[c] = slider_blockers(pieces(~c), ksq, st->pinners[~c]);
+     else
+     {
+          st->blockersForKing[c] = st->previous->blockersForKing[c];
+          st->pinners[~c] = st->previous->pinners[~c];
+     }
   }
-
 
   sideToMove = ~sideToMove;
-  ksq = square<KING>(sideToMove);
-  if (type_of(m) != NORMAL || (attacks_bb<QUEEN>(ksq) & from) || (attacks_bb<QUEEN>(ksq) & to))
-     st->blockersForKing[sideToMove] = slider_blockers(pieces(~sideToMove), square<KING>(sideToMove), st->pinners[~sideToMove]);
-  else {
-     st->blockersForKing[sideToMove] = st->previous->blockersForKing[sideToMove];
-     st->pinners[~sideToMove] = st->previous->pinners[~sideToMove];
-  }
-
-
   // Update king attacks used for fast check detection
   set_check_info(st);
-
 
   // Calculate the repetition info. It is the ply distance from the previous
   // occurrence of the same position, negative in the 3-fold case, or zero
