@@ -1512,7 +1512,7 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       prevSq);
 
-    int quietCheckEvasions = 0;
+    int quiets = 0;
 
     // Loop through the moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move()) != MOVE_NONE)
@@ -1536,7 +1536,7 @@ moves_loop: // When in check, search starts here
           &&  type_of(move) != PROMOTION)
       {
 
-          if (moveCount > 2)
+          if (moveCount - quiets > 2)
               continue;
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
@@ -1577,12 +1577,12 @@ moves_loop: // When in check, search starts here
 
       // movecount pruning for quiet check evasions
       if (  bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && quietCheckEvasions > 1
+          && quiets > 1
           && !capture
           && ss->inCheck)
           continue;
 
-      quietCheckEvasions += !capture && ss->inCheck;
+      quiets += !capture;
 
       // Make and search the move
       pos.do_move(move, st, givesCheck);
