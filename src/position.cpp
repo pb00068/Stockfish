@@ -312,23 +312,12 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 /// Position::set_check_info() sets king attacks to detect if a move gives check
 
-void Position::set_check_info(StateInfo* si, Square ksq, bool usePrevState) const {
-
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
-
-  if (usePrevState) {
-      si->checkSquares[PAWN]   = si->previous->previous->checkSquares[PAWN];
-      si->checkSquares[KNIGHT] = si->previous->previous->checkSquares[KNIGHT];
-      si->checkSquares[BISHOP] = si->previous->previous->checkSquares[BISHOP];
-      si->checkSquares[ROOK]   = si->previous->previous->checkSquares[ROOK];
-  }
-  else {
-      si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
-      si->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
-      si->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
-      si->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
-  }
+void Position::set_check_info(StateInfo* si) const {
+  Square ksq = square<KING>(~sideToMove);
+  si->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
+  si->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
+  si->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
+  si->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
   si->checkSquares[QUEEN]  = si->checkSquares[BISHOP] | si->checkSquares[ROOK];
   si->checkSquares[KING]   = 0;
 }
@@ -346,10 +335,12 @@ void Position::set_state(StateInfo* si) const {
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
   si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
-  Square ksq = square<KING>(~sideToMove);
-  set_check_info(si, ksq, false);
+  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
+  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
 
-  st->kingCrossOccupance[~sideToMove] = attacks_bb<QUEEN>(ksq, pieces());
+
+  set_check_info(si);
+
 
   for (Bitboard b = pieces(); b; )
   {
@@ -375,13 +366,6 @@ void Position::set_state(StateInfo* si) const {
   for (Piece pc : Pieces)
       for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
           si->materialKey ^= Zobrist::psq[pc][cnt];
-
-  // assuring st->previous->previous always != nullptr in do_move
-  StateInfo* stt = new StateInfo();
-  si->previous = stt;
-  si->previous->kingCrossOccupance[0] = si->previous->kingCrossOccupance[1] = 0;
-  si->previous->previous = si;
-
 }
 
 
@@ -884,14 +868,27 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
 
   Square ksq = square<KING>(sideToMove);
-  st->kingCrossOccupance[sideToMove] = attacks_bb<QUEEN>(ksq, pieces());
-  bool usePrevState = (type_of(pc) != KING)
-                      && st->previous->previous->kingCrossOccupance[sideToMove] == st->kingCrossOccupance[sideToMove];
+  if (type_of(pc) == KING || type_of(m) == EN_PASSANT || (attacks_bb<QUEEN>(ksq) & from) || (attacks_bb<QUEEN>(ksq) & to))
+    st->blockersForKing[sideToMove] = slider_blockers(pieces(~sideToMove), square<KING>(sideToMove), st->pinners[~sideToMove]);
+  else
+  {
+     st->blockersForKing[sideToMove] = st->previous->blockersForKing[sideToMove];
+     st->pinners[~sideToMove] = st->previous->pinners[~sideToMove];
+  }
+
+
   sideToMove = ~sideToMove;
+  ksq = square<KING>(sideToMove);
+  if (type_of(m) != NORMAL || (attacks_bb<QUEEN>(ksq) & from) || (attacks_bb<QUEEN>(ksq) & to))
+     st->blockersForKing[sideToMove] = slider_blockers(pieces(~sideToMove), square<KING>(sideToMove), st->pinners[~sideToMove]);
+  else {
+     st->blockersForKing[sideToMove] = st->previous->blockersForKing[sideToMove];
+     st->pinners[~sideToMove] = st->previous->pinners[~sideToMove];
+  }
+
+
   // Update king attacks used for fast check detection
-  set_check_info(st, ksq, usePrevState);
-
-
+  set_check_info(st);
 
 
   // Calculate the repetition info. It is the ply distance from the previous
@@ -1043,11 +1040,10 @@ void Position::do_null_move(StateInfo& newSt) {
   st->pliesFromNull = 0;
 
 
-  Square ksq = square<KING>(sideToMove);
-  st->kingCrossOccupance[sideToMove] = attacks_bb<QUEEN>(ksq, pieces());
-  bool usePrevState = st->previous->previous->kingCrossOccupance[sideToMove] == st->kingCrossOccupance[sideToMove];
   sideToMove = ~sideToMove;
-  set_check_info(st, ksq, usePrevState);
+  st->blockersForKing[WHITE] = st->previous->blockersForKing[WHITE];
+  st->blockersForKing[BLACK] = st->previous->blockersForKing[BLACK];
+  set_check_info(st);
 
   st->repetition = 0;
 

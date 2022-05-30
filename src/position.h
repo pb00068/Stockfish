@@ -47,7 +47,6 @@ struct StateInfo {
   int    rule50;
   int    pliesFromNull;
   Square epSquare;
-  Bitboard kingCrossOccupance[COLOR_NB];
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -179,7 +178,7 @@ private:
   // Initialization helpers (used while setting up a position)
   void set_castling_right(Color c, Square rfrom);
   void set_state(StateInfo* si) const;
-  void set_check_info(StateInfo* si, Square, bool) const;
+  void set_check_info(StateInfo* si) const;
 
   // Other helpers
   void move_piece(Square from, Square to);
