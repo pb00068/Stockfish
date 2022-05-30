@@ -111,7 +111,7 @@ void MovePicker::score() {
   {
       Color us = pos.side_to_move();
       // squares threatened by pawns
-      threatenedByPawn  = pos.attacks_by<PAWN>(~us);
+      threatenedByPawn  = pos.attacks_by<PAWN>(~us) | pos.blockers_for_king(~us);
       // squares threatened by minors or pawns
       threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       // squares threatened by rooks, minors or pawns
@@ -120,7 +120,8 @@ void MovePicker::score() {
       // pieces threatened by pieces of lesser material value
       threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
-                  | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+                  | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn)
+                  | (pos.pieces(us, PAWN)  & pos.blockers_for_king(~us));
   }
   else
   {
