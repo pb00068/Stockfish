@@ -337,10 +337,7 @@ void Position::set_state(StateInfo* si) const {
 
   si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
   si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
-
-
   set_check_info(si);
-
 
   for (Bitboard b = pieces(); b; )
   {
@@ -1028,10 +1025,11 @@ void Position::do_null_move(StateInfo& newSt) {
 
   st->pliesFromNull = 0;
 
-
-  sideToMove = ~sideToMove;
   st->blockersForKing[WHITE] = st->previous->blockersForKing[WHITE];
   st->blockersForKing[BLACK] = st->previous->blockersForKing[BLACK];
+  st->pinners[WHITE] = st->previous->pinners[WHITE];
+  st->pinners[BLACK] = st->previous->pinners[BLACK];
+  sideToMove = ~sideToMove;
   set_check_info(st);
 
   st->repetition = 0;
