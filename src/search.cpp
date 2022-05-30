@@ -1526,8 +1526,6 @@ moves_loop: // When in check, search starts here
       givesCheck = pos.gives_check(move);
       capture = pos.capture(move);
 
-      moveCount++;
-
       // Futility pruning and moveCount pruning (~5 Elo)
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
           && !givesCheck
@@ -1547,12 +1545,14 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
+          moveCount++;
           if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
           }
       }
+      else moveCount++;
 
       // Do not search moves with negative SEE values (~5 Elo)
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
