@@ -867,7 +867,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &thisThread->mainHistory, &captureHistory);
         bool ttPv = ss->ttPv;
         ss->ttPv = false;
 
@@ -1700,8 +1700,8 @@ moves_loop: // When in check, search starts here
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
-
-    if (!pos.capture(bestMove))
+    bool captbest = pos.capture(bestMove);
+    if (!captbest)
     {
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2);
@@ -1726,9 +1726,12 @@ moves_loop: // When in check, search starts here
     // Decrease stats for all non-best capture moves
     for (int i = 0; i < captureCount; ++i)
     {
-        moved_piece = pos.moved_piece(capturesSearched[i]);
-        captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
+        Piece movedpiece = pos.moved_piece(capturesSearched[i]);
+        PieceType capturd = type_of(pos.piece_on(to_sq(capturesSearched[i])));
+        Square toSq = to_sq(capturesSearched[i]);
+        captureHistory[movedpiece][toSq][capturd] << -bonus1;
+        if (captbest && movedpiece == moved_piece && captured == capturd)
+            thisThread->mainHistory[us][from_to(bestMove)] << bonus2/2;
     }
   }
 
