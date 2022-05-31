@@ -867,7 +867,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &thisThread->mainHistory, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &thisThread->captAssistantHistory, &captureHistory);
         bool ttPv = ss->ttPv;
         ss->ttPv = false;
 
@@ -942,7 +942,7 @@ moves_loop: // When in check, search starts here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captAssistantHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
@@ -1507,7 +1507,7 @@ moves_loop: // When in check, search starts here
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
     Square prevSq = to_sq((ss-1)->currentMove);
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captAssistantHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       prevSq);
@@ -1714,8 +1714,11 @@ moves_loop: // When in check, search starts here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        thisThread->captAssistantHistory[us][from_to(bestMove)] << bonus2;
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1728,9 +1731,8 @@ moves_loop: // When in check, search starts here
     {
         Piece movedpiece = pos.moved_piece(capturesSearched[i]);
         Square toSq = to_sq(capturesSearched[i]);
-        if (captbest && movedpiece == moved_piece && toSq == to_sq(bestMove))
-          thisThread->mainHistory[us][from_to(capturesSearched[i])] << -bonus1;
-        else
+        thisThread->captAssistantHistory[us][from_to(capturesSearched[i])] << -bonus1;
+        if (!captbest || movedpiece != moved_piece || toSq != to_sq(bestMove))
           captureHistory[movedpiece][toSq][type_of(pos.piece_on(to_sq(capturesSearched[i])))] << -bonus1;
     }
   }
