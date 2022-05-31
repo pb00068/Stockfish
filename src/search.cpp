@@ -1729,7 +1729,10 @@ moves_loop: // When in check, search starts here
         Piece movedpiece = pos.moved_piece(capturesSearched[i]);
         Square toSq = to_sq(capturesSearched[i]);
         if (captbest && movedpiece == moved_piece && toSq == to_sq(bestMove))
-          thisThread->mainHistory[us][from_to(capturesSearched[i])] << -bonus1;
+        {
+          if (type_of(movedpiece) == ROOK || type_of(movedpiece) <= KNIGHT)
+              thisThread->mainHistory[us][from_to(capturesSearched[i])] << -bonus1;
+        }
         else
           captureHistory[movedpiece][toSq][type_of(pos.piece_on(to_sq(capturesSearched[i])))] << -bonus1;
     }
