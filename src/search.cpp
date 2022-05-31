@@ -1730,7 +1730,7 @@ moves_loop: // When in check, search starts here
         PieceType capturd = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         Square toSq = to_sq(capturesSearched[i]);
 
-        if (captbest && movedpiece == moved_piece && captured == capturd)
+        if (captbest && movedpiece == moved_piece && captured == capturd && toSq == to_sq(bestMove))
         {
             thisThread->mainHistory[us][from_to(bestMove)] << bonus2/2;
             thisThread->mainHistory[us][from_to(capturesSearched[i])] << -bonus2/2;
