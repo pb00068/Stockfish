@@ -57,12 +57,12 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const ButterflyHistory* cam,
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
                                                              const Move* killers)
-           : pos(p), mainHistory(mh), captAssistHistory(cam), captureHistory(cph), continuationHistory(ch),
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
              ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
 {
   assert(d > 0);
@@ -72,11 +72,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 }
 
 /// MovePicker constructor for quiescence search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const ButterflyHistory* cam,
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Square rs)
-           : pos(p), mainHistory(mh), captAssistHistory(cam), captureHistory(cph), continuationHistory(ch), ttMove(ttm), recaptureSquare(rs), depth(d)
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), ttMove(ttm), recaptureSquare(rs), depth(d)
 {
   assert(d <= 0);
 
@@ -88,8 +88,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, Depth d, const ButterflyHistory* cam, const CapturePieceToHistory* cph)
-           : pos(p),  captAssistHistory(cam), captureHistory(cph), ttMove(ttm), threshold(th), depth(d)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, Depth d, const ButterflyHistory* mh, const CapturePieceToHistory* cph)
+           : pos(p),  mainHistory(mh), captureHistory(cph), ttMove(ttm), threshold(th), depth(d)
 {
   assert(!pos.checkers());
 
@@ -133,9 +133,9 @@ void MovePicker::score() {
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
-          m.value =  8 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
+          m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] +
-                   +     (*captAssistHistory)[pos.side_to_move()][from_to(m)];
+                   +     (*mainHistory)[pos.side_to_move()][from_to(m)]/4;
 
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
