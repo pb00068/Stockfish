@@ -133,8 +133,12 @@ void MovePicker::score() {
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
+      {
+          bool rightOrForward = file_of(to_sq(m)) > file_of(from_sq(m)) ||
+                (file_of(to_sq(m)) == file_of(from_sq(m)) && rank_of(to_sq(m)) > rank_of(from_sq(m)));
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
-                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][rightOrForward];
+      }
 
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
