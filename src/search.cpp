@@ -867,7 +867,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, depth - 3, &thisThread->captAssistantHistory, &captureHistory);
         bool ttPv = ss->ttPv;
         ss->ttPv = false;
 
@@ -943,6 +943,7 @@ moves_loop: // When in check, search starts here
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+                                      &thisThread->captAssistantHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
@@ -1507,7 +1508,7 @@ moves_loop: // When in check, search starts here
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
     Square prevSq = to_sq((ss-1)->currentMove);
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captAssistantHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       prevSq);
@@ -1700,7 +1701,6 @@ moves_loop: // When in check, search starts here
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
-
     if (!pos.capture(bestMove))
     {
         // Increase stats for the best move in case it was a quiet move
@@ -1714,8 +1714,11 @@ moves_loop: // When in check, search starts here
         }
     }
     else
+    {
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        thisThread->captAssistantHistory[us][from_to(bestMove)] << bonus2;
+    }
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
@@ -1726,9 +1729,9 @@ moves_loop: // When in check, search starts here
     // Decrease stats for all non-best capture moves
     for (int i = 0; i < captureCount; ++i)
     {
-        moved_piece = pos.moved_piece(capturesSearched[i]);
-        captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
+        Move m = capturesSearched[i];
+        thisThread->captAssistantHistory[us][from_to(m)] << -bonus1;
+        captureHistory[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] << -bonus1;
     }
   }
 
