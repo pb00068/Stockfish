@@ -1715,10 +1715,9 @@ moves_loop: // When in check, search starts here
     }
     else
     {
-        bool rightOrForward = file_of(to_sq(bestMove)) > file_of(from_sq(bestMove)) ||
-             (file_of(to_sq(bestMove)) == file_of(from_sq(bestMove)) && rank_of(to_sq(bestMove)) > rank_of(from_sq(bestMove)));
+        bool east = file_of(to_sq(bestMove)) > file_of(from_sq(bestMove));
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured][rightOrForward] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured][east] << bonus1;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
@@ -1733,9 +1732,8 @@ moves_loop: // When in check, search starts here
         Move m = capturesSearched[i];
         moved_piece = pos.moved_piece(m);
         captured = type_of(pos.piece_on(to_sq(m)));
-        bool rightOrForward = file_of(to_sq(m)) > file_of(from_sq(m)) ||
-            (file_of(to_sq(m)) == file_of(from_sq(m)) && rank_of(to_sq(m)) > rank_of(from_sq(m)));
-        captureHistory[moved_piece][to_sq(m)][captured][rightOrForward] << -bonus1;
+        bool east = file_of(to_sq(m)) > file_of(from_sq(m));
+        captureHistory[moved_piece][to_sq(m)][captured][east] << -bonus1;
     }
   }
 
