@@ -1696,7 +1696,8 @@ moves_loop: // When in check, search starts here
     bonus1 = stat_bonus(depth + 1);
     bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
                                             : stat_bonus(depth);   // smaller bonus
-    if (!pos.capture(bestMove))
+    bool captbest = pos.capture(bestMove);
+    if (!captbest)
     {
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2);
@@ -1724,9 +1725,12 @@ moves_loop: // When in check, search starts here
     // Decrease stats for all non-best capture moves
     for (int i = 0; i < captureCount; ++i)
     {
-        Move m = capturesSearched[i];
-        thisThread->captAssistantHistory[us][from_to(m)] << -bonus1;
-        captureHistory[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] << -bonus1;
+       Move m = capturesSearched[i];
+       Piece movedpiece = pos.moved_piece(m);
+       Square toSq = to_sq(m);
+       thisThread->captAssistantHistory[us][from_to(m)] << -bonus1;
+       if (!captbest || movedpiece != moved_piece || toSq != to_sq(bestMove))
+              captureHistory[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] << -bonus1;
     }
   }
 
