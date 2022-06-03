@@ -124,22 +124,18 @@ void MovePicker::score() {
   }
   else
   {
-
-      Color us = pos.side_to_move();
-      threatened = pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us);
       // Silence unused variable warnings
+      (void) threatened;
       (void) threatenedByPawn;
       (void) threatenedByMinor;
       (void) threatenedByRook;
   }
 
   for (auto& m : *this)
-      if constexpr (Type == CAPTURES) {
-        PieceType captured = type_of(pos.piece_on(to_sq(m)));
-        m.value = (*captureHistory)[pos.moved_piece(m)][to_sq(m)][captured];
-        if (captured >= KNIGHT && !(threatened & to_sq(m)))
-           m.value += 6 * int(PieceValue[MG][pos.piece_on(to_sq(m))]);
-      }
+      if constexpr (Type == CAPTURES)
+          m.value =  8 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
+                   - 3 * int(PieceValue[MG][pos.moved_piece(m)])
+                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
