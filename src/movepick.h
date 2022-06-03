@@ -148,8 +148,6 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
-  Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
-  bool calc;
 };
 
 } // namespace Stockfish
