@@ -69,6 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+  calc = false;
 }
 
 /// MovePicker constructor for quiescence search
@@ -84,6 +85,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
+  calc = true;
+  threatenedByRook=0;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -96,6 +99,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, Depth d, const Cap
   stage = PROBCUT_TT + !(ttm && pos.capture(ttm)
                              && pos.pseudo_legal(ttm)
                              && pos.see_ge(ttm, threshold));
+  calc = true;
+  threatenedByRook=0;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
@@ -106,8 +111,8 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
-  if constexpr (Type == QUIETS)
+
+  if (!calc)
   {
       Color us = pos.side_to_move();
       // squares threatened by pawns
@@ -116,29 +121,24 @@ void MovePicker::score() {
       threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       // squares threatened by rooks, minors or pawns
       threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+      calc = true;
+  }
 
+  if constexpr (Type == QUIETS) {
+      Color us = pos.side_to_move();
       // pieces threatened by pieces of lesser material value
       threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-  }
-  else
-  {
 
-      Color us = pos.side_to_move();
-      threatened = pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us);
-      // Silence unused variable warnings
-      (void) threatenedByPawn;
-      (void) threatenedByMinor;
-      (void) threatenedByRook;
   }
+
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES) {
-        PieceType captured = type_of(pos.piece_on(to_sq(m)));
-        m.value = (*captureHistory)[pos.moved_piece(m)][to_sq(m)][captured];
-        if (captured >= KNIGHT && !(threatened & to_sq(m)))
-           m.value += 6 * int(PieceValue[MG][pos.piece_on(to_sq(m))]);
+        m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))]) +
+               (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))] -
+               (threatenedByRook & to_sq(m)) ? int(PieceValue[MG][pos.moved_piece(m)]) : 0;
       }
 
       else if constexpr (Type == QUIETS)
@@ -205,8 +205,10 @@ top:
       cur = endBadCaptures = moves;
       endMoves = generate<CAPTURES>(pos, cur);
 
-      score<CAPTURES>();
-      partial_insertion_sort(cur, endMoves, -3000 * depth);
+      if (endMoves > cur) {
+        score<CAPTURES>();
+        partial_insertion_sort(cur, endMoves, -3000 * depth);
+      }
       ++stage;
       goto top;
 
