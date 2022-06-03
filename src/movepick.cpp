@@ -122,6 +122,10 @@ void MovePicker::score() {
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
   }
+  if constexpr (Type == CAPTURES)
+  {
+      threatenedByPawn  = pos.attacks_by<PAWN>(~pos.side_to_move());
+  }
   else
   {
       // Silence unused variable warnings
@@ -133,8 +137,8 @@ void MovePicker::score() {
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
-          m.value =  8 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
-                   - 3 * int(PieceValue[MG][pos.moved_piece(m)])
+          m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
+                   - ((threatenedByPawn & to_sq(m)) ? 6 * int(PieceValue[MG][pos.moved_piece(m)]) : 0 )
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if constexpr (Type == QUIETS)
