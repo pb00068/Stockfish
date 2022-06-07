@@ -138,7 +138,7 @@ void MovePicker::score() {
           m.value =  4 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][ west]
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][!west]/8
-                   -     type_of(pos.moved_piece(m)) * PawnValueMg;
+                   -     type_of(pos.moved_piece(m)) * PawnValueMg ;
       }
 
       else if constexpr (Type == QUIETS)
