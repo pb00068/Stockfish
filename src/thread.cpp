@@ -60,6 +60,12 @@ void Thread::clear() {
   counterMoves.fill(MOVE_NONE);
   mainHistory.fill(0);
   captureHistory.fill(0);
+  for (PieceType pt : { PAWN, KNIGHT, BISHOP, ROOK, QUEEN })
+      for (Piece mp : { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING, B_PAWN , B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING })
+           for (Square s = SQ_A1; s2 <= SQ_H8; ++s2)
+                 captureHistory[mp][s][pt] = 6 * int(PieceValue[MG][pt]);
+
+
   previousDepth = 0;
   
   for (bool inCheck : { false, true })
