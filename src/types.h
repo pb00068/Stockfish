@@ -215,6 +215,9 @@ constexpr Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, VALUE_ZERO, VALUE_ZERO }
 };
 
+constexpr int CaptScoreVal[PIECE_NB] = {0, PawnValueMg, 500, 550, 650, 1000, 0, 0,
+                                        0, PawnValueMg, 500, 550, 650, 1000, 0, 0};
+
 typedef int Depth;
 
 enum : int {
