@@ -62,7 +62,7 @@ void Thread::clear() {
   captureHistory.fill(0);
   for (PieceType pt : { PAWN, KNIGHT, BISHOP, ROOK, QUEEN })
       for (Piece mp : { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING, B_PAWN , B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING })
-           for (Square s = SQ_A1; s2 <= SQ_H8; ++s2)
+           for (Square s = SQ_A1; s <= SQ_H8; ++s)
                  captureHistory[mp][s][pt] = 6 * int(PieceValue[MG][pt]);
 
 
