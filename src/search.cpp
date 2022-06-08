@@ -1717,9 +1717,9 @@ moves_loop: // When in check, search starts here
     }
     else
     {
-        bonus1 = depth < 7 ? capt_stat_bonus(depth + int(captured)) : bonus1;
+        int b = depth < 7 ? capt_stat_bonus(depth + int(captured)) : bonus1;
         // Increase stats for the best move in case it was a capture move
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << b;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
