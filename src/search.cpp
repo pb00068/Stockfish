@@ -84,10 +84,6 @@ namespace {
     return std::min((9 * d + 270) * d - 311 , 2145);
   }
 
-  int capt_stat_bonus(Depth d) {
-    return std::min((9 * d + 270) * d - 311 , 5145);
-  }
-
   // Add a small random component to draw evaluations to avoid 3-fold blindness
   Value value_draw(Thread* thisThread) {
     return VALUE_DRAW + Value(2 * (thisThread->nodes & 1) - 1);
@@ -1026,7 +1022,7 @@ moves_loop: // When in check, search starts here
                   && lmrDepth < 6
                   && !ss->inCheck
                   && ss->staticEval + 281 + 179 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
-                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 8 < alpha)
+                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 6 < alpha)
                   continue;
 
               // SEE based pruning (~9 Elo)
@@ -1717,7 +1713,7 @@ moves_loop: // When in check, search starts here
     }
     else
     {
-        bonus1 = depth < 7 ? capt_stat_bonus(depth + int(captured)) : bonus1;
+        bonus1 = depth < 5 ? stat_bonus(depth + int(captured)) : bonus1;
         // Increase stats for the best move in case it was a capture move
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
     }
