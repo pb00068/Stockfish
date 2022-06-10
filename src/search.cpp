@@ -652,8 +652,7 @@ namespace {
                 else {
                     bool east = file_of(to_sq(ttMove)) > file_of(from_sq(ttMove));
                      // Increase stats for the best move in case it was a capture move
-                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][ east] <<  stat_bonus(depth);
-                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][!east] << -stat_bonus(depth);
+                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][ east] <<  stat_bonus(depth+1);
                 }
 
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo)
