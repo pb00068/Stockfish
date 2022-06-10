@@ -137,7 +137,7 @@ void MovePicker::score() {
           bool east = file_of(to_sq(m)) > file_of(from_sq(m));
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][ east]
-                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][!east]/2;
+                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][!east]/4;
       }
 
       else if constexpr (Type == QUIETS)
