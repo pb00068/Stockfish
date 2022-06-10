@@ -629,6 +629,7 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture(ttMove);
+    CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
@@ -651,7 +652,8 @@ namespace {
                 else {
                     bool east = file_of(to_sq(ttMove)) > file_of(from_sq(ttMove));
                      // Increase stats for the best move in case it was a capture move
-                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][east] << stat_bonus(depth + 1);
+                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][ east] <<  stat_bonus(depth);
+                     captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))][!east] << -stat_bonus(depth);
                 }
 
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo)
@@ -724,8 +726,6 @@ namespace {
             }
         }
     }
-
-    CapturePieceToHistory& captureHistory = thisThread->captureHistory;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
