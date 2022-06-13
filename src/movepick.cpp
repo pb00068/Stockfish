@@ -157,6 +157,7 @@ void MovePicker::score() {
           else
               m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                        + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
+                       + (m == refutations[0].move ? 4000 : m == refutations[1].move ? 2000 : 0)
                        - (1 << 28);
       }
 }
