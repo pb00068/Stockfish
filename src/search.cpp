@@ -1739,7 +1739,8 @@ moves_loop: // When in check, search starts here
     for (int i : {1, 2, 4, 6})
     {
         // Only update first 2 continuation histories if we are in check
-        if (ss->inCheck && i > 2)
+        // Only update first continuation history if we evade check by moving the king
+        if (ss->inCheck && (i > 2 || (i == 1 && type_of(pc) == KING)))
             break;
         if (is_ok((ss-i)->currentMove))
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
@@ -1752,7 +1753,7 @@ moves_loop: // When in check, search starts here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
     // Update killers
-    if (ss->killers[0] != move && (!ss->inCheck || type_of(pos.moved_piece(move)) != KING))
+    if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
