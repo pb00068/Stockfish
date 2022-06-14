@@ -1749,25 +1749,36 @@ moves_loop: // When in check, search starts here
 
   // update_quiet_stats() updates move sorting heuristics
 
-  void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
+  void update_quiet_stats(const Position& pos, Stack* ss, Move m, int bonus) {
+
 
     // Update killers
-  	if (!ss->inCheck && ss->killers[0] != move)
+  	if (!ss->inCheck && ss->killers[0] != m)
     {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
+         PieceType movedType = type_of(pos.moved_piece(m));
+         Bitboard b = 0;
+         if  (movedType == KNIGHT || movedType == KING)
+            b |= to_sq(m);
+         else
+            b = between_bb(from_sq(m), to_sq(m)) | to_sq(m);
+
+         if (!is_ok((ss-1)->currentMove) ||  !(b & from_sq((ss-1)->currentMove)))
+         {
+             ss->killers[1] = ss->killers[0];
+             ss->killers[0] = m;
+         }
     }
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->mainHistory[us][from_to(move)] << bonus;
-    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
+    thisThread->mainHistory[us][from_to(m)] << bonus;
+    update_continuation_histories(ss, pos.moved_piece(m), to_sq(m), bonus);
 
     // Update countermove history
-    if (is_ok((ss-1)->currentMove) && (!ss->inCheck || type_of(pos.moved_piece(move)) != KING))
+    if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
-        thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+        thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = m;
     }
   }
 
