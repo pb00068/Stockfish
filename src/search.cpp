@@ -1739,7 +1739,7 @@ moves_loop: // When in check, search starts here
     for (int i : {1, 2, 4, 6})
     {
         // Only update first 2 continuation histories if we are in check
-        // Only update first continuation history when we evade check by moving the king
+        // Only update first continuation history if we evade check by moving the king
         if (ss->inCheck && (i > 2 || (i == 1 && type_of(pc) == KING)))
             break;
         if (is_ok((ss-i)->currentMove))
