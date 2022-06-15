@@ -26,7 +26,7 @@ namespace Stockfish {
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, REFUTATION4, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -84,6 +84,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
+  refutations[3].move =make_move(SQ_D1, SQ_D8);
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
@@ -235,19 +236,16 @@ top:
           refutation = (cur - 1)->move;
           return *(cur - 1);
       }
+      if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
+                && refutations[3].move != refutation
+                && refutations[3].move != ttMove
+                && !pos.capture(refutations[3].move)
+                &&  pos.pseudo_legal(refutations[3]))
+                    return refutations[3];
+             else
+                refutations[3].move = MOVE_NONE;
       ++stage;
       [[fallthrough]];
-
-  case REFUTATION4:
-       ++stage;
-//       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
-//          && refutations[3].move != refutation
-//          && !pos.capture(refutations[3].move)
-//          &&  pos.pseudo_legal(refutations[3]))
-//              return refutations[3];
-//       else
-          refutations[3].move = MOVE_NONE;
-       [[fallthrough]];
   case QUIET_INIT:
       if (!skipQuiets)
       {
