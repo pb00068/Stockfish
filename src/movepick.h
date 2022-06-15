@@ -145,7 +145,6 @@ private:
   ExtMove refutations[4], *cur, *endMoves, *endBadCaptures;
   int stage;
   int returnedRefutations;
-  Move refutation;
   Square recaptureSquare;
   Value threshold;
   Depth depth;
