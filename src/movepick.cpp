@@ -216,24 +216,19 @@ top:
       // Prepare the pointers to loop over the refutations array
       cur = std::begin(refutations);
       endMoves = std::end(refutations);
+      endMoves--;
 
       // If the countermove is the same as a killer, skip it
-      if (   refutations[0].move == refutations[3].move
-          || refutations[1].move == refutations[3].move)
-           --endMoves;
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
-      {
-          refutations[2].move = refutations[3].move;
           --endMoves;
-      }
       returnedRefutations = 0;
 
       ++stage;
       [[fallthrough]];
 
   case REFUTATION:
-      if (select<Next>([&](){ return   returnedRefutations <=2 && *cur != MOVE_NONE
+      if (select<Next>([&](){ return    *cur != MOVE_NONE
                                     && !pos.capture(*cur)
                                     &&  pos.pseudo_legal(*cur); }))
       {
@@ -241,6 +236,17 @@ top:
           return *(cur - 1);
       }
       ++stage;
+      if (refutations[3]!= MOVE_NONE && returnedRefutations <= 2
+                && refutations[3].move != refutations[0].move
+                && refutations[3].move != refutations[1].move
+                && refutations[3].move != refutations[2].move
+                && refutations[3].move != ttMove
+                && !pos.capture(refutations[3].move)
+                &&  pos.pseudo_legal(refutations[3]))
+                    return refutations[3];
+             else
+                refutations[3].move = MOVE_NONE;
+
       [[fallthrough]];
   case QUIET_INIT:
       if (!skipQuiets)
