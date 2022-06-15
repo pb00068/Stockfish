@@ -233,12 +233,13 @@ top:
                                     &&  pos.pseudo_legal(*cur); }))
       {
           returnedRefutations++;
-          refutation = (cur - 1)->move;
           return *(cur - 1);
       }
       ++stage;
       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
-                && refutations[3].move != refutation
+                && refutations[3].move != refutations[0].move
+								 && refutations[3].move != refutations[1].move
+								 && refutations[3].move != refutations[2].move
                 && refutations[3].move != ttMove
                 && !pos.capture(refutations[3].move)
                 &&  pos.pseudo_legal(refutations[3]))
