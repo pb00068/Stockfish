@@ -238,8 +238,8 @@ top:
       ++stage;
       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
                 && refutations[3].move != refutations[0].move
-								 && refutations[3].move != refutations[1].move
-								 && refutations[3].move != refutations[2].move
+                && refutations[3].move != refutations[1].move
+                && refutations[3].move != refutations[2].move
                 && refutations[3].move != ttMove
                 && !pos.capture(refutations[3].move)
                 &&  pos.pseudo_legal(refutations[3]))
