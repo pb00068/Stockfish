@@ -1754,7 +1754,8 @@ moves_loop: // When in check, search starts here
     // Update killers
     if (ss->killers[0] != move)
     {
-        ss->killers[2] = ss->killers[1];
+        if (ss->killers[2] != move)
+            ss->killers[2] = ss->killers[1];
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
