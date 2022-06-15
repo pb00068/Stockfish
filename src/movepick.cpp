@@ -26,7 +26,7 @@ namespace Stockfish {
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, REFUTATION4, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -63,7 +63,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              Move cm,
                                                              const Move* killers)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}, {killers[2], 0}}, depth(d)
 {
   assert(d > 0);
 
@@ -220,6 +220,7 @@ top:
       if (   refutations[0].move == refutations[2].move
           || refutations[1].move == refutations[2].move)
           --endMoves;
+      returnedRefutations = 0;
 
       ++stage;
       [[fallthrough]];
@@ -228,10 +229,24 @@ top:
       if (select<Next>([&](){ return    *cur != MOVE_NONE
                                     && !pos.capture(*cur)
                                     &&  pos.pseudo_legal(*cur); }))
+      {
+          returnedRefutations++;
+          refutation = (cur - 1)->move;
           return *(cur - 1);
+      }
       ++stage;
       [[fallthrough]];
 
+  case REFUTATION4:
+       ++stage;
+       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
+          && refutations[3].move != refutation
+          && !pos.capture(refutations[3].move)
+          &&  pos.pseudo_legal(refutations[3]))
+       {
+              return refutations[3];
+       }
+       [[fallthrough]];
   case QUIET_INIT:
       if (!skipQuiets)
       {

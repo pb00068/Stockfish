@@ -142,8 +142,10 @@ private:
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
   Move ttMove;
-  ExtMove refutations[3], *cur, *endMoves, *endBadCaptures;
+  ExtMove refutations[4], *cur, *endMoves, *endBadCaptures;
   int stage;
+  int returnedRefutations;
+  Move refutation;
   Square recaptureSquare;
   Value threshold;
   Depth depth;
