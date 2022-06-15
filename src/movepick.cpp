@@ -240,12 +240,12 @@ top:
 
   case REFUTATION4:
        ++stage;
-       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
-          && refutations[3].move != refutation
-          && !pos.capture(refutations[3].move)
-          &&  pos.pseudo_legal(refutations[3]))
-              return refutations[3];
-       else
+//       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
+//          && refutations[3].move != refutation
+//          && !pos.capture(refutations[3].move)
+//          &&  pos.pseudo_legal(refutations[3]))
+//              return refutations[3];
+//       else
           refutations[3].move = MOVE_NONE;
        [[fallthrough]];
   case QUIET_INIT:
