@@ -84,7 +84,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
           !(   ttm
             && (pos.checkers() || depth > DEPTH_QS_RECAPTURES || to_sq(ttm) == recaptureSquare)
             && pos.pseudo_legal(ttm));
-  refutations[3].move =make_move(SQ_D1, SQ_D8);
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
