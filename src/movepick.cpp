@@ -236,7 +236,7 @@ top:
           return *(cur - 1);
       }
       ++stage;
-      if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
+      if (refutations[3]!= MOVE_NONE && returnedRefutations <= 2
                 && refutations[3].move != refutations[0].move
                 && refutations[3].move != refutations[1].move
                 && refutations[3].move != refutations[2].move
