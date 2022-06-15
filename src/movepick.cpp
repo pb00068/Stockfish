@@ -236,6 +236,7 @@ top:
           refutation = (cur - 1)->move;
           return *(cur - 1);
       }
+      ++stage;
       if (refutations[3]!= MOVE_NONE && returnedRefutations <= 1
                 && refutations[3].move != refutation
                 && refutations[3].move != ttMove
@@ -244,7 +245,7 @@ top:
                     return refutations[3];
              else
                 refutations[3].move = MOVE_NONE;
-      ++stage;
+
       [[fallthrough]];
   case QUIET_INIT:
       if (!skipQuiets)
