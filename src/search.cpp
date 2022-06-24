@@ -951,7 +951,6 @@ moves_loop: // When in check, search starts here
                          && ttMove
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
-    Bitboard badSquares = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1040,13 +1039,12 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 122 + 138 * lmrDepth + history / 60 <= alpha)
                   continue;
 
-              if (!ss->inCheck && lmrDepth < 3 + type_of(movedPiece) && type_of(movedPiece) >= KNIGHT)
-              {
-                 if (!badSquares)
-                      badSquares = pos.attacks_by<PAWN>(~us) | pos.pieces(~us);
-                 if (badSquares & to_sq(move))
+              if (!ss->inCheck
+                  && lmrDepth < 5 + bool(type_of(movedPiece) >= ROOK)
+                  && type_of(movedPiece) >= KNIGHT
+                  && (mp.threathenedByPawn() & to_sq(move)))
                    continue;
-              }
+
               // Prune moves with negative SEE (~3 Elo)
               if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;

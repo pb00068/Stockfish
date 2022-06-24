@@ -130,6 +130,7 @@ public:
                                            Square);
   MovePicker(const Position&, Move, Value, Depth, const CapturePieceToHistory*);
   Move next_move(bool skipQuiets = false);
+  Bitboard threathenedByPawn();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
@@ -148,6 +149,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  Bitboard threatenedByPawn;
 };
 
 } // namespace Stockfish
