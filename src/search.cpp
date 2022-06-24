@@ -1040,7 +1040,7 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 122 + 138 * lmrDepth + history / 60 <= alpha)
                   continue;
 
-              if (!ss->inCheck && lmrDepth < 2 + (type_of(movedPiece)/2) && type_of(movedPiece) >= KNIGHT)
+              if (!ss->inCheck && lmrDepth < 3 + type_of(movedPiece) && type_of(movedPiece) >= KNIGHT)
               {
                  if (!badSquares)
                       badSquares = pos.attacks_by<PAWN>(~us) | pos.pieces(~us);
@@ -1048,7 +1048,7 @@ moves_loop: // When in check, search starts here
                    continue;
               }
               // Prune moves with negative SEE (~3 Elo)
-              else if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
+              if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;
           }
       }
