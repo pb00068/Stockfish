@@ -1040,8 +1040,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               if (!ss->inCheck
-                  && !PvNode
-                  && lmrDepth < 5 + bool(type_of(movedPiece) >= ROOK)
+                  && lmrDepth < 6 + bool(type_of(movedPiece) >= ROOK)
                   && type_of(movedPiece) >= KNIGHT
                   && (mp.threathenedByPawn() & to_sq(move)))
                    continue;
