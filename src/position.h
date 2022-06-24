@@ -290,8 +290,17 @@ template<PieceType Pt>
 inline Bitboard Position::attacks_by(Color c) const {
 
   if constexpr (Pt == PAWN)
-      return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
-                        : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
+  {
+      Bitboard threats =  c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN) & ~blockers_for_king(WHITE))
+                                     : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN) & ~blockers_for_king(BLACK));
+      Bitboard pinnedpawns = blockers_for_king(c) & pieces(c, PAWN);
+      while (pinnedpawns)
+      {
+         Square sq = pop_lsb(pinnedpawns);
+         threats |= pawn_attacks_bb(c, sq) & line_bb(square<KING>(c), sq);
+      }
+      return threats;
+ 	}
   else
   {
       Bitboard threats = 0;
