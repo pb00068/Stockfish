@@ -297,7 +297,7 @@ inline Bitboard Position::attacks_by(Color c) const {
       while (pinnedpawns)
       {
          Square sq = pop_lsb(pinnedpawns);
-         threats |= pawn_attacks_bb(c, sq) & line_bb(square<KING>(c), sq);
+         threats |= pawn_attacks_bb(c, sq) & PseudoAttacks[BISHOP][square<KING>(c)];
       }
       return threats;
  	}

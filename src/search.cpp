@@ -1039,14 +1039,13 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 122 + 138 * lmrDepth + history / 60 <= alpha)
                   continue;
 
-              if (!ss->inCheck
-                  && lmrDepth < 6 + bool(type_of(movedPiece) >= ROOK)
-                  && type_of(movedPiece) >= KNIGHT
-                  && (mp.threathenedByPawn() & to_sq(move)))
-                   continue;
-
+              if (type_of(movedPiece) >= KNIGHT && (mp.threathenedByPawn() & to_sq(move)))
+              {
+                   if (!ss->inCheck && lmrDepth < 4 + bool(type_of(movedPiece) >= ROOK))
+                      continue;
+              }
               // Prune moves with negative SEE (~3 Elo)
-              if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
+              else if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;
           }
       }
