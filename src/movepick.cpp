@@ -142,7 +142,7 @@ void MovePicker::score() {
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +     (type_of(pos.moved_piece(m)) == KING && pos.blockers_for_king(pos.side_to_move())) ? 15000 * popcount(pos.blockers_for_king(pos.side_to_move())): 0
+                   +     (type_of(pos.moved_piece(m)) == KING && pos.blockers_for_king(pos.side_to_move()) ? 15000 * popcount(pos.blockers_for_king(pos.side_to_move())) : 0)
                    +     (threatened & from_sq(m) ?
                            (type_of(pos.moved_piece(m)) == QUEEN && !(to_sq(m) & threatenedByRook)  ? 50000
                           : type_of(pos.moved_piece(m)) == ROOK  && !(to_sq(m) & threatenedByMinor) ? 25000
