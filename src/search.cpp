@@ -1063,7 +1063,7 @@ moves_loop: // When in check, search starts here
               && (tte->bound() & BOUND_LOWER)
               &&  tte->depth() >= depth - 3)
           {
-              Value singularBeta = ttValue - 3 * depth - 12 * bool(type_of(pos.piece_on(to_sq(move))) >= ROOK && type_of(movedPiece) < ROOK);
+              Value singularBeta = ttValue - 3 * depth - 24 * bool(type_of(pos.piece_on(to_sq(move))) >= ROOK && type_of(movedPiece) < ROOK);
               Depth singularDepth = (depth - 1) / 2;
 
               ss->excludedMove = move;
