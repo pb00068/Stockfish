@@ -193,7 +193,7 @@ namespace {
         target = Type == EVASIONS     ?  between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces( Us)
                : Type == CAPTURES     ?  pos.pieces(~Us)
-               : depth == 1           ?  ~(pos.pieces() | pos.attacks_by<PAWN>(~Us)) // QUIETS AT depth 1
+               : depth <= 2           ?  ~(pos.pieces() | pos.attacks_by<PAWN>(~Us))
                                       : ~pos.pieces(   ); // QUIETS || QUIET_CHECKS
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);

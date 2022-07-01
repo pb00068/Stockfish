@@ -290,7 +290,7 @@ top:
 
   case QCHECK_INIT:
       cur = moves;
-      endMoves = generate<QUIET_CHECKS>(pos, cur, depth);
+      endMoves = generate<QUIET_CHECKS>(pos, cur, 0);
 
       ++stage;
       [[fallthrough]];
