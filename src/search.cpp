@@ -956,6 +956,7 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    bool discoTried = false;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -1019,8 +1020,14 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203) * depth))
+              if (!pos.see_ge(move, Value(-203) * depth)) {
+                  if (!discoTried && givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+                  {
+
+                  }
+                  else
                   continue;
+              }
           }
           else
           {
@@ -1317,6 +1324,8 @@ moves_loop: // When in check, search starts here
 
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          discoTried |= givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move));
       }
     }
 
