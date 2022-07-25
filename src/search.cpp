@@ -956,9 +956,11 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    bool discoTried = false;
+    Move disco2try = MOVE_NONE;
+    Square discoFrom = SQ_NONE;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
+
       assert(is_ok(move));
 
       if (move == excludedMove)
@@ -976,7 +978,9 @@ moves_loop: // When in check, search starts here
       if (!rootNode && !pos.legal(move))
           continue;
 
+
       ss->moveCount = ++moveCount;
+      extra_move:
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth
@@ -1020,12 +1024,11 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203) * depth)) {
-                  if (!discoTried && givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+              if (move != disco2try && !pos.see_ge(move, Value(-203) * depth)) {
+                  if (!disco2try && givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move)))
                   {
-
+                     disco2try = move;
                   }
-                  else
                   continue;
               }
           }
@@ -1279,6 +1282,8 @@ moves_loop: // When in check, search starts here
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
       }
+      if (givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move)))
+          discoFrom = from_sq(move);
 
       if (value > bestValue)
       {
@@ -1325,8 +1330,13 @@ moves_loop: // When in check, search starts here
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
 
-          discoTried |= givesCheck && !(pos.check_squares(type_of(movedPiece)) & to_sq(move));
+
       }
+    }
+
+    if (disco2try && discoFrom != from_sq(disco2try)) {
+    	move = disco2try;
+    	goto extra_move;
     }
 
     // The following condition would detect a stop only after move loop has been
