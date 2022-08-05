@@ -1020,11 +1020,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203 - 200 * (disco && triedDisco != from_sq(move))) * depth)) {
-                  bool doublecheck = depth > 1 && givesCheck && !disco && distance(pos.square<KING>(~us), to_sq(move)) > 1
-                                     && (pos.blockers_for_king(~us) & from_sq(move));
-
-                  if (!doublecheck)
+              if (!pos.see_ge(move, Value(-203 - 600 * (disco && triedDisco != from_sq(move))) * depth)) {
                      continue;
               }
               if (disco)
