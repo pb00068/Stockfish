@@ -315,8 +315,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 void Position::set_check_info(StateInfo* si) const {
 
   st->blockersForKing[WHITE] = st->blockersForKing[BLACK] = st->pinners[WHITE] = st->pinners[BLACK] = 0;
-  slider_blockers<WHITE>();
-  slider_blockers<BLACK>();
+  slider_blockers(WHITE);
+  slider_blockers(BLACK);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -471,8 +471,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s) const {
   return blockers;
 }
 
-template<Color c>
-void Position::slider_blockers() const {
+void Position::slider_blockers(Color c) const {
   Bitboard sliders = pieces(~c);
   Square ksq = square<KING>(c);
 
