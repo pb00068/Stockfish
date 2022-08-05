@@ -558,7 +558,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, didLMR, priorCapture;
+    bool givesCheck, improving, didLMR, priorCapture, disco;
     bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, improvement, complexity;
@@ -946,6 +946,7 @@ moves_loop: // When in check, search starts here
 
     value = bestValue;
     moveCountPruning = false;
+    Square triedDisco = SQ_NONE;
 
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
@@ -987,7 +988,7 @@ moves_loop: // When in check, search starts here
       extension = 0;
       capture = pos.capture(move);
       movedPiece = pos.moved_piece(move);
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, disco);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1019,8 +1020,13 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203) * depth))
-                  continue;
+              if (!pos.see_ge(move, Value(-203 - 200 * (disco && triedDisco != from_sq(move))) * depth)) {
+                  bool doublecheck = depth > 2 && givesCheck && !disco && (pos.blockers_for_king(~us) & from_sq(move)) && !aligned(from_sq(move), to_sq(move), pos.square<KING>(~us));
+                  if (!doublecheck)
+                     continue;
+              }
+              if (disco)
+                 triedDisco = from_sq(move);
           }
           else
           {
@@ -1401,7 +1407,7 @@ moves_loop: // When in check, search starts here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase;
-    bool pvHit, givesCheck, capture;
+    bool pvHit, givesCheck, disco, capture;
     int moveCount;
 
     if (PvNode)
@@ -1508,7 +1514,7 @@ moves_loop: // When in check, search starts here
       if (!pos.legal(move))
           continue;
 
-      givesCheck = pos.gives_check(move);
+      givesCheck = pos.gives_check(move, disco);
       capture = pos.capture(move);
 
       moveCount++;
@@ -1541,7 +1547,7 @@ moves_loop: // When in check, search starts here
 
       // Do not search moves with negative SEE values (~5 Elo)
       if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !pos.see_ge(move))
+          && !disco && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible
