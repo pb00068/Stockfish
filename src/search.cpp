@@ -946,7 +946,7 @@ moves_loop: // When in check, search starts here
 
     value = bestValue;
     moveCountPruning = false;
-    Square triedDisco = SQ_NONE;
+    Square triedCheckingFrom = SQ_NONE;
 
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
@@ -1020,11 +1020,11 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203 - 600 * (disco && triedDisco != from_sq(move))) * depth)) {
+              if (!pos.see_ge(move, Value(-203 - 400 * (disco && triedCheckingFrom != from_sq(move))) * depth)) {
                      continue;
               }
-              if (disco)
-                 triedDisco = from_sq(move);
+              if (givesCheck)
+                   triedCheckingFrom = from_sq(move);
           }
           else
           {
@@ -1495,7 +1495,7 @@ moves_loop: // When in check, search starts here
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
-    Square prevSq = to_sq((ss-1)->currentMove);
+    Square prevSq = to_sq((ss-1)->currentMove),   triedCheckingFrom = SQ_NONE;
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
@@ -1544,8 +1544,8 @@ moves_loop: // When in check, search starts here
       }
 
       // Do not search moves with negative SEE values (~5 Elo)
-      if (    bestValue > VALUE_TB_LOSS_IN_MAX_PLY
-          && !disco && !pos.see_ge(move))
+      if ( (!disco || triedCheckingFrom != from_sq(move)) &&  bestValue > VALUE_TB_LOSS_IN_MAX_PLY
+          && !pos.see_ge(move))
           continue;
 
       // Speculative prefetch as early as possible
@@ -1598,6 +1598,8 @@ moves_loop: // When in check, search starts here
                   break; // Fail high
           }
        }
+      if (givesCheck)
+         triedCheckingFrom = from_sq(move);
     }
 
     // All legal moves have been searched. A special case: if we're in check
