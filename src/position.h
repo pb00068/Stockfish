@@ -120,7 +120,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   void slider_blockers(Color c) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s) const;
+  bool slider_blockers(Bitboard sliders, Square queenSq) const;
   template<PieceType Pt> Bitboard attacks_by(Color c) const;
 
   // Properties of moves

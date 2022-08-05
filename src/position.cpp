@@ -451,9 +451,9 @@ string Position::fen() const {
 /// or the same of the color of the slider.
 
 // function for classical eval (slider attacks on Queen)
-Bitboard Position::slider_blockers(Bitboard sliders, Square queenSquare) const {
+bool Position::slider_blockers(Bitboard sliders, Square queenSquare) const {
 
-  Bitboard blockers = 0;
+
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
   Bitboard snipers = (  (attacks_bb<  ROOK>(queenSquare) & pieces(QUEEN, ROOK))
@@ -466,11 +466,9 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square queenSquare) const {
     Bitboard b = between_bb(queenSquare, sniperSq) & occupancy;
 
     if (b && !more_than_one(b))
-    {
-        blockers |= b;
-    }
+        return true;
   }
-  return blockers;
+  return false;
 }
 
 // function for set_check_info (slider attacks on King)
