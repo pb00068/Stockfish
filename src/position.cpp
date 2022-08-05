@@ -314,8 +314,9 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info(StateInfo* si) const {
 
-  si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK]);
-  si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE]);
+  st->blockersForKing[WHITE] = st->blockersForKing[BLACK] = st->pinners[WHITE] = st->pinners[BLACK] = 0;
+  slider_blockers(WHITE);
+  slider_blockers(BLACK);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -449,30 +450,50 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s) const {
 
   Bitboard blockers = 0;
-  pinners = 0;
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
   Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
                       | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & sliders;
+
+  while (snipers)
+  {
+    Square sniperSq = pop_lsb(snipers);
+    Bitboard b = between_bb(s, sniperSq) & pieces();
+
+    if (b && !more_than_one(b))
+    {
+        blockers |= b;
+    }
+  }
+  return blockers;
+}
+
+void Position::slider_blockers(Color c) const {
+  Bitboard sliders = pieces(~c);
+  Square ksq = square<KING>(c);
+
+
+  // Snipers are sliders that attack 's' when a piece and other snipers are removed
+  Bitboard snipers = (  (attacks_bb<  ROOK>(ksq) & pieces(QUEEN, ROOK))
+                      | (attacks_bb<BISHOP>(ksq) & pieces(QUEEN, BISHOP))) & sliders;
   Bitboard occupancy = pieces() ^ snipers;
 
   while (snipers)
   {
     Square sniperSq = pop_lsb(snipers);
-    Bitboard b = between_bb(s, sniperSq) & occupancy;
+    Bitboard b = between_bb(ksq, sniperSq) & occupancy;
 
     if (b && !more_than_one(b))
     {
-        blockers |= b;
-        if (b & pieces(color_of(piece_on(s))))
-            pinners |= sniperSq;
+        st->blockersForKing[c] |= b;
+        if (b & pieces(c))
+          st->pinners[~c] |= sniperSq;
     }
   }
-  return blockers;
-}
+  }
 
 
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
