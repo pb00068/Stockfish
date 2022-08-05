@@ -1020,9 +1020,9 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203 - 400 * (disco && triedCheckingFrom != from_sq(move))) * depth)) {
-                     continue;
-              }
+              if ( (!disco || triedCheckingFrom == from_sq(move) || distance(to_sq(move), pos.square<KING>(~pos.side_to_move())) > 1)
+                       && !pos.see_ge(move, Value(-203 * depth)))
+                    continue;
               if (givesCheck)
                    triedCheckingFrom = from_sq(move);
           }
@@ -1544,7 +1544,7 @@ moves_loop: // When in check, search starts here
       }
 
       // Do not search moves with negative SEE values (~5 Elo)
-      if ( (!disco || triedCheckingFrom != from_sq(move)) &&  bestValue > VALUE_TB_LOSS_IN_MAX_PLY
+      if ( (!disco || triedCheckingFrom == from_sq(move) || distance(to_sq(move), pos.square<KING>(~pos.side_to_move())) > 1) &&  bestValue > VALUE_TB_LOSS_IN_MAX_PLY
           && !pos.see_ge(move))
           continue;
 
