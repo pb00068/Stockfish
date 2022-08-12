@@ -413,7 +413,7 @@ void Thread::search() {
                      for (Thread* th : Threads)
                      {
                         int a = th->talpha.load(std::memory_order_relaxed);
-                        if (alpha != a && abs(alpha - a) < 3)
+                        if (alpha != a && abs(alpha - a) < 5)
                         {
                             alpha = Value(a);
                             break;
@@ -422,7 +422,7 @@ void Thread::search() {
                      for (Thread* th : Threads)
                      {
                          int b = th->tbeta.load(std::memory_order_relaxed);
-                         if (beta != b && abs(beta - b) < 3)
+                         if (beta != b && abs(beta - b) < 5)
                          {
                              beta = Value(b);
                              break;
@@ -437,6 +437,17 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  if (Threads.size() > 1 && adjustedDepth > 7)
+                     for (Thread* th : Threads)
+                     {
+                         int b = th->tbeta.load(std::memory_order_relaxed);
+                         if (beta != b && abs(beta - b) < 5)
+                         {
+                             beta = Value(b);
+                             break;
+                         }
+                     }
+
                   ++failedHighCnt;
               }
               else
