@@ -376,6 +376,8 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+              talpha = alpha;
+              tbeta = beta;
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -406,6 +408,27 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  if (Threads.size() > 1 && adjustedDepth > 7)
+                  {
+                     for (Thread* th : Threads)
+                     {
+                        int a = th->talpha.load(std::memory_order_relaxed);
+                        if (alpha != a && abs(alpha - a) < 3)
+                        {
+                            alpha = Value(a);
+                            break;
+                        }
+                     }
+                     for (Thread* th : Threads)
+                     {
+                         int b = th->tbeta.load(std::memory_order_relaxed);
+                         if (beta != b && abs(beta - b) < 3)
+                         {
+                             beta = Value(b);
+                             break;
+                         }
+                     }
+                  }
 
                   failedHighCnt = 0;
                   if (mainThread)
