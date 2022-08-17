@@ -407,9 +407,13 @@ void Thread::search() {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
-                  failedHighCnt = 0;
                   if (mainThread)
+                  {
                       mainThread->stopOnPonderhit = false;
+                      if (rootDepth > 6)
+                          rootDepth--; // help to resolve fail low faster
+                  }
+                  failedHighCnt = 0;
               }
               else if (bestValue >= beta)
               {
