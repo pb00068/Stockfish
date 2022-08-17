@@ -314,7 +314,6 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
-  int failedLowWeight = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -339,8 +338,6 @@ void Thread::search() {
       // MultiPV loop. We perform a full root search for each PV line
       for (pvIdx = 0; pvIdx < multiPV && !Threads.stop; ++pvIdx)
       {
-          if (pvIdx)
-            failedLowWeight = 0;
           if (pvIdx == pvLast)
           {
               pvFirst = pvLast;
@@ -378,7 +375,7 @@ void Thread::search() {
           {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - failedLowWeight/16 - 3 * (searchAgainCounter + 1) / 4);
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -411,21 +408,20 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
+                  {
                       mainThread->stopOnPonderhit = false;
+                      if (rootDepth > 6)
+                          rootDepth--; // help to resolve fail low faster
+                  }
                   failedHighCnt = 0;
-                  failedLowWeight+=16;
               }
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
-                  failedLowWeight=0;
               }
               else
-              {
-                  failedLowWeight/=2;
                   break;
-              }
 
               delta += delta / 4 + 2;
 
