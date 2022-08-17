@@ -410,8 +410,8 @@ void Thread::search() {
                   if (mainThread)
                   {
                       mainThread->stopOnPonderhit = false;
-                      if (rootDepth > 6)
-                          rootDepth--; // help to resolve fail low faster
+                      if (rootDepth < 12)
+                          rootDepth++;
                   }
                   failedHighCnt = 0;
               }
