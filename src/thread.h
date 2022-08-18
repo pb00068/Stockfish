@@ -71,7 +71,7 @@ public:
   Search::RootMoves rootMoves;
   Depth rootDepth, completedDepth, previousDepth;
   Value rootDelta;
-  std::atomic_int talpha[MAX_PLY+1], tbeta[MAX_PLY+1];
+  std::atomic_int talpha, tbeta;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;
