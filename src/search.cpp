@@ -408,12 +408,12 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  if (Threads.size() > 1 && rootDepth > 7)
+                  if (Threads.size() > 1 && rootDepth > 9)
                   {
                      for (Thread* th : Threads)
                      {
                         int a = th->talpha.load(std::memory_order_relaxed);
-                        if (alpha != a && abs(alpha - a) < 17 && a < beta)
+                        if (alpha != a && abs(alpha - a) < 8)
                         {
                             alpha = Value(a);
                             break;
@@ -422,7 +422,7 @@ void Thread::search() {
                      for (Thread* th : Threads)
                      {
                          int b = th->tbeta.load(std::memory_order_relaxed);
-                         if (beta != b && abs(beta - b) < 17 && b > alpha)
+                         if (beta != b && abs(beta - b) < 8)
                          {
                              beta = Value(b);
                              break;
