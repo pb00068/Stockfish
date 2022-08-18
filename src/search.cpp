@@ -376,8 +376,6 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-              talpha = rootDepth >= 7 ? alpha : -VALUE_INFINITE;
-              tbeta =  rootDepth >= 7 ? beta :   VALUE_INFINITE;
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -407,28 +405,13 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  if (Threads.size() > 1 && rootDepth > 9)
+                  alpha = bestValue - delta;
+                  if (Threads.size() > 1 && rootDepth > 10)
                   {
-                     for (Thread* th : Threads)
-                     {
-                        int a = th->talpha.load(std::memory_order_relaxed);
-                        if (alpha != a && abs(alpha - a) < 8)
-                        {
-                            alpha = Value(a);
-                            break;
-                        }
-                     }
-                     for (Thread* th : Threads)
-                     {
-                         int b = th->tbeta.load(std::memory_order_relaxed);
-                         if (beta != b && abs(beta - b) < 8)
-                         {
-                             beta = Value(b);
-                             break;
-                         }
-                     }
+                     beta -= beta % 6;
+                     alpha -= alpha % 6;
                   }
+                  alpha = std::max(alpha, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -436,18 +419,10 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  if (Threads.size() > 1 && rootDepth > 7)
-                     for (Thread* th : Threads)
-                     {
-                         int b = th->tbeta.load(std::memory_order_relaxed);
-                         if (beta != b && abs(beta - b) < 17 && b > alpha)
-                         {
-                             beta = Value(b);
-                             break;
-                         }
-                     }
-
+                  beta = bestValue + delta;
+                  if (Threads.size() > 1 && rootDepth > 10)
+                     beta -= beta % 6;
+                  beta = std::min(beta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
