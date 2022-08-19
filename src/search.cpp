@@ -657,13 +657,15 @@ namespace {
             else if (!ttCapture)
             {
                 Piece mPiece = pos.moved_piece(ttMove);
-                if (ss->killers[0]) {
+                if (ss->killers[0] || ss->killers[1]) {
                    int his =  thisThread->mainHistory[us][from_to(ttMove)]
                              + (*(ss-1)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-2)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-4)->continuationHistory)[mPiece][to_sq(ttMove)];
-                   if (his < -2000 && pos.pseudo_legal(ss->killers[0]))
+                   if (his < -4000 && pos.pseudo_legal(ss->killers[0]))
                       tte->resetTTMove(ss->killers[0]);
+                   else if (his < -8000 && pos.pseudo_legal(ss->killers[1]))
+                      tte->resetTTMove(ss->killers[1]);
                 }
                 int penalty = -stat_bonus(depth);
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
