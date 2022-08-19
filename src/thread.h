@@ -51,6 +51,7 @@ public:
   explicit Thread(size_t);
   virtual ~Thread();
   virtual void search();
+  virtual void alignBound2Threads(int i, Value& bound);
   void clear();
   void idle_loop();
   void start_searching();
@@ -69,9 +70,10 @@ public:
   Position rootPos;
   StateInfo rootState;
   Search::RootMoves rootMoves;
-  Depth rootDepth, completedDepth, previousDepth;
+  std::atomic_int rootDepth;
+  Depth completedDepth, previousDepth;
   Value rootDelta;
-  std::atomic_int talpha, tbeta;
+  std::atomic_int tbound[2];
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;

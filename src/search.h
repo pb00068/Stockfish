@@ -20,6 +20,7 @@
 #define SEARCH_H_INCLUDED
 
 #include <vector>
+#include <atomic>
 
 #include "misc.h"
 #include "movepick.h"
