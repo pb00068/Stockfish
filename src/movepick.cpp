@@ -109,6 +109,7 @@ void MovePicker::score() {
   Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
   if constexpr (Type == QUIETS)
   {
+    if (pos.non_pawn_material() < 4 * RookValueMg) {
       Color us = pos.side_to_move();
       // squares threatened by pawns
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
@@ -121,6 +122,8 @@ void MovePicker::score() {
       threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
                   | (pos.pieces(us, ROOK)  & threatenedByMinor)
                   | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+    }
+    else threatened = 0;
   }
   else
   {
