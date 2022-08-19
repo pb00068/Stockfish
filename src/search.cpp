@@ -662,9 +662,9 @@ namespace {
                              + (*(ss-1)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-2)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-4)->continuationHistory)[mPiece][to_sq(ttMove)];
-                   if (his < -4000 && pos.pseudo_legal(ss->killers[0]))
+                   if (his < -5000 && ss->killers[0] != ttMove && pos.pseudo_legal(ss->killers[0]))
                       tte->resetTTMove(ss->killers[0]);
-                   else if (his < -8000 && pos.pseudo_legal(ss->killers[1]))
+                   else if (his < -6000 && ss->killers[1] != ttMove && pos.pseudo_legal(ss->killers[1]))
                       tte->resetTTMove(ss->killers[1]);
                 }
                 int penalty = -stat_bonus(depth);
