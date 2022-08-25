@@ -656,20 +656,18 @@ namespace {
             // Penalty for a quiet ttMove that fails low (~1 Elo)
             else if (!ttCapture)
             {
-                Piece mPiece = pos.moved_piece(ttMove);
-                if (ss->killers[0] || ss->killers[1]) {
+                if (depth > 6 && ss->ply < 12) {
+                   Piece mPiece = pos.moved_piece(ttMove);
                    int his =  thisThread->mainHistory[us][from_to(ttMove)]
                              + (*(ss-1)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-2)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-4)->continuationHistory)[mPiece][to_sq(ttMove)];
-                   if (his < -5000 && ss->killers[0] != ttMove && pos.pseudo_legal(ss->killers[0]))
-                      tte->resetTTMove(ss->killers[0]);
-                   else if (his < -6000 && ss->killers[1] != ttMove && pos.pseudo_legal(ss->killers[1]))
-                      tte->resetTTMove(ss->killers[1]);
+                   if (his < -5000 && ss->killers[0] != ttMove && ss->killers[1] != ttMove)
+                      tte->resetTTMove();
                 }
                 int penalty = -stat_bonus(depth);
                 thisThread->mainHistory[us][from_to(ttMove)] << penalty;
-                update_continuation_histories(ss, mPiece, to_sq(ttMove), penalty);
+                update_continuation_histories(ss, pos.moved_piece(ttMove), to_sq(ttMove), penalty);
             }
         }
 
