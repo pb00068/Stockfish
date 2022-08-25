@@ -607,7 +607,9 @@ namespace {
 
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[NO_PIECE_TYPE][0]   = (ss+2)->killers[NO_PIECE_TYPE][1] = MOVE_NONE;
+    (ss+2)->killers[PAWN][0] = (ss+2)->killers[KNIGHT][0] = (ss+2)->killers[BISHOP][0] =
+                               (ss+2)->killers[ROOK][0] = (ss+2)->killers[QUEEN][0] = (ss+2)->killers[KING][0] =  MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -811,6 +813,7 @@ namespace {
         Depth R = std::min(int(eval - beta) / 147, 5) + depth / 3 + 4 - (complexity > 650);
 
         ss->currentMove = MOVE_NULL;
+        ss->movedType = NO_PIECE_TYPE;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -871,6 +874,7 @@ namespace {
                 assert(pos.capture(move) || promotion_type(move) == QUEEN);
 
                 ss->currentMove = move;
+                ss->movedType = type_of(pos.moved_piece(move));
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [true]
                                                                           [pos.moved_piece(move)]
@@ -937,7 +941,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers[(ss-1)->movedType]);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1105,7 +1109,7 @@ moves_loop: // When in check, search starts here
           // Quiet ttMove extensions (~0 Elo)
           else if (   PvNode
                    && move == ttMove
-                   && move == ss->killers[0]
+                   && move == ss->killers[(ss-1)->movedType][0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
       }
@@ -1119,6 +1123,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->movedType = type_of(movedPiece);
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
@@ -1539,6 +1544,7 @@ moves_loop: // When in check, search starts here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
+      ss->movedType = type_of(pos.moved_piece(move));
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [pos.moved_piece(move)]
@@ -1694,7 +1700,7 @@ moves_loop: // When in check, search starts here
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
-    if (   ((ss-1)->moveCount == 1 + (ss-1)->ttHit || ((ss-1)->currentMove == (ss-1)->killers[0]))
+    if (   ((ss-1)->moveCount == 1 + (ss-1)->ttHit || ((ss-1)->currentMove == (ss-1)->killers[(ss-1)->movedType][0]))
         && !pos.captured_piece())
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -bonus1);
 
@@ -1728,11 +1734,12 @@ moves_loop: // When in check, search starts here
 
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
+    PieceType mt = (ss-1)->movedType;
     // Update killers
-    if (ss->killers[0] != move)
+    if (ss->killers[mt][0] != move)
     {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
+        ss->killers[NO_PIECE_TYPE][1] = ss->killers[mt][0];
+        ss->killers[mt][0] = move;
     }
 
     Color us = pos.side_to_move();

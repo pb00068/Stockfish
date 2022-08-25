@@ -45,7 +45,8 @@ struct Stack {
   int ply;
   Move currentMove;
   Move excludedMove;
-  Move killers[2];
+  Move killers[PIECE_TYPE_NB][2];
+  PieceType movedType;
   Value staticEval;
   int statScore;
   int moveCount;
