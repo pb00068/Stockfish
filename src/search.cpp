@@ -656,13 +656,12 @@ namespace {
             // Penalty for a quiet ttMove that fails low (~1 Elo)
             else if (!ttCapture)
             {
-                if (depth > 6 && ss->ply < 12) {
+                if (depth > 5 && ss->ply < 14) {
                    Piece mPiece = pos.moved_piece(ttMove);
-                   int his =  thisThread->mainHistory[us][from_to(ttMove)]
-                             + (*(ss-1)->continuationHistory)[mPiece][to_sq(ttMove)]
+                   int his =   (*(ss-1)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-2)->continuationHistory)[mPiece][to_sq(ttMove)]
                              + (*(ss-4)->continuationHistory)[mPiece][to_sq(ttMove)];
-                   if (his < -5000 && ss->killers[0] != ttMove && ss->killers[1] != ttMove)
+                   if (his < -4000 && ss->killers[0] != ttMove && ss->killers[1] != ttMove)
                       tte->resetTTMove();
                 }
                 int penalty = -stat_bonus(depth);
