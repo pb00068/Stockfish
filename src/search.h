@@ -47,6 +47,7 @@ struct Stack {
   Move excludedMove;
   Move killers[4];
   Value staticEval;
+  Bitboard currentLine;
   int statScore;
   int moveCount;
   bool inCheck;

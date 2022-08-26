@@ -811,6 +811,7 @@ namespace {
         Depth R = std::min(int(eval - beta) / 147, 5) + depth / 3 + 4 - (complexity > 650);
 
         ss->currentMove = MOVE_NULL;
+        ss->currentLine = 0;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -871,6 +872,7 @@ namespace {
                 assert(pos.capture(move) || promotion_type(move) == QUEEN);
 
                 ss->currentMove = move;
+                ss->currentLine = 0;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [true]
                                                                           [pos.moved_piece(move)]
@@ -937,7 +939,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                  (is_ok((ss-1)->currentMove) && from_sq((ss-1)->currentMove) == to_sq(ss->killers[2])) ? &ss->killers[2] : ss->killers);
+                  ( (ss-1)->currentLine & to_sq(ss->killers[2])) ? &ss->killers[2] : ss->killers);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1119,6 +1121,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->currentLine = between_bb(to_sq(move), from_sq(move));
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
@@ -1539,6 +1542,7 @@ moves_loop: // When in check, search starts here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
+      ss->currentLine = 0;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [pos.moved_piece(move)]
@@ -1729,7 +1733,7 @@ moves_loop: // When in check, search starts here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
     // Update killers
-    if (is_ok((ss-1)->currentMove) && from_sq((ss-1)->currentMove) == to_sq(move))  // Total 820151 Hits 3891 hit rate (%) 0
+    if ((ss-1)->currentLine & to_sq(move))
     {
         ss->killers[2] = move;
         ss->killers[3] = ss->killers[1];
