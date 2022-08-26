@@ -607,7 +607,7 @@ namespace {
 
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+2)->killers[2] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -937,7 +937,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                  (is_ok((ss-1)->currentMove) && from_sq((ss-1)->currentMove) == to_sq(ss->killers[2])) ? &ss->killers[2] : ss->killers);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1729,7 +1729,12 @@ moves_loop: // When in check, search starts here
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 
     // Update killers
-    if (ss->killers[0] != move)
+    if (is_ok((ss-1)->currentMove) && from_sq((ss-1)->currentMove) == to_sq(move))  // Total 820151 Hits 3891 hit rate (%) 0
+    {
+        ss->killers[2] = move;
+        ss->killers[3] = ss->killers[1];
+    }
+    else if (ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
