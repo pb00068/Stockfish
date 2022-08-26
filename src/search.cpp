@@ -1736,7 +1736,7 @@ moves_loop: // When in check, search starts here
     if ((ss-1)->currentLine & to_sq(move))
     {
         ss->killers[2] = move;
-        ss->killers[3] = ss->killers[1];
+        ss->killers[3] = ss->killers[0] != move ? ss->killers[0] : ss->killers[1];
     }
     else if (ss->killers[0] != move)
     {
