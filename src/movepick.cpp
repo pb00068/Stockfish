@@ -140,7 +140,8 @@ void MovePicker::score() {
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0)
-                   +     bool(pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 16384;
+                   +     bool(pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 16384
+                   +     bool(pos.blockers_for_king(~pos.side_to_move()) & from_sq(m))   * 16384;
       else // Type == EVASIONS
       {
           if (pos.capture(m))
