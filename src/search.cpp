@@ -1275,6 +1275,8 @@ moves_loop: // When in check, search starts here
               bestMove = move;
               if (ss->bestMove && ss->bestMove != bestMove && from_sq(ss->bestMove) == from_sq(bestMove))
                   ss->clearingSq = from_sq(bestMove);
+              else if ((ss-2)->bestMove && (ss-2)->bestMove != bestMove && from_sq((ss-2)->bestMove) == from_sq(bestMove))
+                  ss->clearingSq = from_sq(bestMove);
               ss->bestMove = bestMove;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
