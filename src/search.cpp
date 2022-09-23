@@ -607,7 +607,7 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+2)->bestMove = MOVE_NONE;
-    (ss+2)->clearingSq = SQ_NONE;
+
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -645,8 +645,7 @@ namespace {
         {
             if (ttValue >= beta)
             {
-                if (ss->bestMove && ss->bestMove != ttMove && from_sq(ss->bestMove) == from_sq(ttMove))
-                    ss->clearingSq = from_sq(ttMove);
+
                 ss->bestMove = ttMove;
                 // Bonus for a quiet ttMove that fails high (~3 Elo)
                 if (!ttCapture)
@@ -939,7 +938,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, ss->clearingSq);
+                                      ss->killers);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1274,9 +1273,7 @@ moves_loop: // When in check, search starts here
           {
               bestMove = move;
               if (ss->bestMove && ss->bestMove != bestMove && from_sq(ss->bestMove) == from_sq(bestMove))
-                  ss->clearingSq = from_sq(bestMove);
-              else if ((ss-2)->bestMove && (ss-2)->bestMove != bestMove && from_sq((ss-2)->bestMove) == from_sq(bestMove))
-                  ss->clearingSq = from_sq(bestMove);
+                  mp.setClearing(from_sq(bestMove));
               ss->bestMove = bestMove;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
