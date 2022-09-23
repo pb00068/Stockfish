@@ -606,8 +606,8 @@ namespace {
 
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = (ss+2)->bestMove = MOVE_NONE;
-
+    (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+     ss->clearing = SQ_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -645,8 +645,6 @@ namespace {
         {
             if (ttValue >= beta)
             {
-
-                ss->bestMove = ttMove;
                 // Bonus for a quiet ttMove that fails high (~3 Elo)
                 if (!ttCapture)
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
@@ -654,6 +652,8 @@ namespace {
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo)
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
+
+
             }
             // Penalty for a quiet ttMove that fails low (~1 Elo)
             else if (!ttCapture)
@@ -1271,10 +1271,12 @@ moves_loop: // When in check, search starts here
 
           if (value > alpha)
           {
-              bestMove = move;
-              if (ss->bestMove && ss->bestMove != bestMove && from_sq(ss->bestMove) == from_sq(bestMove))
-                  mp.setClearing(from_sq(bestMove));
-              ss->bestMove = bestMove;
+
+             if (PvNode)
+                (ss-2)->clearing = from_sq(move);
+             if (bestMove && from_sq(move) == from_sq(bestMove))
+                 mp.setClearing(from_sq(bestMove));
+             bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1303,7 +1305,7 @@ moves_loop: // When in check, search starts here
       else
          ss->cutoffCnt = 0;
 
-
+      mp.setClearing(ss->clearing);
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
