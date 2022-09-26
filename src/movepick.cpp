@@ -26,7 +26,7 @@ namespace Stockfish {
 namespace {
 
   enum Stages {
-    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, QUIET_INIT, QUIET, BAD_CAPTURE,
+    MAIN_TT, CAPTURE_INIT, GOOD_CAPTURE, REFUTATION, REPLACED_COUNTER, QUIET_INIT, QUIET, BAD_CAPTURE,
     EVASION_TT, EVASION_INIT, EVASION,
     PROBCUT_TT, PROBCUT_INIT, PROBCUT,
     QSEARCH_TT, QCAPTURE_INIT, QCAPTURE, QCHECK_INIT, QCHECK
@@ -224,6 +224,20 @@ top:
       ++stage;
       [[fallthrough]];
 
+  case REPLACED_COUNTER:
+      if (endMoves != std::end(refutations)
+       && refutations[0].move != refutations[2].move
+       && refutations[1].move != refutations[2].move)
+      {
+         endMoves = std::end(refutations);
+         if (select<Next>([&](){ return    *cur != MOVE_NONE
+                                             && !pos.capture(*cur)
+                                             &&  pos.pseudo_legal(*cur); }))
+                   return *(cur - 1);
+      }
+      ++stage;
+      [[fallthrough]];
+
   case QUIET_INIT:
       if (!skipQuiets)
       {
@@ -293,6 +307,11 @@ top:
 
   assert(false);
   return MOVE_NONE; // Silence warning
+}
+
+void MovePicker::setCounterMove(Move m) {
+  if (stage < REPLACED_COUNTER)
+    refutations[2] = m;
 }
 
 } // namespace Stockfish
