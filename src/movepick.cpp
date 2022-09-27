@@ -172,7 +172,10 @@ Move MovePicker::select(Pred filter) {
 }
 
 void MovePicker::setKiller(Move m) {
-    refutations[1] = m;
+  if (refutations[1] != m) {
+      refutations[2] = refutations[1];
+      refutations[1] = m;
+  }
 }
 
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
