@@ -172,7 +172,6 @@ Move MovePicker::select(Pred filter) {
 }
 
 void MovePicker::setKiller(Move m) {
-   if (stage < REFUTATION)
     refutations[1] = m;
 }
 
