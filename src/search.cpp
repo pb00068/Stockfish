@@ -1300,7 +1300,7 @@ moves_loop: // When in check, search starts here
       else
          ss->cutoffCnt = 0;
 
-      if (move == ttMove && ss->killers[2] != ss->killers[0] && pos.pseudo_legal(ss->killers[2]) && !pos.capture(ss->killers[2]))
+      if (ss->killers[2] && move == ttMove && ss->killers[2] != ss->killers[0] && pos.pseudo_legal(ss->killers[2]) && !pos.capture(ss->killers[2]))
         mp.setKiller(ss->killers[2]);
 
 
