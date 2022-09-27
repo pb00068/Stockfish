@@ -171,6 +171,14 @@ Move MovePicker::select(Pred filter) {
   return MOVE_NONE;
 }
 
+void MovePicker::setKiller(Move m) {
+   if (stage < REFUTATION)
+   {
+    refutations[1] = refutations[0];
+    refutations[0] = m;
+   }
+}
+
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo-legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
