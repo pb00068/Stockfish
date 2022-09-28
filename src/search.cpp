@@ -607,8 +607,8 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
-    (ss+2)->seedebunked[0]   = (ss+2)->seedebunked[1] = MOVE_NONE;
-    (ss+2)->seepruned[0]   = (ss+2)->seepruned[1] = MOVE_NONE;
+    (ss+2)->debunked[0]   = (ss+2)->debunked[1] = MOVE_NONE;
+    (ss+2)->shallowpruned[0]   = (ss+2)->shallowpruned[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -1015,7 +1015,7 @@ moves_loop: // When in check, search starts here
 
               // SEE based pruning (~9 Elo)
               if (!pos.see_ge(move, Value(-222) * depth))
-                   continue;
+                  continue;
           }
           else
           {
@@ -1031,27 +1031,20 @@ moves_loop: // When in check, search starts here
               history += 2 * thisThread->mainHistory[us][from_to(move)];
 
               // Futility pruning: parent node (~9 Elo)
-              if (move != ss->seedebunked[0] && move != ss->seedebunked[1] &&  !ss->inCheck
+              if (move != ss->debunked[0] && move != ss->debunked[1] && !ss->inCheck
                   && lmrDepth < 13
                   && ss->staticEval + 106 + 145 * lmrDepth + history / 52 <= alpha)
               {
-                  if (ss->seepruned[0] != move)
+                  if (ss->shallowpruned[0] != move)
                   {
-                        ss->seepruned[1] = ss->seepruned[0];
-                        ss->seepruned[0] = move;
+                      ss->shallowpruned[1] = ss->shallowpruned[0];
+                      ss->shallowpruned[0] = move;
                   }
                   continue;
               }
               // Prune moves with negative SEE (~3 Elo)
-              if (move != ss->seedebunked[0] && move != ss->seedebunked[1] && !pos.see_ge(move, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
-              {
-                if (ss->seepruned[0] != move)
-                {
-                    ss->seepruned[1] = ss->seepruned[0];
-                    ss->seepruned[0] = move;
-                }
+              if (!pos.see_ge(move, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                 continue;
-              }
           }
       }
 
@@ -1588,10 +1581,10 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
-              if (move == ss->seepruned[0])
-                ss->seedebunked[0] = move;
-              else if (move == ss->seepruned[1])
-                ss->seedebunked[1] = move;
+              if (!ss->inCheck && move == ss->shallowpruned[0])
+                ss->debunked[0] = move;
+              if (!ss->inCheck && move == ss->shallowpruned[1])
+                ss->debunked[1] = move;
 
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
