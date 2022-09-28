@@ -1014,8 +1014,15 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-222) * depth))
-                  continue;
+              if (move != ss->debunked[0] && move != ss->debunked[1] && !pos.see_ge(move, Value(-222) * depth))
+              {
+                    if (ss->shallowpruned[0] != move)
+                    {
+                        ss->shallowpruned[1] = ss->shallowpruned[0];
+                        ss->shallowpruned[0] = move;
+                    }
+                    continue;
+              }
           }
           else
           {
@@ -1031,17 +1038,11 @@ moves_loop: // When in check, search starts here
               history += 2 * thisThread->mainHistory[us][from_to(move)];
 
               // Futility pruning: parent node (~9 Elo)
-              if (move != ss->debunked[0] && move != ss->debunked[1] && !ss->inCheck
+              if (!ss->inCheck
                   && lmrDepth < 13
                   && ss->staticEval + 106 + 145 * lmrDepth + history / 52 <= alpha)
-              {
-                  if (ss->shallowpruned[0] != move)
-                  {
-                      ss->shallowpruned[1] = ss->shallowpruned[0];
-                      ss->shallowpruned[0] = move;
-                  }
                   continue;
-              }
+
               // Prune moves with negative SEE (~3 Elo)
               if (!pos.see_ge(move, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                 continue;
@@ -1277,10 +1278,13 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
-              if (!ss->inCheck && move == ss->shallowpruned[0])
-                ss->debunked[0] = move;
-              if (!ss->inCheck && move == ss->shallowpruned[1])
-                ss->debunked[1] = move;
+              if (capture || givesCheck)
+              {
+                 if (move == ss->shallowpruned[0])
+                    ss->debunked[0] = move;
+                 if (move == ss->shallowpruned[1])
+                    ss->debunked[1] = move;
+              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1308,10 +1312,13 @@ moves_loop: // When in check, search starts here
       }
       else {
          ss->cutoffCnt = 0;
-         if (!ss->inCheck && move == ss->debunked[0])
-              ss->debunked[0] = MOVE_NONE;
-         if (!ss->inCheck && move == ss->debunked[1])
-              ss->debunked[1] = MOVE_NONE;
+         if (capture || givesCheck)
+         {
+            if (move == ss->debunked[0])
+               ss->debunked[0] = MOVE_NONE;
+            if (move == ss->debunked[1])
+               ss->debunked[1] = MOVE_NONE;
+         }
       }
 
 
