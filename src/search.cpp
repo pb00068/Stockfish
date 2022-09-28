@@ -1277,6 +1277,10 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (!ss->inCheck && move == ss->shallowpruned[0])
+                ss->debunked[0] = move;
+              if (!ss->inCheck && move == ss->shallowpruned[1])
+                ss->debunked[1] = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1302,8 +1306,13 @@ moves_loop: // When in check, search starts here
               }
           }
       }
-      else
+      else {
          ss->cutoffCnt = 0;
+         if (!ss->inCheck && move == ss->debunked[0])
+              ss->debunked[0] = MOVE_NONE;
+         if (!ss->inCheck && move == ss->debunked[1])
+              ss->debunked[1] = MOVE_NONE;
+      }
 
 
       // If the move is worse than some previously searched move, remember it to update its stats later
@@ -1581,10 +1590,6 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
-              if (!ss->inCheck && move == ss->shallowpruned[0])
-                ss->debunked[0] = move;
-              if (!ss->inCheck && move == ss->shallowpruned[1])
-                ss->debunked[1] = move;
 
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
