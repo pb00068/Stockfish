@@ -1031,11 +1031,17 @@ moves_loop: // When in check, search starts here
               history += 2 * thisThread->mainHistory[us][from_to(move)];
 
               // Futility pruning: parent node (~9 Elo)
-              if (   !ss->inCheck
+              if (move != ss->seedebunked[0] && move != ss->seedebunked[1] &&  !ss->inCheck
                   && lmrDepth < 13
                   && ss->staticEval + 106 + 145 * lmrDepth + history / 52 <= alpha)
+              {
+                  if (ss->seepruned[0] != move)
+                  {
+                        ss->seepruned[1] = ss->seepruned[0];
+                        ss->seepruned[0] = move;
+                  }
                   continue;
-
+              }
               // Prune moves with negative SEE (~3 Elo)
               if (move != ss->seedebunked[0] && move != ss->seedebunked[1] && !pos.see_ge(move, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
               {
