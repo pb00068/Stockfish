@@ -607,6 +607,8 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->seedebunked[0]   = (ss+2)->seedebunked[1] = MOVE_NONE;
+    (ss+2)->seepruned[0]   = (ss+2)->seepruned[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -1012,8 +1014,15 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-222) * depth))
-                  continue;
+              if (move != ss->seedebunked[0] && move != ss->seedebunked[1] && !pos.see_ge(move, Value(-222) * depth))
+              {
+                   if (ss->seepruned[0] != move)
+                   {
+                       ss->seepruned[1] = ss->seepruned[0];
+                       ss->seepruned[0] = move;
+                   }
+                   continue;
+              }
           }
           else
           {
@@ -1573,6 +1582,10 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (move == ss->seepruned[0])
+                ss->seedebunked[0] = move;
+              else if (move == ss->seepruned[1])
+                ss->seedebunked[1] = move;
 
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
