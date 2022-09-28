@@ -1016,12 +1016,12 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~9 Elo)
               if (move != ss->debunked[0] && move != ss->debunked[1] && !pos.see_ge(move, Value(-222) * depth))
               {
-                    if (ss->shallowpruned[0] != move)
-                    {
+                  if (ss->shallowpruned[0] != move)
+                  {
                         ss->shallowpruned[1] = ss->shallowpruned[0];
                         ss->shallowpruned[0] = move;
-                    }
-                    continue;
+                  }
+                  continue;
               }
           }
           else
