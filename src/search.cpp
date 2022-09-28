@@ -1044,6 +1044,7 @@ moves_loop: // When in check, search starts here
                     ss->seepruned[1] = ss->seepruned[0];
                     ss->seepruned[0] = move;
                 }
+                continue;
               }
           }
       }
