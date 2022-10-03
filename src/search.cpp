@@ -1317,7 +1317,7 @@ moves_loop: // When in check, search starts here
       }
       else {
          ss->cutoffCnt = 0;
-         if (value < bestValue - 400 && (capture || givesCheck))
+         if (value < bestValue - 600 && (capture || givesCheck))
          {
              if (move == ss->debunked[0])
                ss->debunked[0] = MOVE_NONE;
