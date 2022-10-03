@@ -1013,8 +1013,8 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              int debunked = 2 * (move == ss->debunked[0]) + bool (move == ss->debunked[1]);
-              if (!pos.see_ge(move, Value(-222) * (depth + 2 * debunked)))
+              int debunked = 4 * (move == ss->debunked[0]) + 2 * (move == ss->debunked[1]) + 2 * (move == (ss-2)->debunked[0]) + (move == (ss-2)->debunked[1]);
+              if (!pos.see_ge(move, Value(-222) * (depth + debunked + bool(debunked))))
               {
                   if (ss->shallowpruned[0] != move)
                   {
@@ -1154,9 +1154,6 @@ moves_loop: // When in check, search starts here
 
           // Decrease reduction if opponent's move count is high (~1 Elo)
           if ((ss-1)->moveCount > 7)
-              r--;
-
-          if (move == ss->debunked[0] || move == ss->debunked[1])
               r--;
 
           // Increase reduction for cut nodes (~3 Elo)
@@ -1315,7 +1312,7 @@ moves_loop: // When in check, search starts here
       }
       else {
          ss->cutoffCnt = 0;
-         if (capture || givesCheck)
+         if (value < bestValue - 400 && (capture || givesCheck))
          {
             if (move == ss->debunked[0])
                ss->debunked[0] = MOVE_NONE;
@@ -1600,6 +1597,13 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (capture || givesCheck)
+              {
+                   if (move == ss->shallowpruned[0])
+                     ss->debunked[0] = move;
+                   if (move == ss->shallowpruned[1])
+                     ss->debunked[1] = move;
+              }
 
               if (PvNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
