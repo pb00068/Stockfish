@@ -608,7 +608,6 @@ namespace {
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->debunked[0]   = (ss+2)->debunked[1] = MOVE_NONE;
-    (ss+2)->shallowpruned[0]   = (ss+2)->shallowpruned[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -1014,7 +1013,8 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~9 Elo)
-              if (move != ss->debunked[0] && move != ss->debunked[1] && !pos.see_ge(move, Value(-222) * depth))
+              int debunked = 2 * (move == ss->debunked[0]) + bool (move == ss->debunked[1]);
+              if (!pos.see_ge(move, Value(-222) * (depth + 2 * debunked)))
               {
                   if (ss->shallowpruned[0] != move)
                   {
