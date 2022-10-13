@@ -1308,8 +1308,11 @@ moves_loop: // When in check, search starts here
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!capture && quietCount < 64)
+          else if (!capture && quietCount < 64) {
               quietsSearched[quietCount++] = move;
+              if (ss->statScore > 0 && value < alpha - 500 && quietCount < 64)
+                quietsSearched[quietCount++] = move;
+          }
       }
     }
 
