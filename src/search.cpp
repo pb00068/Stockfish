@@ -1299,7 +1299,7 @@ moves_loop: // When in check, search starts here
       }
       else {
          ss->cutoffCnt = 0;
-         if (move == countermove && is_ok((ss-1)->currentMove))
+         if (cutNode && move == countermove && is_ok((ss-1)->currentMove))
             thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = MOVE_NONE;
       }
 
