@@ -1297,8 +1297,11 @@ moves_loop: // When in check, search starts here
               }
           }
       }
-      else
+      else {
          ss->cutoffCnt = 0;
+         if (move == countermove && is_ok((ss-1)->currentMove))
+            thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = MOVE_NONE;
+      }
 
 
       // If the move is worse than some previously searched move, remember it to update its stats later
