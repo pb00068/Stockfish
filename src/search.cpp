@@ -1307,8 +1307,11 @@ moves_loop: // When in check, search starts here
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
-          else if (!capture && quietCount < 64)
+          else if (!capture && quietCount < 64) {
               quietsSearched[quietCount++] = move;
+              if(PvNode && value == alpha && ss->pv[2] == move)
+                 quietCount--; // we assume here a transposition thus move & bestMove equally strong
+          }
       }
     }
 
