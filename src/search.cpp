@@ -1309,7 +1309,7 @@ moves_loop: // When in check, search starts here
 
           else if (!capture && quietCount < 64) {
               quietsSearched[quietCount++] = move;
-              if(PvNode && value == alpha && ss->pv[1] != MOVE_NONE && ss->pv[2] == move)
+              if(PvNode && !rootNode && value == alpha && ss->pv[1] != MOVE_NONE && ss->pv[2] == move)
                  quietCount--; // we assume here a transposition thus move & bestMove equally strong
           }
       }
