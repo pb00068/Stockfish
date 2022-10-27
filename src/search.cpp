@@ -554,7 +554,7 @@ namespace {
 
     TTEntry* tte;
     Key posKey;
-    Move ttMove, move, excludedMove, bestMove;
+    Move ttMove, move, excludedMove, bestMove, nextPvMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, priorCapture, singularQuietLMR;
@@ -938,6 +938,7 @@ moves_loop: // When in check, search starts here
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
+    nextPvMove = MOVE_NONE;
 
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
@@ -1274,7 +1275,11 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
+              {
                   update_pv(ss->pv, move, (ss+1)->pv);
+                  if (ss->pv[1] != MOVE_NONE)
+                    nextPvMove = ss->pv[2];
+              }
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
@@ -1302,7 +1307,7 @@ moves_loop: // When in check, search starts here
 
 
       // If the move is worse than some previously searched move, remember it to update its stats later
-      if (move != bestMove && (!PvNode || ss->pv[0] == MOVE_NONE || ss->pv[1] == MOVE_NONE || ss->pv[2] != move))
+      if (move != bestMove && move != nextPvMove)
       {
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
