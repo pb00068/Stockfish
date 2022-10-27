@@ -1304,17 +1304,15 @@ moves_loop: // When in check, search starts here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
+        if(PvNode && ss->pv[0] != MOVE_NONE && ss->pv[1] != MOVE_NONE &&
+          (ss->pv[2] == move || (ss->pv[2] != MOVE_NONE && ss->pv[3] != MOVE_NONE && ss->pv[4] == move)))
+           {   }
+        else {
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
-
-          else if (!capture && quietCount < 64) {
+          else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
-              if(PvNode && value == alpha && ss->pv[0] != MOVE_NONE && ss->pv[1] != MOVE_NONE &&
-              (ss->pv[2] == move || (ss->pv[2] != MOVE_NONE && ss->pv[3] != MOVE_NONE && ss->pv[4] == move)))
-              {
-                 quietCount--; // we assume here a transposition thus move & bestMove equally strong
-              }
-          }
+        }
       }
     }
 
