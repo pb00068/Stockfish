@@ -1302,16 +1302,12 @@ moves_loop: // When in check, search starts here
 
 
       // If the move is worse than some previously searched move, remember it to update its stats later
-      if (move != bestMove)
+      if (move != bestMove && (!PvNode || ss->pv[0] == MOVE_NONE || ss->pv[1] == MOVE_NONE || ss->pv[2] != move))
       {
-        if(PvNode && ss->pv[0] != MOVE_NONE && ss->pv[1] != MOVE_NONE && ss->pv[2] == move)
-        {   }
-        else {
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
-        }
       }
     }
 
