@@ -631,6 +631,8 @@ namespace {
     ttCapture = ttMove && pos.capture(ttMove);
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+    if (PvNode)
+       ss->PVposkey = posKey;
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -642,7 +644,8 @@ namespace {
         // If ttMove is quiet, update move sorting heuristics on TT hit (~1 Elo)
         if (ttMove)
         {
-            if (ttValue >= beta)
+            bool equalstrong = tte->bound() == BOUND_EXACT && ttValue == alpha && posKey == ss->PVposkey;
+            if (ttValue >= beta || equalstrong)
             {
                 // Bonus for a quiet ttMove that fails high (~3 Elo)
                 if (!ttCapture)
