@@ -116,7 +116,7 @@ namespace {
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply, int r50c);
-  void update_pv(Move* pv, Move move, const Move* childPv);
+  void update_pv(Move* pv, Move move, const Move* childPv, Depth depth, const Position& pos);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
@@ -1269,7 +1269,7 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
+                  update_pv(ss->pv, move, (ss+1)->pv, depth, pos);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
@@ -1573,7 +1573,7 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv);
+                  update_pv(ss->pv, move, (ss+1)->pv, 0 , pos);
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
@@ -1649,10 +1649,15 @@ moves_loop: // When in check, search starts here
 
   // update_pv() adds current move and appends child pv[]
 
-  void update_pv(Move* pv, Move move, const Move* childPv) {
+  void update_pv(Move* pv, Move move, const Move* childPv, Depth depth, const Position& pos) {
 
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
+    {
+       if (depth > 0 && !pos.capture(*childPv)) {
+          pos.this_thread()->mainHistory[pos.side_to_move()][from_to(*childPv)] << stat_bonus(depth--);
+       }
         *pv++ = *childPv++;
+    }
     *pv = MOVE_NONE;
   }
 
