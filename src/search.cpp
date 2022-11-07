@@ -1573,7 +1573,7 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv, 0 , pos);
+                  update_pv(ss->pv, move, (ss+1)->pv, -2 , pos);
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
@@ -1656,9 +1656,9 @@ moves_loop: // When in check, search starts here
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
     {
        c = ~c;
-       if (depth > 0 && !pos.capture(*childPv)) {
-          pos.this_thread()->mainHistory[c][from_to(*childPv)] << stat_bonus(depth--);
-       }
+       if (depth > 0 && !pos.capture(*childPv))
+          pos.this_thread()->mainHistory[c][from_to(*childPv)] << stat_bonus(depth);
+       depth--;
        *pv++ = *childPv++;
     }
     *pv = MOVE_NONE;
