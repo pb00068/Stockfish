@@ -1655,7 +1655,7 @@ moves_loop: // When in check, search starts here
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
     {
        c = ~c;
-       if (depth > 0 && !pos.capture(*childPv)) {
+       if (depth > 0 && !pos.capture(*childPv) && pos.this_thread()->mainHistory[c][from_to(*childPv)] < 0) {
           pos.this_thread()->mainHistory[c][from_to(*childPv)] << stat_bonus(depth--);
        }
        *pv++ = *childPv++;
