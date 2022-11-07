@@ -1269,7 +1269,7 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv, depth, pos);
+                  update_pv(ss->pv, move, (ss+1)->pv, 0, pos);
 
               if (PvNode && value < beta) // Update alpha! Always alpha < beta
               {
@@ -1573,7 +1573,7 @@ moves_loop: // When in check, search starts here
               bestMove = move;
 
               if (PvNode) // Update pv even in fail-high case
-                  update_pv(ss->pv, move, (ss+1)->pv, -2 , pos);
+                  update_pv(ss->pv, move, (ss+1)->pv, 2 , pos);
 
               if (PvNode && value < beta) // Update alpha here!
                   alpha = value;
@@ -1652,7 +1652,6 @@ moves_loop: // When in check, search starts here
   void update_pv(Move* pv, Move move, const Move* childPv, Depth depth, const Position& pos) {
 
     Color c = pos.side_to_move();
-    depth +=2;
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
     {
        c = ~c;
