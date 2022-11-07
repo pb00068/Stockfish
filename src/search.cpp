@@ -1651,12 +1651,14 @@ moves_loop: // When in check, search starts here
 
   void update_pv(Move* pv, Move move, const Move* childPv, Depth depth, const Position& pos) {
 
+    Color c = pos.side_to_move();
     for (*pv++ = move; childPv && *childPv != MOVE_NONE; )
     {
+       c = ~c;
        if (depth > 0 && !pos.capture(*childPv)) {
-          pos.this_thread()->mainHistory[pos.side_to_move()][from_to(*childPv)] << stat_bonus(depth--);
+          pos.this_thread()->mainHistory[c][from_to(*childPv)] << stat_bonus(depth--);
        }
-        *pv++ = *childPv++;
+       *pv++ = *childPv++;
     }
     *pv = MOVE_NONE;
   }
