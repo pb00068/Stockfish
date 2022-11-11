@@ -145,7 +145,7 @@ void MovePicker::score() {
                      int cat = pos.pawnMoveStructCategory(m);
                      if (cat & 1)
                          m.value +=(*pawnHistory)[pos.side_to_move()][0][from_to(m)];
-                     if (cat & 21)
+                     if (cat & 2)
                          m.value +=(*pawnHistory)[pos.side_to_move()][1][from_to(m)];
                      if (cat & 4)
                          m.value +=(*pawnHistory)[pos.side_to_move()][2][from_to(m)];

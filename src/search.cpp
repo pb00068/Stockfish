@@ -1686,7 +1686,7 @@ moves_loop: // When in check, search starts here
                   int cat = pos.pawnMoveStructCategory(quietsSearched[i]);
                   if (cat & 1)
                     thisThread->pawnHistory[us][0][from_to(quietsSearched[i])] << -bonus2;
-                  if (cat & 21)
+                  if (cat & 2)
                     thisThread->pawnHistory[us][1][from_to(quietsSearched[i])] << -bonus2;
                   if (cat & 4)
                     thisThread->pawnHistory[us][2][from_to(quietsSearched[i])] << -bonus2;
@@ -1749,7 +1749,7 @@ moves_loop: // When in check, search starts here
        int cat = pos.pawnMoveStructCategory(move);
        if (cat & 1)
          thisThread->pawnHistory[us][0][from_to(move)] << bonus;
-       if (cat & 21)
+       if (cat & 2)
          thisThread->pawnHistory[us][1][from_to(move)] << bonus;
        if (cat & 4)
          thisThread->pawnHistory[us][2][from_to(move)] << bonus;
