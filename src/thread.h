@@ -73,6 +73,7 @@ public:
   Value rootDelta;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
+  PawnStructHistory pawnHistory;
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
 };

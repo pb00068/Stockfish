@@ -89,6 +89,8 @@ enum StatsType { NoCaptures, Captures };
 /// (~11 elo)
 typedef Stats<int16_t, 7183, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyHistory;
 
+typedef Stats<int16_t, 7183, COLOR_NB, 3, int(SQUARE_NB) * int(SQUARE_NB)> PawnStructHistory;
+
 /// CounterMoveHistory stores counter moves indexed by [piece][to] of the previous
 /// move, see www.chessprogramming.org/Countermove_Heuristic
 typedef Stats<Move, NOT_USED, PIECE_NB, SQUARE_NB> CounterMoveHistory;
@@ -120,6 +122,7 @@ public:
   MovePicker(const MovePicker&) = delete;
   MovePicker& operator=(const MovePicker&) = delete;
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
+                                           const PawnStructHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
@@ -141,6 +144,7 @@ private:
 
   const Position& pos;
   const ButterflyHistory* mainHistory;
+  const PawnStructHistory * pawnHistory;
   const CapturePieceToHistory* captureHistory;
   const PieceToHistory** continuationHistory;
   Move ttMove;

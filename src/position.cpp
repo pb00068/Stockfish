@@ -441,6 +441,22 @@ string Position::fen() const {
   return ss.str();
 }
 
+int Position::pawnMoveStructCategory(Move m) const {
+    Square to   = to_sq(m);
+    Square s = to - pawn_push(sideToMove);
+    bool supported = (adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(s));
+    bool supportsOwnPawns = 0;
+    bool lever = 0;
+    if (relative_rank(sideToMove, to) <= RANK_7)
+    {
+        s = to + pawn_push(sideToMove);
+        supportsOwnPawns = popcount(adjacent_files_bb(to) & (pieces(sideToMove, PAWN)) & rank_bb(s));
+        if (supported)
+          lever = popcount(adjacent_files_bb(to) & (pieces(~sideToMove, PAWN)) & rank_bb(s));
+    }
+
+    return (supported << 2) + (supportsOwnPawns << 1) + lever;
+}
 
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)
 /// that are blocking attacks on the square 's' from 'sliders'. A piece blocks a

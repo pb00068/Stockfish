@@ -120,6 +120,7 @@ public:
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  int pawnMoveStructCategory(Move m) const;
   template<PieceType Pt> Bitboard attacks_by(Color c) const;
 
   // Properties of moves
