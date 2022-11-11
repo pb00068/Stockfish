@@ -444,18 +444,21 @@ string Position::fen() const {
 int Position::pawnMoveStructCategory(Move m) const {
     Square to   = to_sq(m);
     Square s = to - pawn_push(sideToMove);
-    bool supported = (adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(s));
-    bool supportsOwnPawns = 0;
-    bool lever = 0;
+    int supported = bool(adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(s));
+    int doesFlank = bool(adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(to));
+    int supportsOwnPawns = 0;
+    int lever = 0;
     if (relative_rank(sideToMove, to) <= RANK_7)
     {
         s = to + pawn_push(sideToMove);
-        supportsOwnPawns = popcount(adjacent_files_bb(to) & (pieces(sideToMove, PAWN)) & rank_bb(s));
+        supportsOwnPawns = bool(adjacent_files_bb(to) & (pieces(sideToMove, PAWN)) & rank_bb(s));
         if (supported)
-          lever = popcount(adjacent_files_bb(to) & (pieces(~sideToMove, PAWN)) & rank_bb(s));
+          lever = bool(adjacent_files_bb(to) & (pieces(~sideToMove, PAWN)) & rank_bb(s));
     }
 
-    return (supported << 2) + (supportsOwnPawns << 1) + lever;
+    //sync_cout<<"info (" << (doesFlank << 3) << "  " << (supported << 2) << "  " << (supportsOwnPawns << 1) << " " <<  lever <<  ")" << sync_endl;
+
+    return (doesFlank << 3) + (supported << 2) + (supportsOwnPawns << 1) + lever;
 }
 
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)
