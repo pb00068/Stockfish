@@ -1749,8 +1749,6 @@ moves_loop: // When in check, search starts here
 
     if (depth > 5 && type_of(pos.moved_piece(move)) == PAWN) {
        int cat = pos.pawnMoveStructCategory(move);
-       if (cat)
-       	sync_cout<< pos << UCI::move(move, false) << sync_endl;
        if (cat & 1)
          thisThread->pawnHistory[us][0][from_to(move)] << bonus;
        if (cat & 2)
