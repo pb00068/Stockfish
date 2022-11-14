@@ -1685,13 +1685,13 @@ moves_loop: // When in check, search starts here
             if (depth > 5 && type_of(pos.moved_piece(quietsSearched[i])) == PAWN) {
                   int cat = pos.pawnMoveStructCategory(quietsSearched[i]);
                   if (cat & 1)
-                    thisThread->pawnHistory[us][0][from_to(quietsSearched[i])] << -bonus2/4;
+                    thisThread->pawnHistory[us][0][to_sq(quietsSearched[i])] << -bonus2/2;
                   if (cat & 2)
-                    thisThread->pawnHistory[us][1][from_to(quietsSearched[i])] << -bonus2/4;
+                    thisThread->pawnHistory[us][1][to_sq(quietsSearched[i])] << -bonus2/2;
                   if (cat & 4)
-                    thisThread->pawnHistory[us][2][from_to(quietsSearched[i])] << -bonus2/4;
+                    thisThread->pawnHistory[us][2][to_sq(quietsSearched[i])] << -bonus2/2;
                   if (cat & 8)
-                    thisThread->pawnHistory[us][3][from_to(quietsSearched[i])] << -bonus2/4;
+                    thisThread->pawnHistory[us][3][to_sq(quietsSearched[i])] << -bonus2/2;
             }
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bonus2);
         }
@@ -1750,13 +1750,13 @@ moves_loop: // When in check, search starts here
     if (depth > 5 && type_of(pos.moved_piece(move)) == PAWN) {
        int cat = pos.pawnMoveStructCategory(move);
        if (cat & 1)
-         thisThread->pawnHistory[us][0][from_to(move)] << bonus/4;
+         thisThread->pawnHistory[us][0][to_sq(move)] << bonus/2;
        if (cat & 2)
-         thisThread->pawnHistory[us][1][from_to(move)] << bonus/4;
+         thisThread->pawnHistory[us][1][to_sq(move)] << bonus/2;
        if (cat & 4)
-         thisThread->pawnHistory[us][2][from_to(move)] << bonus/4;
+         thisThread->pawnHistory[us][2][to_sq(move)] << bonus/2;
        if (cat & 8)
-         thisThread->pawnHistory[us][3][from_to(move)] << bonus/4;
+         thisThread->pawnHistory[us][3][to_sq(move)] << bonus/2;
     }
 
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);

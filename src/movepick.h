@@ -89,7 +89,7 @@ enum StatsType { NoCaptures, Captures };
 /// (~11 elo)
 typedef Stats<int16_t, 7183, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyHistory;
 
-typedef Stats<int16_t, 7183, COLOR_NB, 4, int(SQUARE_NB) * int(SQUARE_NB)> PawnStructHistory;
+typedef Stats<int16_t, 7183, COLOR_NB, 4, int(SQUARE_NB)> PawnStructHistory;
 
 /// CounterMoveHistory stores counter moves indexed by [piece][to] of the previous
 /// move, see www.chessprogramming.org/Countermove_Heuristic
