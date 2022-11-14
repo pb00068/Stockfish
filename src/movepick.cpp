@@ -149,8 +149,6 @@ void MovePicker::score() {
                          m.value +=(*pawnHistory)[pos.side_to_move()][1][to_sq(m)];
                      if (cat & 4)
                          m.value +=(*pawnHistory)[pos.side_to_move()][2][to_sq(m)];
-                     if (cat & 8)
-                         m.value +=(*pawnHistory)[pos.side_to_move()][3][to_sq(m)];
                    }
       }
       else // Type == EVASIONS
