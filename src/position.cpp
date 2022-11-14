@@ -448,16 +448,18 @@ int Position::pawnMoveStructCategory(Move m) const {
     int doesFlank = bool(adjacent_files_bb(to) & pieces(sideToMove, PAWN) & rank_bb(to));
     int supportsOwnPawns = 0;
     int attacks = 0;
+    int lever = 0;
     if (relative_rank(sideToMove, to) <= RANK_7)
     {
         s = to + pawn_push(sideToMove);
         supportsOwnPawns = bool(adjacent_files_bb(to) & (pieces(sideToMove, PAWN)) & rank_bb(s));
         attacks = bool(adjacent_files_bb(to) & (pieces(~sideToMove)) & rank_bb(s));
+        lever   = bool(adjacent_files_bb(to) & (pieces(~sideToMove, PAWN)) & rank_bb(s));
     }
 
     //sync_cout<<"info (" << (doesFlank << 3) << "  " << (supported << 2) << "  " << (supportsOwnPawns << 1) << " " <<  lever <<  ")" << sync_endl;
 
-    return (doesFlank << 3) + (supported << 2) + (supportsOwnPawns << 1) + attacks;
+    return (doesFlank << 4) + (supported << 3) + (supportsOwnPawns << 2) + (attacks << 1) + lever;
 }
 
 /// Position::slider_blockers() returns a bitboard of all the pieces (both colors)

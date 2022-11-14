@@ -142,6 +142,7 @@ void MovePicker::score() {
                    +     bool(pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 16384;
 
                    if (depth > 5 && type_of(pos.moved_piece(m)) == PAWN) {
+                     m.value -= (*mainHistory)[pos.side_to_move()][from_to(m)];
                      int cat = pos.pawnMoveStructCategory(m);
                      if (cat & 1)
                          m.value +=(*pawnHistory)[pos.side_to_move()][0][to_sq(m)];
@@ -151,6 +152,10 @@ void MovePicker::score() {
                          m.value +=(*pawnHistory)[pos.side_to_move()][2][to_sq(m)];
                      if (cat & 8)
                          m.value +=(*pawnHistory)[pos.side_to_move()][3][to_sq(m)];
+                     if (cat & 16)
+                         m.value +=(*pawnHistory)[pos.side_to_move()][4][to_sq(m)];
+                     if (!cat)
+                         m.value +=(*pawnHistory)[pos.side_to_move()][5][to_sq(m)];
                    }
       }
       else // Type == EVASIONS
