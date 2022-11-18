@@ -1736,13 +1736,9 @@ moves_loop: // When in check, search starts here
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
 
-    // Penalty for reverse move and retreating moves (sliders)
-    if (type_of(pos.moved_piece(move)) != PAWN && pos.game_ply() < 22)
-    {
-         Bitboard line = between_bb(to_sq(move), from_sq(move));
-         while (line)
-             thisThread->mainHistory[us][make_move(to_sq(move), pop_lsb(line))] << -bonus;
-    }
+    // Penalty for reversed move in case of moved piece not being a pawn
+    if (type_of(pos.moved_piece(move)) != PAWN && pos.game_ply() < 20)
+        thisThread->mainHistory[us][from_to(reverse_move(move))] << -4 * bonus;
 
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
