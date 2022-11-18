@@ -184,7 +184,7 @@ namespace {
         }
         else if (token == "setoption")  setoption(is);
         else if (token == "position")   position(pos, is, states);
-        else if (token == "ucinewgame") { Search::clear(); elapsed = now(); } // Search::clear() may take a while
+        else if (token == "ucinewgame") { Search::clear(true); elapsed = now(); } // Search::clear() may take a while
     }
 
     elapsed = now() - elapsed + 1; // Ensure positivity to avoid a 'divide by zero'
@@ -271,7 +271,7 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "setoption")  setoption(is);
       else if (token == "go")         go(pos, is, states);
       else if (token == "position")   position(pos, is, states);
-      else if (token == "ucinewgame") Search::clear();
+      else if (token == "ucinewgame") Search::clear(true);
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
 
       // Add custom non-UCI commands, mainly for debugging purposes.

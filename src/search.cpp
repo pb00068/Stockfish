@@ -164,13 +164,13 @@ void Search::init() {
 
 /// Search::clear() resets search state to its initial value
 
-void Search::clear() {
+void Search::clear(bool newGame) {
 
   Threads.main()->wait_for_search_finished();
 
   Time.availableNodes = 0;
   TT.clear();
-  Threads.clear();
+  Threads.clear(newGame);
   Tablebases::init(Options["SyzygyPath"]); // Free mapped files
 }
 

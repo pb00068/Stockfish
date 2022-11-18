@@ -51,7 +51,7 @@ public:
   explicit Thread(size_t);
   virtual ~Thread();
   virtual void search();
-  void clear();
+  void clear(bool);
   void idle_loop();
   void start_searching();
   void wait_for_search_finished();
@@ -104,7 +104,7 @@ struct MainThread : public Thread {
 struct ThreadPool : public std::vector<Thread*> {
 
   void start_thinking(Position&, StateListPtr&, const Search::LimitsType&, bool = false);
-  void clear();
+  void clear(bool);
   void set(size_t);
 
   MainThread* main()        const { return static_cast<MainThread*>(front()); }

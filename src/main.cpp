@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   Bitbases::init();
   Endgames::init();
   Threads.set(size_t(Options["Threads"]));
-  Search::clear(); // After threads are up
+  Search::clear(true); // After threads are up
   Eval::NNUE::init();
 
   UCI::loop(argc, argv);

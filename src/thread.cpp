@@ -55,7 +55,7 @@ Thread::~Thread() {
 
 /// Thread::clear() reset histories, usually before a new game
 
-void Thread::clear() {
+void Thread::clear(bool newgame) {
 
   counterMoves.fill(MOVE_NONE);
   mainHistory.fill(0);
@@ -67,6 +67,27 @@ void Thread::clear() {
           for (auto& to : continuationHistory[inCheck][c])
               for (auto& h : to)
                   h->fill(-71);
+
+  if (newgame) { // back score some bad development moves
+       // KNIGHT Moves to the border
+       mainHistory[WHITE][from_to(make_move(SQ_B1, SQ_A3))] << -2000;
+       mainHistory[WHITE][from_to(make_move(SQ_G1, SQ_H3))] << -2000;
+       mainHistory[BLACK][from_to(make_move(SQ_B8, SQ_A6))] << -2000;
+       mainHistory[BLACK][from_to(make_move(SQ_G8, SQ_H6))] << -2000;
+
+       // King moves not castling
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D1))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F1))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D2))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F2))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_E2))] << -6000;
+
+       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_D8))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_F8))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_D7))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_F7))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_E7))] << -6000;
+  }
 }
 
 
@@ -139,7 +160,7 @@ void ThreadPool::set(size_t requested) {
 
       while (size() < requested)
           push_back(new Thread(size()));
-      clear();
+      clear(false);
 
       // Reallocate the hash with the new threadpool size
       TT.resize(size_t(Options["Hash"]));
@@ -152,10 +173,10 @@ void ThreadPool::set(size_t requested) {
 
 /// ThreadPool::clear() sets threadPool data to initial values
 
-void ThreadPool::clear() {
+void ThreadPool::clear(bool newgame) {
 
   for (Thread* th : *this)
-      th->clear();
+      th->clear(newgame);
 
   main()->callsCnt = 0;
   main()->bestPreviousScore = VALUE_INFINITE;
