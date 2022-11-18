@@ -470,6 +470,10 @@ constexpr Move make(Square from, Square to, PieceType pt = KNIGHT) {
   return Move(T + ((pt - KNIGHT) << 12) + (from << 6) + to);
 }
 
+constexpr Move reverse_move(Move m) {
+  return make_move(to_sq(m), from_sq(m));
+}
+
 constexpr bool is_ok(Move m) {
   return from_sq(m) != to_sq(m); // Catch MOVE_NULL and MOVE_NONE
 }

@@ -275,6 +275,7 @@ void Thread::search() {
   Color us = rootPos.side_to_move();
   int iterIdx = 0;
 
+  mainHistory.fill(0);
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
@@ -1734,6 +1735,11 @@ moves_loop: // When in check, search starts here
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
+
+    // Penalty for reversed move in case of moved piece not being a pawn
+    if (type_of(pos.moved_piece(move)) != PAWN && pos.game_ply() < 20)
+        thisThread->mainHistory[us][from_to(reverse_move(move))] << -4 * bonus;
+
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     // Update countermove history
