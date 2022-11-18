@@ -70,23 +70,34 @@ void Thread::clear(bool newgame) {
 
   if (newgame) { // back score some bad development moves
        // KNIGHT Moves to the border
-       mainHistory[WHITE][from_to(make_move(SQ_B1, SQ_A3))] << -2000;
-       mainHistory[WHITE][from_to(make_move(SQ_G1, SQ_H3))] << -2000;
-       mainHistory[BLACK][from_to(make_move(SQ_B8, SQ_A6))] << -2000;
-       mainHistory[BLACK][from_to(make_move(SQ_G8, SQ_H6))] << -2000;
+       mainHistory[WHITE][from_to(make_move(SQ_B1, SQ_A3))] << -4000;
+       mainHistory[WHITE][from_to(make_move(SQ_G1, SQ_H3))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_B8, SQ_A6))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_G8, SQ_H6))] << -4000;
 
        // King moves not castling
-       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D1))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F1))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D2))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F2))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_E2))] << -6000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D1))] << -8000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F1))] << -8000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_D2))] << -8000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F2))] << -8000;
+       mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_E2))] << -8000;
 
-       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D8))] << -6000;
-       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F8))] << -6000;
-       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D7))] << -6000;
-       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F7))] << -6000;
-       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_E7))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D8))] << -8000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F8))] << -8000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D7))] << -8000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F7))] << -8000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_E7))] << -8000;
+
+       // Border Pawn pushes
+       mainHistory[WHITE][from_to(make_move(SQ_A2, SQ_A3))] << -4000;
+       mainHistory[WHITE][from_to(make_move(SQ_A2, SQ_A4))] << -4000;
+       mainHistory[WHITE][from_to(make_move(SQ_H2, SQ_H3))] << -4000;
+       mainHistory[WHITE][from_to(make_move(SQ_H2, SQ_H4))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_A7, SQ_A6))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_A7, SQ_A5))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_H7, SQ_H6))] << -4000;
+       mainHistory[BLACK][from_to(make_move(SQ_H7, SQ_H5))] << -4000;
+
   }
 }
 
