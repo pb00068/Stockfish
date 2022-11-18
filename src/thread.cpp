@@ -82,11 +82,11 @@ void Thread::clear(bool newgame) {
        mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_F2))] << -6000;
        mainHistory[WHITE][from_to(make_move(SQ_E1, SQ_E2))] << -6000;
 
-       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_D8))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_F8))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_D7))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_F7))] << -6000;
-       mainHistory[WHITE][from_to(make_move(SQ_E8, SQ_E7))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D8))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F8))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_D7))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_F7))] << -6000;
+       mainHistory[BLACK][from_to(make_move(SQ_E8, SQ_E7))] << -6000;
   }
 }
 
