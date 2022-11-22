@@ -212,36 +212,31 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
 Thread* ThreadPool::get_best_thread() const {
 
-    Thread* bestThread = front();
-    std::map<Move, int64_t> votes;
-    Value minScore = VALUE_NONE;
+    Thread* bestThread = nullptr;
+    Depth maxDepth = 0;
 
-    // Find minimum score of all threads
-    for (Thread* th: *this)
-        minScore = std::min(minScore, th->rootMoves[0].score);
+    // Find highest depth and initialize bestThread with first thread having an useful score
+    for (Thread* th: *this) {
+       if (th->rootMoves[0].scoreUpperbound) // skip threads with an upperbound score
+          continue;
+       if (bestThread == nullptr)
+           bestThread = th;
+       maxDepth = std::max(maxDepth, th->rootMoves[0].searchedDepth);
+    }
+    if (bestThread == nullptr)
+        bestThread = front(); // worst case: all threads aborted search after a fail low
 
-    // Vote according to score and depth, and select the best thread
+    // Now among the threads with maximum depth choose the one with highest (non upperbound) score and longer PV
     for (Thread* th : *this)
     {
-        if (th->rootMoves[0].scoreUpperbound) // for the voting skip moves with an upperbound score
+        if (th->rootMoves[0].scoreUpperbound || th->rootMoves[0].searchedDepth != maxDepth)
            continue;
-        votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * th->rootMoves[0].searchedDepth;
 
-        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
-        {
-            // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
-                bestThread = th;
-        }
-        else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
-                 || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && (   votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]
-                         || (   votes[th->rootMoves[0].pv[0]] == votes[bestThread->rootMoves[0].pv[0]]
-                             && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size()))))
+        if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
+            bestThread = th;
+        else if (th->rootMoves[0].score == bestThread->rootMoves[0].score && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size())
             bestThread = th;
     }
-
     return bestThread;
 }
 
