@@ -399,7 +399,7 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  alpha = std::max(bestValue  - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -1244,6 +1244,10 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
 
+              // if first move fails low and no good other candidate moves
+              if (value <= alpha && !thisThread->bestMoveChanges && ss->ttHit && tte->move() == move)
+                  return alpha; // instantly return and retry with an extended window
+
               assert((ss+1)->pv);
 
               for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
@@ -1257,14 +1261,10 @@ moves_loop: // When in check, search starts here
                   ++thisThread->bestMoveChanges;
           }
           else
-          {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
-              if (moveCount > 10  && bestValue < alpha && !thisThread->bestMoveChanges)
-                  return bestValue; // return with fail low and retry with an extended window
-          }
       }
 
       if (value > bestValue)
