@@ -72,6 +72,7 @@ struct RootMove {
   Value previousScore = -VALUE_INFINITE;
   Value averageScore = -VALUE_INFINITE;
   int selDepth = 0;
+  int searchedDepth = 0;
   int tbRank = 0;
   bool scoreLowerbound = false;
   bool scoreUpperbound = false;

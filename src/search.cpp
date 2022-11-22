@@ -1185,10 +1185,11 @@ moves_loop: // When in check, search starts here
           if (value > alpha && d < newDepth)
           {
               const bool doDeeperSearch = value > (alpha + 64 + 11 * (newDepth - d));
-              value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth + doDeeperSearch, !cutNode);
+              newDepth += doDeeperSearch;
+              value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
 
-              int bonus = value > alpha ?  stat_bonus(newDepth)
-                                        : -stat_bonus(newDepth);
+              int bonus = value > alpha ?  stat_bonus(newDepth - doDeeperSearch)
+                                        : -stat_bonus(newDepth - doDeeperSearch);
 
               if (capture)
                   bonus /= 6;
@@ -1210,9 +1211,8 @@ moves_loop: // When in check, search starts here
       {
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
-
-          value = -search<PV>(pos, ss+1, -beta, -alpha,
-                              std::min(maxNextDepth, newDepth), false);
+          newDepth = std::min(maxNextDepth, newDepth);
+          value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
       // Step 19. Undo move
@@ -1241,6 +1241,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
+              rm.searchedDepth = newDepth;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
