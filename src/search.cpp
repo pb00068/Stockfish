@@ -399,7 +399,7 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(alpha - delta, -VALUE_INFINITE);
+                  alpha = std::max(bestValue  - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -1246,7 +1246,7 @@ moves_loop: // When in check, search starts here
 
               // if first move fails low and no good other candidate moves
               if (value <= alpha && !thisThread->bestMoveChanges && ss->ttHit && tte->move() == move)
-                  return bestValue; // instantly return and retry with an extended window
+                  return alpha; // instantly return and retry with an extended window
 
               assert((ss+1)->pv);
 
