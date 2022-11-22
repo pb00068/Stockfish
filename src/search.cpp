@@ -267,7 +267,7 @@ void Thread::search() {
   // The latter is needed for statScore and killer initialization.
   Stack stack[MAX_PLY+10], *ss = stack+7;
   Move  pv[MAX_PLY+1];
-  Value alpha, beta, delta;
+  Value delta, beta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -284,7 +284,7 @@ void Thread::search() {
 
   ss->pv = pv;
 
-  bestValue = delta = alpha = -VALUE_INFINITE;
+  bestValue = delta = aspAlpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
 
   if (mainThread)
@@ -352,7 +352,7 @@ void Thread::search() {
           {
               Value prev = rootMoves[pvIdx].averageScore;
               delta = Value(10) + int(prev) * prev / 15620;
-              alpha = std::max(prev - delta,-VALUE_INFINITE);
+              aspAlpha = std::max(prev - delta,-VALUE_INFINITE);
               beta  = std::min(prev + delta, VALUE_INFINITE);
 
               // Adjust optimism based on root move's previousScore
@@ -370,7 +370,7 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-              bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
+              bestValue = Stockfish::search<Root>(rootPos, ss, aspAlpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -390,16 +390,16 @@ void Thread::search() {
               // the UI) before a re-search.
               if (   mainThread
                   && multiPV == 1
-                  && (bestValue <= alpha || bestValue >= beta)
+                  && (bestValue <= aspAlpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+                  sync_cout << UCI::pv(rootPos, rootDepth, aspAlpha, beta) << sync_endl;
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (bestValue <= aspAlpha)
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue  - delta, -VALUE_INFINITE);
+                  beta = (aspAlpha + beta) / 2;
+                  aspAlpha = std::max(bestValue  - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
@@ -423,7 +423,7 @@ void Thread::search() {
 
           if (    mainThread
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
-              sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+              sync_cout << UCI::pv(rootPos, rootDepth, aspAlpha, beta) << sync_endl;
       }
 
       if (!Threads.stop)
@@ -1244,9 +1244,9 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.pv.resize(1);
 
-              // if first move fails low and no good other candidate moves
-              if (value <= alpha && !thisThread->bestMoveChanges && ss->ttHit && tte->move() == move)
-                  return alpha; // instantly return and retry with an extended window
+              // if first move is ttMove and fails low immediately decrease aspiration alpha a bit
+              if (value <= alpha && move == ttMove && value > -VALUE_KNOWN_WIN)
+                  alpha = thisThread->aspAlpha = (alpha + value) / 2;
 
               assert((ss+1)->pv);
 
