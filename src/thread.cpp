@@ -175,6 +175,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   main()->stopOnPonderhit = stop = false;
   increaseDepth = true;
   main()->ponder = ponderMode;
+  main()->gen = 0;
   Search::Limits = limits;
   Search::RootMoves rootMoves;
 
@@ -213,31 +214,22 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 Thread* ThreadPool::get_best_thread() const {
 
     Thread* bestThread = front();
-    std::map<Move, int64_t> votes;
-    Value minScore = VALUE_NONE;
+    std::map<Move, int64_t> maxgens;
 
-    // Find minimum score of all threads
-    for (Thread* th: *this)
-        minScore = std::min(minScore, th->rootMoves[0].score);
-
-    // Vote according to score and depth, and select the best thread
+    // Per move collect latest generation
     for (Thread* th : *this)
     {
-        votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+        if (maxgens[th->rootMoves[0].pv[0]] < th->rootMoves[0].generation)
+            maxgens[th->rootMoves[0].pv[0]] = th->rootMoves[0].generation;
+    }
 
-        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
-        {
-            // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
-                bestThread = th;
-        }
-        else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
-                 || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && (   votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]
-                         || (   votes[th->rootMoves[0].pv[0]] == votes[bestThread->rootMoves[0].pv[0]]
-                             && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size()))))
-            bestThread = th;
+    for (Thread* th : *this)
+    {
+       // only consider scores from the latest generation
+       if (th->rootMoves[0].generation != maxgens[th->rootMoves[0].pv[0]])
+          continue;
+       if (th->rootMoves[0].score > bestThread->rootMoves[0].score && !th->rootMoves[0].scoreUpperbound)
+           bestThread = th;
     }
 
     return bestThread;
