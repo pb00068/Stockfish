@@ -406,9 +406,9 @@ void Thread::search() {
                   if (mainThread)
                   {
                       mainThread->stopOnPonderhit = false;
-                      if (totalTime > 0 && Threads.size() > 1 && Limits.use_time_management() && Time.elapsed() > totalTime * 0.9) {
+                      if (rootDepth > 8 && totalTime > 0 && Threads.size() > 1 && Limits.use_time_management() && Time.elapsed() > totalTime * 0.95) {
                           for (Thread* th : Threads)
-                             if (th != mainThread && th->completedDepth >= mainThread->rootDepth && !th->rootMoves[0].scoreUpperbound)
+                             if (th != mainThread && th->completedDepth > mainThread->rootDepth && !th->rootMoves[0].scoreUpperbound)
                              {
                                  Threads.stop = true;
                                  break; // another thread already completed this depth
