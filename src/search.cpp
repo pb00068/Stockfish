@@ -312,6 +312,7 @@ void Thread::search() {
   optimism[us] = optimism[~us] = VALUE_ZERO;
 
   int searchAgainCounter = 0;
+  double totalTime = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -403,7 +404,17 @@ void Thread::search() {
 
                   failedHighCnt = 0;
                   if (mainThread)
+                  {
                       mainThread->stopOnPonderhit = false;
+                      if (Threads.size() > 1 && Limits.use_time_management() && Time.elapsed() > totalTime * 0.9) {
+                          for (Thread* th : Threads)
+                             if (th != mainThread && th->completedDepth >= mainThread->rootDepth && !th->rootMoves[0].scoreUpperbound)
+                             {
+                                 Threads.stop = true;
+                                 break; // another thread already completed this depth
+                             }
+                      }
+                  }
               }
               else if (bestValue >= beta)
               {
@@ -470,7 +481,7 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::min(1.0 + (complexity - 261) / 1738.7, 1.5);
 
-          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
+          totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
