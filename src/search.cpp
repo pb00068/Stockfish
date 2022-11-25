@@ -803,6 +803,7 @@ namespace {
         Depth R = std::min(int(eval - beta) / 168, 7) + depth / 3 + 4 - (complexity > 861);
 
         ss->currentMove = MOVE_NULL;
+        ss->currentIsCapture = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -863,6 +864,7 @@ namespace {
                 assert(pos.capture(move) || promotion_type(move) == QUEEN);
 
                 ss->currentMove = move;
+                ss->currentIsCapture = false; // altrhoug its true we don't want extensions during this search
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [true]
                                                                           [pos.moved_piece(move)]
@@ -1099,6 +1101,11 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5177)
               extension = 1;
+
+          // Extend first quiet after a big sharp exchange
+          else if (!capture && (ss-1)->currentIsCapture && (ss-2)->currentIsCapture && (ss-3)->currentIsCapture && (ss-4)->currentIsCapture &&
+                   (ss->inCheck || (ss-1)->inCheck || (ss-2)->inCheck ||  (ss-3)->inCheck))
+             extension = 1;
       }
 
       // Add extension to new depth
@@ -1110,6 +1117,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->currentIsCapture = capture;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
@@ -1542,6 +1550,7 @@ moves_loop: // When in check, search starts here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
+      ss->currentIsCapture = capture;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [pos.moved_piece(move)]
