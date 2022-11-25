@@ -429,6 +429,7 @@ void Thread::search() {
       if (!Threads.stop)
           completedDepth = rootDepth;
 
+
       if (rootMoves[0].pv[0] != lastBestMove) {
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
@@ -1248,7 +1249,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
-              rm.searchedDepth = newDepth;
+              rm.searchedDepth = newDepth + 1;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
