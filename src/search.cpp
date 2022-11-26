@@ -864,7 +864,7 @@ namespace {
                 assert(pos.capture(move) || promotion_type(move) == QUEEN);
 
                 ss->currentMove = move;
-                ss->currentIsCapture = false; // altrhoug its true we don't want extensions during this search
+                ss->currentIsCapture = false; // although its true we don't want extensions during this search
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                           [true]
                                                                           [pos.moved_piece(move)]
@@ -1104,7 +1104,7 @@ moves_loop: // When in check, search starts here
 
           // Extend first quiet after a big sharp exchange
           else if (!capture && (ss-1)->currentIsCapture && (ss-2)->currentIsCapture && (ss-3)->currentIsCapture && (ss-4)->currentIsCapture &&
-                   (ss->inCheck || (ss-1)->inCheck || (ss-2)->inCheck ||  (ss-3)->inCheck))
+                   ((ss-1)->inCheck || (ss-2)->inCheck ||  (ss-3)->inCheck))
              extension = 1;
       }
 
@@ -1117,7 +1117,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->currentIsCapture = capture;
+      ss->currentIsCapture = capture && type_of(pos.piece_on(to_sq(move))) > PAWN;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
@@ -1550,7 +1550,7 @@ moves_loop: // When in check, search starts here
       prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
-      ss->currentIsCapture = capture;
+      ss->currentIsCapture = capture && type_of(pos.piece_on(to_sq(move))) > PAWN;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [pos.moved_piece(move)]
