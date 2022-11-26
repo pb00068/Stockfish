@@ -550,7 +550,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth newDepth;
+    Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, priorCapture, singularQuietLMR;
     bool capture, moveCountPruning, ttCapture;
@@ -973,7 +973,7 @@ moves_loop: // When in check, search starts here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      ss->extension = 0;
+      extension = 0;
       capture = pos.capture(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
@@ -1062,14 +1062,14 @@ moves_loop: // When in check, search starts here
 
               if (value < singularBeta)
               {
-                  ss->extension = 1;
+                  extension = 1;
                   singularQuietLMR = !ttCapture;
 
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
                       && value < singularBeta - 25
                       && ss->doubleExtensions <= 9)
-                      ss->extension = 2;
+                      extension = 2;
               }
 
               // Multi-cut pruning
@@ -1082,35 +1082,35 @@ moves_loop: // When in check, search starts here
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension)
               else if (ttValue >= beta)
-                  ss->extension = -2;
+                  extension = -2;
 
               // If the eval of ttMove is less than alpha and value, we reduce it (negative extension)
               else if (ttValue <= alpha && ttValue <= value)
-                  ss->extension = -1;
+                  extension = -1;
           }
 
           // Check extensions (~1 Elo)
           else if (   givesCheck
                    && depth > 9
                    && abs(ss->staticEval) > 82)
-              ss->extension = 1;
+              extension = 1;
 
           // Quiet ttMove extensions (~0 Elo)
           else if (   PvNode
                    && move == ttMove
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5177)
-              ss->extension = 1;
+              extension = 1;
 
-          // Extend first quiet after a big exchange
+          // Extend first quiet after a big sharp exchange
           else if (!capture && (ss-1)->currentIsCapture && (ss-2)->currentIsCapture && (ss-3)->currentIsCapture && (ss-4)->currentIsCapture &&
-                   !(ss-1)->extension && !(ss-2)->extension && !(ss-3)->extension && !(ss-4)->extension)
-             ss->extension = 1;
+                   (ss->inCheck || (ss-1)->inCheck || (ss-2)->inCheck ||  (ss-3)->inCheck))
+             extension = 1;
       }
 
       // Add extension to new depth
-      newDepth += ss->extension;
-      ss->doubleExtensions = (ss-1)->doubleExtensions + (ss->extension == 2);
+      newDepth += extension;
+      ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
