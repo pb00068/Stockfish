@@ -215,33 +215,66 @@ Thread* ThreadPool::get_best_thread() const {
     Thread* bestThread = front();
     std::map<Move, int64_t> votes;
     Value minScore = VALUE_NONE;
+    Value minExactScore = VALUE_NONE;
+    Value avgExactScore = VALUE_ZERO;
+    int exactScores = 0;
 
-    // Find minimum score of all threads
-    for (Thread* th: *this)
+    // Do some statistics
+    for (Thread* th: *this) {
         minScore = std::min(minScore, th->rootMoves[0].score);
+        if (th->rootMoves[0].scoreUpperbound || th->rootMoves[0].scoreLowerbound)
+              continue;
+        minExactScore = std::min(minExactScore, th->rootMoves[0].score);
+        exactScores++;
+        avgExactScore += th->rootMoves[0].score;
+    }
+    avgExactScore/= exactScores;
 
-    // Vote according to score and depth, and select the best thread
+    // Vote according to score (value & quality) and depth, and select the best thread
     for (Thread* th : *this)
     {
-        if (th->rootMoves[0].scoreUpperbound) // for the voting skip moves with an upperbound score
+        // ignore outsiders
+        if (exactScores && th->rootMoves[0].scoreUpperbound && th->rootMoves[0].score > avgExactScore + 5)
+            continue;
+        if (exactScores && th->rootMoves[0].scoreLowerbound && th->rootMoves[0].score < avgExactScore - 5)
             continue;
         votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * th->rootMoves[0].searchedDepth;
+            (th->rootMoves[0].score - (exactScores ? minExactScore : minScore) + 14) * th->rootMoves[0].searchedDepth;
 
+        if (exactScores && th->rootMoves[0].scoreUpperbound && th->rootMoves[0].score <= minExactScore) // trusty Upperbound
+           votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
+        if (exactScores && th->rootMoves[0].scoreLowerbound && th->rootMoves[0].score >= avgExactScore + 5) // trusty Lowerbound
+           votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
+    }
+
+    //
+    bool tbResolved = false;
+    for (Thread* th : *this)
+    {
         if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
+            tbResolved = true;
             // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
             if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
                 bestThread = th;
         }
         else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
                  || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && (   votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]
-                         || (   votes[th->rootMoves[0].pv[0]] == votes[bestThread->rootMoves[0].pv[0]]
-                             && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size()))))
+                     && votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]))
             bestThread = th;
     }
+    if (tbResolved)
+      return bestThread;
 
+    Move bestMove = bestThread->rootMoves[0].pv[0];
+    // For that move choose the one with the longest PV (just avoid showing truncated PV's)
+    for (Thread* th : *this)
+    {
+        if (th->rootMoves[0].pv[0] != bestMove)
+          continue;
+        if (th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size())
+          bestThread = th;
+    }
     return bestThread;
 }
 
