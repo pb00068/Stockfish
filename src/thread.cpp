@@ -241,9 +241,9 @@ Thread* ThreadPool::get_best_thread() const {
         votes[th->rootMoves[0].pv[0]] +=
             (th->rootMoves[0].score - (exactScores ? minExactScore : minScore) + 14) * th->rootMoves[0].searchedDepth;
 
-        if (exactScores && th->rootMoves[0].scoreUpperbound && th->rootMoves[0].score <= minExactScore) // trusty Upperbound
+        if (exactScores && th->rootMoves[0].scoreUpperbound && th->rootMoves[0].score <= minExactScore) // trusty upperbound
            votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
-        if (exactScores && th->rootMoves[0].scoreLowerbound && th->rootMoves[0].score >= avgExactScore + 5) // trusty Lowerbound
+        if (exactScores && th->rootMoves[0].scoreLowerbound && th->rootMoves[0].score >= avgExactScore + 5) // trusty lowerbound
            votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
     }
 
@@ -267,12 +267,14 @@ Thread* ThreadPool::get_best_thread() const {
       return bestThread;
 
     Move bestMove = bestThread->rootMoves[0].pv[0];
-    // For that move choose the one with the longest PV (just avoid showing truncated PV's)
+    // Take one with highest score having PV length >=2
     for (Thread* th : *this)
     {
         if (th->rootMoves[0].pv[0] != bestMove)
           continue;
-        if (th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size())
+        if (bestThread->rootMoves[0].pv.size() <= 2 && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size())
+          bestThread = th;
+        else if (th->rootMoves[0].score > bestThread->rootMoves[0].score && th->rootMoves[0].pv.size() >= 2)
           bestThread = th;
     }
     return bestThread;
