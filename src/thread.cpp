@@ -218,9 +218,17 @@ Thread* ThreadPool::get_best_thread() const {
     Value minExactScore = VALUE_NONE;
     Value avgExactScore = VALUE_ZERO;
     int exactScores = 0;
+    bool tbResolved = false;
 
     // Do some statistics
     for (Thread* th: *this) {
+        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
+        {
+           tbResolved = true;
+           // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
+          if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
+                 bestThread = th;
+        }
         minScore = std::min(minScore, th->rootMoves[0].score);
         if (th->rootMoves[0].scoreUpperbound || th->rootMoves[0].scoreLowerbound)
               continue;
@@ -228,7 +236,10 @@ Thread* ThreadPool::get_best_thread() const {
         exactScores++;
         avgExactScore += th->rootMoves[0].score;
     }
-    avgExactScore/= exactScores;
+    if (tbResolved)
+       return bestThread;
+    if (exactScores)
+      avgExactScore/= exactScores;
 
     // Vote according to score (value & quality) and depth, and select the best thread
     for (Thread* th : *this)
@@ -245,29 +256,13 @@ Thread* ThreadPool::get_best_thread() const {
            votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
         if (exactScores && th->rootMoves[0].scoreLowerbound && th->rootMoves[0].score >= avgExactScore + 5) // trusty lowerbound
            votes[th->rootMoves[0].pv[0]] += (th->rootMoves[0].score - minExactScore + 14) * th->rootMoves[0].searchedDepth;
-    }
 
-    //
-    bool tbResolved = false;
-    for (Thread* th : *this)
-    {
-        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
-        {
-            tbResolved = true;
-            // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
-                bestThread = th;
-        }
-        else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
-                 || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]))
-            bestThread = th;
+        if (votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]])
+           bestThread = th;
     }
-    if (tbResolved)
-      return bestThread;
 
     Move bestMove = bestThread->rootMoves[0].pv[0];
-    // Take one with highest score having PV length >=2
+    // Take the one with highest score having PV length >=2
     for (Thread* th : *this)
     {
         if (th->rootMoves[0].pv[0] != bestMove)

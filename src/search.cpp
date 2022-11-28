@@ -233,6 +233,7 @@ void MainThread::search() {
   if (   int(Options["MultiPV"]) == 1
       && !Limits.depth
       && !skill.enabled()
+      && Threads.size() > 1
       && rootMoves[0].pv[0] != MOVE_NONE)
       bestThread = Threads.get_best_thread();
 
