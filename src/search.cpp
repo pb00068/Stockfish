@@ -475,7 +475,7 @@ void Thread::search() {
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
           if (rootMoves.size() == 1)
-              totalTime = std::min(500.0, totalTime);
+             totalTime = std::min(500.0, totalTime);
 
           // Stop the search if we have exceeded the totalTime
           if (Time.elapsed() > totalTime)
@@ -1261,6 +1261,9 @@ moves_loop: // When in check, search starts here
               if (   moveCount > 1
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
+
+              if (depth > 10 && moveCount == 1 && value > alpha && thisThread == Threads.main() && Limits.use_time_management() && !Threads.main()->stopOnPonderhit && Time.elapsed() > Time.maximum() * 0.9)
+                  Threads.stop = true;
           }
           else
               // All other moves but the PV are set to the lowest value: this
