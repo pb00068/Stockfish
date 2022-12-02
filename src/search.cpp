@@ -1262,7 +1262,8 @@ moves_loop: // When in check, search starts here
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
 
-              if (depth > 10 && moveCount == 1 && value > alpha && thisThread == Threads.main() && Limits.use_time_management() && !Threads.main()->stopOnPonderhit && Time.elapsed() > Time.maximum() * 0.8)
+              if (depth > 10 && !rm.scoreUpperbound && thisThread == Threads.main()
+                  && Limits.use_time_management() && !Threads.main()->stopOnPonderhit && Time.elapsed() > Time.maximum() * 0.7)
                   Threads.stop = true;
           }
           else
