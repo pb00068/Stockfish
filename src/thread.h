@@ -88,7 +88,6 @@ struct MainThread : public Thread {
   void check_time();
 
   double previousTimeReduction;
-  double timeLimitForNewCycle;
   Value bestPreviousScore;
   Value bestPreviousAverageScore;
   Value iterValue[4];

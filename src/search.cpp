@@ -470,15 +470,15 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::min(1.0 + (complexity - 261) / 1738.7, 1.5);
 
-          mainThread->timeLimitForNewCycle = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
+          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
           if (rootMoves.size() == 1)
-            mainThread->timeLimitForNewCycle = std::min(500.0, mainThread->timeLimitForNewCycle);
+             totalTime = std::min(500.0, totalTime);
 
           // Stop the search if we have exceeded the totalTime
-          if (Time.elapsed() > mainThread->timeLimitForNewCycle)
+          if (Time.elapsed() > totalTime)
           {
               // If we are allowed to ponder do not stop the search now but
               // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -489,7 +489,7 @@ void Thread::search() {
           }
           else if (   Threads.increaseDepth
                    && !mainThread->ponder
-                   && Time.elapsed() > mainThread->timeLimitForNewCycle * 0.53)
+                   && Time.elapsed() > totalTime * 0.53)
                    Threads.increaseDepth = false;
           else
                    Threads.increaseDepth = true;
@@ -1262,18 +1262,8 @@ moves_loop: // When in check, search starts here
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
 
-              if (depth > 10 && Limits.use_time_management() && thisThread == Threads.main())
-              {
-                  MainThread* mainThread = Threads.main();
-                  if (!mainThread->stopOnPonderhit && Time.elapsed() > mainThread->timeLimitForNewCycle)
-                  {
-                    if (moveCount == 1 && rm.scoreUpperbound) {
-                       rm.score = -VALUE_INFINITE; // rely on previous score
-                       rm.scoreUpperbound = false;
-                    }
-                    Threads.stop = true; // refuse to analyze remaining root moves if we would had not begun an new deepening cycle
-                  }
-              }
+              if (depth > 10 && moveCount == 1 && value > alpha && thisThread == Threads.main() && Limits.use_time_management() && !Threads.main()->stopOnPonderhit && Time.elapsed() > Time.maximum() * 0.8)
+                  Threads.stop = true;
           }
           else
               // All other moves but the PV are set to the lowest value: this
