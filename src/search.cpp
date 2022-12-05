@@ -1248,6 +1248,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
+              rm.scoreUpdated = Time.getTimeCheck();
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
@@ -1799,7 +1800,8 @@ void MainThread::check_time() {
 
   static TimePoint lastInfoTime = now();
 
-  TimePoint elapsed = Time.elapsed(lastInfoTime);
+  TimePoint elapsed = Time.elapsed();
+  Time.setTimeCheck(elapsed);
   TimePoint tick = Limits.startTime + elapsed;
 
   if (tick - lastInfoTime >= 1000)
