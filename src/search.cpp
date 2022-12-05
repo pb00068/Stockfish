@@ -1799,7 +1799,7 @@ void MainThread::check_time() {
 
   static TimePoint lastInfoTime = now();
 
-  TimePoint elapsed = Time.elapsed(lastInfoTime);
+  TimePoint elapsed = Time.elapsedTime(lastInfoTime);
   TimePoint tick = Limits.startTime + elapsed;
 
   if (tick - lastInfoTime >= 1000)
