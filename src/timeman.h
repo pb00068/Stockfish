@@ -35,8 +35,9 @@ public:
   TimePoint maximum() const { return maximumTime; }
   TimePoint elapsed() const { return Search::Limits.npmsec ?
                                      TimePoint(Threads.nodes_searched()) : now() - startTime; }
-  TimePoint elapsedTime(TimePoint now) const { return Search::Limits.npmsec ?
+  TimePoint elapsed(TimePoint now) const { return Search::Limits.npmsec ?
                                        TimePoint(Threads.nodes_searched()) : now - startTime; }
+  int getTimeCheck() const { return   timeCheck.load(std::memory_order_relaxed); }
 
   int64_t availableNodes; // When in 'nodes as time' mode
 
@@ -44,6 +45,7 @@ private:
   TimePoint startTime;
   TimePoint optimumTime;
   TimePoint maximumTime;
+  std::atomic_int timeCheck;
 };
 
 extern TimeManagement Time;
