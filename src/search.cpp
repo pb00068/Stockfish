@@ -929,7 +929,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, rootNode);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1248,6 +1248,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
+              rm.scored = true;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
