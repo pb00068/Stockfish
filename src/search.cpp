@@ -1248,7 +1248,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
-              rm.scored = !rm.scoreUpperbound;
+              rm.scored = !rm.scoreUpperbound && newDepth > 10;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
