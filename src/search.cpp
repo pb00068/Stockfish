@@ -553,7 +553,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, priorCapture, singularQuietLMR;
-    bool capture, moveCountPruning, ttCapture;
+    bool capture, moveCountPruning, ttCapture, scoredRootMove = false;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, improvement, complexity;
 
@@ -943,6 +943,7 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    scoredRootMove = false;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -957,6 +958,11 @@ moves_loop: // When in check, search starts here
       if (rootNode && !std::count(thisThread->rootMoves.begin() + thisThread->pvIdx,
                                   thisThread->rootMoves.begin() + thisThread->pvLast, move))
           continue;
+
+      if (rootNode && !moveCount) {
+          Search::RootMoves::iterator it = std::find(thisThread->rootMoves.begin() , thisThread->rootMoves.end(), move);
+          scoredRootMove = it !=  thisThread->rootMoves.end() && it->scored;
+      }
 
       // Check for legality
       if (!rootNode && !pos.legal(move))
@@ -1123,6 +1129,7 @@ moves_loop: // When in check, search starts here
       // been searched. In general we would like to reduce them, but there are many
       // cases where we extend a son if it has good chances to be "interesting".
       if (    depth >= 2
+          &&  !scoredRootMove
           &&  moveCount > 1 + (PvNode && ss->ply <= 1)
           && (   !ss->ttPv
               || !capture
@@ -1248,6 +1255,7 @@ moves_loop: // When in check, search starts here
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = value >= beta;
               rm.scoreUpperbound = value <= alpha;
+              rm.scored = true;
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
