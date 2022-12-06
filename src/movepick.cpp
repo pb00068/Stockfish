@@ -123,9 +123,15 @@ void MovePicker::score() {
   }
 
   for (auto& m : *this)
-      if constexpr (Type == CAPTURES)
+      if constexpr (Type == CAPTURES) {
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+          if (isRoot) {
+             Search::RootMoves::iterator it = std::find(pos.this_thread()->rootMoves.begin() , pos.this_thread()->rootMoves.end(), m);
+             if (it != pos.this_thread()->rootMoves.end() && it->scored)
+                 m.value += 100000;
+          }
+      }
 
       else if constexpr (Type == QUIETS) {
           m.value =  2 * (*mainHistory)[pos.side_to_move()][from_to(m)]
@@ -191,9 +197,11 @@ top:
       ++stage;
       return ttMove;
 
-  case CAPTURE_INIT:
-  case PROBCUT_INIT:
   case QCAPTURE_INIT:
+  case PROBCUT_INIT:
+        isRoot = false;
+  case CAPTURE_INIT:
+
       cur = endBadCaptures = moves;
       endMoves = generate<CAPTURES>(pos, cur);
 
