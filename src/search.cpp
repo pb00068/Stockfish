@@ -364,12 +364,12 @@ void Thread::search() {
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
-          int failedHighCnt = 0;
+          int failedHighCnt = 0, failedLowCnt = 0;
           while (true)
           {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - failedLowCnt - 3 * (searchAgainCounter + 1) / 4);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -402,6 +402,7 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
+                  failedLowCnt++;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
@@ -409,9 +410,14 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
+                  failedLowCnt=0;
               }
-              else
-                  break;
+              else {
+                  if (failedLowCnt) // centered window after a fail Low
+                    failedLowCnt = 0; // do a further cycle with full depth
+                  else
+                    break;
+              }
 
               delta += delta / 4 + 2;
 
