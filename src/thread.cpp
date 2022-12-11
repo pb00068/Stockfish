@@ -218,21 +218,22 @@ Thread* ThreadPool::get_best_thread() const {
 
     // Find minimum score of all threads
     for (Thread* th: *this)
-        minScore = std::min(minScore, th->rootMoves[0].score);
+        minScore = std::min(minScore, th->rootMoves[0].scoreUpperbound ? th->rootMoves[0].uciScore : th->rootMoves[0].score);
+
 
     // Vote according to score and depth, and select the best thread
     auto thread_value = [minScore](Thread* th) {
-            return (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+            return ((th->rootMoves[0].scoreUpperbound ? th->rootMoves[0].uciScore : th->rootMoves[0].score) - minScore + 14) * int(th->completedDepth);
         };
 
     for (Thread* th : *this)
         votes[th->rootMoves[0].pv[0]] += thread_value(th);
 
     for (Thread* th : *this)
-        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
+        if (abs(bestThread->rootMoves[0].uciScore) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
             // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
+            if (th->rootMoves[0].uciScore > bestThread->rootMoves[0].uciScore)
                 bestThread = th;
         }
         else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
