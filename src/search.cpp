@@ -1833,7 +1833,7 @@ void MainThread::check_time() {
   {
       if (Limits.use_time_management() && !stopOnPonderhit && failedLow && Time.timeOuts < 2) // normal time elapsed but just failed low
       {
-          Time.timeOuts++; // take extra time for resolving the fail low
+          Time.timeOuts++;  // take extra time for resolving the fail low
           Time.increaseMaximumTime();
       }
       else
