@@ -93,6 +93,7 @@ struct MainThread : public Thread {
   Value iterValue[4];
   int callsCnt;
   bool stopOnPonderhit;
+  bool failedLow;
   std::atomic_bool ponder;
 };
 

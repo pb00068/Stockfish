@@ -33,10 +33,12 @@ public:
   void init(Search::LimitsType& limits, Color us, int ply);
   TimePoint optimum() const { return optimumTime; }
   TimePoint maximum() const { return maximumTime; }
+  void increaseMaximumTime();
   TimePoint elapsed() const { return Search::Limits.npmsec ?
                                      TimePoint(Threads.nodes_searched()) : now() - startTime; }
 
   int64_t availableNodes; // When in 'nodes as time' mode
+  int timeOuts;
 
 private:
   TimePoint startTime;

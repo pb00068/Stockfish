@@ -102,4 +102,8 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
       optimumTime += optimumTime / 4;
 }
 
+
+void TimeManagement::increaseMaximumTime() {
+   maximumTime *= 1.3;
+}
 } // namespace Stockfish

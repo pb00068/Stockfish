@@ -169,6 +169,7 @@ void Search::clear() {
   Threads.main()->wait_for_search_finished();
 
   Time.availableNodes = 0;
+  Time.timeOuts = 0;
   TT.clear();
   Threads.clear();
   Tablebases::init(Options["SyzygyPath"]); // Free mapped files
@@ -385,6 +386,8 @@ void Thread::search() {
               // the previous iteration.
               if (Threads.stop)
                   break;
+              if (mainThread)
+                  mainThread->failedLow = false;
 
               // When failing high/low give some update (without cluttering
               // the UI) before a re-search.
@@ -402,8 +405,10 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
-                  if (mainThread)
+                  if (mainThread) {
                       mainThread->stopOnPonderhit = false;
+                      mainThread->failedLow = true;
+                  }
               }
               else if (bestValue >= beta)
               {
@@ -1826,7 +1831,15 @@ void MainThread::check_time() {
   if (   (Limits.use_time_management() && (elapsed > Time.maximum() - 10 || stopOnPonderhit))
       || (Limits.movetime && elapsed >= Limits.movetime)
       || (Limits.nodes && Threads.nodes_searched() >= (uint64_t)Limits.nodes))
-      Threads.stop = true;
+  {
+      if (Limits.use_time_management() && !stopOnPonderhit && failedLow && Time.timeOuts < 2) // normal time elapsed but just failed low
+      {
+          Time.timeOuts++; // take extra time for resolving the fail low
+          Time.increaseMaximumTime();
+      }
+      else
+          Threads.stop = true;
+  }
 }
 
 
