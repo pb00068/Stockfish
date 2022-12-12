@@ -1267,7 +1267,7 @@ moves_loop: // When in check, search starts here
                   rm.pv.push_back(*m);
 
               if (moveCount == 1 && value <= alpha && !thisThread->bestMoveChanges && depth > 10)
-                 return bestValue; // immediately restart aspiration search with lowered alpha
+                 return value; // immediately restart aspiration search with lowered alpha
 
               // We record how often the best move has been changed in each iteration.
               // This information is used for time management. In MultiPV mode,
