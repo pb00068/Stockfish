@@ -353,7 +353,7 @@ void Thread::search() {
               Value prev = rootMoves[pvIdx].averageScore;
               if (Threads.size() > 1 && pvIdx== 0) {
                  int d = Threads.maxDepth.load(std::memory_order_relaxed);
-                 if (d >= rootDepth)
+                 if (d >= rootDepth - 1)
                    prev = Value(Threads.averageScore.load(std::memory_order_relaxed));
               }
               delta = Value(10) + int(prev) * prev / 15620;
@@ -1282,7 +1282,7 @@ moves_loop: // When in check, search starts here
                  int d = Threads.maxDepth.load(std::memory_order_relaxed);
                  if (thisThread->rootDepth >= d) {
                     int avgScore = Threads.averageScore.load(std::memory_order_relaxed);
-                    Threads.averageScore = d == 0 ? avgScore : (2 * rm.uciScore + avgScore) / 3;
+                    Threads.averageScore = d == 0 ? avgScore : (rm.score + 3 * avgScore) / 4;
                  }
                  if (thisThread->rootDepth > d)
                     Threads.maxDepth = thisThread->rootDepth;
