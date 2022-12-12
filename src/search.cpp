@@ -1266,8 +1266,6 @@ moves_loop: // When in check, search starts here
               for (Move* m = (ss+1)->pv; *m != MOVE_NONE; ++m)
                   rm.pv.push_back(*m);
 
-              if (moveCount == 1 && value <= alpha && !thisThread->bestMoveChanges && depth > 10)
-                 return value; // immediately restart aspiration search with lowered alpha
 
               // We record how often the best move has been changed in each iteration.
               // This information is used for time management. In MultiPV mode,
@@ -1277,10 +1275,14 @@ moves_loop: // When in check, search starts here
                   ++thisThread->bestMoveChanges;
           }
           else
+          {
               // All other moves but the PV are set to the lowest value: this
               // is not a problem when sorting because the sort is stable and the
               // move position in the list is preserved - just the PV is pushed up.
               rm.score = -VALUE_INFINITE;
+              if (!(bestValue == alpha) && moveCount == 5 && !thisThread->bestMoveChanges && depth > 10)
+                   return value; // immediately restart aspiration search with lowered alpha
+          }
       }
 
       if (value > bestValue)
