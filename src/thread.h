@@ -116,8 +116,9 @@ struct ThreadPool : public std::vector<Thread*> {
 
   std::atomic_bool stop, increaseDepth;
 
-  std::atomic_int averageScore;
-  std::atomic_int maxDepth;
+  std::atomic_int move1;
+  std::atomic_int move2;
+  std::atomic_int move3;
 
 private:
   StateListPtr setupStates;

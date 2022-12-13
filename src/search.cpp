@@ -351,11 +351,6 @@ void Thread::search() {
           if (rootDepth >= 4)
           {
               Value prev = rootMoves[pvIdx].averageScore;
-              if (Threads.size() > 1 && pvIdx== 0) {
-                 int d = Threads.maxDepth.load(std::memory_order_relaxed);
-                 if (d >= rootDepth - 1)
-                   prev = Value(Threads.averageScore.load(std::memory_order_relaxed));
-              }
               delta = Value(10) + int(prev) * prev / 15620;
               alpha = std::max(prev - delta,-VALUE_INFINITE);
               beta  = std::min(prev + delta, VALUE_INFINITE);
@@ -390,6 +385,18 @@ void Thread::search() {
               // the previous iteration.
               if (Threads.stop)
                   break;
+              else if (bestValue > alpha && pvIdx == 0 && Threads.size() > 1 && rootDepth > 6 && !rootPos.capture(rootMoves[0].pv[0])) {
+                   int m1 = Threads.move1.load(std::memory_order_relaxed);
+                   int m2 = Threads.move2.load(std::memory_order_relaxed);
+                   int m3 = Threads.move3.load(std::memory_order_relaxed);
+                   Move ownbest = rootMoves[0].pv[0];
+                   if (ownbest != m1 && ownbest != m2 && ownbest != m3)
+                   {
+                     Threads.move3 = m2;
+                     Threads.move2 = m1;
+                     Threads.move1 = ownbest;
+                   }
+              }
 
               // When failing high/low give some update (without cluttering
               // the UI) before a re-search.
@@ -930,6 +937,24 @@ moves_loop: // When in check, search starts here
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
 
+    if (rootNode && Threads.size() > 1 && depth > 6) {
+       int m[3];
+       m[0] = Threads.move1.load(std::memory_order_relaxed);
+       m[1] = Threads.move2.load(std::memory_order_relaxed);
+       m[2] = Threads.move3.load(std::memory_order_relaxed);
+       if (m[0] == m[1])
+           m[1] = MOVE_NONE;
+       if (m[0] == m[2])
+           m[2] = MOVE_NONE;
+       int y=0;
+       for (int z=0; z<3 && y<2; z++) {
+           if (m[z] != MOVE_NONE && m[z] != ttMove)
+              ss->killers[y++] = Move(m[z]);
+       }
+       for (; y<2; y++)
+          ss->killers[y++] = MOVE_NONE;
+    }
+
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
                                       contHist,
@@ -1277,16 +1302,6 @@ moves_loop: // When in check, search starts here
               if (   moveCount > 1
                   && !thisThread->pvIdx)
                   ++thisThread->bestMoveChanges;
-
-              if (Threads.size() > 1 && thisThread->rootDepth > 6) {
-                 int d = Threads.maxDepth.load(std::memory_order_relaxed);
-                 if (thisThread->rootDepth >= d) {
-                    int avgScore = Threads.averageScore.load(std::memory_order_relaxed);
-                    Threads.averageScore = d == 0 ? avgScore : (rm.score + 3 * avgScore) / 4;
-                 }
-                 if (thisThread->rootDepth > d)
-                    Threads.maxDepth = thisThread->rootDepth;
-              }
           }
           else
               // All other moves but the PV are set to the lowest value: this
