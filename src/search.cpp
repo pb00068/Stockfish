@@ -1439,7 +1439,7 @@ moves_loop: // When in check, search starts here
     ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit = ss->ttHit && tte->is_pv();
 
-    if (  !PvNode
+    if (  (!PvNode || tte->depth() > ttDepth + 1)
         && ss->ttHit
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race
