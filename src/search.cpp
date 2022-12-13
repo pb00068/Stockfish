@@ -1614,9 +1614,9 @@ moves_loop: // When in check, search starts here
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval);
 
-    assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
+    assert(v > -VALUE_INFINITE && v < VALUE_INFINITE);
 
-    return bestValue;
+    return v;
   }
 
 
