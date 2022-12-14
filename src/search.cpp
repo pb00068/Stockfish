@@ -369,6 +369,8 @@ void Thread::search() {
           {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
+              if (rootDepth > 10)
+                Threads.aspSearch++;
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
@@ -1250,6 +1252,7 @@ moves_loop: // When in check, search starts here
               rm.score =  rm.uciScore = value;
               rm.selDepth = thisThread->selDepth;
               rm.scoreLowerbound = rm.scoreUpperbound = false;
+              rm.aspSearch = Threads.aspSearch.load(std::memory_order_relaxed);
 
               if (value >= beta) {
                  rm.scoreLowerbound = true;

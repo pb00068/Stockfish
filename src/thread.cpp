@@ -174,6 +174,8 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 
   main()->stopOnPonderhit = stop = false;
   increaseDepth = true;
+  aspSearch = 0;
+
   main()->ponder = ponderMode;
   Search::Limits = limits;
   Search::RootMoves rootMoves;
@@ -215,14 +217,20 @@ Thread* ThreadPool::get_best_thread() const {
     Thread* bestThread = front();
     std::map<Move, int64_t> votes;
     Value minScore = VALUE_NONE;
+    int oldestRun = 2147483647;
+    int mostRecentRun = 1;
 
     // Find minimum score of all threads
-    for (Thread* th: *this)
+    for (Thread* th: *this) {
         minScore = std::min(minScore, th->rootMoves[0].score);
+        oldestRun = std::min(oldestRun, th->rootMoves[0].aspSearch);
+        mostRecentRun = std::max(mostRecentRun, th->rootMoves[0].aspSearch);
+    }
+    int distance = 1 + mostRecentRun - oldestRun;
 
-    // Vote according to score and depth, and select the best thread
-    auto thread_value = [minScore](Thread* th) {
-            return (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+    // Vote according to score and most recent search, and select the best thread
+    auto thread_value = [minScore, oldestRun, distance](Thread* th) {
+            return (th->rootMoves[0].score - minScore + 14) * int((15 * (th->rootMoves[0].aspSearch - oldestRun)) / distance);
         };
 
     for (Thread* th : *this)
