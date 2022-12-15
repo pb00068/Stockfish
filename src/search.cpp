@@ -274,6 +274,7 @@ void Thread::search() {
   double timeReduction = 1, totBestMoveChanges = 0;
   Color us = rootPos.side_to_move();
   int iterIdx = 0;
+  Threads.maxCompletedDepthHelpers=0;
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
@@ -312,6 +313,7 @@ void Thread::search() {
   optimism[us] = optimism[~us] = VALUE_ZERO;
 
   int searchAgainCounter = 0;
+  double  totalTime =0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -390,9 +392,17 @@ void Thread::search() {
               // the UI) before a re-search.
               if (   mainThread
                   && multiPV == 1
-                  && (bestValue <= alpha || bestValue >= beta)
-                  && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth) << sync_endl;
+                  && (bestValue <= alpha || bestValue >= beta))
+             {
+                  TimePoint t =  Time.elapsed();
+                  if (Threads.size() > 1 && totalTime > 0 && t > totalTime && Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed) >= rootDepth)
+                  {
+                     Threads.stop = true;
+                     break;
+                  }
+                  else if (t > 3000)
+                     sync_cout << UCI::pv(rootPos, rootDepth) << sync_endl;
+              }
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
@@ -440,8 +450,11 @@ void Thread::search() {
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
 
-      if (!mainThread)
+      if (!mainThread) {
+          if (completedDepth > 10 && Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed) < completedDepth)
+              Threads.maxCompletedDepthHelpers = completedDepth;
           continue;
+      }
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
@@ -470,7 +483,7 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::min(1.0 + (complexity - 261) / 1738.7, 1.5);
 
-          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
+          totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
