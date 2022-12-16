@@ -661,7 +661,7 @@ namespace {
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
         {
-            if (tte->depth() > depth)
+            if (tte->depth() > depth + 1)
                (ss-1)->easyTTCutoffs++;
             return ttValue;
         }
@@ -1381,7 +1381,8 @@ moves_loop: // When in check, search starts here
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
-                  ss->easyTTCutoffs >= moveCount -1 ? depth + 1 : depth, bestMove, ss->staticEval);
+                  (ss->easyTTCutoffs >= moveCount || (moveCount > 10 && ss->easyTTCutoffs >= (2 * moveCount/3))) ? depth + 1 : depth,
+                  bestMove, ss->staticEval);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
