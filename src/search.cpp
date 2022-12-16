@@ -395,7 +395,11 @@ void Thread::search() {
                   && (bestValue <= alpha || bestValue >= beta))
              {
                   TimePoint t =  Time.elapsed();
-                  if (Threads.size() > 1 && totalTime > 0 && t > totalTime && Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed) >= rootDepth)
+                  if (Threads.size() > 1
+                      && totalTime > 0
+                      && t > totalTime * 1.2
+                      && Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed) >= rootDepth
+                      && Threads.countHelpers.load(std::memory_order_relaxed) >= Threads.size() / 3)
                   {
                      Threads.stop = true;
                      break;
@@ -451,8 +455,16 @@ void Thread::search() {
           Threads.stop = true;
 
       if (!mainThread) {
-          if (completedDepth > 10 && Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed) < completedDepth)
-              Threads.maxCompletedDepthHelpers = completedDepth;
+          if (completedDepth > 10 && !Threads.stop) {
+             int maxCompleted = Threads.maxCompletedDepthHelpers.load(std::memory_order_relaxed);
+             if (maxCompleted < completedDepth)
+             {
+               Threads.maxCompletedDepthHelpers = completedDepth;
+               Threads.countHelpers = 1;
+             }
+             else if (maxCompleted == completedDepth)
+               Threads.countHelpers++;
+          }
           continue;
       }
 

@@ -116,6 +116,7 @@ struct ThreadPool : public std::vector<Thread*> {
 
   std::atomic_bool stop, increaseDepth;
   std::atomic_int maxCompletedDepthHelpers;
+  std::atomic_uint countHelpers;
 
 private:
   StateListPtr setupStates;
