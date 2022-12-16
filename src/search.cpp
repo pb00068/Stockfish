@@ -565,6 +565,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->ttCutoffs=0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -659,7 +660,11 @@ namespace {
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
+        {
+            if (tte->depth() > depth)
+               (ss-1)->ttCutoffs++;
             return ttValue;
+        }
     }
 
     // Step 5. Tablebases probe
@@ -1103,6 +1108,11 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5177)
               extension = 1;
       }
+
+      // if first 2 moves where both early cut off by TT we can assume that
+      // this node was already explored with higher depth so extend it
+      if (moveCount == 3 && !extension && ss->ttCutoffs > 2)
+        extension = 1;
 
       // Add extension to new depth
       newDepth += extension;
