@@ -394,9 +394,13 @@ void Thread::search() {
                   && (bestValue <= alpha || bestValue >= beta))
               {
                   TimePoint t =  Time.elapsed();
-                  if (totalTime > 0 && t > totalTime)
+                  if (bestValue >= beta && totalTime > 0 && t >= totalTime)
                   {
-                     Threads.stop = true;
+                     // don't need to spend extra time to resolve a fail high since we already know the best continuation
+                     if (mainThread->ponder)
+                        mainThread->stopOnPonderhit = true;
+                     else
+                        Threads.stop = true;
                      break;
                   }
                   else if (t > 3000)
