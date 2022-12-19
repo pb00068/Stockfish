@@ -394,7 +394,7 @@ void Thread::search() {
                   && (bestValue <= alpha || bestValue >= beta))
               {
                   TimePoint t =  Time.elapsed();
-                  if (bestValue >= beta && totalTime > 0 && t >= totalTime)
+                  if (bestValue >= beta && totalTime > 0 && t >= totalTime * 1.2)
                   {
                      // don't need to spend extra time to resolve a fail high since we already know the best continuation
                      if (mainThread->ponder)
