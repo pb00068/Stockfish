@@ -215,24 +215,28 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 Thread* ThreadPool::get_best_thread() const {
 
     Thread* bestThread = front();
+    std::map<Move, int64_t> votes;
+    Value minScore = VALUE_NONE;
+    int oldestRun = 2147483647;
+    int mostRecentRun = 1;
 
-
-    // Find thread with most recent result (most recent aspiration search run)
-    for (Thread* th: *this)
-    {
-       // exclude fail lows, because here pv[0] is from previous iteration
-       if (th->rootMoves[0].scoreUpperbound)
-         continue;
-       if (th->rootMoves[0].aspSearch > bestThread->rootMoves[0].aspSearch ||
-          (th->rootMoves[0].aspSearch == bestThread->rootMoves[0].aspSearch && th->rootMoves[0].score > bestThread->rootMoves[0].score))
-            bestThread = th;
+    // Find minimum score of all threads
+    for (Thread* th: *this) {
+        minScore = std::min(minScore, th->rootMoves[0].score);
+        oldestRun = std::min(oldestRun, th->rootMoves[0].aspSearch);
+        mostRecentRun = std::max(mostRecentRun, th->rootMoves[0].aspSearch);
     }
+    int distance = 1 + mostRecentRun - oldestRun;
 
-    Move bestMove = bestThread->rootMoves[0].pv[0];
-    // Among threads with this move, choose the one with the shortest Mate, otherwise longest PV
-    for (Thread* th : *this) {
-        if (th->rootMoves[0].pv[0] != bestMove)
-           continue;
+    // Vote according to score and depth, and select the best thread
+    auto thread_value = [minScore, oldestRun, distance](Thread* th) {
+            return (th->rootMoves[0].score - minScore + (15 * (th->rootMoves[0].aspSearch - oldestRun) / distance)) * int(th->completedDepth);
+        };
+
+    for (Thread* th : *this)
+        votes[th->rootMoves[0].pv[0]] += thread_value(th);
+
+    for (Thread* th : *this)
         if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
             // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
@@ -241,9 +245,11 @@ Thread* ThreadPool::get_best_thread() const {
         }
         else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
                  || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && th->rootMoves[0].pv.size() > bestThread->rootMoves[0].pv.size()))
+                     && (   votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]
+                         || (   votes[th->rootMoves[0].pv[0]] == votes[bestThread->rootMoves[0].pv[0]]
+                             &&   thread_value(th) * int(th->rootMoves[0].pv.size() > 2)
+                                > thread_value(bestThread) * int(bestThread->rootMoves[0].pv.size() > 2)))))
             bestThread = th;
-    }
 
     return bestThread;
 }
