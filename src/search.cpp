@@ -555,14 +555,14 @@ namespace {
     bool givesCheck, improving, priorCapture, singularQuietLMR;
     bool capture, moveCountPruning, ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement, complexity;
+    int moveCount, captureCount, quietCount, improvement, complexity, threatenedPiecesMoved;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
-    moveCount          = captureCount = quietCount = ss->moveCount = 0;
+    moveCount          = captureCount = quietCount = ss->moveCount = threatenedPiecesMoved = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -1131,7 +1131,8 @@ moves_loop: // When in check, search starts here
               || !capture
               || (cutNode && (ss-1)->moveCount > 1)))
       {
-          Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
+          // add threatenedPiecesMoved to movecount: if moving the threathened Piece does not help we are likely failing low anyway
+          Depth r = reduction(improving, depth, moveCount + ((mp.threatenedPieces & from_sq(move)) ? 0 : threatenedPiecesMoved), delta, thisThread->rootDelta);
 
           // Decrease reduction if position is or has been on the PV
           // and node is not likely to fail low. (~3 Elo)
@@ -1160,9 +1161,12 @@ moves_loop: // When in check, search starts here
               r--;
 
           // Decrease reduction if we move a threatened piece (~1 Elo)
-          if (   depth > 9
-              && (mp.threatenedPieces & from_sq(move)))
-              r--;
+          if (mp.threatenedPieces & from_sq(move))
+          {
+              if (depth > 9)
+                  r--;
+              threatenedPiecesMoved++;
+          }
 
           // Increase reduction if next ply has a lot of fail high
           if ((ss+1)->cutoffCnt > 3)
