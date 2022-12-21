@@ -119,7 +119,7 @@ void MovePicker::score() {
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                        | (pos.pieces(us, ROOK)  & threatenedByMinor)
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-      numThreatenedPieces = popcount(threatenedPieces);
+      numThreatenedPieces = popcount(threatenedPieces | (threatenedByPawn & (pos.pieces(us, PAWN))));
   }
 
   for (auto& m : *this)
