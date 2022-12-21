@@ -69,7 +69,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
-  threatenedPieces = 0;
+  threatenedPieces = numThreatenedPieces = 0;
 }
 
 /// MovePicker constructor for quiescence search
@@ -119,6 +119,7 @@ void MovePicker::score() {
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                        | (pos.pieces(us, ROOK)  & threatenedByMinor)
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+      numThreatenedPieces = popcount(threatenedPieces);
   }
 
   for (auto& m : *this)

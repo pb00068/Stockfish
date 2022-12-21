@@ -1128,6 +1128,9 @@ moves_loop: // When in check, search starts here
           && !likelyFailLow)
           r -= 2;
 
+      // reduce less if position is sharp
+      r -= mp.numThreatenedPieces / 2;
+
       // Decrease reduction if opponent's move count is high (~1 Elo)
       if ((ss-1)->moveCount > 7)
           r--;
