@@ -1221,7 +1221,7 @@ moves_loop: // When in check, search starts here
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
           if (moveCount > 1 && rootNode && value >= beta) {
-              thisThread->rootBeta = beta = (beta + value)/2;
+              thisThread->rootBeta = beta = value;
           }
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
