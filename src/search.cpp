@@ -1220,13 +1220,18 @@ moves_loop: // When in check, search starts here
       // parent node fail low with value <= alpha and try another move.
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
-          if (moveCount <= 3 && rootNode && value >= beta) {
-              thisThread->rootBeta = beta = std::min(value + 20, VALUE_MATE); // increases the probability to get a value within bound, anyway still < 50%
+          Value adj = VALUE_ZERO;
+          if (moveCount > 1 && rootNode && value >= beta) {
+              // adjust alpha for this move to get more cut-offs
+              if (beta - alpha > 200)
+                  adj = value - beta;
+              // adjust aspiration beta to possibly avoid a fail high again
+              thisThread->rootBeta = beta = std::min(value + 20, VALUE_MATE);
           }
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
-          value = -search<PV>(pos, ss+1, -beta, -alpha,
+          value = -search<PV>(pos, ss+1, -beta, -(alpha + adj),
                               std::min(maxNextDepth, newDepth), false);
       }
 
