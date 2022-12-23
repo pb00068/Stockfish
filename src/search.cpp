@@ -1215,16 +1215,19 @@ moves_loop: // When in check, search starts here
                value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), !cutNode);
       }
 
-      // For PV nodes only, do a full PV search on the first move or after a fail
-      // high (in the latter case search only if value < beta), otherwise let the
-      // parent node fail low with value <= alpha and try another move.
-      if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
+      // For PV nodes only, do a full PV search
+      if (PvNode && (moveCount == 1 || (value > alpha && value < beta)))
       {
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
+      }
+      else if (rootNode && value >= beta) // adjust PV
+      {
+        (ss+1)->pv = pv;
+        (ss+1)->pv[0] = MOVE_NONE;
       }
 
       // Step 19. Undo move
