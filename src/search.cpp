@@ -285,7 +285,7 @@ void Thread::search() {
   ss->pv = pv;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
-  rootBeta = VALUE_INFINITE;
+  beta = VALUE_INFINITE;
 
   if (mainThread)
   {
@@ -353,7 +353,7 @@ void Thread::search() {
               Value prev = rootMoves[pvIdx].averageScore;
               delta = Value(10) + int(prev) * prev / 15620;
               alpha = std::max(prev - delta,-VALUE_INFINITE);
-              rootBeta  = std::min(prev + delta, VALUE_INFINITE);
+              beta  = std::min(prev + delta, VALUE_INFINITE);
 
               // Adjust optimism based on root move's previousScore
               int opt = 118 * prev / (std::abs(prev) + 169);
@@ -370,7 +370,7 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-              bestValue = Stockfish::search<Root>(rootPos, ss, alpha, rootBeta, adjustedDepth, false);
+              bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -390,7 +390,7 @@ void Thread::search() {
               // the UI) before a re-search.
               if (   mainThread
                   && multiPV == 1
-                  && (bestValue <= alpha || bestValue >= rootBeta)
+                  && (bestValue <= alpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
                   sync_cout << UCI::pv(rootPos, rootDepth) << sync_endl;
 
@@ -398,16 +398,16 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  rootBeta = (alpha + rootBeta) / 2;
+                  beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
-              else if (bestValue >= rootBeta)
+              else if (bestValue >= beta)
               {
-                  rootBeta = std::min(bestValue + delta, VALUE_INFINITE);
+                  beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
@@ -1226,7 +1226,7 @@ moves_loop: // When in check, search starts here
               if (beta - alpha > 200)
                   adj = value - beta;
               // adjust aspiration beta to possibly avoid a fail high again
-              thisThread->rootBeta = beta = std::min(value + 20, VALUE_MATE);
+              thisThread->beta = beta = std::min(value + 20, VALUE_MATE);
           }
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;

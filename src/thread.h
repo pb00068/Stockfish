@@ -70,7 +70,7 @@ public:
   StateInfo rootState;
   Search::RootMoves rootMoves;
   Depth rootDepth, completedDepth, previousDepth;
-  Value rootDelta, rootBeta;
+  Value rootDelta, beta;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;
