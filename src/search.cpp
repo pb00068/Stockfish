@@ -1221,7 +1221,7 @@ moves_loop: // When in check, search starts here
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
           if (moveCount > 1 && rootNode && value >= beta) {
-              // adjust aspiration beta to possibly avoid a fail high again
+              // adjust aspiration beta for possibly avoid a fail high again
               thisThread->beta = beta = std::min(value + 1, VALUE_MATE);
           }
           (ss+1)->pv = pv;
