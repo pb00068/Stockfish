@@ -1225,7 +1225,7 @@ moves_loop: // When in check, search starts here
 
           Value v  = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
-          value = (v >= beta && value >= beta && rootNode) ? std::max(value, v) : v;
+          value = (v >= beta && value >= beta && rootNode) ? std::min(value, v) : v;
       }
 
       // Step 19. Undo move
