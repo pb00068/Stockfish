@@ -938,7 +938,7 @@ moves_loop: // When in check, search starts here
     bool likelyFailLow =    PvNode
                          && ttMove
                          && (tte->bound() & BOUND_UPPER)
-                         && alpha > ttValue  // with lowered expectations (alpha) the node might not fail low anymore
+                         && alpha > ttValue  // with lowered expectation (alpha) the node might not fail low anymore
                          && tte->depth() >= depth;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
