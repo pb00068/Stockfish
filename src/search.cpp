@@ -1220,11 +1220,9 @@ moves_loop: // When in check, search starts here
       // parent node fail low with value <= alpha and try another move.
       if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
       {
-          if (moveCount <= 3 && rootNode && value >= beta)
-          {
-              // adjust aspiration beta for possibly avoid a fail high again
+          if (rootNode && value >= beta)
+              // adjust aspiration beta to possibly avoid a fail high again
               thisThread->beta = beta = std::min(value + 10, VALUE_MATE);
-          }
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
