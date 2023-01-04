@@ -1225,6 +1225,16 @@ moves_loop: // When in check, search starts here
 
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
+          if (rootNode && moveCount == 1 && value < alpha && alpha > -VALUE_INFINITE + 21)
+          {
+               thisThread->alpha = alpha = value - 20;
+               thisThread->alpha = thisThread->alpha -1;
+               (ss+1)->pv = pv;
+               (ss+1)->pv[0] = MOVE_NONE;
+
+               value = -search<PV>(pos, ss+1, -beta, -alpha,
+                        std::min(maxNextDepth, newDepth), false);
+          }
       }
 
       // Step 19. Undo move
@@ -1251,7 +1261,6 @@ moves_loop: // When in check, search starts here
           {
               rm.score =  rm.uciScore = value;
               rm.selDepth = thisThread->selDepth;
-              thisThread->alpha = value-1; // adjust aspiration alpha dynamically just below best move value
               rm.scoreLowerbound = rm.scoreUpperbound = false;
 
               if (value >= beta) {
