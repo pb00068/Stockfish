@@ -1140,7 +1140,7 @@ moves_loop: // When in check, search starts here
       if (cutNode)
           r += 2;
 
-      // Increase reduction if ttMove is a capture with see >= 0
+      // Increase reduction if ttMove is a capture with non negative see
       if (goodTTCapture)
           r++;
 
