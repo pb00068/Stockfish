@@ -926,7 +926,7 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    bool goodTTCapture = ttCapture && pos.see_ge(ttMove);
+    bool goodTTCapture = ttCapture && pos.see_ge(ttMove, VALUE_ZERO + 1);
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
