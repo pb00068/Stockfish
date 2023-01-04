@@ -373,7 +373,10 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+              if (failedHighCnt && ss->moveCount > 1 && pvIdx == 0)
+                 ss->excludedMove = rootMoves[1].pv[0]; // try to avoid researching the former bestmove with lower depth
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
+              ss->excludedMove = MOVE_NONE;
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -1263,6 +1266,7 @@ moves_loop: // When in check, search starts here
               else if (value <= alpha) {
                  rm.scoreUpperbound = true;
                  rm.uciScore = alpha;
+                 ss->excludedMove = MOVE_NONE; // prior failing high move now failed low -> research all moves
               }
               rm.pv.resize(1);
 
