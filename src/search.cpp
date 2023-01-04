@@ -267,7 +267,7 @@ void Thread::search() {
   // The latter is needed for statScore and killer initialization.
   Stack stack[MAX_PLY+10], *ss = stack+7;
   Move  pv[MAX_PLY+1];
-  Value alpha, beta, delta;
+  Value beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -1251,6 +1251,7 @@ moves_loop: // When in check, search starts here
           {
               rm.score =  rm.uciScore = value;
               rm.selDepth = thisThread->selDepth;
+              thisThread->alpha = value-1; // adjust aspiration alpha dynamically just below best move value
               rm.scoreLowerbound = rm.scoreUpperbound = false;
 
               if (value >= beta) {
