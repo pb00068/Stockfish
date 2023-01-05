@@ -1254,6 +1254,7 @@ moves_loop: // When in check, search starts here
           {
               rm.score =  rm.uciScore = value;
               rm.selDepth = thisThread->selDepth;
+              bool wasLowerbound = rm.scoreLowerbound && moveCount == 1;
               rm.scoreLowerbound = rm.scoreUpperbound = false;
 
               if (value >= beta) {
@@ -1263,6 +1264,11 @@ moves_loop: // When in check, search starts here
               else if (value <= alpha) {
                  rm.scoreUpperbound = true;
                  rm.uciScore = alpha;
+              }
+              else if (wasLowerbound) {
+                 // we resolved the failing-high move with reduced depth (see failedHighCnt)
+                 // now search the remaining root-moves with normal depth
+                 depth++;
               }
               rm.pv.resize(1);
 
