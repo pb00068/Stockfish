@@ -1117,6 +1117,8 @@ bool Position::see_ge(Move m, Value threshold) const {
       {
           if ((swap = PawnValueMg - swap) < res)
               break;
+          else if (relative_rank(stm, to) >= 6)
+             swap += relative_rank(stm, to) > 6 ? RookValueMg : KnightValueMg; // Pawn (almost) promoting
 
           occupied ^= least_significant_square_bb(bb);
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
