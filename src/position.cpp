@@ -1113,12 +1113,10 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' any X-ray attackers behind it.
-      if ((bb = stmAttackers & pieces(PAWN)))
+      if ((bb = stmAttackers & pieces(PAWN) & PawnCamp[stm]))
       {
           if ((swap = PawnValueMg - swap) < res)
               break;
-          else if (relative_rank(stm, to) >= 6)
-             swap += relative_rank(stm, to) > 6 ? RookValueMg : KnightValueMg; // Pawn (almost) promoting
 
           occupied ^= least_significant_square_bb(bb);
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
@@ -1131,8 +1129,8 @@ bool Position::see_ge(Move m, Value threshold) const {
 
           occupied ^= least_significant_square_bb(bb);
       }
-
-      else if ((bb = stmAttackers & pieces(BISHOP)))
+      // Bishops and advanced Pawns (relative rank >= 6)
+      else if ((bb = stmAttackers & pieces(PAWN, BISHOP)))
       {
           if ((swap = BishopValueMg - swap) < res)
               break;
