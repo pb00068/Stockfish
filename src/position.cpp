@@ -1129,7 +1129,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
           occupied ^= least_significant_square_bb(bb);
       }
-      // Bishops and advanced Pawns (relative rank >= 6)
+      // Bishops and promoting Pawns
       else if ((bb = stmAttackers & pieces(PAWN, BISHOP)))
       {
           if ((swap = BishopValueMg - swap) < res)

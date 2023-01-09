@@ -64,7 +64,7 @@ constexpr Bitboard QueenSide   = FileABB | FileBBB | FileCBB | FileDBB;
 constexpr Bitboard CenterFiles = FileCBB | FileDBB | FileEBB | FileFBB;
 constexpr Bitboard KingSide    = FileEBB | FileFBB | FileGBB | FileHBB;
 constexpr Bitboard Center      = (FileDBB | FileEBB) & (Rank4BB | Rank5BB);
-constexpr Bitboard PawnCamp[COLOR_NB] = { AllSquares ^ Rank7BB ^ Rank6BB, AllSquares ^ Rank2BB ^ Rank3BB };
+constexpr Bitboard PawnCamp[COLOR_NB] = { AllSquares ^ Rank7BB, AllSquares ^ Rank2BB};
 
 constexpr Bitboard KingFlank[FILE_NB] = {
   QueenSide ^ FileDBB, QueenSide, QueenSide,
@@ -80,7 +80,6 @@ extern Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 extern Bitboard PawnAttacks[COLOR_NB][SQUARE_NB];
-
 
 
 /// Magic holds all magic bitboards relevant data for a single square
