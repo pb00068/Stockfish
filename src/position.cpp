@@ -1079,7 +1079,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (swap < 0)
       return false;
   if (type_of(piece_on(to)) == PAWN && relative_rank(~sideToMove, to) > 6)
-      swap += RookValueMg;
+      swap += KnightValueMg;
 
   swap = PieceValue[MG][piece_on(from)] - swap;
   if (swap <= 0)
@@ -1120,7 +1120,7 @@ bool Position::see_ge(Move m, Value threshold) const {
           if ((swap = PawnValueMg - swap) < res)
               break;
           else if (relative_rank(stm, to) > 6)
-             swap += RookValueMg; // Pawn (almost) promoting
+             swap += KnightValueMg; // Pawn (almost) promoting
 
           occupied ^= least_significant_square_bb(bb);
           attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
