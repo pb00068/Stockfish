@@ -1006,9 +1006,15 @@ moves_loop: // When in check, search starts here
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 6 < alpha)
                   continue;
 
+              int div = (move == ss->shallowPruned[2] || move == ss->shallowPruned[3]) ? 2 : 1;
+
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, Value(-220) * depth))
+              if (!pos.see_ge(move, Value(-220 / div) * depth))
+              {
+                  if (depth > 4)
+                     ss->shallowPruned[(ss->shallowPruned[0] == move)] = move;
                   continue;
+              }
           }
           else
           {
@@ -1029,9 +1035,15 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 103 + 136 * lmrDepth + history / 53 <= alpha)
                   continue;
 
+              if (depth > 4 && (move == ss->shallowPruned[2] || move == ss->shallowPruned[3]))
+                lmrDepth = std::max(0, lmrDepth - 2);
+
               // Prune moves with negative SEE (~4 Elo)
               if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 16 * lmrDepth)))
+              {
+                  ss->shallowPruned[(ss->shallowPruned[0] == move)] = move;
                   continue;
+              }
           }
       }
 
@@ -1292,6 +1304,8 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (depth > 4 && (move == ss->shallowPruned[1] || move == ss->shallowPruned[2]))
+                 ss->shallowPruned[2 + (move == ss->shallowPruned[2])] = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
