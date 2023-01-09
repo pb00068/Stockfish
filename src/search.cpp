@@ -604,6 +604,7 @@ namespace {
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->shallowPruned[0]   = (ss+2)->shallowPruned[1] = (ss+2)->shallowPruned[2]   = (ss+2)->shallowPruned[3] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
@@ -1304,7 +1305,7 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
-              if (depth > 4 && (move == ss->shallowPruned[1] || move == ss->shallowPruned[2]))
+              if (move == ss->shallowPruned[0] || move == ss->shallowPruned[1])
                  ss->shallowPruned[2 + (move == ss->shallowPruned[2])] = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
