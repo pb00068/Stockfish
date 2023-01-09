@@ -1215,7 +1215,7 @@ moves_loop: // When in check, search starts here
       // Step 18. Full depth search when LMR is skipped. If expected reduction is high, reduce its depth by 1.
       else if (!PvNode || moveCount > 1)
       {
-               value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), !cutNode);
+               value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), (!cutNode) && r <= 4);
       }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
@@ -1227,7 +1227,7 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv[0] = MOVE_NONE;
 
           value = -search<PV>(pos, ss+1, -beta, -alpha,
-                              std::min(maxNextDepth, newDepth), rootNode && value >= beta);
+                              std::min(maxNextDepth, newDepth), false);
       }
 
       // Step 19. Undo move
