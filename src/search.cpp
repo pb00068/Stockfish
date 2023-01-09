@@ -926,7 +926,6 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    bool goodTTCapture = ttCapture && pos.see_ge(ttMove, VALUE_ZERO + 1);
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -1140,9 +1139,11 @@ moves_loop: // When in check, search starts here
       if (cutNode)
           r += 2;
 
-      // Increase reduction if ttMove is a capture with non negative see
-      if (goodTTCapture)
+      // Increase reduction if ttMove is a capture (reduces complexity)
+      if (ttCapture)
           r++;
+      else if (type_of(ttMove) == PROMOTION) // non capturing promotion increases complexity
+          r--;
 
       // Decrease reduction for PvNodes based on depth
       if (PvNode)
