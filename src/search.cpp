@@ -555,7 +555,7 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, priorCapture, singularQuietLMR;
-    bool capture, moveCountPruning, ttCapture;
+    bool capture, moveCountPruning, ttCapture, ttCaptOpening;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, improvement, complexity;
 
@@ -626,6 +626,7 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture(ttMove);
+    ttCaptOpening = false;
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
@@ -1123,6 +1124,8 @@ moves_loop: // When in check, search starts here
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
 
+      ttCaptOpening = (ttCapture && move == ttMove && type_of(pos.captured_piece()) == PAWN && pos.count<PAWN>() >= 10);
+
       Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
       // Decrease reduction if position is or has been on the PV
@@ -1139,11 +1142,10 @@ moves_loop: // When in check, search starts here
       if (cutNode)
           r += 2;
 
-      // Increase reduction if ttMove is a capture (reduces complexity)
-      if (ttCapture)
+      // Increase reduction if ttMove is a capture (exclude captures/exchanges which open the position)
+      if (ttCapture && !ttCaptOpening)
           r++;
-      else if (type_of(ttMove) == PROMOTION) // non capturing promotion increases complexity
-          r--;
+
 
       // Decrease reduction for PvNodes based on depth
       if (PvNode)
