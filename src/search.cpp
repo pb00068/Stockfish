@@ -1481,7 +1481,7 @@ moves_loop: // When in check, search starts here
         if (bestValue >= beta)
         {
             // Save gathered info in transposition table
-            if (!ss->ttHit || (tte->depth() <= 0 && bestValue != ttValue && abs(bestValue) < VALUE_MATE))
+            if (!ss->ttHit || (tte->depth() <= 0 && ttValue == VALUE_NONE))
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
