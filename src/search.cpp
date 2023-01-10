@@ -1186,6 +1186,7 @@ moves_loop: // When in check, search starts here
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
+
           // Do full depth search when reduced LMR search fails high
           if (value > alpha && d < newDepth)
           {
@@ -1481,7 +1482,7 @@ moves_loop: // When in check, search starts here
         if (bestValue >= beta)
         {
             // Save gathered info in transposition table
-            if (!ss->ttHit)
+            if (!ss->ttHit || (tte->depth() <= 0 && bestValue != ttValue && abs(bestValue) < VALUE_MATE))
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
