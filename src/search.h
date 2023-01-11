@@ -74,6 +74,7 @@ struct RootMove {
   Value uciScore = -VALUE_INFINITE;
   bool scoreLowerbound = false;
   bool scoreUpperbound = false;
+  bool previousScoreAlwaysPositive;
   int selDepth = 0;
   int tbRank = 0;
   Value tbScore;

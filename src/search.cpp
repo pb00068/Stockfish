@@ -300,15 +300,15 @@ void Thread::search() {
               mainThread->iterValue[i] = mainThread->bestPreviousScore;
   }
 
-  size_t multiPV = size_t(Options["MultiPV"]);
+  Threads.main()->multiPV = size_t(Options["MultiPV"]);
   Skill skill(Options["Skill Level"], Options["UCI_LimitStrength"] ? int(Options["UCI_Elo"]) : 0);
 
   // When playing with strength handicap enable MultiPV search that we will
   // use behind the scenes to retrieve a set of possible moves.
   if (skill.enabled())
-      multiPV = std::max(multiPV, (size_t)4);
+  	Threads.main()->multiPV = std::max(Threads.main()->multiPV, (size_t)4);
 
-  multiPV = std::min(multiPV, rootMoves.size());
+  Threads.main()->multiPV = std::min(Threads.main()->multiPV, rootMoves.size());
 
   complexityAverage.set(153, 1);
 
@@ -327,8 +327,21 @@ void Thread::search() {
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
-      for (RootMove& rm : rootMoves)
+      for (RootMove& rm : rootMoves) {
           rm.previousScore = rm.score;
+          if (rootDepth <= 14 && rm.uciScore > 0)
+          {
+            rm.previousScoreAlwaysPositive = true;
+            sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = true!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+          }
+          else if (rootDepth > 14 && rm.uciScore <= 0) {
+          	rm.previousScoreAlwaysPositive = false;
+          	if (rm.pv[0] == make_move(SQ_D4,SQ_C2)) {
+          	sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = false!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " <<  rm.uciScore << sync_endl;
+
+          	}
+          }
+      }
 
       size_t pvFirst = 0;
       pvLast = 0;
@@ -337,7 +350,7 @@ void Thread::search() {
          searchAgainCounter++;
 
       // MultiPV loop. We perform a full root search for each PV line
-      for (pvIdx = 0; pvIdx < multiPV && !Threads.stop; ++pvIdx)
+      for (pvIdx = 0; pvIdx < Threads.main()->multiPV && !Threads.stop; ++pvIdx)
       {
           if (pvIdx == pvLast)
           {
@@ -392,7 +405,7 @@ void Thread::search() {
               // When failing high/low give some update (without cluttering
               // the UI) before a re-search.
               if (   mainThread
-                  && multiPV == 1
+                  && mainThread->multiPV == 1
                   && (bestValue <= alpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
                   sync_cout << UCI::pv(rootPos, rootDepth) << sync_endl;
@@ -425,7 +438,7 @@ void Thread::search() {
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
           if (    mainThread
-              && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
+              && (Threads.stop || pvIdx + 1 == mainThread->multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth) << sync_endl;
       }
 
@@ -448,7 +461,7 @@ void Thread::search() {
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
-          skill.pick_best(multiPV);
+          skill.pick_best(Threads.main()->multiPV);
 
       // Use part of the gained time from a previous stable move for the current move
       for (Thread* th : Threads)
@@ -509,7 +522,7 @@ void Thread::search() {
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
       std::swap(rootMoves[0], *std::find(rootMoves.begin(), rootMoves.end(),
-                skill.best ? skill.best : skill.pick_best(multiPV)));
+                skill.best ? skill.best : skill.pick_best(mainThread->multiPV)));
 }
 
 
@@ -845,6 +858,7 @@ namespace {
     // much above beta, we can (almost) safely prune the previous move.
     if (   !PvNode
         &&  depth > 4
+        &&  (ss-1)->currentMove != MOVE_NULL
         &&  abs(beta) < VALUE_TB_WIN_IN_MAX_PLY
         // if value from transposition table is lower than probCutBeta, don't attempt probCut
         // there and in further interactions with transposition table cutoff depth is set to depth - 3
@@ -966,10 +980,10 @@ moves_loop: // When in check, search starts here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+//          sync_cout << "info depth " << depth
+//                    << " currmove " << UCI::move(move, pos.is_chess960())
+//                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
 
@@ -1268,6 +1282,13 @@ moves_loop: // When in check, search starts here
                  rm.scoreUpperbound = true;
                  rm.uciScore = alpha;
               }
+              if (depth >= 14 && rm.uciScore == 0 && !rm.scoreLowerbound && rm.previousScoreAlwaysPositive && Threads.main()->multiPV==1 && thisThread->rootMoves.size() > 1) // zero by scaling down
+              {
+              	//enable multiPv
+              	Threads.main()->multiPV=2;
+              	sync_cout << "info now setting Pv to 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+              }
+
               rm.pv.resize(1);
 
               assert((ss+1)->pv);
@@ -1843,7 +1864,7 @@ string UCI::pv(const Position& pos, Depth depth) {
   TimePoint elapsed = Time.elapsed() + 1;
   const RootMoves& rootMoves = pos.this_thread()->rootMoves;
   size_t pvIdx = pos.this_thread()->pvIdx;
-  size_t multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());
+  size_t multiPV = std::min(Threads.main()->multiPV, rootMoves.size());
   uint64_t nodesSearched = Threads.nodes_searched();
   uint64_t tbHits = Threads.tb_hits() + (TB::RootInTB ? rootMoves.size() : 0);
 
