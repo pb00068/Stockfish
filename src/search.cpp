@@ -1142,7 +1142,7 @@ moves_loop: // When in check, search starts here
       // Increase reduction if ttMove is a capture (reduces complexity)
       if (ttCapture)
           r++;
-      else if (type_of(ttMove) == PROMOTION) // non capturing promotion increases complexity
+      else if (type_of(ttMove) == PROMOTION && promotion_type(ttMove) == QUEEN) // non capturing promotion to Queen increases complexity
           r--;
 
       // Decrease reduction for PvNodes based on depth
