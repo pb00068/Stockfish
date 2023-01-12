@@ -299,7 +299,7 @@ void Thread::search() {
           for (int i = 0; i < 4; ++i)
               mainThread->iterValue[i] = mainThread->bestPreviousScore;
 
-      mainThread->significantBestMoveChanges=0;
+      mainThread->significantBestMoveChanges = 0;
   }
 
   Threads.main()->multiPV = size_t(Options["MultiPV"]);
