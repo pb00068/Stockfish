@@ -298,6 +298,8 @@ void Thread::search() {
       else
           for (int i = 0; i < 4; ++i)
               mainThread->iterValue[i] = mainThread->bestPreviousScore;
+
+      mainThread->significantBestMoveChanges=0;
   }
 
   Threads.main()->multiPV = size_t(Options["MultiPV"]);
@@ -306,7 +308,7 @@ void Thread::search() {
   // When playing with strength handicap enable MultiPV search that we will
   // use behind the scenes to retrieve a set of possible moves.
   if (skill.enabled())
-  	Threads.main()->multiPV = std::max(Threads.main()->multiPV, (size_t)4);
+      Threads.main()->multiPV = std::max(Threads.main()->multiPV, (size_t)4);
 
   Threads.main()->multiPV = std::min(Threads.main()->multiPV, rootMoves.size());
 
@@ -327,21 +329,8 @@ void Thread::search() {
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
-      for (RootMove& rm : rootMoves) {
+      for (RootMove& rm : rootMoves)
           rm.previousScore = rm.score;
-          if (rootDepth <= 14 && rm.uciScore > 0)
-          {
-            rm.previousScoreAlwaysPositive = true;
-            sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = true!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
-          }
-          else if (rootDepth > 14 && rm.uciScore <= 0 && rm.score != VALUE_INFINITE) {
-          	rm.previousScoreAlwaysPositive = false;
-          	if (rm.pv[0] == make_move(SQ_D4,SQ_C2)) {
-          	sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = false!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " <<  rm.uciScore << sync_endl;
-
-          	}
-          }
-      }
 
       size_t pvFirst = 0;
       pvLast = 0;
@@ -458,6 +447,11 @@ void Thread::search() {
 
       if (!mainThread)
           continue;
+
+      if (Threads.main()->multiPV > 1 && Threads.main()->significantBestMoveChanges && Threads.main()->stagnant != mainThread->rootMoves[0].pv[0] && Threads.main()->multiPV != size_t(Options["MultiPV"])) {
+        Threads.main()->multiPV = size_t(Options["MultiPV"]);
+        sync_cout << "info string reset internal MultiPV to " << Threads.main()->multiPV << sync_endl;
+      }
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
@@ -979,10 +973,10 @@ moves_loop: // When in check, search starts here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+//          sync_cout << "info depth " << depth
+//                    << " currmove " << UCI::move(move, pos.is_chess960())
+//                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
 
@@ -1281,21 +1275,24 @@ moves_loop: // When in check, search starts here
                  rm.scoreUpperbound = true;
                  rm.uciScore = alpha;
               }
-              if (thisThread == Threads.main()) {
-              if (moveCount== 1 && depth >= 14 && (rm.uciScore == 0 || rm.uciScore == 1) && !rm.scoreLowerbound && rm.previousScoreAlwaysPositive && thisThread->rootMoves.size() > 1) // zero by scaling down
+              if (thisThread == Threads.main() && moveCount== 1 && Threads.main()->multiPV==1 &&
+                 !Threads.main()->significantBestMoveChanges && depth >= 20 && abs(rm.uciScore) <= 360 &&
+                 pos.non_pawn_material() < 6000 && thisThread->rootMoves.size() > 1)
               {
-              	//enable multiPv
-              	if (Threads.main()->multiPV==1 )
-              	{
-              		Threads.main()->multiPV= thisThread->rootMoves.size() > 2 ? 3 : 2;
-              		sync_cout << "info now setting MultiPv!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
-              		thisThread->bestMoveChanges=0;
-              	}
-              	else if (Threads.main()->multiPV >1 && thisThread->bestMoveChanges) {
-              		Threads.main()->multiPV= size_t(Options["MultiPV"]);
-              	sync_cout << "info now resetting multiPv again !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
-              	}
-              }
+                  //enable multiPv for front moves giving check or capturing
+                 size_t  i=0;
+                 int pvLines = 1;
+                 while (++i < thisThread->rootMoves.size() - 1)
+                 {
+                    Move m = thisThread->rootMoves[i].pv[0];
+                    pvLines += pos.gives_check(m) || pos.capture(m);
+                 }
+                 if (pvLines > 1)
+                 {
+                    Threads.main()->multiPV= pvLines;
+                    Threads.main()->stagnant = thisThread->rootMoves[0].pv[0];
+                    sync_cout << "info string setting MultiPv to " << pvLines << " for this turn" << sync_endl;
+                 }
               }
 
               rm.pv.resize(1);
@@ -1309,8 +1306,12 @@ moves_loop: // When in check, search starts here
               // This information is used for time management. In MultiPV mode,
               // we must take care to only do this for the first PV line.
               if (   moveCount > 1
-                  && !thisThread->pvIdx)
+                  && (!thisThread->pvIdx || Threads.main()->multiPV != size_t(Options["MultiPV"])))
+              {
                   ++thisThread->bestMoveChanges;
+                  if (thisThread == Threads.main() && depth > 9)
+                    Threads.main()->significantBestMoveChanges++;
+              }
           }
           else
               // All other moves but the PV are set to the lowest value: this
@@ -1917,8 +1918,6 @@ string UCI::pv(const Position& pos, Depth depth) {
 
       for (Move m : rootMoves[i].pv)
           ss << " " << UCI::move(m, pos.is_chess960());
-
-      ss << " alwaysb " << rootMoves[i].previousScoreAlwaysPositive << " score " << v << " mt " << Threads.main()->multiPV;
   }
 
   return ss.str();

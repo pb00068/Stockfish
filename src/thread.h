@@ -93,6 +93,8 @@ struct MainThread : public Thread {
   Value iterValue[4];
   int callsCnt;
   bool stopOnPonderhit;
+  int significantBestMoveChanges;
+  Move stagnant;
   std::atomic_bool ponder;
   size_t multiPV;
 };
