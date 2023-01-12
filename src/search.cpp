@@ -334,7 +334,7 @@ void Thread::search() {
             rm.previousScoreAlwaysPositive = true;
             sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = true!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
           }
-          else if (rootDepth > 14 && rm.uciScore <= 0) {
+          else if (rootDepth > 14 && rm.uciScore <= 0 && rm.score != VALUE_INFINITE) {
           	rm.previousScoreAlwaysPositive = false;
           	if (rm.pv[0] == make_move(SQ_D4,SQ_C2)) {
           	sync_cout << "info now setting rootMove " << rm.pv[0] << "  previousScoreAlwaysPositive = false!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " <<  rm.uciScore << sync_endl;
@@ -1282,11 +1282,21 @@ moves_loop: // When in check, search starts here
                  rm.scoreUpperbound = true;
                  rm.uciScore = alpha;
               }
-              if (depth >= 14 && rm.uciScore == 0 && !rm.scoreLowerbound && rm.previousScoreAlwaysPositive && Threads.main()->multiPV==1 && thisThread->rootMoves.size() > 1) // zero by scaling down
+              if (thisThread == Threads.main()) {
+              if (moveCount== 1 && depth >= 14 && (rm.uciScore == 0 || rm.uciScore == 1) && !rm.scoreLowerbound && rm.previousScoreAlwaysPositive && thisThread->rootMoves.size() > 1) // zero by scaling down
               {
               	//enable multiPv
-              	Threads.main()->multiPV=2;
-              	sync_cout << "info now setting Pv to 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+              	if (Threads.main()->multiPV==1 )
+              	{
+              		Threads.main()->multiPV=2;
+              		sync_cout << "info now setting MultiPv to 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+              		thisThread->bestMoveChanges=0;
+              	}
+              	else if (Threads.main()->multiPV >1 && thisThread->bestMoveChanges) {
+              		Threads.main()->multiPV= size_t(Options["MultiPV"]);
+              	sync_cout << "info now resetting multiPv again !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+              	}
+              }
               }
 
               rm.pv.resize(1);
@@ -1864,7 +1874,7 @@ string UCI::pv(const Position& pos, Depth depth) {
   TimePoint elapsed = Time.elapsed() + 1;
   const RootMoves& rootMoves = pos.this_thread()->rootMoves;
   size_t pvIdx = pos.this_thread()->pvIdx;
-  size_t multiPV = std::min(Threads.main()->multiPV, rootMoves.size());
+  size_t multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());
   uint64_t nodesSearched = Threads.nodes_searched();
   uint64_t tbHits = Threads.tb_hits() + (TB::RootInTB ? rootMoves.size() : 0);
 
@@ -1908,6 +1918,8 @@ string UCI::pv(const Position& pos, Depth depth) {
 
       for (Move m : rootMoves[i].pv)
           ss << " " << UCI::move(m, pos.is_chess960());
+
+      ss << " alwaysb " << rootMoves[i].previousScoreAlwaysPositive << " score " << v << " mt " << Threads.main()->multiPV;
   }
 
   return ss.str();
