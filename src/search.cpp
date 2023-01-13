@@ -1232,7 +1232,8 @@ moves_loop: // When in check, search starts here
 
           if (rootNode && moveCount > 1 && value >= beta && depth > 20)
           {
-          	;
+          	; // it may take to long to do the PV search, when it get aborted (elapsed > totalTime) then new bestmove get not updated
+          	  // also in analysis mode it is not fine when the engine holds back the info that a possible new bestmove has been found
           }
           else
           value = -search<PV>(pos, ss+1, -beta, -alpha,
