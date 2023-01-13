@@ -1222,6 +1222,8 @@ moves_loop: // When in check, search starts here
                value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), !cutNode);
       }
 
+      bool newBestMove = false;
+      Value v = value;
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
       // parent node fail low with value <= alpha and try another move.
@@ -1230,14 +1232,10 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
-          if (rootNode && moveCount > 1 && value >= beta && depth > 20)
-          {
-          	; // it may take to long to do the PV search, when it get aborted (elapsed > totalTime) then new bestmove get not updated
-          	  // also in analysis mode it is not fine when the engine holds back the info that a possible new bestmove has been found
-          }
-          else
+          newBestMove = bool(rootNode && moveCount > 1 && value >= beta);
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
+
       }
 
       // Step 19. Undo move
@@ -1250,7 +1248,12 @@ moves_loop: // When in check, search starts here
       // the search cannot be trusted, and we return immediately without
       // updating best move, PV and TT.
       if (Threads.stop.load(std::memory_order_relaxed))
+      {
+        if (newBestMove)
+          value = v;
+        else
           return VALUE_ZERO;
+      }
 
       if (rootNode)
       {
