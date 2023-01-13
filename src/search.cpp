@@ -1230,6 +1230,11 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
+          if (rootNode && moveCount > 1 && value >= beta && depth > 20)
+          {
+          	;
+          }
+          else
           value = -search<PV>(pos, ss+1, -beta, -alpha,
                               std::min(maxNextDepth, newDepth), false);
       }
