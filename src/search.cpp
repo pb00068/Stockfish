@@ -69,6 +69,20 @@ namespace {
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
+
+  const int pvline[] = { 2065, 1, 1761, 3567, 2479, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2950, 644, 446, 74, 4024, 29249, 2128, 657, 1025, 266, 75, 1106, 732, 1179, 3592, 1756, 522, 1821, 654, 1892, 2657, 2349, 2138, 2924, 1691, 2868, 901 };
+
+  bool isOnPvLine(Stack * ss, Move m) {
+      if (m != pvline[ss->ply])
+        return false;
+      int i=0;
+      for (i=1; i< ss->ply; i++) {
+         if ((ss-i)->currentMove != pvline[ss->ply - i])
+           return false;
+      }
+      return true;
+  }
+
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
     int r = Reductions[d] * Reductions[mn];
     return (r + 1460 - int(delta) * 1024 / int(rootDelta)) / 1024 + (!i && r > 937);
@@ -629,6 +643,8 @@ namespace {
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
+
+
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
         && ss->ttHit
@@ -833,8 +849,11 @@ namespace {
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta) {
+                 if (isOnPvLine(ss-1, (ss-1)->currentMove))
+                	 sync_cout << "info move refuted due null-move " << UCI::move((ss-1)->currentMove, false) << pos << sync_endl;
                 return nullValue;
+            }
         }
     }
 
@@ -885,6 +904,8 @@ namespace {
                 {
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3, move, ss->staticEval);
+                     if (isOnPvLine(ss, move))
+                       sync_cout << "info cut by probcut " << move << "\n" << pos << sync_endl;
                     return value;
                 }
             }
@@ -966,10 +987,10 @@ moves_loop: // When in check, search starts here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
-          sync_cout << "info depth " << depth
-                    << " currmove " << UCI::move(move, pos.is_chess960())
-                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
+//      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
+//          sync_cout << "info depth " << depth
+//                    << " currmove " << UCI::move(move, pos.is_chess960())
+//                    << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
       if (PvNode)
           (ss+1)->pv = nullptr;
 
@@ -1122,6 +1143,8 @@ moves_loop: // When in check, search starts here
 
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
+
+
 
       Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
@@ -1887,6 +1910,10 @@ string UCI::pv(const Position& pos, Depth depth) {
 
       for (Move m : rootMoves[i].pv)
           ss << " " << UCI::move(m, pos.is_chess960());
+
+//      ss << "\ninfo string ";
+//        for (Move m : rootMoves[i].pv)
+//           ss << " " << m << ",";
   }
 
   return ss.str();
