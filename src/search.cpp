@@ -9,7 +9,7 @@
 
   Stockfish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See thef
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
@@ -963,6 +963,9 @@ moves_loop: // When in check, search starts here
       // Check for legality
       if (!rootNode && !pos.legal(move))
           continue;
+
+      if ((ss-1)->currentMove == MOVE_NULL && move == reverse_move((ss-2)->currentMove))
+         continue;
 
       ss->moveCount = ++moveCount;
 
