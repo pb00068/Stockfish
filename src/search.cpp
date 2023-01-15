@@ -9,7 +9,7 @@
 
   Stockfish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See thef
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
@@ -806,12 +806,14 @@ namespace {
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        (ss+1)->excludedMove = reverse_move((ss-1)->currentMove);
 
         pos.do_null_move(st);
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
         pos.undo_null_move();
+        (ss+1)->excludedMove = MOVE_NONE;
 
         if (nullValue >= beta)
         {
@@ -963,9 +965,6 @@ moves_loop: // When in check, search starts here
       // Check for legality
       if (!rootNode && !pos.legal(move))
           continue;
-
-      if ((ss-1)->currentMove == MOVE_NULL && move == reverse_move((ss-2)->currentMove))
-         continue;
 
       ss->moveCount = ++moveCount;
 
