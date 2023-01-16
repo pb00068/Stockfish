@@ -805,13 +805,12 @@ namespace {
         Depth R = std::min(int(eval - beta) / 165, 6) + depth / 3 + 4 - (complexity > 800);
 
         if (    ss->ttHit
-                && (depth >= 14 || abs(beta) >= VALUE_KNOWN_WIN) // meet verification search conditions
+                && depth > 14  // meet verification search conditions
                 && tte->depth() > depth - R
                 && ttValue >= beta
-                && abs(beta) < VALUE_KNOWN_WIN
                 && ttValue != VALUE_NONE // Possible in case of TT access race
                 && (tte->bound() & BOUND_LOWER))
-          return ttValue;
+          return beta;
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
