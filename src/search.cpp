@@ -804,7 +804,8 @@ namespace {
         // Null move dynamic reduction based on depth, eval and complexity of position
         Depth R = std::min(int(eval - beta) / 165, 6) + depth / 3 + 4 - (complexity > 800);
 
-        if ( ss->ttHit
+        if (    ss->ttHit
+                && (depth >= 14 || abs(beta) >= VALUE_KNOWN_WIN) // meet verification search conditions
                 && tte->depth() > depth - R
                 && ttValue >= beta
                 && abs(beta) < VALUE_KNOWN_WIN
