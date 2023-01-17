@@ -801,15 +801,17 @@ namespace {
     {
         assert(eval - beta >= 0);
 
+
         // Null move dynamic reduction based on depth, eval and complexity of position
         Depth R = std::min(int(eval - beta) / 165, 6) + depth / 3 + 4 - (complexity > 800);
-        if (depth - R > 8) {
-        	int kingMoves;
-					for (const auto& m : MoveList<LEGAL>(pos)) {
+        bool doNullSearch = true;
+        if (depth - R > 10 && pos.non_pawn_material() < 9400) {
+          MoveList<LEGAL_KINGMOVES> pt = MoveList<LEGAL_KINGMOVES>(pos);
+          doNullSearch = pt.end() != pt.begin();
+        }
 
-					}
-				}
-
+        if (doNullSearch)
+        {
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -844,6 +846,7 @@ namespace {
 
             if (v >= beta)
                 return nullValue;
+        }
         }
     }
 

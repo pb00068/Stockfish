@@ -201,7 +201,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   for (Thread* th : threads)
   {
       th->nodes = th->tbHits = th->bestMoveChanges = 0;
-      th->nmpMaxPly = MAX_PLY;
+      th->nmpMinPly = 0;
       th->rootDepth = th->completedDepth = 0;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);

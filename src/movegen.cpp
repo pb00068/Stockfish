@@ -273,4 +273,19 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
   return moveList;
 }
 
+template<>
+ExtMove* generate<LEGAL_KINGMOVES>(const Position& pos, ExtMove* moveList) {
+
+  Color us = pos.side_to_move();
+  ExtMove* cur = moveList;
+  moveList = generate<EVASIONS>(pos, moveList);
+  while (cur != moveList)
+      if ((pos.attackers_to(to_sq(*cur), pos.pieces()) & pos.pieces(~us)))
+          *cur = (--moveList)->move;
+      else
+          ++cur;
+
+  return moveList;
+}
+
 } // namespace Stockfish
