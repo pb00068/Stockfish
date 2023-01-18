@@ -1229,8 +1229,9 @@ moves_loop: // When in check, search starts here
       {
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
+          Value add = (rootNode && moveCount > 1 && value >= beta) ? Value(beta - alpha / 4) : VALUE_ZERO;
 
-          value = -search<PV>(pos, ss+1, -beta, -alpha,
+          value = -search<PV>(pos, ss+1, -beta, -(alpha+add),
                               std::min(maxNextDepth, newDepth), false);
       }
 
