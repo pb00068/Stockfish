@@ -315,6 +315,7 @@ void Thread::search() {
   optimism[us] = optimism[~us] = VALUE_ZERO;
 
   int searchAgainCounter = 0;
+  failLowCnt = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -405,6 +406,7 @@ void Thread::search() {
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   failedHighCnt = 0;
+                  failLowCnt++;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
@@ -1229,7 +1231,7 @@ moves_loop: // When in check, search starts here
       {
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
-          Value add = (rootNode && moveCount > 1 && value >= beta) ? Value(beta - alpha / 4) : VALUE_ZERO;
+          Value add = (rootNode && moveCount > 1 && value >= beta && !thisThread->failLowCnt) ? Value(beta - alpha / 6) : VALUE_ZERO;
 
           value = -search<PV>(pos, ss+1, -beta, -(alpha+add),
                               std::min(maxNextDepth, newDepth), false);
