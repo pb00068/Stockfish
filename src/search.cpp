@@ -826,16 +826,19 @@ namespace {
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
+            if (depth - R > 10 && pos.non_pawn_material() < 9400)
+            {
+                MoveList<LEGAL_KINGMOVES> pt = MoveList<LEGAL_KINGMOVES>(pos);
+                R += pt.end() - pt.begin();
+                if (pt.end() == pt.begin())
+                   R -= 2; // search deeper if King can't move, this positions are more likely zugzwang
+            }
+
             // Do verification search at high depths, with null move pruning disabled
             // for us, until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
             thisThread->nmpColor = us;
-            if (depth - R > 10 && pos.non_pawn_material() < 9400) {
-              MoveList<LEGAL_KINGMOVES> pt = MoveList<LEGAL_KINGMOVES>(pos);
-              R += pt.end() - pt.begin();
-              if (pt.end() == pt.begin())
-                R -=2; // search deeper if King can't move
-            }
+
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
 
