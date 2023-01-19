@@ -277,14 +277,14 @@ template<>
 ExtMove* generate<LEGAL_KINGMOVES>(const Position& pos, ExtMove* moveList) {
 
   Color us = pos.side_to_move();
-  ExtMove* cur = moveList;
-  moveList = generate<EVASIONS>(pos, moveList);
-  while (cur != moveList)
-      if ((pos.attackers_to(to_sq(*cur), pos.pieces()) & pos.pieces(~us)))
-          *cur = (--moveList)->move;
-      else
-          ++cur;
-
+  const Square ksq = pos.square<KING>(us);
+  Bitboard b = attacks_bb<KING>(ksq) & ~pos.pieces(us);
+  while (b)
+  {
+     Square s = pop_lsb(b);
+     if (!(pos.attackers_to(s, pos.pieces() ^ ksq) & pos.pieces(~us)))
+        *moveList++ = make_move(ksq, s);
+  }
   return moveList;
 }
 

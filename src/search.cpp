@@ -804,14 +804,8 @@ namespace {
 
         // Null move dynamic reduction based on depth, eval and complexity of position
         Depth R = std::min(int(eval - beta) / 165, 6) + depth / 3 + 4 - (complexity > 800);
-        bool doNullSearch = true;
-        if (depth - R > 10 && pos.non_pawn_material() < 9400) {
-          MoveList<LEGAL_KINGMOVES> pt = MoveList<LEGAL_KINGMOVES>(pos);
-          doNullSearch = pt.end() != pt.begin();
-        }
 
-        if (doNullSearch)
-        {
+
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -839,6 +833,12 @@ namespace {
             // for us, until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
             thisThread->nmpColor = us;
+            if (depth - R > 10 && pos.non_pawn_material() < 9400) {
+              MoveList<LEGAL_KINGMOVES> pt = MoveList<LEGAL_KINGMOVES>(pos);
+              R += pt.end() - pt.begin();
+              if (pt.end() == pt.begin())
+                R -=2; // search deeper if King can't move
+            }
 
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
 
@@ -846,7 +846,6 @@ namespace {
 
             if (v >= beta)
                 return nullValue;
-        }
         }
     }
 
