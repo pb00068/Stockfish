@@ -1039,6 +1039,10 @@ moves_loop: // When in check, search starts here
       // We take care to not overdo to avoid search getting stuck.
       if (ss->ply < thisThread->rootDepth * 2)
       {
+
+          if (type_of(move) == PROMOTION && promotion_type(move) == QUEEN && !capture && pos.see_ge(move))
+            extension = 2;
+          else
           // Singular extension search (~94 Elo). If all moves but one fail low on a
           // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
           // then that move is singular and should be extended. To verify this we do
