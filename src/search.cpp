@@ -318,6 +318,7 @@ void Thread::search() {
   optimism[us] = optimism[~us] = VALUE_ZERO;
 
   int searchAgainCounter = 0;
+  verificationHits = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -720,6 +721,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
+    bool verificationKickedIn = false;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -822,11 +824,15 @@ namespace {
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
 
-            if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
+            if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 12 - 2 * bool(thisThread->verificationHits > 0)))
                 return nullValue;
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
+            if (thisThread->verificationHits > 0)
+               R-=2;
+            else if (thisThread->verificationHits < -100)
+               R++;
             // Do verification search at high depths, with null move pruning disabled
             // for us, until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
@@ -837,7 +843,11 @@ namespace {
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                thisThread->verificationHits--; // verification was useless
                 return nullValue;
+            }
+            verificationKickedIn = true;
         }
     }
 
@@ -1299,6 +1309,8 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (verificationKickedIn)
+                    thisThread->verificationHits+=25; // verification search was needed to discover this move
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
