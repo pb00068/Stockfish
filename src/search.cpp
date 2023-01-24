@@ -997,7 +997,7 @@ moves_loop: // When in check, search starts here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, delta, thisThread->rootDelta), 0);
           if ((ss-1)->currentMove == MOVE_NULL)
-            lmrDepth+=2;
+            lmrDepth++;
 
           if (   capture
               || givesCheck)
@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, Value(-220) * depth))
+              if (!pos.see_ge(move, Value(-220 - (ss-1)->currentMove == MOVE_NULL ? 150 : 0) * depth))
                   continue;
           }
           else
@@ -1135,9 +1135,6 @@ moves_loop: // When in check, search starts here
       if (   ss->ttPv
           && !likelyFailLow)
           r -= 2;
-
-      if ((ss-1)->currentMove == MOVE_NULL)
-         r -= 2;
 
       // Decrease reduction if opponent's move count is high (~1 Elo)
       if ((ss-1)->moveCount > 7)
