@@ -318,6 +318,7 @@ void Thread::search() {
   optimism[us] = optimism[~us] = VALUE_ZERO;
 
   int searchAgainCounter = 0;
+  int searchInstability = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -357,7 +358,7 @@ void Thread::search() {
           if (rootDepth >= 4)
           {
               Value prev = rootMoves[pvIdx].averageScore;
-              delta = Value(10) + int(prev) * prev / 15400;
+              delta = Value(10 + 4 * searchInstability) + int(prev) * prev / 15400;
               alpha = std::max(prev - delta,-VALUE_INFINITE);
               beta  = std::min(prev + delta, VALUE_INFINITE);
 
@@ -366,11 +367,14 @@ void Thread::search() {
               optimism[ us] = Value(opt);
               optimism[~us] = -optimism[us];
           }
+          if (rootDepth < 8)
+             searchInstability = 0;
 
           // Start with a small aspiration window and, in the case of a fail
           // high/low, re-search with a bigger window until we don't fail
           // high/low anymore.
           int failedHighCnt = 0;
+          bool failedLow = false;
           while (true)
           {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
@@ -407,7 +411,10 @@ void Thread::search() {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
+                  if (failedHighCnt)
+                     searchInstability++;
                   failedHighCnt = 0;
+                  failedLow = true;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
@@ -415,11 +422,15 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
+                  if (failedLow)
+                     searchInstability++;
+                  failedLow = false;
               }
               else
                   break;
 
-              delta += delta / 4 + 2;
+
+              delta += delta / 4 + 1 + searchInstability;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
