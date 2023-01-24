@@ -997,7 +997,7 @@ moves_loop: // When in check, search starts here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, delta, thisThread->rootDelta), 0);
           if ((ss-1)->currentMove == MOVE_NULL)
-            lmrDepth++;
+            lmrDepth+=2;
 
           if (   capture
               || givesCheck)
@@ -1128,13 +1128,16 @@ moves_loop: // When in check, search starts here
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
 
-      Depth r = reduction(improving, depth, moveCount - bool(moveCount > 1 && (ss-1)->currentMove == MOVE_NULL), delta, thisThread->rootDelta);
+      Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
       // Decrease reduction if position is or has been on the PV
       // and node is not likely to fail low. (~3 Elo)
       if (   ss->ttPv
           && !likelyFailLow)
           r -= 2;
+
+      if ((ss-1)->currentMove == MOVE_NULL)
+         r -= 2;
 
       // Decrease reduction if opponent's move count is high (~1 Elo)
       if ((ss-1)->moveCount > 7)
