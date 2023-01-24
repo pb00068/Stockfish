@@ -623,14 +623,23 @@ namespace {
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
-    posKey = excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(excludedMove);
-    tte = TT.probe(posKey, ss->ttHit);
-    ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
-            : ss->ttHit    ? tte->move() : MOVE_NONE;
-    ttCapture = ttMove && pos.capture(ttMove);
     if (!excludedMove)
+    {
+        posKey = pos.key();
+        tte = TT.probe(posKey, ss->ttHit);
+        ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
+        ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
+            : ss->ttHit    ? tte->move() : MOVE_NONE;
+        ttCapture = ttMove && pos.capture(ttMove);
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+    }
+    else {
+    	ss->ttHit = ttCapture = false;
+    	ttValue = VALUE_NONE;
+    	ttMove = MOVE_NONE;
+    	posKey = 0;
+    	tte = TT.dummy_entry();
+    }
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -701,6 +710,7 @@ namespace {
                 if (    b == BOUND_EXACT
                     || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
+                	if (!excludedMove)
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6),
                               MOVE_NONE, VALUE_NONE);
