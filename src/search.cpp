@@ -737,6 +737,8 @@ namespace {
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
+        if (!excludedMove)
+        {
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
@@ -746,6 +748,7 @@ namespace {
         if (    ttValue != VALUE_NONE
             && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
             eval = ttValue;
+        }
     }
     else
     {
