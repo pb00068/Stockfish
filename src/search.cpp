@@ -731,7 +731,7 @@ namespace {
         complexity = 0;
         goto moves_loop;
     }
-    else if (ss->ttHit)
+    else if (ss->ttHit && !excludedMove)
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
