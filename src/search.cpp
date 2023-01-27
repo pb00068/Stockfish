@@ -624,6 +624,7 @@ namespace {
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
     posKey = excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(excludedMove);
+    bool tthitBeforeSingularExtensionCall = ss->ttHit; // needed for singular extension call
     tte = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
@@ -731,7 +732,15 @@ namespace {
         goto moves_loop;
     }
     else if (excludedMove)
-       eval = ss->staticEval;
+    {
+    	if (tthitBeforeSingularExtensionCall)
+    	{ // don't trust hits from TT with excluded move key (must derive from key collisions)
+       ss->staticEval = eval = evaluate(pos, &complexity);
+       complexity = 10000; // should be irrelevant what it is set now
+    	}
+    	else
+    		eval = ss->staticEval; // value already computed: equal to evaluate(pos, &complexity);
+    }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
@@ -1066,7 +1075,6 @@ moves_loop: // When in check, search starts here
               Depth singularDepth = (depth - 1) / 2;
 
               ss->excludedMove = move;
-              thisThread->complexityAverage.update(complexity);
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
 
