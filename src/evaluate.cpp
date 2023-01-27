@@ -1057,30 +1057,27 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   // option is set to false. Otherwise we use the NNUE eval unless the
   // PSQ advantage is decisive and several pieces remain. (~3 Elo)
   bool useClassical = !useNNUE || (pos.count<ALL_PIECES>() > 7 && abs(psq) > 1781);
+  int complex;
 
   if (useClassical)
       v = Evaluation<NO_TRACE>(pos).value();
   else
   {
-      int nnueComplexity;
       int scale = 1076 + 96 * pos.non_pawn_material() / 5120;
 
       Color stm = pos.side_to_move();
       Value optimism = pos.this_thread()->optimism[stm];
 
-      Value nnue = NNUE::evaluate(pos, true, &nnueComplexity);
+      Value nnue = NNUE::evaluate(pos, true, &complex);
 
       // Blend nnue complexity with (semi)classical complexity
-      nnueComplexity = (  406 * nnueComplexity
+      complex = (  406 * complex
                         + 424 * abs(psq - nnue)
                         + (optimism  > 0 ? int(optimism) * int(psq - nnue) : 0)
                         ) / 1024;
 
-      // Return hybrid NNUE complexity to caller
-      if (complexity)
-          *complexity = nnueComplexity;
 
-      optimism = optimism * (272 + nnueComplexity) / 256;
+      optimism = optimism * (272 + complex) / 256;
       v = (nnue * scale + optimism * (scale - 748)) / 1024;
   }
 
@@ -1091,8 +1088,12 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 
   // When not using NNUE, return classical complexity to caller
-  if (complexity && useClassical)
-      *complexity = abs(v - psq);
+  if (useClassical) {
+      complex = abs(v - psq);
+  }
+  if (complexity)
+     *complexity = complex;
+  pos.this_thread()->complexityAverage.update(complex);
 
   return v;
 }
