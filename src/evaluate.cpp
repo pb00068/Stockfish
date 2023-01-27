@@ -1088,9 +1088,8 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 
   // When not using NNUE, return classical complexity to caller
-  if (useClassical) {
+  if (useClassical)
       complex = abs(v - psq);
-  }
   if (complexity)
      *complexity = complex;
   pos.this_thread()->complexityAverage.update(complex);
