@@ -620,7 +620,6 @@ namespace {
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
     posKey = pos.key();
-    bool hitBefore = ss->ttHit; // needed this info for singular extension calls
     tte = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
@@ -731,11 +730,11 @@ namespace {
     }
     else if (excludedMove)
     {
-       if (hitBefore)
-           ss->staticEval = eval = evaluate(pos, &complexity); // don't trust static evals from TT
+       if (ss->ttHit && tte->eval() != VALUE_NONE)
+           ss->staticEval = eval = tte->eval(); // try to trust TT's stored static eval (can be different to actual eval due to changed optimism)
        else
        {
-           eval = ss->staticEval; // value already computed
+           eval = ss->staticEval; // value already computed in calling SE node
            assert(ss->staticEval == evaluate(pos, &complexity));
        }
     }
