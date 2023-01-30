@@ -718,6 +718,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
+    dbg_hit_on(excludedMove);
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
