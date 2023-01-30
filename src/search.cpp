@@ -730,12 +730,8 @@ namespace {
     }
     else if (excludedMove)
     {
-       if (ss->ttHit && tte->eval() != VALUE_NONE) {
+       if (ss->ttHit && tte->eval() != VALUE_NONE)
            ss->staticEval = eval = tte->eval(); // try to trust TT's stored static eval (can be different to actual eval due to changed optimism)
-           if (ttValue != VALUE_NONE
-                       && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-                eval = ttValue;
-       }
        else
        {
            eval = ss->staticEval; // value already computed in calling SE node
