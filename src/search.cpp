@@ -729,7 +729,7 @@ namespace {
         goto moves_loop;
     }
     else if (excludedMove)
-         eval = ss->staticEval - 20;
+         eval = ss->staticEval;
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
@@ -1071,6 +1071,7 @@ moves_loop: // When in check, search starts here
               if (value < singularBeta)
               {
                   extension = 1;
+                  eval = ss->staticEval = evaluate(pos, &complexity);
                   singularQuietLMR = !ttCapture;
 
                   // Avoid search explosion by limiting the number of double extensions
