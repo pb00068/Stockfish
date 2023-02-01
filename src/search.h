@@ -24,6 +24,8 @@
 #include "misc.h"
 #include "movepick.h"
 #include "types.h"
+#include "tt.h"
+
 
 namespace Stockfish {
 
@@ -51,6 +53,7 @@ struct Stack {
   bool ttHit;
   int doubleExtensions;
   int cutoffCnt;
+  TTEntry *tte;
 };
 
 

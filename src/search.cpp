@@ -619,14 +619,24 @@ namespace {
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
-    posKey = pos.key();
-    tte = TT.probe(posKey, ss->ttHit);
-    ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
-    ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
-            : ss->ttHit    ? tte->move() : MOVE_NONE;
-    ttCapture = ttMove && pos.capture(ttMove);
-    if (!excludedMove)
+
+    bool hitBefore = ss->ttHit; // need this for singular extension calls to guard against TT race conditions
+    if (excludedMove)
     {
+        posKey = 0;
+        tte = ss->tte; // inherit form caller node
+        ttValue = VALUE_NONE;
+        ttMove = MOVE_NONE; // == excludedMove
+        ttCapture = false;
+    }
+    else
+    {
+        posKey = pos.key();
+        tte = TT.probe(posKey, ss->ttHit);
+        ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
+        ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
+                    : ss->ttHit    ? tte->move() : MOVE_NONE;
+        ttCapture = ttMove && pos.capture(ttMove);
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
     // At non-PV nodes we check for an early TT cutoff
@@ -729,7 +739,15 @@ namespace {
         goto moves_loop;
     }
     else if (excludedMove)
-         eval = ss->staticEval;
+    {
+        if (hitBefore)
+            ss->staticEval = eval = evaluate(pos, &complexity); // don't trust static evals from TT
+        else
+        {
+           eval = ss->staticEval; // value already computed in caller node
+           assert(ss->staticEval == evaluate(pos, &complexity));
+        }
+    }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
@@ -773,7 +791,7 @@ namespace {
     // Step 7. Razoring (~1 Elo).
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
-    if (!excludedMove && eval < alpha - 394 - 255 * depth * depth)
+    if (eval < alpha - 394 - 255 * depth * depth)
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
@@ -911,6 +929,7 @@ moves_loop: // When in check, search starts here
     probCutBeta = beta + 402;
     if (   ss->inCheck
         && !PvNode
+        && !excludedMove
         && depth >= 2
         && ttCapture
         && (tte->bound() & BOUND_LOWER)
@@ -1061,10 +1080,9 @@ moves_loop: // When in check, search starts here
           {
               Value singularBeta = ttValue - (3 + (ss->ttPv && !PvNode)) * depth;
               Depth singularDepth = (depth - 1) / 2;
-              if (depth <= 0)
-              	abort();
 
               ss->excludedMove = move;
+              ss->tte = tte;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
 
