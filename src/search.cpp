@@ -619,23 +619,25 @@ namespace {
     if (!rootNode)
         (ss+2)->statScore = 0;
 
-    // Step 4. Transposition table lookup. We don't want the score of a partial
-    // search to overwrite a previous full search TT value, so we use a different
-    // position key in case of an excluded move.
+    // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
+    bool preExcludedTTHit = ss->ttHit; // In excluded search, we cannot trust TT eval.
+
     posKey = pos.key();
-    bool hitBefore = ss->ttHit; // needed this info for singular extension calls
     tte = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture(ttMove);
+
+    // At this point, if not excluded, skip straight to step 6, static eval. However,
+    // to save indentation, we list the condition in all code between here and there.
     if (!excludedMove)
-    {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
     // At non-PV nodes we check for an early TT cutoff
-    if (  !PvNode
+    if (   !PvNode
+        && !excludedMove
         && ss->ttHit
         && tte->depth() > depth - (tte->bound() == BOUND_EXACT)
         && ttValue != VALUE_NONE // Possible in case of TT access race
@@ -670,7 +672,7 @@ namespace {
     }
 
     // Step 5. Tablebases probe
-    if (!rootNode && TB::Cardinality)
+    if (!rootNode && !excludedMove && TB::Cardinality)
     {
         int piecesCount = pos.count<ALL_PIECES>();
 
@@ -720,7 +722,6 @@ namespace {
             }
         }
     }
-    }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
 
@@ -735,13 +736,12 @@ namespace {
     }
     else if (excludedMove)
     {
-       if (hitBefore)
-           ss->staticEval = eval = evaluate(pos, &complexity); // don't trust static evals from TT
-       else
-       {
-           eval = ss->staticEval; // value already computed
-           assert(ss->staticEval == evaluate(pos, &complexity));
-       }
+       // Static evals from the TT aren't good enough (-13 Elo), presumably due to changing optimism context.
+       if (preExcludedTTHit)
+           ss->staticEval = eval = evaluate(pos, &complexity);
+       else // However, non-TT evals from the containing non-excluded search,
+            // being fresh, are useful, and re-using them gains about ~1 Elo.
+           eval = ss->staticEval;
     }
     else if (ss->ttHit)
     {
