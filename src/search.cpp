@@ -436,6 +436,7 @@ void Thread::search() {
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
+      bestMove = rootMoves[0].pv[0];
 
       // Have we found a "mate in x"?
       if (   Limits.mate
@@ -1041,7 +1042,16 @@ moves_loop: // When in check, search starts here
 
       // Step 15. Extensions (~100 Elo)
       // We take care to not overdo to avoid search getting stuck.
-      if (ss->ply < thisThread->rootDepth * 2)
+
+      // extend root moves which are in front on other threads
+      if (rootNode && moveCount > 1 && Threads.size() > 1) {
+        for (Thread* th: Threads)
+           if (th != thisThread && th->bestMove.load(std::memory_order_relaxed) == move) {
+              extension = 1;
+              break;
+           }
+      }
+      if (!extension && ss->ply < thisThread->rootDepth * 2)
       {
           // Singular extension search (~94 Elo). If all moves but one fail low on a
           // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),

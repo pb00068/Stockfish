@@ -74,6 +74,7 @@ void Thread::clear() {
 void Thread::start_searching() {
   mutex.lock();
   searching = true;
+  bestMove = MOVE_NONE;
   mutex.unlock(); // Unlock before notifying saves a few CPU-cycles
   cv.notify_one(); // Wake up the thread in idle_loop()
 }
