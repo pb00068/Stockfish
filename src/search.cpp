@@ -729,15 +729,14 @@ namespace {
         complexity = 0;
         goto moves_loop;
     }
-    else if (excludedMove) {
-        // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
-           ss->staticEval = eval = evaluate(pos, &complexity); // ss->staticEval will we saved at the end of containing non-excluded search
+    else if (excludedMove) { // implies a ttHit in containing search so ss->staticEval should contain a reasonable value
+      eval = ss->staticEval; // does this still loose 13 ELO?
     }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
-        if (eval == VALUE_NONE || thisThread->nodes % 32 == 0)
+        if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
