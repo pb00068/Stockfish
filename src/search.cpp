@@ -731,13 +731,18 @@ namespace {
     }
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
+        // However static evals from the TT must be recalculated from time to time
+        // with current optimism
+        if (thisThread->nodes % 32 == 0)
            ss->staticEval = eval = evaluate(pos, &complexity); // ss->staticEval will we saved at the end of containing non-excluded search
+        else
+           eval = ss->staticEval; // 99% == value from TT
     }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
-        if (eval == VALUE_NONE || thisThread->nodes % 32 == 0)
+        if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
