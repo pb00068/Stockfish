@@ -733,7 +733,10 @@ namespace {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
         // Recalculate value with current optimism (without updating thread avgComplexity)
+        Value v = thisThread->optimism[us];
+        thisThread->optimism[us] = VALUE_ZERO;
         ss->staticEval = eval = evaluate(pos, &complexity);
+        thisThread->optimism[us] = v;
     }
     else if (ss->ttHit)
     {
@@ -760,7 +763,7 @@ namespace {
     }
 
     // Use static evaluation difference to improve quiet move ordering (~4 Elo)
-    if (!excludedMove && is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
+    if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
     {
         int bonus = std::clamp(-19 * int((ss-1)->staticEval + ss->staticEval), -1940, 1940);
         thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] << bonus;
