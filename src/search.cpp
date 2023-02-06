@@ -731,12 +731,12 @@ namespace {
     }
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
-        // However static evals from the TT must be recalculated from time to time
-        // with current optimism
-        if (thisThread->nodes % 32 == 0)
-           ss->staticEval = eval = evaluate(pos, &complexity); // ss->staticEval will we saved at the end of containing non-excluded search
-        else
-           eval = ss->staticEval; // 99% == value from TT
+        // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
+        // Recalculate value with current optimism (without updating thread avgComplexity)
+    	if (thisThread->nodes % 8 == 0 && ss->ttHit && tte->eval() != VALUE_NONE )
+    		ss->staticEval = eval = tte->eval();
+    	else
+        ss->staticEval = eval = evaluate(pos, &complexity);
     }
     else if (ss->ttHit)
     {
