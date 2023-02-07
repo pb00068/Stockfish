@@ -800,12 +800,21 @@ namespace {
         && (ss-1)->statScore < 18200
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 20 * depth - improvement / 14 + 235 + complexity / 24
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
+
+        // Since staticEval plays an important rule here, recalculate it in case we got it from TT
+        if (ss->ttHit &&  ss->staticEval == tte->eval())
+        {
+           ss->staticEval = eval = evaluate(pos, &complexity);
+           thisThread->complexityAverage.update(complexity);
+        }
+
+        if (ss->staticEval >= beta - 20 * depth - improvement / 14 + 235 + complexity / 24)
+        {
 
         // Null move dynamic reduction based on depth, eval and complexity of position
         Depth R = std::min(int(eval - beta) / 165, 6) + depth / 3 + 4 - (complexity > 800);
@@ -841,6 +850,7 @@ namespace {
 
             if (v >= beta)
                 return nullValue;
+        }
         }
     }
 
