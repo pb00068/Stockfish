@@ -809,7 +809,7 @@ namespace {
         // Since staticEval plays an important rule here, recalculate it in case we got it from TT
         if (ss->ttHit &&  ss->staticEval == tte->eval())
         {
-           ss->staticEval = eval = evaluate(pos, &complexity);
+           ss->staticEval = evaluate(pos, &complexity);
            thisThread->complexityAverage.update(complexity);
         }
 
