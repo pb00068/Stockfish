@@ -1070,10 +1070,13 @@ moves_loop: // When in check, search starts here
 
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
-              ss->staticEval = eval = evaluate(pos, &complexity);
-              thisThread->complexityAverage.update(complexity);
-              if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-                 eval = ttValue;
+              if (!ss->inCheck)
+              {
+                 ss->staticEval = eval = evaluate(pos, &complexity);
+                 thisThread->complexityAverage.update(complexity);
+                 if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
+                    eval = ttValue;
+              }
 
               ss->excludedMove = MOVE_NONE;
 
