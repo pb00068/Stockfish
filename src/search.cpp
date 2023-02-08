@@ -729,13 +729,9 @@ namespace {
         complexity = 0;
         goto moves_loop;
     }
-    else if (excludedMove) {
+    else if (excludedMove)
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         eval = ss->staticEval;
-        if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-            eval = ttValue;
-
-    }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
