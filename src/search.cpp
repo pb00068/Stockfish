@@ -1070,14 +1070,6 @@ moves_loop: // When in check, search starts here
 
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
-              if (!ss->inCheck)
-              {
-                 ss->staticEval = eval = evaluate(pos, &complexity);
-                 thisThread->complexityAverage.update(complexity);
-                 if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-                    eval = ttValue;
-              }
-
               ss->excludedMove = MOVE_NONE;
 
               if (value < singularBeta)
@@ -1124,6 +1116,14 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5600)
               extension = 1;
+      }
+
+      if (extension && !ss->inCheck)
+      {
+          ss->staticEval = eval = evaluate(pos, &complexity);
+          thisThread->complexityAverage.update(complexity);
+          if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
+            eval = ttValue;
       }
 
       // Add extension to new depth
