@@ -1067,7 +1067,6 @@ moves_loop: // When in check, search starts here
 
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
-              ss->staticEval = eval = evaluate(pos, &complexity);
               ss->excludedMove = MOVE_NONE;
 
               if (value < singularBeta)
@@ -1114,6 +1113,14 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5600)
               extension = 1;
+      }
+
+      if (extension) {
+         ss->staticEval = eval = evaluate(pos, &complexity);
+         thisThread->complexityAverage.update(complexity);
+         // ttValue can be used as a better position evaluation (~7 Elo)
+         if (ss->ttHit &&  ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
+            eval = ttValue;
       }
 
       // Add extension to new depth
