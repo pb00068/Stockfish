@@ -40,6 +40,7 @@ namespace Stockfish {
 namespace Search {
 
   LimitsType Limits;
+  bool useNNue=true;
 }
 
 namespace Tablebases {
@@ -193,6 +194,7 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
+  useNNue = Options["Use NNUE"];
 
   Eval::NNUE::verify();
 
@@ -581,7 +583,7 @@ namespace {
         if (   Threads.stop.load(std::memory_order_relaxed)
             || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
+            return (ss->ply >= MAX_PLY) ? evaluate(pos)
                                                         : value_draw(pos.this_thread());
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -723,7 +725,12 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        if (Search::useNNue) {
+          ss->staticEval = eval = evaluate(pos, &complexity);
+          thisThread->complexityAverage.update(complexity);
+        }
+        else
+          ss->staticEval = eval = VALUE_NONE;
         improving = false;
         improvement = 0;
         complexity = 0;
@@ -1441,7 +1448,7 @@ moves_loop: // When in check, search starts here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY) ? evaluate(pos) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1467,8 +1474,13 @@ moves_loop: // When in check, search starts here
     // Evaluate the position statically
     if (ss->inCheck)
     {
+      if (Search::useNNue)
+         ss->staticEval = bestValue = futilityBase = evaluate(pos);
+      else
+      {
         ss->staticEval = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
+      }
     }
     else
     {
