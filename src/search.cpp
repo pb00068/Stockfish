@@ -1122,8 +1122,6 @@ moves_loop: // When in check, search starts here
       {
           ss->staticEval = eval = evaluate(pos, &complexity);
           thisThread->complexityAverage.update(complexity);
-          if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-            eval = ttValue;
       }
 
       // Add extension to new depth
