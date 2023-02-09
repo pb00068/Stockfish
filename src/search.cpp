@@ -312,8 +312,6 @@ void Thread::search() {
 
   complexityAverage.set(153, 1);
 
-  optimism[us] = optimism[~us] = VALUE_ZERO;
-
   int searchAgainCounter = 0;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
@@ -359,9 +357,11 @@ void Thread::search() {
               beta  = std::min(prev + delta, VALUE_INFINITE);
 
               // Adjust optimism based on root move's previousScore
-              int opt = 116 * prev / (std::abs(prev) + 170);
-              optimism[ us] = Value(opt);
-              optimism[~us] = -optimism[us];
+              if (rootDepth % 4 ==0) {
+                  int opt = 116 * prev / (std::abs(prev) + 170);
+                  optimism[ us] = Value(opt);
+                  optimism[~us] = -optimism[us];
+              }
           }
 
           // Start with a small aspiration window and, in the case of a fail
