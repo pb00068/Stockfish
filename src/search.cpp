@@ -731,8 +731,7 @@ namespace {
     }
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
-        // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
-        // Recalculate value with current optimism (without updating thread avgComplexity)
+        // However static evals from the TT aren't good enough (-13 elo), they change over time due to changing thread's optimism & bestValue (lazy-evals)
         ss->staticEval = eval = evaluate(pos, &complexity);
     }
     else if (ss->ttHit)
@@ -755,7 +754,6 @@ namespace {
         // Save static evaluation into transposition table
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
-    thisThread->complexityAverage.update(complexity);
 
     // Use static evaluation difference to improve quiet move ordering (~4 Elo)
     if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)

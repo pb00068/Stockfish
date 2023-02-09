@@ -1094,6 +1094,9 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   if (complexity && useClassical)
       *complexity = abs(v - psq);
 
+  if (complexity)
+      pos.this_thread()->complexityAverage.update(*complexity);
+
   return v;
 }
 
