@@ -618,7 +618,8 @@ namespace {
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
     posKey = pos.key();
-    tte = TT.probe(posKey, ss->ttHit);
+    bool old;
+    tte = TT.probe(posKey, ss->ttHit, old);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
@@ -739,7 +740,7 @@ namespace {
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
-        if (eval == VALUE_NONE)
+        if (eval == VALUE_NONE || old)
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
@@ -1451,7 +1452,8 @@ moves_loop: // When in check, search starts here
                                                   : DEPTH_QS_NO_CHECKS;
     // Step 3. Transposition table lookup
     posKey = pos.key();
-    tte = TT.probe(posKey, ss->ttHit);
+    bool old;
+    tte = TT.probe(posKey, ss->ttHit, old);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit = ss->ttHit && tte->is_pv();
@@ -1928,7 +1930,8 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
         return false;
 
     pos.do_move(pv[0], st);
-    TTEntry* tte = TT.probe(pos.key(), ttHit);
+    bool o;
+    TTEntry* tte = TT.probe(pos.key(), ttHit, o);
 
     if (ttHit)
     {

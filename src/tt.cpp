@@ -117,7 +117,7 @@ void TranspositionTable::clear() {
 /// minus 8 times its relative age. TTEntry t1 is considered more valuable than
 /// TTEntry t2 if its replace value is greater than that of t2.
 
-TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
+TTEntry* TranspositionTable::probe(const Key key, bool& found, bool& old) const {
 
   TTEntry* const tte = first_entry(key);
   const uint16_t key16 = (uint16_t)key;  // Use the low 16 bits as key inside the cluster
@@ -125,8 +125,8 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   for (int i = 0; i < ClusterSize; ++i)
       if (tte[i].key16 == key16 || !tte[i].depth8)
       {
+          old = TT.generation8 % GENERATION_CYCLE > tte[i].genBound8;
           tte[i].genBound8 = uint8_t(generation8 | (tte[i].genBound8 & (GENERATION_DELTA - 1))); // Refresh
-
           return found = (bool)tte[i].depth8, &tte[i];
       }
 
