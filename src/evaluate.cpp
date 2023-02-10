@@ -989,9 +989,25 @@ namespace {
 
     // Early exit if score is high
     auto lazy_skip = [&](Value lazyThreshold) {
-        return abs(mg_value(score) + eg_value(score)) >   lazyThreshold
-                                                        + std::abs(pos.this_thread()->bestValue) * 5 / 4
-                                                        + pos.non_pawn_material() / 32;
+       Value v = mg_value(score) + eg_value(score);
+       bool ret =  abs(v) > lazyThreshold + std::abs(pos.this_thread()->bestValue) * 5 / 4 + pos.non_pawn_material() / 32;
+       Color inAdvantage = v > 0 ? WHITE : BLACK;
+       if (ret && lazyThreshold == LazyThreshold1 && pos.non_pawn_material(~inAdvantage) >= BishopValueMg + 2 * RookValueMg) {
+           // do a minimal king safety check before skipping main stage
+
+           const Square ksq = pos.square<KING>(inAdvantage);
+           // with such a material advantage, opponent still having some pieces,
+           // require king not being out in the blue
+           // and at least some knight/rook/queen guarding our king
+           if ( (!(attacks_bb<KING>(ksq) & pos.pieces(inAdvantage)) && popcount(attacks_bb<KING>(ksq)) > 3) ||
+                 (!(PseudoAttacks[7][ksq] & pos.pieces(inAdvantage, KNIGHT)) &&
+                 !((PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) & (pos.pieces(inAdvantage, ROOK, QUEEN)))))
+           {
+              //sync_cout << "info advantage " << inAdvantage << " by " << v << pos << " extended kingring " << Bitboards::pretty(PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) << sync_endl;
+             return false;
+           }
+       }
+       return ret;
     };
 
     if (lazy_skip(LazyThreshold1))
