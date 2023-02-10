@@ -993,19 +993,22 @@ namespace {
        bool ret =  abs(v) > lazyThreshold + std::abs(pos.this_thread()->bestValue) * 5 / 4 + pos.non_pawn_material() / 32;
        Color inAdvantage = v > 0 ? WHITE : BLACK;
        if (ret && lazyThreshold == LazyThreshold1 && pos.non_pawn_material(~inAdvantage) >= BishopValueMg + 2 * RookValueMg) {
-           // do a minimal king safety check before skipping main stage
+           // do a minimal king safety eval
 
            const Square ksq = pos.square<KING>(inAdvantage);
-           // with such a material advantage, opponent still having some pieces,
-           // require king not being out in the blue
-           // and at least some knight/rook/queen guarding our king
-           if ( (!(attacks_bb<KING>(ksq) & pos.pieces(inAdvantage)) && popcount(attacks_bb<KING>(ksq)) > 3) ||
-                 (!(PseudoAttacks[7][ksq] & pos.pieces(inAdvantage, KNIGHT)) &&
-                 !((PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) & (pos.pieces(inAdvantage, ROOK, QUEEN)))))
-           {
-              //sync_cout << "info advantage " << inAdvantage << " by " << v << pos << " extended kingring " << Bitboards::pretty(PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) << sync_endl;
-             return false;
-           }
+           int kingDanger = 0;
+           if ( (!(attacks_bb<KING>(ksq) & pos.pieces(inAdvantage)) && popcount(attacks_bb<KING>(ksq)) > 3))
+             kingDanger += 40; // king not in corner and not surrounded by own pieces
+           if (!(PseudoAttacks[7][ksq] & pos.pieces(inAdvantage, KNIGHT)))
+             kingDanger += 40;  // not protected by knight
+           if (!((PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) & (pos.pieces(inAdvantage, ROOK, QUEEN))))
+             kingDanger += 40; // not guarded by rook/queen
+
+           if (inAdvantage == WHITE)
+                score -= make_score(kingDanger,kingDanger);
+           else
+                score += make_score(kingDanger,kingDanger);
+
        }
        return ret;
     };
