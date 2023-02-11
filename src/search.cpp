@@ -332,6 +332,7 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
+      reevalPVs = false;
 
       if (!Threads.increaseDepth)
          searchAgainCounter++;
@@ -732,14 +733,16 @@ namespace {
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
-        // Recalculate value with current optimism (without updating thread avgComplexity)
-        ss->staticEval = eval = evaluate(pos, &complexity);
+
+        eval = evaluate(pos, &complexity);
+        thisThread->reevalPVs = abs(eval - ss->staticEval) > 60;
+        ss->staticEval = eval;
     }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
-        if (eval == VALUE_NONE)
+        if (eval == VALUE_NONE || (ss->ttPv  && thisThread->reevalPVs))
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());

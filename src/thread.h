@@ -64,6 +64,7 @@ public:
   std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
   int selDepth, nmpMinPly;
   Color nmpColor;
+  bool reevalPVs;
   Value bestValue, optimism[COLOR_NB];
 
   Position rootPos;
