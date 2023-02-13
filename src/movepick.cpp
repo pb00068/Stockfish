@@ -79,7 +79,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              Square rs)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), ttMove(ttm), recaptureSquare(rs), depth(d)
 {
-  assert(d <= 0);
+  assert(d <= 2);
 
   stage = (pos.checkers() ? EVASION_TT : QSEARCH_TT) +
           !(   ttm
