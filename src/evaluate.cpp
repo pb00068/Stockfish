@@ -994,6 +994,7 @@ namespace {
        Color inAdvantage = v > 0 ? WHITE : BLACK;
        //dbg_hit_on(pos.captured_piece() && pos.side_to_move() != inAdvantage, 0);
        //dbg_hit_on(pos.sideWasInCheckBefore(pos.side_to_move() != inAdvantage), 1);
+
        if (pos.captured_piece() && pos.side_to_move() != inAdvantage)
            return false; // don't skip if the side in advantage just captured a piece (gaining material while loosing positional isn't good)
        if (pos.sideWasInCheckBefore(pos.side_to_move() != inAdvantage))
