@@ -96,8 +96,6 @@ void Bitboards::init() {
       for (int step : {-9, -8, -7, -1, 1, 7, 8, 9} )
          PseudoAttacks[KING][s1] |= safe_destination(s1, step);
 
-      PseudoAttacks[7][s1] = PseudoAttacks[KING][s1];
-
       for (int step : {-17, -15, -10, -6, 6, 10, 15, 17} )
          PseudoAttacks[KNIGHT][s1] |= safe_destination(s1, step);
 
@@ -114,14 +112,6 @@ void Bitboards::init() {
               }
               BetweenBB[s1][s2] |= s2;
           }
-  }
-  for (Square s = SQ_A1; s <= SQ_H8; ++s)
-  {
-        Bitboard b = PseudoAttacks[KING][s];
-        while (b) {
-             Square s2 = pop_lsb(b);
-             PseudoAttacks[7][s] |= PseudoAttacks[KING][s2];
-        }
   }
 }
 

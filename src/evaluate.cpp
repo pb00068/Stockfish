@@ -992,24 +992,8 @@ namespace {
        Value v = mg_value(score) + eg_value(score);
        bool ret =  abs(v) > lazyThreshold + std::abs(pos.this_thread()->bestValue) * 5 / 4 + pos.non_pawn_material() / 32;
        Color inAdvantage = v > 0 ? WHITE : BLACK;
-       if (ret && lazyThreshold == LazyThreshold1 && pos.non_pawn_material(~inAdvantage) >= BishopValueMg + 2 * RookValueMg) {
-           // do a minimal king safety eval
-
-           const Square ksq = pos.square<KING>(inAdvantage);
-           int kingDanger = 0;
-           if ( (!(attacks_bb<KING>(ksq) & pos.pieces(inAdvantage)) && popcount(attacks_bb<KING>(ksq)) > 3))
-             kingDanger += 40; // king not in corner and not surrounded by own pieces
-           if (!(PseudoAttacks[7][ksq] & pos.pieces(inAdvantage, KNIGHT)))
-             kingDanger += 40;  // not protected by knight
-           if (!((PseudoAttacks[7][ksq] | attacks_bb<ROOK>(ksq, pos.pieces())) & (pos.pieces(inAdvantage, ROOK, QUEEN))))
-             kingDanger += 40; // not guarded by rook/queen
-
-           if (inAdvantage == WHITE)
-                score -= make_score(kingDanger,kingDanger);
-           else
-                score += make_score(kingDanger,kingDanger);
-
-       }
+       if (pos.sideWasInCheckBefore(pos.side_to_move() != inAdvantage))
+           return false; // dont skip Main evaluation if the side in advantage were in chech 2 or 4 plies before
        return ret;
     };
 
