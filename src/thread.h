@@ -65,6 +65,7 @@ public:
   int selDepth, nmpMinPly;
   Color nmpColor;
   Value bestValue, optimism[COLOR_NB];
+  bool optChangedRemarkly;
 
   Position rootPos;
   StateInfo rootState;

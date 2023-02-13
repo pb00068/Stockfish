@@ -313,6 +313,7 @@ void Thread::search() {
   complexityAverage.set(153, 1);
 
   optimism[us] = optimism[~us] = VALUE_ZERO;
+  optChangedRemarkly=false;
 
   int searchAgainCounter = 0;
 
@@ -360,6 +361,10 @@ void Thread::search() {
 
               // Adjust optimism based on root move's previousScore
               int opt = 116 * prev / (std::abs(prev) + 170);
+              if (rootDepth >= 5)
+              {
+                 optChangedRemarkly = abs(opt - optimism[ us]) > 6;
+              }
               optimism[ us] = Value(opt);
               optimism[~us] = -optimism[us];
           }
@@ -732,8 +737,12 @@ namespace {
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
-        // Recalculate value with current optimism (without updating thread avgComplexity)
-        ss->staticEval = eval = evaluate(pos, &complexity);
+        if (thisThread->optChangedRemarkly)
+        {
+           ss->staticEval = evaluate(pos, &complexity);
+           thisThread->complexityAverage.update(complexity);
+        }
+        eval = ss->staticEval;
     }
     else if (ss->ttHit)
     {
@@ -743,6 +752,7 @@ namespace {
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
+        thisThread->complexityAverage.update(complexity);
 
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (    ttValue != VALUE_NONE
@@ -755,7 +765,7 @@ namespace {
         // Save static evaluation into transposition table
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
-    thisThread->complexityAverage.update(complexity);
+
 
     // Use static evaluation difference to improve quiet move ordering (~4 Elo)
     if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
@@ -1484,9 +1494,9 @@ moves_loop: // When in check, search starts here
                 bestValue = ttValue;
         }
         else
-            // In case of null move search use previous static eval with a different sign
+            // In case of null move search and eval classical use previous static eval with a different sign
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+            (ss-1)->currentMove != MOVE_NULL || (Eval::useNNUE && (pos.count<ALL_PIECES>() <= 7 || abs(pos.psq_eg_stm()) <= 1781)) ? evaluate(pos)
                                              : -(ss-1)->staticEval;
 
         // Stand pat. Return immediately if static value is at least beta
