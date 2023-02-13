@@ -862,7 +862,7 @@ namespace {
         assert(probCutBeta < VALUE_INFINITE);
 
         MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
-        int mc=0;
+
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
@@ -873,7 +873,7 @@ namespace {
                                                                           [true]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
-                mc++;
+
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -892,11 +892,6 @@ namespace {
                     return value;
                 }
             }
-        if (mc)
-        {
-           ss->staticEval = evaluate(pos, &complexity);
-           thisThread->complexityAverage.update(complexity);
-        }
     }
 
     // Step 11. If the position is not in TT, decrease depth by 3.
