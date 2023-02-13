@@ -895,7 +895,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
 bool Position::sideWasInCheckBefore(bool prev) const
 {
-   StateInfo* stp = prev ? st->previous : st;
+   StateInfo* stp = prev && st->previous ? st->previous : st;
    if (stp->previous && stp->previous->previous) {
      stp = stp->previous->previous;
      if  (stp->checkersBB)
