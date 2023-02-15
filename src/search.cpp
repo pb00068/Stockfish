@@ -731,6 +731,7 @@ namespace {
     }
     else if (excludedMove) {
         eval  = ss->staticEval; // trust tt-entries
+        evaluate(pos, &complexity);
         complexity = abs(ss->staticEval - pos.psq_eg_stm());
     }
     else if (ss->ttHit)
