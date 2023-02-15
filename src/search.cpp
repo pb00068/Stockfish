@@ -732,6 +732,8 @@ namespace {
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
        eval = ss->staticEval;
+       evaluate(pos, &complexity);
+       thisThread->complexityAverage.update(complexity);
     }
     else if (ss->ttHit)
     {
