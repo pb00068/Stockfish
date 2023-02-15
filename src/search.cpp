@@ -731,7 +731,7 @@ namespace {
     }
     else if (excludedMove) {
         eval  = ss->staticEval; // trust tt-entries
-        evaluate(pos, &complexity); // don't assign, don't update threads complexity
+        complexity = abs(ss->staticEval - pos.psq_eg_stm());
     }
     else if (ss->ttHit)
     {
@@ -741,7 +741,7 @@ namespace {
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
-        thisThread->complexityAverage.update(complexity);
+
 
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (    ttValue != VALUE_NONE
@@ -751,10 +751,10 @@ namespace {
     else
     {
         ss->staticEval = eval = evaluate(pos, &complexity);
-        thisThread->complexityAverage.update(complexity);
         // Save static evaluation into transposition table
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
+    thisThread->complexityAverage.update(complexity);
 
 
     // Use static evaluation difference to improve quiet move ordering (~4 Elo)
