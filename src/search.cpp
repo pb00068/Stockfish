@@ -730,10 +730,8 @@ namespace {
         goto moves_loop;
     }
     else if (excludedMove) {
-        // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
-        // However static evals from the TT aren't good enough (-13 elo), presumably due to changing optimism context
-        // Recalculate value with current optimism (without updating thread avgComplexity)
-        ss->staticEval = eval = evaluate(pos, &complexity);
+        eval  = ss->staticEval; // trust tt-entries
+        evaluate(pos, &complexity); // don't assign, don't update threads complexity
     }
     else if (ss->ttHit)
     {
