@@ -731,9 +731,9 @@ namespace {
     }
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
-        // because this search is called on same ply (ss instead to ss+1).
+        // N.B.: excludedMove search passes ss, not ss+1
         eval = ss->staticEval; // trust tt-entry
-        if (Eval::useNNUE && ((pos.count<ALL_PIECES>() <= 7 || abs(pos.psq_eg_stm()) <= 1781)))
+        if (Eval::useNNUE)
             Eval::NNUE::evaluate(pos, true, nullptr);
     }
     else if (ss->ttHit)
@@ -744,7 +744,6 @@ namespace {
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
-        thisThread->complexityAverage.update(complexity);
 
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (    ttValue != VALUE_NONE
@@ -754,7 +753,6 @@ namespace {
     else
     {
         ss->staticEval = eval = evaluate(pos, &complexity);
-        thisThread->complexityAverage.update(complexity);
         // Save static evaluation into transposition table
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
@@ -1119,6 +1117,12 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5600)
               extension = 1;
       }
+      if (!extension // singular extension similar conditions
+           && Eval::useNNUE
+           && move == ttMove
+           && !excludedMove
+           &&  tte->depth() >= depth - 3)
+               Eval::NNUE::evaluate(pos, true, nullptr);
 
       // Add extension to new depth
       newDepth += extension;
