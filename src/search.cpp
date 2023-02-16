@@ -733,8 +733,7 @@ namespace {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         // not that search with excluded move uses same ply (is done with ss instead to ss+1)
         eval = ss->staticEval; // trust tt-entry
-        if (Eval::useNNUE)
-            Eval::NNUE::evaluate(pos, true, nullptr);
+        // complexity can be left uninitialized here since it's use in nmp is excluded by excludedMove
     }
     else if (ss->ttHit)
     {
