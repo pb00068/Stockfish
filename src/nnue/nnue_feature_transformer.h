@@ -361,8 +361,10 @@ namespace Stockfish::Eval::NNUE {
       {
         // This governs when a full feature refresh is needed and how many
         // updates are better than just one full refresh.
+        auto& dp = st->dirtyPiece;
         if (   FeatureSet::requires_refresh(st, Perspective)
-            || (gain -= FeatureSet::update_cost(st) + 1) < 0)
+            ||  dp.piece[0] == make_piece(Perspective, KING)
+            || (gain -= FeatureSet::update_cost(st) + 2) < 0)
           break;
         next = st;
         st = st->previous;
