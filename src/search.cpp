@@ -732,7 +732,7 @@ namespace {
     else if (excludedMove) {
         // excludeMove implies that we had a ttHit on the containing non-excluded search with ss->staticEval filled from TT
         // N.B.: excludedMove search passes ss, not ss+1
-        ss->staticEval = eval = evaluate(pos, &complexity);
+        eval = ss->staticEval;
     }
     else if (ss->ttHit)
     {
@@ -811,13 +811,10 @@ namespace {
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
-        if (Eval::useNNUE)
-            Eval::NNUE::evaluate(pos, true, nullptr);
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
         pos.undo_null_move();
-
 
         if (nullValue >= beta)
         {
@@ -1073,6 +1070,9 @@ moves_loop: // When in check, search starts here
               // the search with excludedMove will update ss->staticEval
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+
+              if (Eval::useNNUE)
+                  Eval::NNUE::evaluate(pos, true, nullptr);
 
               if (value < singularBeta)
               {
