@@ -1117,8 +1117,8 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5600)
           {
               extension = 1;
-              if (Eval::useNNUE)
-                 Eval::NNUE::evaluate(pos, true, nullptr);
+              if (Eval::useNNUE && !ss->inCheck)
+                  ss->staticEval = Eval::NNUE::evaluate(pos, true, nullptr);
           }
       }
 
