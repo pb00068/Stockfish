@@ -1118,7 +1118,7 @@ moves_loop: // When in check, search starts here
           {
               extension = 1;
               if (Eval::useNNUE)
-                 ss->staticEval = Eval::NNUE::evaluate(pos, true, nullptr);
+                 Eval::NNUE::evaluate(pos, true, nullptr);
           }
       }
 
