@@ -103,6 +103,7 @@ public:
   template<PieceType Pt> int count() const;
   template<PieceType Pt> Square square(Color c) const;
   bool is_on_semiopen_file(Color c, Square s) const;
+  bool kingMovedRecently() const;
 
   // Castling
   CastlingRights castling_rights(Color c) const;

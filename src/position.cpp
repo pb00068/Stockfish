@@ -1028,6 +1028,18 @@ void Position::do_null_move(StateInfo& newSt) {
   assert(pos_is_ok());
 }
 
+bool Position::kingMovedRecently() const {
+      int z=0;
+      StateInfo *stt = st;
+      while (z++ < 4 && stt->previous && (!stt->accumulator.computed[WHITE] || !stt->accumulator.computed[BLACK]))
+      {
+        if (type_of(stt->dirtyPiece.piece[0]) == KING)
+           return true;
+        stt = stt->previous;
+      }
+      return false;
+}
+
 
 /// Position::undo_null_move() must be used to undo a "null move"
 

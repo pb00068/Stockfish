@@ -792,6 +792,7 @@ namespace {
         &&  eval < 28580) // larger than VALUE_KNOWN_WIN, but smaller than TB wins
         return eval;
 
+
     // Step 9. Null move search with verification search (~35 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
@@ -841,6 +842,10 @@ namespace {
                 return nullValue;
         }
     }
+
+
+    if (Eval::useNNUE && !excludedMove && depth > 5 && pos.kingMovedRecently())
+        Eval::NNUE::evaluate(pos, true, nullptr);
 
     probCutBeta = beta + 180 - 54 * improving;
 
@@ -1242,8 +1247,6 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
-          if (Eval::useNNUE && !ss->inCheck && newDepth > 8)
-              ss->staticEval = Eval::NNUE::evaluate(pos, true, nullptr);
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
