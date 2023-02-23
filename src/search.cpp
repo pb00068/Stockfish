@@ -742,7 +742,11 @@ namespace {
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
+        {
+           if ((ss-1)->inCheck && (ss-1)->excludedMove) // also this node's accumulator will be used rather often
+              Eval::NNUE::hint_common_parent_position(pos);
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
+        }
 
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (    ttValue != VALUE_NONE
