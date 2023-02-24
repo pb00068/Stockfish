@@ -1048,7 +1048,7 @@ make_v:
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
 
-Value Eval::evaluate(const Position& pos, int* complexity) {
+Value Eval::evaluate(const Position& pos, bool shortenChain, int* complexity) {
 
   Value v;
   Value psq = pos.psq_eg_stm();
@@ -1068,7 +1068,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       Color stm = pos.side_to_move();
       Value optimism = pos.this_thread()->optimism[stm];
 
-      Value nnue = NNUE::evaluate(pos, true, &nnueComplexity);
+      Value nnue = NNUE::evaluate(pos, shortenChain, true, &nnueComplexity);
 
       // Blend nnue complexity with (semi)classical complexity
       nnueComplexity = (  406 * nnueComplexity
@@ -1152,12 +1152,12 @@ std::string Eval::trace(Position& pos) {
   ss << "\nClassical evaluation   " << to_cp(v) << " (white side)\n";
   if (Eval::useNNUE)
   {
-      v = NNUE::evaluate(pos, false);
+      v = NNUE::evaluate(pos, true, false);
       v = pos.side_to_move() == WHITE ? v : -v;
       ss << "NNUE evaluation        " << to_cp(v) << " (white side)\n";
   }
 
-  v = evaluate(pos);
+  v = evaluate(pos, true);
   v = pos.side_to_move() == WHITE ? v : -v;
   ss << "Final evaluation       " << to_cp(v) << " (white side)";
   if (Eval::useNNUE)

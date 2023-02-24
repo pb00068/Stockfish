@@ -271,9 +271,9 @@ namespace Stockfish::Eval::NNUE {
     }
 
     // Convert input features
-    std::int32_t transform(const Position& pos, OutputType* output, int bucket) const {
-      update_accumulator<WHITE>(pos);
-      update_accumulator<BLACK>(pos);
+    std::int32_t transform(const Position& pos, OutputType* output, int bucket, bool shortenChain) const {
+      update_accumulator<WHITE>(pos, shortenChain);
+      update_accumulator<BLACK>(pos, shortenChain);
 
       const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
       const auto& accumulation = pos.state()->accumulator.accumulation;
@@ -639,7 +639,7 @@ namespace Stockfish::Eval::NNUE {
     }
 
     template<Color Perspective>
-    void update_accumulator(const Position& pos) const {
+    void update_accumulator(const Position& pos, bool shortenChain) const {
 
       auto [oldest_st, next] = try_find_computed_accumulator<Perspective>(pos);
 
@@ -653,10 +653,18 @@ namespace Stockfish::Eval::NNUE {
         //     1. for the current position
         //     2. the next accumulator after the computed one
         // The heuristic may change in the future.
-        StateInfo *states_to_update[3] =
-          { next, next == pos.state() ? nullptr : pos.state(), nullptr };
+        if (shortenChain) {
+           StateInfo *states_to_update[3] =
+             { next, next == pos.state() ? nullptr : pos.state(), nullptr };
+             update_accumulator_incremetal<Perspective, 3>(pos, oldest_st, states_to_update);
+        }
+        else {
+        	StateInfo *states_to_update[2] = { pos.state(), nullptr };
+        	update_accumulator_incremetal<Perspective, 2>(pos, oldest_st, states_to_update);
+        }
 
-        update_accumulator_incremetal<Perspective, 3>(pos, oldest_st, states_to_update);
+
+
       }
       else
       {
