@@ -869,11 +869,12 @@ namespace {
         assert(probCutBeta < VALUE_INFINITE);
 
         MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
-
+        int mc=0;
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
                 assert(pos.capture(move) || promotion_type(move) == QUEEN);
+                mc++;
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
@@ -900,7 +901,8 @@ namespace {
                 }
             }
 
-        Eval::NNUE::hint_common_parent_position(pos);
+        if (mc > 0 && !ss->inCheck)
+            Eval::NNUE::hint_common_parent_position(pos);
     }
 
     // Step 11. If the position is not in TT, decrease depth by 3.
