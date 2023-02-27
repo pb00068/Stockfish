@@ -901,7 +901,7 @@ namespace {
                 }
             }
 
-        if (mc > 0 && !ss->inCheck)
+        if (mc > 0)
             Eval::NNUE::hint_common_parent_position(pos);
     }
 
