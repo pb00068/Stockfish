@@ -157,7 +157,7 @@ namespace Stockfish::Eval::NNUE {
     const int bucket = (pos.count<ALL_PIECES>() - 1) / 4;
     const auto psqt = featureTransformer->update_accumulator_get_psqt(pos, bucket);
     std::int32_t positional = 0;
-    if (abs(psqt) > 12000)
+    if (abs(psqt) > 9000)
     {
 #if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
     TransformedFeatureType transformedFeaturesUnaligned[
