@@ -994,7 +994,6 @@ namespace {
                                                         + pos.non_pawn_material() / 32;
     };
 
-    //dbg_hit_on(lazy_skip(LazyThreshold1), 7);
     if (lazy_skip(LazyThreshold1))
         goto make_v;
 
