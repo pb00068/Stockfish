@@ -159,7 +159,7 @@ namespace Stockfish::Eval::NNUE {
     const auto psqt = featureTransformer->update_accumulator_get_psqt(pos, bucket);
     std::int32_t positional = 0;
     //dbg_hit_on(abs(psqt) < 24000 + std::abs(pos.this_thread()->bestValue) * 5, 4);
-    if (abs(psqt) < 24000 + std::abs(pos.this_thread()->bestValue) * 5)
+    if (abs(psqt) < 30000 + std::abs(pos.this_thread()->bestValue) * 5)
     {
 #if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
     TransformedFeatureType transformedFeaturesUnaligned[
