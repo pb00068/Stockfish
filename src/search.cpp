@@ -1481,6 +1481,12 @@ moves_loop: // When in check, search starts here
     }
     else
     {
+        if (Eval::useNNUE && (!ss->ttHit || tte->eval() == VALUE_NONE) && is_ok((ss-1)->currentMove) && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == KING)
+        {
+          // Last move was King-Move: We don't want to do a expensive full refresh NNUE-eval so shortcut
+          // so let it be good and eventually explore it by normal search
+             return beta;
+        }
         if (ss->ttHit)
         {
             // Never assume anything about values stored in TT
