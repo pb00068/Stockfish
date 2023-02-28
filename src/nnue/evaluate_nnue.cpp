@@ -157,7 +157,7 @@ namespace Stockfish::Eval::NNUE {
 
     const int bucket = (pos.count<ALL_PIECES>() - 1) / 4;
     const auto psqt = featureTransformer->update_accumulator_get_psqt(pos, bucket);
-    std::int32_t positional = 0;
+    std::int32_t positional;
     //dbg_hit_on(abs(psqt) < 24000 + std::abs(pos.this_thread()->bestValue) * 5, 4);
     if (abs(psqt) < 30000 + std::abs(pos.this_thread()->bestValue) * 5)
     {
@@ -173,6 +173,8 @@ namespace Stockfish::Eval::NNUE {
        featureTransformer->transform(pos, transformedFeatures);
        positional = network[bucket]->propagate(transformedFeatures);
     }
+    else
+    	positional = psqt;
 
     if (complexity)
         *complexity = abs(psqt - positional) / OutputScale;
