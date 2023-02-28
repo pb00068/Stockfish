@@ -150,6 +150,15 @@ namespace Stockfish::Eval::NNUE {
     constexpr uint64_t alignment = CacheLineSize;
     int delta = 24 - pos.non_pawn_material() / 9560;
 
+
+
+    ASSERT_ALIGNED(transformedFeatures, alignment);
+
+    const int bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const auto psqt = featureTransformer->update_accumulator_get_psqt(pos, bucket);
+    std::int32_t positional = 0;
+    if (abs(psqt) > 12000)
+    {
 #if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
     TransformedFeatureType transformedFeaturesUnaligned[
       FeatureTransformer::BufferSize + alignment / sizeof(TransformedFeatureType)];
@@ -159,12 +168,9 @@ namespace Stockfish::Eval::NNUE {
     alignas(alignment)
       TransformedFeatureType transformedFeatures[FeatureTransformer::BufferSize];
 #endif
-
-    ASSERT_ALIGNED(transformedFeatures, alignment);
-
-    const int bucket = (pos.count<ALL_PIECES>() - 1) / 4;
-    const auto psqt = featureTransformer->transform(pos, transformedFeatures, bucket);
-    const auto positional = network[bucket]->propagate(transformedFeatures);
+       featureTransformer->transform(pos, transformedFeatures);
+       positional = network[bucket]->propagate(transformedFeatures);
+    }
 
     if (complexity)
         *complexity = abs(psqt - positional) / OutputScale;
@@ -206,7 +212,8 @@ namespace Stockfish::Eval::NNUE {
     NnueEvalTrace t{};
     t.correctBucket = (pos.count<ALL_PIECES>() - 1) / 4;
     for (IndexType bucket = 0; bucket < LayerStacks; ++bucket) {
-      const auto materialist = featureTransformer->transform(pos, transformedFeatures, bucket);
+      const auto materialist = featureTransformer->update_accumulator_get_psqt(pos, bucket);
+      featureTransformer->transform(pos, transformedFeatures);
       const auto positional = network[bucket]->propagate(transformedFeatures);
 
       t.psqt[bucket] = static_cast<Value>( materialist / OutputScale );

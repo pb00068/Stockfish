@@ -270,19 +270,25 @@ namespace Stockfish::Eval::NNUE {
       return !stream.fail();
     }
 
-    // Convert input features
-    std::int32_t transform(const Position& pos, OutputType* output, int bucket) const {
+
+    std::int32_t update_accumulator_get_psqt(const Position& pos, int bucket) const {
       update_accumulator<WHITE>(pos);
       update_accumulator<BLACK>(pos);
 
-      const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
-      const auto& accumulation = pos.state()->accumulator.accumulation;
       const auto& psqtAccumulation = pos.state()->accumulator.psqtAccumulation;
 
       const auto psqt = (
-            psqtAccumulation[perspectives[0]][bucket]
-          - psqtAccumulation[perspectives[1]][bucket]
+            psqtAccumulation[ pos.side_to_move()][bucket]
+          - psqtAccumulation[~pos.side_to_move()][bucket]
         ) / 2;
+      return psqt;
+    }
+
+    // Convert input features
+    void transform(const Position& pos, OutputType* output) const {
+
+        const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
+        const auto& accumulation = pos.state()->accumulator.accumulation;
 
 
       for (IndexType p = 0; p < 2; ++p)
@@ -332,7 +338,6 @@ namespace Stockfish::Eval::NNUE {
       vec_cleanup();
 #endif
 
-      return psqt;
     } // end of function transform()
 
     void hint_common_access(const Position& pos) const {
