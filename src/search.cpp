@@ -1023,15 +1023,14 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                  if (depth > 2 && !givesCheck && (pos.pieces(~us, QUEEN) & occupied)) {
+                  if (depth > 4 && !givesCheck && (pos.pieces(~us, QUEEN) & occupied)) {
                      occupied |= to_sq(move);
                      Square qsq = lsb( (pos.pieces(~us, QUEEN) & occupied));
                      if (!((pos.attackers_to( qsq, occupied) & pos.pieces(us) & occupied)))
                       continue;
-                     if (pos.attackers_to( qsq, pos.pieces()) & pos.pieces(us))
-                      continue;
+
                      if (pos.attackers_to(to_sq(move), pos.pieces()) & qsq)
-                      continue; // Queen could have went in to escape the threat
+                      continue; // Queen could have went in, to escape the threat
                   }
                   else
                     continue;
