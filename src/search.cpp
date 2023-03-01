@@ -1030,6 +1030,8 @@ moves_loop: // When in check, search starts here
                       continue;
                      if (pos.attackers_to( qsq, pos.pieces()) & pos.pieces(us))
                       continue;
+                     if (pos.attackers_to(to_sq(move), pos.pieces()) & qsq)
+                      continue; // Queen could have went in to escape the threat
                   }
                   else
                     continue;
