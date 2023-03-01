@@ -1078,7 +1078,7 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
-              ss->moveCount = 4; // does 4 perform better than the more logical value 1 ?
+              ss->moveCount = 6; // does 6 perform better than the more logical value 1 ?
 
               if (value < singularBeta)
               {
