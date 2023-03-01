@@ -1078,7 +1078,7 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
-              ss->moveCount = 4; // does 4 perform better than the more logical value 1 ?
+              ss->moveCount = 4;
 
               if (value < singularBeta)
               {
@@ -1354,6 +1354,9 @@ moves_loop: // When in check, search starts here
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
+
+      if (move == ttMove)
+          ss->moveCount = 1;
     }
 
     // The following condition would detect a stop only after move loop has been
