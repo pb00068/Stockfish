@@ -843,7 +843,7 @@ namespace {
             Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
 
             thisThread->nmpMinPly = 0;
-            ss->moveCount = 0;
+            ss->moveCount=0;
 
             if (v >= beta)
                 return nullValue;
@@ -1078,6 +1078,7 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+              ss->moveCount = 1;
 
               if (value < singularBeta)
               {
@@ -1353,9 +1354,6 @@ moves_loop: // When in check, search starts here
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
-
-      if (move == ttMove)
-        ss->moveCount = 1; // might been already > 1 due to Singular Extension search
     }
 
     // The following condition would detect a stop only after move loop has been
