@@ -1024,7 +1024,7 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
                   // don't prune the move if the position is sharp after the exchanges
-                  if (depth > 1 && capture)
+                  if (depth > 3 && capture)
                   {
                      occupied |= to_sq(move);
                      Bitboard leftEnemies = pos.pieces(~us, QUEEN, ROOK) & occupied;
@@ -1034,8 +1034,8 @@ moves_loop: // When in check, search starts here
                          Square sq = pop_lsb(leftEnemies);
                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
                              continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
-                         if (pos.attackers_to(to_sq(move), occupied) & sq)
-                             continue; // since SEE is negative, Queen/Rook probably could have concluded the exchange too
+                         if ((pos.attackers_to(to_sq(move), occupied) & sq) && !(pos.attackers_to(to_sq(move), occupied) & pos.pieces(us) & occupied))
+                             continue; // since SEE is negative, Queen/Rook could have concluded the exchange too
                          hanging |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                          if (hanging)
                              break;
