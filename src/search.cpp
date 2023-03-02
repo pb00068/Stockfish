@@ -1024,7 +1024,7 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
                   // don't prune the move if the position is sharp after the exchanges
-                  if (depth > 1 && capture)
+                  if (capture)
                   {
                      Bitboard leftEnemies = pos.pieces(~us, QUEEN, ROOK) & occupied;
                      occupied |= to_sq(move);
