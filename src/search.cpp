@@ -1023,17 +1023,19 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                  // don't prune the move if the position is sharp
-                  if (depth > 2 && capture && (pos.pieces(~us, QUEEN, ROOK) & occupied))
+                  // don't prune the move if the position is sharp after the exchanges
+                  if (depth > 1 && capture)
                   {
                      occupied |= to_sq(move);
-                     Bitboard heavies = pos.pieces(~us, QUEEN, ROOK) & occupied;
+                     Bitboard leftEnemies = pos.pieces(~us, QUEEN, ROOK) & occupied;
                      Bitboard hanging = 0;
-                     while (heavies && !hanging)
+                     while (leftEnemies && !hanging)
                      {
-                         Square sq = pop_lsb(heavies);
+                         Square sq = pop_lsb(leftEnemies);
                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
-                             continue; // don't consider pieces already threatened/hanging before SEE exchanges
+                             continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
+                         if (pos.attackers_to(to_sq(move), occupied) & sq)
+                             continue; // since SEE is negative, Queen/Rook probably could have concluded the exchange too
                          hanging |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                          if (hanging)
                              break;
