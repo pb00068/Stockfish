@@ -1019,9 +1019,33 @@ moves_loop: // When in check, search starts here
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
                   continue;
 
+              Bitboard occupied;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, Value(-206) * depth))
-                  continue;
+              if (!pos.see_ge(move, occupied, Value(-206) * depth))
+              {
+                  // don't prune the move if the position is sharp after the exchanges
+                  if (depth > 1 && capture)
+                  {
+                     Bitboard leftEnemies = pos.pieces(~us, QUEEN, ROOK) & occupied;
+                     occupied |= to_sq(move);
+                     Bitboard hanging = 0;
+                     while (leftEnemies && !hanging)
+                     {
+                         Square sq = pop_lsb(leftEnemies);
+                         if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
+                             continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
+                         if (pos.attackers_to(to_sq(move), occupied) & sq)
+                             continue; // since SEE is negative, Queen/Rook probably could have concluded the exchange too
+                         hanging |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                         if (hanging)
+                             break;
+                     }
+                     if (!hanging)
+                      continue;
+                  }
+                  else
+                    continue;
+              }
           }
           else
           {
@@ -1047,8 +1071,9 @@ moves_loop: // When in check, search starts here
 
               lmrDepth = std::max(lmrDepth, 0);
 
+              Bitboard occupied;
               // Prune moves with negative SEE (~4 Elo)
-              if (!pos.see_ge(move, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
+              if (!pos.see_ge(move, occupied, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                   continue;
           }
       }
@@ -1530,6 +1555,7 @@ moves_loop: // When in check, search starts here
                                       prevSq);
 
     int quietCheckEvasions = 0;
+    Bitboard occupied;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1566,7 +1592,7 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
-          if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+          if (futilityBase <= alpha && !pos.see_ge(move, occupied, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
               continue;
@@ -1585,7 +1611,7 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Do not search moves with bad enough SEE values (~5 Elo)
-      if (!pos.see_ge(move, Value(-110)))
+      if (!pos.see_ge(move, occupied, Value(-110)))
           continue;
     }
 
