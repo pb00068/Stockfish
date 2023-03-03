@@ -702,11 +702,16 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   ++st->rule50;
   ++st->pliesFromNull;
 
-  // Used by NNUE
-  st->accumulator.computed[WHITE] = false;
-  st->accumulator.computed[BLACK] = false;
   auto& dp = st->dirtyPiece;
-  dp.dirty_num = 1;
+
+  // Used by NNUE
+  if (st->toInitNNUE) {
+    st->accumulator.computed[WHITE] = false;
+    st->accumulator.computed[BLACK] = false;
+
+    dp.dirty_num = 1;
+  }
+
 
   Color us = sideToMove;
   Color them = ~us;
@@ -755,7 +760,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       else
           st->nonPawnMaterial[them] -= PieceValue[MG][captured];
 
-      if (Eval::useNNUE)
+      if (Eval::useNNUE && st->toInitNNUE)
       {
           dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
           dp.piece[1] = captured;
@@ -799,7 +804,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Move the piece. The tricky Chess960 castling is handled earlier
   if (type_of(m) != CASTLING)
   {
-      if (Eval::useNNUE)
+      if (Eval::useNNUE && st->toInitNNUE)
       {
           dp.piece[0] = pc;
           dp.from[0] = from;
@@ -830,7 +835,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           remove_piece(to);
           put_piece(promotion, to);
 
-          if (Eval::useNNUE)
+          if (Eval::useNNUE && st->toInitNNUE)
           {
               // Promoting pawn to SQ_NONE, promoted piece from SQ_NONE
               dp.to[0] = SQ_NONE;
@@ -889,6 +894,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
       }
   }
+  st->toInitNNUE = false;
 
   assert(pos_is_ok());
 }

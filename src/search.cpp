@@ -112,7 +112,7 @@ namespace {
   };
 
   template <NodeType nodeType>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, StateInfo* states);
 
   template <NodeType nodeType>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
@@ -142,6 +142,7 @@ namespace {
             cnt = 1, nodes++;
         else
         {
+            st.toInitNNUE = false;
             pos.do_move(m, st);
             cnt = leaf ? MoveList<LEGAL>(pos).size() : perft<false>(pos, depth - 1);
             nodes += cnt;
@@ -373,7 +374,7 @@ void Thread::search() {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-              bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
+              bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false, nullptr);
 
               // Bring the best move to the front. It is critical that sorting
               // is done with a stable algorithm because all the values but the
@@ -519,7 +520,7 @@ namespace {
   // search<>() is the main search function for both PV and non-PV nodes
 
   template <NodeType nodeType>
-  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
+  Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode, StateInfo* states) {
 
     constexpr bool PvNode = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
@@ -547,6 +548,7 @@ namespace {
 
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
     StateInfo st;
+    StateInfo seStates[4]; // for Singular Search nodes
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
     TTEntry* tte;
@@ -820,7 +822,7 @@ namespace {
 
         pos.do_null_move(st);
 
-        Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
+        Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode, nullptr);
 
         pos.undo_null_move();
 
@@ -840,7 +842,7 @@ namespace {
             thisThread->nmpMinPly = ss->ply + 3 * (depth-R) / 4;
             thisThread->nmpColor = us;
 
-            Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+            Value v = search<NonPV>(pos, ss, beta-1, beta, depth-R, false, nullptr);
 
             thisThread->nmpMinPly = 0;
 
@@ -881,6 +883,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
+                st.toInitNNUE = true;
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -888,7 +891,7 @@ namespace {
 
                 // If the qsearch held, perform the regular search
                 if (value >= probCutBeta)
-                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, depth - 4, !cutNode);
+                    value = -search<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1, depth - 4, !cutNode, nullptr);
 
                 pos.undo_move(move);
 
@@ -956,6 +959,7 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    bool afterExcludedMoveSearch = false;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -1075,9 +1079,10 @@ moves_loop: // When in check, search starts here
               Depth singularDepth = (depth - 1) / 2;
 
               ss->excludedMove = move;
-              // the search with excludedMove will update ss->staticEval
-              value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
+              // we pass here an array of StateInfo's to be reused later on
+              value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode, seStates);
               ss->excludedMove = MOVE_NONE;
+              afterExcludedMoveSearch = true;
 
               if (value < singularBeta)
               {
@@ -1138,9 +1143,34 @@ moves_loop: // When in check, search starts here
                                                                 [capture]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
-
       // Step 16. Make the move
-      pos.do_move(move, st, givesCheck);
+      bool done = false;
+      if (excludedMove && moveCount <= 4)
+      {
+           assert(states != nullptr);
+           states[moveCount - 1].toInitNNUE = true; // mark it as to initialize
+           pos.do_move(move, states[moveCount - 1], givesCheck);
+           done = true;
+      }
+      else if (afterExcludedMoveSearch && moveCount < 8) // we are in search after search excludedMove
+      {
+         // try to re-use states used in search with excludedMove
+         for (int i = 0; i < 4; i++)
+         {
+           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false)
+           {
+              pos.do_move(move, seStates[i], givesCheck);
+              done = true;
+              break;
+           }
+         }
+      }
+
+      if (!done)
+      {
+         st.toInitNNUE = true; // mark state as to NUUE initialize
+         pos.do_move(move, st, givesCheck);
+      }
 
       // Decrease reduction if position is or has been on the PV
       // and node is not likely to fail low. (~3 Elo)
@@ -1206,7 +1236,7 @@ moves_loop: // When in check, search starts here
           // beyond the first move depth. This may lead to hidden double extensions.
           Depth d = std::clamp(newDepth - r, 1, newDepth + 1);
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true, nullptr);
 
           // Do full depth search when reduced LMR search fails high
           if (value > alpha && d < newDepth)
@@ -1222,7 +1252,7 @@ moves_loop: // When in check, search starts here
               newDepth += doDeeperSearch - doShallowerSearch + doEvenDeeperSearch;
 
               if (newDepth > d)
-                  value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
+                  value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode, nullptr);
 
               int bonus = value > alpha ?  stat_bonus(newDepth)
                                         : -stat_bonus(newDepth);
@@ -1238,7 +1268,7 @@ moves_loop: // When in check, search starts here
           if (!ttMove && cutNode)
               r += 2;
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), !cutNode);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth - (r > 4), !cutNode, nullptr);
       }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
@@ -1249,7 +1279,7 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
 
-          value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
+          value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false, nullptr);
       }
 
       // Step 19. Undo move
@@ -1602,6 +1632,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Step 7. Make and search the move
+      st.toInitNNUE = true;
       pos.do_move(move, st, givesCheck);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
@@ -1935,6 +1966,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
     if (pv[0] == MOVE_NONE)
         return false;
 
+    st.toInitNNUE = false;
     pos.do_move(pv[0], st);
     TTEntry* tte = TT.probe(pos.key(), ttHit);
 
