@@ -900,7 +900,8 @@ namespace {
                 }
             }
 
-        Eval::NNUE::hint_common_parent_position(pos);
+        if (!cutNode || !ttMove || type_of(pos.moved_piece(ttMove)) != KING)
+           Eval::NNUE::hint_common_parent_position(pos);
     }
 
     // Step 11. If the position is not in TT, decrease depth by 3.
