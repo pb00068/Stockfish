@@ -1078,7 +1078,7 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
-              ss->moveCount = value < singularBeta ? 7 : 2; // these are the mean values measured at current master
+              ss->moveCount = 1;
 
               if (value < singularBeta)
               {
@@ -1150,7 +1150,7 @@ moves_loop: // When in check, search starts here
           r -= 2;
 
       // Decrease reduction if opponent's move count is high (~1 Elo)
-      if ((ss-1)->moveCount > 7)
+      if ((ss-1)->moveCount > 7 || (ss-1)->doubleExtensions > (ss-2)->doubleExtensions)
           r--;
 
       // Increase reduction for cut nodes (~3 Elo)
@@ -1200,7 +1200,7 @@ moves_loop: // When in check, search starts here
           &&  ss->moveCount > 1 + (PvNode && ss->ply <= 1)
           && (   !ss->ttPv
               || !capture
-              || (cutNode && (ss-1)->moveCount > 1)))
+              || (cutNode && ((ss-1)->moveCount > 1 || (ss-1)->doubleExtensions > (ss-2)->doubleExtensions))))
       {
           // In general we want to cap the LMR depth search at newDepth, but when
           // reduction is negative, we allow this move a limited search extension
@@ -1354,9 +1354,6 @@ moves_loop: // When in check, search starts here
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
-
-      if (move == ttMove)
-          ss->moveCount = 1;
     }
 
     // The following condition would detect a stop only after move loop has been
