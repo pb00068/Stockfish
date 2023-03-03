@@ -1021,28 +1021,7 @@ moves_loop: // When in check, search starts here
 
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, depth, Value(-206) * depth))
-              {
-                  // don't prune move if the position is sharp (or checking) after the exchanges
-//                  if (depth > 1 && capture)
-//                  {
-//                     Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
-//                     Bitboard hanging = 0;
-//                     occupied |= to_sq(move);
-//                     while (leftEnemies && !hanging)
-//                     {
-//                         Square sq = pop_lsb(leftEnemies);
-//                         if (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
-//                             continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
-//                         hanging |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-//                         if (hanging)
-//                             break;
-//                     }
-//                     if (!hanging)
-//                      continue;
-//                  }
-//                  else
-                    continue;
-              }
+                  continue;
           }
           else
           {
@@ -1069,7 +1048,7 @@ moves_loop: // When in check, search starts here
               lmrDepth = std::max(lmrDepth, 0);
 
               // Prune moves with negative SEE (~4 Elo)
-              if (!pos.see_ge(move, lmrDepth, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
+              if (!pos.see_ge(move, 0, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                   continue;
           }
       }
