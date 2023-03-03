@@ -62,6 +62,7 @@ struct StateInfo {
   Eval::NNUE::Accumulator accumulator;
   DirtyPiece dirtyPiece;
   bool toInitNNUE;
+  Move lastMove;
 };
 
 
@@ -149,6 +150,7 @@ public:
   // Accessing hash keys
   Key key() const;
   Key key_after(Move m) const;
+  Key key_after_adj(Move m) const;
   Key material_key() const;
   Key pawn_key() const;
 

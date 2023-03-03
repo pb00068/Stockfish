@@ -695,6 +695,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   std::memcpy(&newSt, st, offsetof(StateInfo, key));
   newSt.previous = st;
   st = &newSt;
+  st->lastMove = m;
 
   // Increment ply counters. In particular, rule50 will be reset to zero later on
   // in case of a capture or a pawn move.
@@ -1063,8 +1064,23 @@ Key Position::key_after(Move m) const {
 
   k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 
-  return (captured || type_of(pc) == PAWN)
-      ? k : adjust_key50<true>(k);
+  return k;
+}
+
+Key Position::key_after_adj(Move m) const {
+	Square from = from_sq(m);
+	  Square to = to_sq(m);
+	  Piece pc = piece_on(from);
+	  Piece captured = piece_on(to);
+	  Key k = st->key ^ Zobrist::side;
+
+	  if (captured)
+	      k ^= Zobrist::psq[captured][to];
+
+	  k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+
+	  return (captured || type_of(pc) == PAWN)
+	      ? k : adjust_key50<true>(k);
 }
 
 
