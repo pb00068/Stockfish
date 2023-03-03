@@ -900,7 +900,7 @@ namespace {
                 }
             }
 
-        if (!cutNode || !ttMove || type_of(pos.moved_piece(ttMove)) != KING)
+        if (!cutNode)
            Eval::NNUE::hint_common_parent_position(pos);
     }
 
