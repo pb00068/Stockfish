@@ -1078,8 +1078,7 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
-              if (ss->moveCount >= 2)
-                  ss->moveCount /= 2;
+              ss->moveCount = value < singularBeta ? 7 : 2; // these are the mean values measured at current master
 
               if (value < singularBeta)
               {
