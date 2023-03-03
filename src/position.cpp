@@ -1066,7 +1066,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
+bool Position::see_ge(Move m, Depth d, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1085,11 +1085,12 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       return true;
 
   assert(color_of(piece_on(from)) == sideToMove);
-  occupied = pieces() ^ from ^ to;
+  Bitboard occupied = pieces() ^ from ^ to;
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
+  bool exhausted[2] = {false, false};
 
   while (true)
   {
@@ -1126,7 +1127,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
 
       else if ((bb = stmAttackers & pieces(KNIGHT)))
       {
-      	 occupied ^= least_significant_square_bb(bb);
+          occupied ^= least_significant_square_bb(bb);
           if ((swap = KnightValueMg - swap) < res)
               break;
 
@@ -1167,9 +1168,28 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+      {
+          if (attackers & ~pieces(stm))
+             res ^= 1;
+          else
+             stmAttackers = 0;
+          break;
+      }
   }
+  exhausted[stm] = !(stmAttackers & occupied);
 
+  if (d > 1 && !res && piece_on(to)) {
+     Bitboard leftEnemies = (pieces(~sideToMove, QUEEN, ROOK) | pieces(~sideToMove, KING)) & occupied;
+     occupied |= to;
+     while (leftEnemies)
+     {
+       Square sq = pop_lsb(leftEnemies);
+       if (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove)))
+          continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
+       if (attackers_to(sq, occupied) & pieces(sideToMove) & occupied)
+          return true; // move should be analyzed, pos is sharp
+    }
+  }
   return bool(res);
 }
 
