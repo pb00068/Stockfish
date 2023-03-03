@@ -1090,6 +1090,7 @@ bool Position::see_ge(Move m, Depth d, Value threshold) const {
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
+  bool exhausted[2] = {false, false};
 
   while (true)
   {
@@ -1166,10 +1167,14 @@ bool Position::see_ge(Move m, Depth d, Value threshold) const {
           if (attackers & ~pieces(stm))
              res ^= 1;
           else
+          {
+             occupied ^= square<KING>(stm);
              stmAttackers = 0;
+          }
           break;
       }
   }
+  exhausted[stm] = !(stmAttackers & occupied);
 
   if (d > 1 && !res && piece_on(to)) {
      Bitboard leftEnemies = (pieces(~sideToMove, QUEEN, ROOK) | pieces(~sideToMove, KING)) & occupied;
@@ -1180,7 +1185,10 @@ bool Position::see_ge(Move m, Depth d, Value threshold) const {
        if (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove)))
           continue; // don't consider pieces which were already threatened/hanging before SEE exchanges
        if (attackers_to(sq, occupied) & pieces(sideToMove) & occupied)
+       {
+         sync_cout << *this << " " << UCI::move(m, false) <<  Bitboards::pretty(occupied) << sync_endl;
           return true; // move should be analyzed, pos is sharp
+       }
     }
   }
   return bool(res);
