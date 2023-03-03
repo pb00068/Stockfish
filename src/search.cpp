@@ -1159,6 +1159,8 @@ moves_loop: // When in check, search starts here
          {
            if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false)
            {
+              if (seStates[i].accumulator.computed[WHITE] || seStates[i].accumulator.computed[BLACK])
+              	seStates[i].toInitNNUE = true;
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
               break;
