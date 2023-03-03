@@ -1160,9 +1160,6 @@ moves_loop: // When in check, search starts here
          {
            if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
            {
-              //if (!capture)
-               dbg_hit_on(capture);
-
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
               break;
