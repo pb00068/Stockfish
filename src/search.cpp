@@ -650,6 +650,7 @@ namespace {
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo on STC, ~2 Elo on LTC)
                 if ((ss-1)->moveCount <= 2 && !priorCapture)
                     update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -stat_bonus(depth + 1));
+                ss->currentMove = ttMove;
             }
             // Penalty for a quiet ttMove that fails low (~1 Elo)
             else if (!ttCapture)
@@ -1347,11 +1348,18 @@ moves_loop: // When in check, search starts here
       // If the move is worse than some previously searched move, remember it to update its stats later
       if (move != bestMove)
       {
+          mark1:
           if (capture && captureCount < 32)
               capturesSearched[captureCount++] = move;
 
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
+
+          if (givesCheck && type_of(pos.moved_piece((ss+1)->currentMove)) == KING)
+          {
+              givesCheck = false;
+              goto mark1;
+          }
       }
     }
 
