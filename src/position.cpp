@@ -1064,7 +1064,8 @@ Key Position::key_after(Move m) const {
 
   k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 
-  return k;
+  return (captured || type_of(pc) == PAWN)
+        ? k : adjust_key50<true>(k);
 }
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
