@@ -548,9 +548,21 @@ namespace {
 
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
     StateInfo st;
-    StateInfo seStates[4]; // for Singular Search nodes
-    Move seMoves[4];
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
+    StateInfo seStates[4]; // for Singular Search nodes
+    seStates[0].lastMove=MOVE_NULL;
+    seStates[1].lastMove=MOVE_NULL;
+    seStates[2].lastMove=MOVE_NULL;
+    seStates[3].lastMove=MOVE_NULL;
+    seStates[0].toInitNNUE=true;
+    seStates[1].toInitNNUE=true;
+    seStates[2].toInitNNUE=true;
+    seStates[3].toInitNNUE=true;
+    ASSERT_ALIGNED(&seStates[0], Eval::NNUE::CacheLineSize);
+    ASSERT_ALIGNED(&seStates[1], Eval::NNUE::CacheLineSize);
+    ASSERT_ALIGNED(&seStates[2], Eval::NNUE::CacheLineSize);
+    ASSERT_ALIGNED(&seStates[3], Eval::NNUE::CacheLineSize);
+
 
     TTEntry* tte;
     Key posKey;
@@ -1080,6 +1092,7 @@ moves_loop: // When in check, search starts here
               Depth singularDepth = (depth - 1) / 2;
 
               ss->excludedMove = move;
+              //sync_cout << "info calling search with exclMv" << sync_endl;
               // we pass here an array of StateInfo's to be reused later on
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode, seStates);
               ss->excludedMove = MOVE_NONE;
@@ -1158,8 +1171,9 @@ moves_loop: // When in check, search starts here
          // try to re-use states used in search with excludedMove
          for (int i = 0; i < 4; i++)
          {
-           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
+           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false)// && seStates[i].lastMove == move)
            {
+              //dbg_mean_of(1);
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
               break;
