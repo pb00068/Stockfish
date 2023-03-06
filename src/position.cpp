@@ -1067,23 +1067,6 @@ Key Position::key_after(Move m) const {
   return k;
 }
 
-Key Position::key_after_adj(Move m) const {
-	Square from = from_sq(m);
-	  Square to = to_sq(m);
-	  Piece pc = piece_on(from);
-	  Piece captured = piece_on(to);
-	  Key k = st->key ^ Zobrist::side;
-
-	  if (captured)
-	      k ^= Zobrist::psq[captured][to];
-
-	  k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
-
-	  return (captured || type_of(pc) == PAWN)
-	      ? k : adjust_key50<true>(k);
-}
-
-
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.

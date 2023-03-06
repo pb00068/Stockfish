@@ -550,14 +550,10 @@ namespace {
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
     StateInfo seStates[4]; // for Singular Search nodes
-    seStates[0].lastMove=MOVE_NULL;
-    seStates[1].lastMove=MOVE_NULL;
-    seStates[2].lastMove=MOVE_NULL;
-    seStates[3].lastMove=MOVE_NULL;
     seStates[0].toInitNNUE=true;
     seStates[1].toInitNNUE=true;
     seStates[2].toInitNNUE=true;
-    seStates[3].toInitNNUE=true;
+    seStates[3].toInitNNUE=true; // why are this assignmements neeeded?
     ASSERT_ALIGNED(&seStates[0], Eval::NNUE::CacheLineSize);
     ASSERT_ALIGNED(&seStates[1], Eval::NNUE::CacheLineSize);
     ASSERT_ALIGNED(&seStates[2], Eval::NNUE::CacheLineSize);
@@ -1149,7 +1145,7 @@ moves_loop: // When in check, search starts here
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after_adj(move)));
+      prefetch(TT.first_entry(pos.key_after(move)));
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1162,18 +1158,6 @@ moves_loop: // When in check, search starts here
       if (excludedMove && moveCount <= 4)
       {
            assert(states != nullptr);
-           if (moveCount == 1)
-           {
-           if (states[0].lastMove != MOVE_NULL || states[1].lastMove != MOVE_NULL || states[2].lastMove != MOVE_NULL || states[3].lastMove != MOVE_NULL )
-           {
-          	 sync_cout << "What the heck? States are wrong! exclMove " << excludedMove << " states move "  << states[0].lastMove << " " << states[1].lastMove << " " << states[2].lastMove << " " << states[3].lastMove << sync_endl;
-          	 sync_cout << "What the heck? States are wrong! exclMove " << excludedMove << " states toInit "  << states[0].toInitNNUE << " " << states[1].toInitNNUE << " " << states[2].toInitNNUE << " " << states[3].toInitNNUE << sync_endl;
-          	 abort();
-           }
-//           else {
-//          	 sync_cout << "info states are correct!" << sync_endl;
-//           }
-           }
            states[moveCount - 1].toInitNNUE = true; // mark it as to initialize
            pos.do_move(move, states[moveCount - 1], givesCheck);
            done = true;
@@ -1185,7 +1169,6 @@ moves_loop: // When in check, search starts here
          {
            if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
            {
-              dbg_mean_of(1);
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
               break;
@@ -1647,7 +1630,7 @@ moves_loop: // When in check, search starts here
     }
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after_adj(move)));
+      prefetch(TT.first_entry(pos.key_after(move)));
 
       // Update the current move
       ss->currentMove = move;
