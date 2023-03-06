@@ -1162,6 +1162,18 @@ moves_loop: // When in check, search starts here
       if (excludedMove && moveCount <= 4)
       {
            assert(states != nullptr);
+           if (moveCount == 1)
+           {
+           if (states[0].lastMove != MOVE_NULL || states[1].lastMove != MOVE_NULL || states[2].lastMove != MOVE_NULL || states[3].lastMove != MOVE_NULL )
+           {
+          	 sync_cout << "What the heck? States are wrong! exclMove " << excludedMove << " states move "  << states[0].lastMove << " " << states[1].lastMove << " " << states[2].lastMove << " " << states[3].lastMove << sync_endl;
+          	 sync_cout << "What the heck? States are wrong! exclMove " << excludedMove << " states toInit "  << states[0].toInitNNUE << " " << states[1].toInitNNUE << " " << states[2].toInitNNUE << " " << states[3].toInitNNUE << sync_endl;
+          	 abort();
+           }
+//           else {
+//          	 sync_cout << "info states are correct!" << sync_endl;
+//           }
+           }
            states[moveCount - 1].toInitNNUE = true; // mark it as to initialize
            pos.do_move(move, states[moveCount - 1], givesCheck);
            done = true;
@@ -1173,7 +1185,7 @@ moves_loop: // When in check, search starts here
          {
            if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
            {
-              //dbg_mean_of(1);
+              dbg_mean_of(1);
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
               break;
