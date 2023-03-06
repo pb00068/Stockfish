@@ -1171,7 +1171,7 @@ moves_loop: // When in check, search starts here
          // try to re-use states used in search with excludedMove
          for (int i = 0; i < 4; i++)
          {
-           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false)// && seStates[i].lastMove == move)
+           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
            {
               //dbg_mean_of(1);
               pos.do_move(move, seStates[i], givesCheck);
