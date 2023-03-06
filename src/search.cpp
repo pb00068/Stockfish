@@ -142,7 +142,7 @@ namespace {
             cnt = 1, nodes++;
         else
         {
-            st.toInitNNUE = false;
+            st.toInit = false;
             pos.do_move(m, st);
             cnt = leaf ? MoveList<LEGAL>(pos).size() : perft<false>(pos, depth - 1);
             nodes += cnt;
@@ -550,15 +550,6 @@ namespace {
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
     StateInfo seStates[4]; // for Singular Search nodes
-    seStates[0].toInitNNUE=true;
-    seStates[1].toInitNNUE=true;
-    seStates[2].toInitNNUE=true;
-    seStates[3].toInitNNUE=true; // why are this assignmements neeeded?
-    ASSERT_ALIGNED(&seStates[0], Eval::NNUE::CacheLineSize);
-    ASSERT_ALIGNED(&seStates[1], Eval::NNUE::CacheLineSize);
-    ASSERT_ALIGNED(&seStates[2], Eval::NNUE::CacheLineSize);
-    ASSERT_ALIGNED(&seStates[3], Eval::NNUE::CacheLineSize);
-
 
     TTEntry* tte;
     Key posKey;
@@ -892,7 +883,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                st.toInitNNUE = true;
+                st.toInit = true;
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -1158,7 +1149,12 @@ moves_loop: // When in check, search starts here
       if (excludedMove && moveCount <= 4)
       {
            assert(states != nullptr);
-           states[moveCount - 1].toInitNNUE = true; // mark it as to initialize
+           if (moveCount == 1) {
+              states[0].toInit=true;
+              states[1].toInit=true;
+              states[2].toInit=true;
+              states[3].toInit=true;
+           }
            pos.do_move(move, states[moveCount - 1], givesCheck);
            done = true;
       }
@@ -1167,7 +1163,7 @@ moves_loop: // When in check, search starts here
          // try to re-use states used in search with excludedMove
          for (int i = 0; i < 4; i++)
          {
-           if (pos.key_after(move) == seStates[i].key && seStates[i].toInitNNUE == false && seStates[i].lastMove == move)
+           if (pos.key_after(move) == seStates[i].key && seStates[i].toInit == false)
            {
               pos.do_move(move, seStates[i], givesCheck);
               done = true;
@@ -1178,7 +1174,7 @@ moves_loop: // When in check, search starts here
 
       if (!done)
       {
-         st.toInitNNUE = true; // mark state as to NUUE initialize
+         st.toInit = true; // mark state as to NUUE initialize
          pos.do_move(move, st, givesCheck);
       }
 
@@ -1642,7 +1638,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Step 7. Make and search the move
-      st.toInitNNUE = true;
+      st.toInit = true;
       pos.do_move(move, st, givesCheck);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
@@ -1976,7 +1972,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
     if (pv[0] == MOVE_NONE)
         return false;
 
-    st.toInitNNUE = false;
+    st.toInit = false;
     pos.do_move(pv[0], st);
     TTEntry* tte = TT.probe(pos.key(), ttHit);
 

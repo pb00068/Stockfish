@@ -687,6 +687,51 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   assert(&newSt != st);
 
   thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
+
+  Color us = sideToMove;
+  Color them = ~us;
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece pc = piece_on(from);
+  Piece captured = type_of(m) == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
+  assert(color_of(pc) == us);
+  assert(captured == NO_PIECE || color_of(captured) == (type_of(m) != CASTLING ? them : us));
+  assert(type_of(captured) != KING);
+
+//  if (!st->toInit) {
+//     ++gamePly;
+//     if (type_of(m) == CASTLING)
+//     {
+//        Square rfrom, rto;
+//        do_castling<true>(us, from, to, rfrom, rto);
+//        captured = NO_PIECE;
+//     }
+//     if (captured)
+//     {
+//         Square capsq = to;
+//
+//         if (type_of(m) == EN_PASSANT)
+//         {
+//             capsq -= pawn_push(us);
+//             board[capsq] = NO_PIECE;
+//         }
+//
+//         // Update board and piece lists
+//         remove_piece(capsq);
+//
+//         prefetch(thisThread->materialTable[st->materialKey]);
+//     }
+//     if (type_of(m) != CASTLING)
+//         move_piece(from, to);
+//     if (type_of(m) == PROMOTION)
+//     {
+//         remove_piece(to);
+//         put_piece(make_piece(us, promotion_type(m)), to);
+//     }
+//     sideToMove = ~sideToMove;
+//     return;
+//  }
+
   Key k = st->key ^ Zobrist::side;
 
   // Copy some fields of the old state to our new StateInfo object except the
@@ -695,7 +740,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   std::memcpy(&newSt, st, offsetof(StateInfo, key));
   newSt.previous = st;
   st = &newSt;
-  st->lastMove = m;
 
   // Increment ply counters. In particular, rule50 will be reset to zero later on
   // in case of a capture or a pawn move.
@@ -706,24 +750,13 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   auto& dp = st->dirtyPiece;
 
   // Used by NNUE
-  if (st->toInitNNUE) {
+  if (st->toInit) {
     st->accumulator.computed[WHITE] = false;
     st->accumulator.computed[BLACK] = false;
 
     dp.dirty_num = 1;
   }
 
-
-  Color us = sideToMove;
-  Color them = ~us;
-  Square from = from_sq(m);
-  Square to = to_sq(m);
-  Piece pc = piece_on(from);
-  Piece captured = type_of(m) == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
-
-  assert(color_of(pc) == us);
-  assert(captured == NO_PIECE || color_of(captured) == (type_of(m) != CASTLING ? them : us));
-  assert(type_of(captured) != KING);
 
   if (type_of(m) == CASTLING)
   {
@@ -761,7 +794,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       else
           st->nonPawnMaterial[them] -= PieceValue[MG][captured];
 
-      if (Eval::useNNUE && st->toInitNNUE)
+      if (Eval::useNNUE && st->toInit)
       {
           dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
           dp.piece[1] = captured;
@@ -805,7 +838,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Move the piece. The tricky Chess960 castling is handled earlier
   if (type_of(m) != CASTLING)
   {
-      if (Eval::useNNUE && st->toInitNNUE)
+      if (Eval::useNNUE && st->toInit)
       {
           dp.piece[0] = pc;
           dp.from[0] = from;
@@ -836,7 +869,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           remove_piece(to);
           put_piece(promotion, to);
 
-          if (Eval::useNNUE && st->toInitNNUE)
+          if (Eval::useNNUE && st->toInit)
           {
               // Promoting pawn to SQ_NONE, promoted piece from SQ_NONE
               dp.to[0] = SQ_NONE;
@@ -895,7 +928,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
       }
   }
-  st->toInitNNUE = false;
+  st->toInit = false;
 
   assert(pos_is_ok());
 }
@@ -975,7 +1008,7 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
   rto = relative_square(us, kingSide ? SQ_F1 : SQ_D1);
   to = relative_square(us, kingSide ? SQ_G1 : SQ_C1);
 
-  if (Do && Eval::useNNUE)
+  if (Do && Eval::useNNUE && st->toInit)
   {
       auto& dp = st->dirtyPiece;
       dp.piece[0] = make_piece(us, KING);
@@ -1065,7 +1098,7 @@ Key Position::key_after(Move m) const {
   k ^= Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 
   return (captured || type_of(pc) == PAWN)
-        ? k : adjust_key50<true>(k);
+      ? k : adjust_key50<true>(k);
 }
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
