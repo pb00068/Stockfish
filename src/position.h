@@ -61,6 +61,7 @@ struct StateInfo {
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;
   DirtyPiece dirtyPiece;
+  bool toReuse;
 };
 
 
@@ -137,6 +138,7 @@ public:
 
   // Doing and undoing moves
   void do_move(Move m, StateInfo& newSt);
+  void do_move_special(Move m, StateInfo& st);
   void do_move(Move m, StateInfo& newSt, bool givesCheck);
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);

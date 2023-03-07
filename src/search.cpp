@@ -567,6 +567,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->st.toReuse = false;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -1139,6 +1140,13 @@ moves_loop: // When in check, search starts here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      dbg_hit_on(ss->st.toReuse,2);
+      if(type_of(movedPiece) == KING && ss->st.toReuse && ss->st.key == pos.key_after(move))
+      {
+      	pos.do_move_special(move, ss->st);
+      	 dbg_hit_on(true,1);
+      }
+      else
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1252,9 +1260,15 @@ moves_loop: // When in check, search starts here
           value = -search<PV>(pos, ss+1, -beta, -alpha, newDepth, false);
       }
 
+      if(value < beta && type_of(movedPiece) == KING && excludedMove && pos.state()->accumulator.computed[WHITE])
+      {
+         std::memcpy(&ss->st, pos.state(), sizeof(st));
+         ss->st.toReuse = true;
+         sync_cout << ss->st.key << " ist it eqauz " << pos.state()->key << sync_endl;
+         dbg_hit_on(true,0);
+      }
       // Step 19. Undo move
       pos.undo_move(move);
-
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 20. Check for a new best move

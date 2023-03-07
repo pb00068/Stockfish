@@ -893,6 +893,41 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   assert(pos_is_ok());
 }
 
+void Position::do_move_special(Move m, StateInfo& filledSt) {
+  thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
+ dbg_mean_of(1);
+  Color us = sideToMove;
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece captured = type_of(m) == EN_PASSANT ? make_piece(~us, PAWN) : piece_on(to);
+  assert(color_of(pc) == us);
+  assert(captured == NO_PIECE || color_of(captured) == (type_of(m) != CASTLING ? them : us));
+  assert(type_of(captured) != KING);
+
+  st = &filledSt;
+  // just do the stuff non related to StateInfo
+  ++gamePly;
+  if (type_of(m) == CASTLING)
+  {
+     Square rfrom, rto;
+     do_castling<true>(us, from, to, rfrom, rto);
+     captured = NO_PIECE;
+  }
+  if (captured)
+  {
+     Square capsq = to;
+     if (type_of(m) == EN_PASSANT)
+        capsq -= pawn_push(us);
+     remove_piece(capsq);
+     prefetch(thisThread->materialTable[st->materialKey]);
+  }
+  if (type_of(m) != CASTLING)
+     move_piece(from, to);
+  if (type_of(m) == PROMOTION)
+     remove_piece(to), put_piece(make_piece(us, promotion_type(m)), to);
+  sideToMove = ~sideToMove;
+  return;
+}
 
 /// Position::undo_move() unmakes a move. When it returns, the position should
 /// be restored to exactly the same state as before the move was made.
