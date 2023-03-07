@@ -142,8 +142,7 @@ namespace {
             cnt = 1, nodes++;
         else
         {
-            st.toInit = false;
-            pos.do_move(m, st);
+            pos.do_move(m, st, true);
             cnt = leaf ? MoveList<LEGAL>(pos).size() : perft<false>(pos, depth - 1);
             nodes += cnt;
             pos.undo_move(m);
@@ -883,8 +882,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                st.toInit = true;
-                pos.do_move(move, st);
+                pos.do_move(move, st, true);
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1);
@@ -1081,7 +1079,19 @@ moves_loop: // When in check, search starts here
               ss->excludedMove = move;
               //sync_cout << "info calling search with exclMv" << sync_endl;
               // we pass here an array of StateInfo's to be reused later on
+
+              seStates[0].initialized=false;
+              seStates[1].initialized=false;
+              seStates[2].initialized=false;
+              seStates[3].initialized=false;
+              seStates[0].lastMove=MOVE_NONE;
+              seStates[1].lastMove=MOVE_NONE;
+              seStates[2].lastMove=MOVE_NONE;
+              seStates[3].lastMove=MOVE_NONE;
+
+              //sync_cout << pos.key() << " ply " << ss->ply << "  starting excl. move search " << UCI::move(ss->excludedMove, false) << sync_endl;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode, seStates);
+              //sync_cout << pos.key() << " ply " << ss->ply << "  finished excl. move search " << UCI::move(ss->excludedMove, false) << sync_endl;
               ss->excludedMove = MOVE_NONE;
               afterExcludedMoveSearch = true;
 
@@ -1149,13 +1159,10 @@ moves_loop: // When in check, search starts here
       if (excludedMove && moveCount <= 4)
       {
            assert(states != nullptr);
-           if (moveCount == 1) {
-              states[0].toInit=true;
-              states[1].toInit=true;
-              states[2].toInit=true;
-              states[3].toInit=true;
-           }
-           pos.do_move(move, states[moveCount - 1], givesCheck);
+
+           //if (pos.key_after(move) == 7415722780643566004)
+           //  sync_cout << pos.key() << " ply " << ss->ply << " do move " << UCI::move(move, false) << " with reuse intent " << pos.key_after(move) << " excl move " << UCI::move(excludedMove, false)  << sync_endl;
+           pos.do_move(move, states[moveCount - 1], true, givesCheck);
            done = true;
       }
       else if (afterExcludedMoveSearch && moveCount < 8) // we are in search after search excludedMove
@@ -1163,9 +1170,11 @@ moves_loop: // When in check, search starts here
          // try to re-use states used in search with excludedMove
          for (int i = 0; i < 4; i++)
          {
-           if (pos.key_after(move) == seStates[i].key && seStates[i].toInit == false)
+           if (move == seStates[i].lastMove && seStates[i].initialized)
            {
-              pos.do_move(move, seStates[i], givesCheck);
+          	 //sync_cout << pos.key() << " ply " << ss->ply << " do move " << UCI::move(move, false) << " with reuse " << pos.key_after(move) << sync_endl;
+              pos.do_move(move, seStates[i], false, givesCheck);
+              dbg_mean_of(1);
               done = true;
               break;
            }
@@ -1173,10 +1182,7 @@ moves_loop: // When in check, search starts here
       }
 
       if (!done)
-      {
-         st.toInit = true; // mark state as to NUUE initialize
-         pos.do_move(move, st, givesCheck);
-      }
+         pos.do_move(move, st, true, givesCheck);
 
       // Decrease reduction if position is or has been on the PV
       // and node is not likely to fail low. (~3 Elo)
@@ -1638,8 +1644,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Step 7. Make and search the move
-      st.toInit = true;
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, true, givesCheck);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
 
@@ -1972,8 +1977,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
     if (pv[0] == MOVE_NONE)
         return false;
 
-    st.toInit = false;
-    pos.do_move(pv[0], st);
+    pos.do_move(pv[0], st, true);
     TTEntry* tte = TT.probe(pos.key(), ttHit);
 
     if (ttHit)
