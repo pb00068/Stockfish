@@ -548,7 +548,7 @@ namespace {
     Move pv[MAX_PLY+1], capturesSearched[32], quietsSearched[64];
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
-    StateInfo seStates[4]; // for Singular Search nodes
+    StateInfo seStates[2]; // for Singular Search nodes
 
     TTEntry* tte;
     Key posKey;
@@ -1081,8 +1081,6 @@ moves_loop: // When in check, search starts here
 
               seStates[0].initialized=false;
               seStates[1].initialized=false;
-              seStates[2].initialized=false;
-              seStates[3].initialized=false;
 
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode, seStates);
               ss->excludedMove = MOVE_NONE;
@@ -1149,7 +1147,7 @@ moves_loop: // When in check, search starts here
                                                                 [to_sq(move)];
       // Step 16. Make the move
       bool done = false;
-      if (excludedMove && moveCount <= 4)
+      if (excludedMove && moveCount <= 2)
       {
            assert(states != nullptr);
            pos.do_move(move, states[moveCount - 1], true, givesCheck);
@@ -1158,12 +1156,11 @@ moves_loop: // When in check, search starts here
       else if (afterExcludedMoveSearch && moveCount < 8) // we are in search after search excludedMove
       {
          // try to re-use states used in search with excludedMove
-         for (int i = 0; i < 4; i++)
+         for (int i = 0; i < 2; i++)
          {
            if (move == seStates[i].lastMove && seStates[i].initialized)
            {
               pos.do_move(move, seStates[i], false, givesCheck);
-              dbg_mean_of(1);
               done = true;
               break;
            }
