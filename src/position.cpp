@@ -742,13 +742,9 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
   auto& dp = st->dirtyPiece;
 
   // Used by NNUE
-  if (Eval::useNNUE) {
-    st->accumulator.computed[WHITE] = false;
-    st->accumulator.computed[BLACK] = false;
-
-    dp.dirty_num = 1;
-  }
-
+  st->accumulator.computed[WHITE] = false;
+  st->accumulator.computed[BLACK] = false;
+  dp.dirty_num = 1;
 
   if (type_of(m) == CASTLING)
   {
