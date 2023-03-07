@@ -699,154 +699,29 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
   assert(type_of(captured) != KING);
 
   if (!forceInit && newSt.initialized) {
-
-  	  // Copy some fields of the old state to our new StateInfo object except the
-  	  // ones which are going to be recalculated from scratch anyway and then switch
-  	  // our state pointer to point to the new (ready to be updated) state.
-  	StateInfo keep;
-  	std::memcpy(&keep, &newSt, offsetof(StateInfo, initialized));
-  	  std::memcpy(&newSt, st, offsetof(StateInfo, key));
-  	  newSt.previous = st;
-  	  st = &newSt;
-
-  	  // Increment ply counters. In particular, rule50 will be reset to zero later on
-  	  // in case of a capture or a pawn move.
-  	  ++gamePly;
-  	  ++st->rule50;
-  	  ++st->pliesFromNull;
-
-
-
-  	  if (type_of(m) == CASTLING)
-  	  {
-  	      Square rfrom, rto;
-  	      do_castling<true>(us, from, to, rfrom, rto);
-  	      captured = NO_PIECE;
-  	  }
-
-  	  if (captured)
-  	  {
-  	      Square capsq = to;
-
-  	      // If the captured piece is a pawn, update pawn hash key, otherwise
-  	      // update non-pawn material.
-  	      if (type_of(captured) == PAWN)
-  	      {
-  	          if (type_of(m) == EN_PASSANT)
-  	              capsq -= pawn_push(us);
-
-  	          st->pawnKey ^= Zobrist::psq[captured][capsq];
-  	      }
-  	      else
-  	          st->nonPawnMaterial[them] -= PieceValue[MG][captured];
-
-
-  	      // Update board and piece lists
-  	      remove_piece(capsq);
-
-  	      // Update material hash key and prefetch access to materialTable
-
-  	      st->materialKey ^= Zobrist::psq[captured][pieceCount[captured]];
-  	      prefetch(thisThread->materialTable[st->materialKey]);
-
-  	      // Reset rule 50 counter
-  	      st->rule50 = 0;
-  	  }
-
-
-
-  	  // Reset en passant square
-  	  if (st->epSquare != SQ_NONE)
-  	      st->epSquare = SQ_NONE;
-
-
-  	  // Update castling rights if needed
-  	  if (st->castlingRights && (castlingRightsMask[from] | castlingRightsMask[to]))
-  	      st->castlingRights &= ~(castlingRightsMask[from] | castlingRightsMask[to]);
-
-
-
-  	  // Move the piece. The tricky Chess960 castling is handled earlier
-  	  if (type_of(m) != CASTLING)
-  	      move_piece(from, to);
-
-  	  // If the moving piece is a pawn do some special extra work
-  	  if (type_of(pc) == PAWN)
-  	  {
-  	      // Set en passant square if the moved pawn can be captured
-  	      if (   (int(to) ^ int(from)) == 16
-  	          && (pawn_attacks_bb(us, to - pawn_push(us)) & pieces(them, PAWN)))
-
-  	          st->epSquare = to - pawn_push(us);
-
-
-  	      else if (type_of(m) == PROMOTION)
-  	      {
-  	          Piece promotion = make_piece(us, promotion_type(m));
-  	          remove_piece(to);
-  	          put_piece(promotion, to);
-
-  	          st->pawnKey ^= Zobrist::psq[pc][to];
-  	          st->materialKey ^=  Zobrist::psq[promotion][pieceCount[promotion]-1]
-  	                            ^ Zobrist::psq[pc][pieceCount[pc]];
-
-  	          // Update material
-  	          st->nonPawnMaterial[us] += PieceValue[MG][promotion];
-  	      }
-
-  	      // Update pawn hash key
-  	      st->pawnKey ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
-
-  	      // Reset rule 50 draw counter
-  	      st->rule50 = 0;
-  	  }
-
-   if (keep.castlingRights != st->castlingRights || keep.rule50 != st->rule50 || keep.pawnKey != st->pawnKey || keep.materialKey != st->materialKey || keep.epSquare != st->epSquare)
-   {
-  	 sync_cout << "info differs key " << st->key  << " " << keep.castlingRights << " " <<  st->castlingRights << " " << keep.rule50 << " " <<  st->rule50 << " " <<  keep.pawnKey << " " <<  st->pawnKey << " " <<  keep.materialKey << " " <<  st->materialKey << " " <<  keep.epSquare << " " <<  st->epSquare << sync_endl;
-  	 sync_cout << " previous key is " << st->previous->key << "  previous rule50 " <<  st->previous->rule50 << " move " << UCI::move(m, false) << sync_endl;
-  	 abort();
-   }
-
-  	  sideToMove = ~sideToMove;
-
-
-
-  	   dbg_mean_of(1,1);
-  	   return;
-
-//     st = &newSt;
-//     ++gamePly;
-//     if (type_of(m) == CASTLING)
-//     {
-//        Square rfrom, rto;
-//        do_castling<true>(us, from, to, rfrom, rto);
-//        captured = NO_PIECE;
-//     }
-//     if (captured)
-//     {
-//         Square capsq = to;
-//
-//         if (type_of(m) == EN_PASSANT)
-//         {
-//             capsq -= pawn_push(us);
-//             board[capsq] = NO_PIECE;
-//         }
-//
-//         // Update board and piece lists
-//         remove_piece(capsq);
-//
-//         prefetch(thisThread->materialTable[st->materialKey]);
-//     }
-//     if (type_of(m) != CASTLING)
-//         move_piece(from, to);
-//     if (type_of(m) == PROMOTION)
-//     {
-//         remove_piece(to);
-//         put_piece(make_piece(us, promotion_type(m)), to);
-//     }
-//     sideToMove = ~sideToMove;
-//     return;
+      st = &newSt;
+      // just do the stuff non related to StateInfo
+      ++gamePly;
+    if (type_of(m) == CASTLING)
+    {
+        Square rfrom, rto;
+        do_castling<true>(us, from, to, rfrom, rto);
+        captured = NO_PIECE;
+    }
+    if (captured)
+    {
+        Square capsq = to;
+          if (type_of(m) == EN_PASSANT)
+           capsq -= pawn_push(us);
+        remove_piece(capsq);
+        prefetch(thisThread->materialTable[st->materialKey]);
+    }
+    if (type_of(m) != CASTLING)
+        move_piece(from, to);
+    if (type_of(m) == PROMOTION)
+        remove_piece(to), put_piece(make_piece(us, promotion_type(m)), to);
+    sideToMove = ~sideToMove;
+    return;
   }
 
   Key k = st->key ^ Zobrist::side;
@@ -867,7 +742,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
   auto& dp = st->dirtyPiece;
 
   // Used by NNUE
-  if (!st->initialized || forceInit) {
+  if (Eval::useNNUE) {
     st->accumulator.computed[WHITE] = false;
     st->accumulator.computed[BLACK] = false;
 
@@ -911,7 +786,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
       else
           st->nonPawnMaterial[them] -= PieceValue[MG][captured];
 
-      if (Eval::useNNUE && (!st->initialized || forceInit))
+      if (Eval::useNNUE)
       {
           dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
           dp.piece[1] = captured;
@@ -955,7 +830,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
   // Move the piece. The tricky Chess960 castling is handled earlier
   if (type_of(m) != CASTLING)
   {
-      if (Eval::useNNUE && (!st->initialized || forceInit))
+      if (Eval::useNNUE)
       {
           dp.piece[0] = pc;
           dp.from[0] = from;
@@ -986,7 +861,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
           remove_piece(to);
           put_piece(promotion, to);
 
-          if (Eval::useNNUE && (!st->initialized || forceInit))
+          if (Eval::useNNUE)
           {
               // Promoting pawn to SQ_NONE, promoted piece from SQ_NONE
               dp.to[0] = SQ_NONE;
@@ -1045,11 +920,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool forceInit, bool givesCheck
           }
       }
   }
-  if (st->key == 7415722780643566004)
-
-  //if (st->key == 7415722780643566004 || st->key == 559569930010561674)
-if (st->previous)
-  	sync_cout << " pos key " << st->key << " rule50 is " << st->rule50 << " previous key is " << st->previous->key << "  previous rule50 " <<  st->previous->rule50 << sync_endl;
 
   st->initialized = true;
   st->lastMove = m;

@@ -1077,21 +1077,14 @@ moves_loop: // When in check, search starts here
               Depth singularDepth = (depth - 1) / 2;
 
               ss->excludedMove = move;
-              //sync_cout << "info calling search with exclMv" << sync_endl;
               // we pass here an array of StateInfo's to be reused later on
 
               seStates[0].initialized=false;
               seStates[1].initialized=false;
               seStates[2].initialized=false;
               seStates[3].initialized=false;
-              seStates[0].lastMove=MOVE_NONE;
-              seStates[1].lastMove=MOVE_NONE;
-              seStates[2].lastMove=MOVE_NONE;
-              seStates[3].lastMove=MOVE_NONE;
 
-              //sync_cout << pos.key() << " ply " << ss->ply << "  starting excl. move search " << UCI::move(ss->excludedMove, false) << sync_endl;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode, seStates);
-              //sync_cout << pos.key() << " ply " << ss->ply << "  finished excl. move search " << UCI::move(ss->excludedMove, false) << sync_endl;
               ss->excludedMove = MOVE_NONE;
               afterExcludedMoveSearch = true;
 
@@ -1159,9 +1152,6 @@ moves_loop: // When in check, search starts here
       if (excludedMove && moveCount <= 4)
       {
            assert(states != nullptr);
-
-           //if (pos.key_after(move) == 7415722780643566004)
-           //  sync_cout << pos.key() << " ply " << ss->ply << " do move " << UCI::move(move, false) << " with reuse intent " << pos.key_after(move) << " excl move " << UCI::move(excludedMove, false)  << sync_endl;
            pos.do_move(move, states[moveCount - 1], true, givesCheck);
            done = true;
       }
@@ -1172,7 +1162,6 @@ moves_loop: // When in check, search starts here
          {
            if (move == seStates[i].lastMove && seStates[i].initialized)
            {
-          	 //sync_cout << pos.key() << " ply " << ss->ply << " do move " << UCI::move(move, false) << " with reuse " << pos.key_after(move) << sync_endl;
               pos.do_move(move, seStates[i], false, givesCheck);
               dbg_mean_of(1);
               done = true;
