@@ -280,7 +280,6 @@ namespace {
   constexpr Score ThreatBySafePawn    = S(167, 99);
   constexpr Score TrappedRook         = S( 55, 13);
   constexpr Score WeakQueenProtection = S( 14,  0);
-  constexpr Score WeakQueen           = S( 57, 19);
 
 
 #undef S
@@ -511,14 +510,6 @@ namespace {
                         score -= TrappedRook * (1 + !pos.castling_rights(Us));
                 }
             }
-        }
-
-        if constexpr (Pt == QUEEN)
-        {
-            // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
-                score -= WeakQueen;
         }
     }
     if constexpr (T)
