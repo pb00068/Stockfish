@@ -1023,7 +1023,7 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                      if (depth < 3 - capture)
+                      if (depth < 3 - capture || pos.non_pawn_material(~us) >= 2 * RookValueMg + QueenValueMg)
                         continue;
                      // don't prune move if after see we attack a heavy enemy piece (KQR)
                      Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
