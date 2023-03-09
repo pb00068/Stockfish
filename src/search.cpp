@@ -605,6 +605,7 @@ namespace {
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
+    ss->searchedWExcluded = false;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
@@ -1079,6 +1080,7 @@ moves_loop: // When in check, search starts here
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
               ss->moveCount = 1;
+              ss->searchedWExcluded = true;
 
               if (value < singularBeta)
               {
@@ -1154,7 +1156,7 @@ moves_loop: // When in check, search starts here
           r -= 2;
 
       // Decrease reduction if opponent's move count is high (~1 Elo)
-      if ((ss-1)->moveCount > 7 || (ss-1)->doubleExtensions > (ss-2)->doubleExtensions)
+      if ((ss-1)->moveCount > 7 || (ss-1)->searchedWExcluded)
           r--;
 
       // Increase reduction for cut nodes (~3 Elo)
@@ -1204,7 +1206,7 @@ moves_loop: // When in check, search starts here
           &&  ss->moveCount > 1 + (PvNode && ss->ply <= 1)
           && (   !ss->ttPv
               || !capture
-              || (cutNode && ((ss-1)->moveCount > 1 || (ss-1)->doubleExtensions > (ss-2)->doubleExtensions))))
+              || (cutNode && ((ss-1)->moveCount > 1))))
       {
           // In general we want to cap the LMR depth search at newDepth, but when
           // reduction is negative, we allow this move a limited search extension
