@@ -315,8 +315,8 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info() const {
 
-  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK]);
-  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE]);
+  slider_blockers(WHITE);
+  slider_blockers(BLACK);
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -450,29 +450,32 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+void Position::slider_blockers(Color Us) const {
 
-  Bitboard blockers = 0;
-  pinners = 0;
+    st->blockersForKing[~Us] = st->blockersForKing[~Us + 2] = st->pinners[Us] = st->pinners[Us + 2]= 0;
+    Square s = square<KING>(~Us);
+    // Snipers are sliders that attack 's' when a piece and other snipers are removed
+    Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
+                        | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & pieces(Us);
+    Bitboard occupancy = pieces() ^ snipers;
 
-  // Snipers are sliders that attack 's' when a piece and other snipers are removed
-  Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
-                      | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & sliders;
-  Bitboard occupancy = pieces() ^ snipers;
-
-  while (snipers)
-  {
-    Square sniperSq = pop_lsb(snipers);
-    Bitboard b = between_bb(s, sniperSq) & occupancy;
-
-    if (b && !more_than_one(b))
+    while (snipers)
     {
-        blockers |= b;
-        if (b & pieces(color_of(piece_on(s))))
-            pinners |= sniperSq;
+      Square sniperSq = pop_lsb(snipers);
+      Bitboard b = between_bb(s, sniperSq) & occupancy;
+      if (b && !more_than_one(b))
+      {
+          st->blockersForKing[~Us] |= b;
+          if (b & pieces(color_of(piece_on(s))))
+            st->pinners[Us] |= sniperSq;
+      }
+      else if (b && !st->blockersForKing[~Us + 2] && popcount(b) == 2)
+      {
+         st->blockersForKing[~Us + 2] |= b; // two blockers in line
+         st->pinners[Us + 2] |= sniperSq;
+      }
     }
-  }
-  return blockers;
+    return;
 }
 
 
@@ -1108,6 +1111,16 @@ bool Position::see_ge(Move m, Value threshold) const {
 
           if (!stmAttackers)
               break;
+      }
+      if (pinners(~stm + 2) & occupied)
+      {
+        Bitboard b = blockers_for_king(stm + 2) & occupied;
+        if (b && !more_than_one(b) && !(blockers_for_king(stm + 2) & to))
+        {
+          stmAttackers &= ~blockers_for_king(stm + 2);
+          if (!stmAttackers)
+            break;
+        }
       }
 
       res ^= 1;
