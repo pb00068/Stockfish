@@ -515,10 +515,20 @@ namespace {
 
         if constexpr (Pt == QUEEN)
         {
-            // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners))
-                score -= WeakQueen;
+            Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pos.pieces(QUEEN, ROOK))
+                                  | (attacks_bb<BISHOP>(s) & pos.pieces(QUEEN, BISHOP))) & pos.pieces(Them, ROOK, BISHOP);
+            Bitboard occupancy = pos.pieces() ^ snipers;
+
+            while (snipers)
+            {
+                Square sniperSq = pop_lsb(snipers);
+                Bitboard bbb = between_bb(s, sniperSq) & occupancy;
+                if (bbb && !more_than_one(bbb))
+                {
+                   score -= WeakQueen;
+                   break;
+                }
+            }
         }
     }
     if constexpr (T)

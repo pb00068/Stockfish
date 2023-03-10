@@ -52,8 +52,8 @@ struct StateInfo {
   Key        key;
   Bitboard   checkersBB;
   StateInfo* previous;
-  Bitboard   blockersForKing[COLOR_NB];
-  Bitboard   pinners[COLOR_NB];
+  Bitboard   blockersForKing[COLOR_NB * 2];
+  Bitboard   pinners[COLOR_NB * 2];
   Bitboard   checkSquares[PIECE_TYPE_NB];
   Piece      capturedPiece;
   int        repetition;
@@ -112,14 +112,14 @@ public:
 
   // Checking
   Bitboard checkers() const;
-  Bitboard blockers_for_king(Color c) const;
+  Bitboard blockers_for_king(int c) const;
   Bitboard check_squares(PieceType pt) const;
-  Bitboard pinners(Color c) const;
+  Bitboard pinners(int c) const;
 
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
+  void slider_blockers(Color Us) const;
   template<PieceType Pt> Bitboard attacks_by(Color c) const;
 
   // Properties of moves
@@ -309,11 +309,11 @@ inline Bitboard Position::checkers() const {
   return st->checkersBB;
 }
 
-inline Bitboard Position::blockers_for_king(Color c) const {
+inline Bitboard Position::blockers_for_king(int c) const {
   return st->blockersForKing[c];
 }
 
-inline Bitboard Position::pinners(Color c) const {
+inline Bitboard Position::pinners(int c) const {
   return st->pinners[c];
 }
 
