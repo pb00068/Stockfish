@@ -1110,16 +1110,19 @@ bool Position::see_ge(Move m, Value threshold) const {
           stmAttackers &= ~blockers_for_king(stm);
 
           if (!stmAttackers)
+          {
+              dbg_hit_on(true,0);
               break;
+          }
       }
       if (pinners(~stm + 2) & occupied)
       {
           Bitboard b = blockers_for_king(stm + 2) & occupied;
-          if (b && !more_than_one(b) && !(blockers_for_king(stm + 2) & to))
+          if (b && !more_than_one(b) && !(b & to) && !(line_bb(to, square<KING>(stm)) & b))
           {
              stmAttackers &= ~blockers_for_king(stm + 2);
              if (!stmAttackers)
-                break;
+               break;
           }
       }
 
