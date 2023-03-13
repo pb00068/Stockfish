@@ -458,6 +458,7 @@ void Position::slider_blockers(Color Us) const {
     Bitboard snipers = (  (attacks_bb<  ROOK>(s) & pieces(QUEEN, ROOK))
                         | (attacks_bb<BISHOP>(s) & pieces(QUEEN, BISHOP))) & pieces(Us);
     Bitboard occupancy = pieces() ^ snipers;
+
     while (snipers)
     {
       Square sniperSq = pop_lsb(snipers);
@@ -1092,9 +1093,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
-  // if capture and no single blockers for stm, check for 2 blockers
-  int offsets[2] = { piece_on(to) && (blockers_for_king(2) & from) && !blockers_for_king(0) ? 2 : 0,
-                     piece_on(to) && (blockers_for_king(3) & from) && !blockers_for_king(1) ? 2 : 0 };
 
   while (true)
   {
@@ -1107,17 +1105,24 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // Don't allow pinned pieces to attack as long as there are
       // pinners on their original square.
-      if (pinners(~stm + offsets[stm]) & occupied)
+      if (pinners(~stm) & occupied)
       {
-      	Bitboard bbbb = stmAttackers;
-          stmAttackers &= ~blockers_for_king(stm + offsets[stm]);
+          stmAttackers &= ~blockers_for_king(stm);
 
           if (!stmAttackers)
           {
-              dbg_hit_on(offsets[stm] > 0,0);
-              if(offsets[stm])
-              	sync_cout << *this << UCI::move(m, false) << Bitboards::pretty(blockers_for_king(stm + offsets[stm])) << Bitboards::pretty(bbbb) << stm << sync_endl;
+              dbg_hit_on(true,0);
               break;
+          }
+      }
+      if (pinners(~stm + 2) & occupied)
+      {
+          Bitboard b = blockers_for_king(stm + 2) & occupied;
+          if (b && !more_than_one(b) && !(b & to) && !(line_bb(to, square<KING>(stm)) & b))
+          {
+             stmAttackers &= ~blockers_for_king(stm + 2);
+             if (!stmAttackers)
+               break;
           }
       }
 
