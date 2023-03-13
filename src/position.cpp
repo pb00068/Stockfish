@@ -1167,7 +1167,13 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+      {
+          if ((attackers & ~pieces(stm)))
+             return res ^ 1;
+
+          occupied ^= stmAttackers;
+          return res;
+      }
   }
 
   return bool(res);

@@ -988,6 +988,7 @@ moves_loop: // When in check, search starts here
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      bool sharpMove = false;
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1023,7 +1024,7 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                      if (depth < 2 - capture)
+                     if (depth < 3 - capture)
                         continue;
                      // don't prune move if after see we attack a heavy enemy piece (KQR)
                      Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
@@ -1035,10 +1036,11 @@ moves_loop: // When in check, search starts here
                          attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                          // don't consider pieces which were already threatened/hanging before SEE exchanges
                          if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                        	 attacks = 0;
+                            attacks = 0;
                      }
                      if (!attacks)
                       continue;
+                     sharpMove = true;
               }
           }
           else
@@ -1173,6 +1175,9 @@ moves_loop: // When in check, search starts here
 
       // Decrease reduction if opponent's move count is high (~1 Elo)
       if ((ss-1)->moveCount > 7)
+          r--;
+
+      if (sharpMove)
           r--;
 
       // Increase reduction for cut nodes (~3 Elo)
