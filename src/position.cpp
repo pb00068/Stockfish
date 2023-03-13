@@ -1093,8 +1093,8 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard stmAttackers, bb;
   int res = 1;
   // if capture and no single blockers for stm, check for 2 blockers
-  int offsets[2] = { piece_on(to) && (blockers_for_king(2) & from) && !blockers_for_king(0) ? 2 : 0,
-                     piece_on(to) && (blockers_for_king(3) & from) && !blockers_for_king(1) ? 2 : 0 };
+  //int offsets[2] = { piece_on(to) && (blockers_for_king(2) & from) && !blockers_for_king(0) ? 2 : 0,
+  //                   piece_on(to) && (blockers_for_king(3) & from) && !blockers_for_king(1) ? 2 : 0 };
 
   while (true)
   {
@@ -1104,21 +1104,14 @@ bool Position::see_ge(Move m, Value threshold) const {
       // If stm has no more attackers then give up: stm loses
       if (!(stmAttackers = attackers & pieces(stm)))
           break;
-
+      int offset = piece_on(to) && (blockers_for_king(stm + 2) & from) && !blockers_for_king(stm) ? 2 : 0;
       // Don't allow pinned pieces to attack as long as there are
       // pinners on their original square.
-      if (pinners(~stm + offsets[stm]) & occupied)
+      if (pinners(~stm + offset) & occupied)
       {
-      	Bitboard bbbb = stmAttackers;
-          stmAttackers &= ~blockers_for_king(stm + offsets[stm]);
-
+          stmAttackers &= ~blockers_for_king(stm + offset);
           if (!stmAttackers)
-          {
-              dbg_hit_on(offsets[stm] > 0,0);
-              if(offsets[stm])
-              	sync_cout << *this << UCI::move(m, false) << Bitboards::pretty(blockers_for_king(stm + offsets[stm])) << Bitboards::pretty(bbbb) << stm << sync_endl;
               break;
-          }
       }
 
       res ^= 1;
