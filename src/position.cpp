@@ -1097,8 +1097,8 @@ bool Position::see_ge(Move m, Value threshold) const {
           break;
 
       // Optimistic approach for moving side:
-      // don't allow opponent pinned pieces to attack as long as there are pinners on their original square.
-      // allow own pinned pieces to attack as soon first pinner has left it's original square.
+      // don't allow opponent pinned pieces to attack as long as there are pinners on their original square
+      // allow own pinned pieces to attack as soon first pinner has left it's original square
       if ((stm != sideToMove && (pinners(~stm) & occupied)) ||
           (stm == sideToMove && (pinners(~stm) & occupied) == pinners(~stm)))
       {
