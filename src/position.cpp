@@ -1100,9 +1100,11 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (!(stmAttackers = attackers & pieces(stm)))
           break;
 
-      // Don't allow pinned pieces to attack as long as there are
-      // pinners on their original square.
-      if (pinners(~stm) & occupied)
+      // Optimistic approach for moving side:
+      // don't allow opponent pinned pieces to attack as long as there are pinners on their original square.
+      // allow own pinned pieces to attack as soon first pinner has left it's original square.
+      if ((stm != sideToMove && (pinners(~stm) & occupied)) ||
+          (stm == sideToMove && (pinners(~stm) & occupied) == pinners(~stm)))
       {
           stmAttackers &= ~blockers_for_king(stm);
 
