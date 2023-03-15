@@ -1024,20 +1024,10 @@ moves_loop: // When in check, search starts here
               {
                       if (depth < 3 - capture)
                         continue;
-                     // don't prune move if after see we attack a heavy enemy piece (KQR)
-                     Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
-                     Bitboard attacks = 0;
-                     occupied |= to_sq(move);
-                     while (leftEnemies && !attacks)
-                     {
-                         Square sq = pop_lsb(leftEnemies);
-                         attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                         // don't consider hanging pieces which were already threatened/hanging before SEE exchanges
-                         if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                        	 attacks = 0;
-                     }
-                     if (!attacks)
-                      continue;
+                     // don't prune the move if opponent king is in check after exchanges
+                     // (or if it were forced to evade check by capturing on to)
+                     if (!(pos.attackers_to(pos.square<KING>(~us), occupied) & pos.pieces(us) & occupied))
+                        continue;
               }
           }
           else
