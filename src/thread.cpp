@@ -203,6 +203,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootDepth = th->completedDepth = 0;
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);
+      Eval::NNUE::hint_common_parent_position(th->rootPos);
       th->rootState = setupStates->back();
   }
 
