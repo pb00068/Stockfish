@@ -109,7 +109,7 @@ void MovePicker::score() {
   [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook;
   if constexpr (Type == QUIETS)
   {
-    if (depth > 1) {
+    if (depth > 2) {
       Color us = pos.side_to_move();
 
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
