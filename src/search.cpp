@@ -1172,14 +1172,15 @@ moves_loop: // When in check, search starts here
           r--;
 
       // Decrease reduction if we move a threatened piece (~1 Elo)
-      if (   depth > 4
-          && (mp.threatenedPieces & from_sq(move)))
+      if ((mp.threatenedPieces & from_sq(move))) /// mean  escape moves generated Queen= 5,4   Rook= 4,8  Knight = 4,6 Bishop = 3,4
       {
-          r--;
-          triedEscapes++;
+         if (depth > 9)
+            r--;
+         if (type_of(movedPiece) == QUEEN)
+            triedEscapes++;
       }
       else
-         r += triedEscapes/4;
+         r += triedEscapes/2;
 
       // Increase reduction if next ply has a lot of fail high
       if ((ss+1)->cutoffCnt > 3)
