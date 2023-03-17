@@ -936,7 +936,7 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = thisThread->counterMoves[pos.piece_on(prevSq)][prevSq];
-    MovePicker mp(pos, ttMove, depth - (PvNode && !cutNode), &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth - (!PvNode && !cutNode), &thisThread->mainHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
