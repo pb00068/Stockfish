@@ -1021,7 +1021,7 @@ moves_loop: // When in check, search starts here
 
               // SEE based pruning (~11 Elo)
               // don't prune checking moves with depth >= 3
-              if ((!givesCheck || depth < 3) && !pos.see_ge(move, Value(-206) * depth))
+              if (!pos.see_ge(move, Value(-206) * depth))
                   continue;
           }
           else
