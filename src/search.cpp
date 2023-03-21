@@ -937,7 +937,6 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
-    Bitboard attacked = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -989,8 +988,6 @@ moves_loop: // When in check, search starts here
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
-      if (capture)
-         attacked |= to_sq(move);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1028,12 +1025,18 @@ moves_loop: // When in check, search starts here
               {
                 if (depth < 2 - capture)
                     continue;
-                // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
-                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied & ~attacked;
+                // don't prune move if a enemy piece (KQRB) is under attack after the exchanges
+                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING, BISHOP)) & occupied;
                 Bitboard attacks = 0;
+                occupied |= to_sq(move);
                 while (leftEnemies && !attacks)
-                    attacks = pos.attackers_to(pop_lsb(leftEnemies), occupied) & pos.pieces(us) & (occupied | to_sq(move));
-
+                {
+                    Square sq = pop_lsb(leftEnemies);
+                    attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                    // exclude attacks which were already there before SEE-exchanges
+                    if (attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                        attacks = 0;
+                }
                 if (!attacks)
                     continue;
               }
