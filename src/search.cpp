@@ -937,6 +937,7 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
+    Bitboard attacked = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -988,6 +989,8 @@ moves_loop: // When in check, search starts here
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      if (capture)
+         attacked |= to_sq(move);
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1023,19 +1026,16 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                  // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied & ~mp.threatenedPieces;
-                  Bitboard attacks = 0;
-                  while (leftEnemies && !attacks)
-                  {
-                      Square sq = pop_lsb(leftEnemies);
-                      attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & (occupied | to_sq(move));
-                      // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
-                          attacks = 0;
-                  }
-                  if (!attacks)
-                      continue;
+                if (depth < 2 - capture)
+                    continue;
+                // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
+                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied & ~attacked;
+                Bitboard attacks = 0;
+                while (leftEnemies && !attacks)
+                    attacks = pos.attackers_to(pop_lsb(leftEnemies), occupied) & pos.pieces(us) & (occupied | to_sq(move));
+
+                if (!attacks)
+                    continue;
               }
           }
           else

@@ -1085,7 +1085,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
-  int res = 1, cycle = 1;
+  int res = 1;
 
   while (true)
   {
@@ -1157,16 +1157,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-      {
-          if (attackers & ~pieces(stm)) // king can't go in
-            return res ^ 1;
-
-          if (cycle == 1)
-            occupied ^= bb;
-          // else leave king-square marked occupied, because it might been already in check a cycle before
-          return res;
-      }
-      cycle++;
+          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
   }
 
   return bool(res);
