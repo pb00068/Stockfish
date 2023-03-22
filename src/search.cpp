@@ -568,6 +568,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->threatenedPieces = 0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -989,6 +990,8 @@ moves_loop: // When in check, search starts here
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
+      ss->threatenedPieces |= mp.threatenedPieces;
+
       // Calculate new depth for this move
       newDepth = depth - 1;
 
@@ -1026,17 +1029,12 @@ moves_loop: // When in check, search starts here
                 if (depth < 2 - capture)
                     continue;
                 // don't prune move if a enemy piece (KQRB) is under attack after the exchanges
-                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING, BISHOP)) & occupied;
+                // exclude a priori already threatened Pieces
+                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING, BISHOP)) & occupied & ~(ss-1)->threatenedPieces;
                 Bitboard attacks = 0;
                 occupied |= to_sq(move);
                 while (leftEnemies && !attacks)
-                {
-                    Square sq = pop_lsb(leftEnemies);
-                    attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                    // exclude attacks which were already there before SEE-exchanges
-                    if (attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                        attacks = 0;
-                }
+                    attacks = pos.slider_attackers_to(pop_lsb(leftEnemies), occupied) & pos.pieces(us) & occupied;
                 if (!attacks)
                     continue;
               }
