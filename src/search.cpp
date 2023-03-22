@@ -563,6 +563,7 @@ namespace {
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
+    ss->threatenedPieces = 0;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
@@ -988,6 +989,7 @@ moves_loop: // When in check, search starts here
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      ss->threatenedPieces |= mp.threatenedPieces;
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1020,7 +1022,7 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, Value(-206) * depth))
+              if (!((ss-1)->threatenedPieces & pos.pieces() & to_sq(move)) && !pos.see_ge(move, Value(-206) * depth))
                   continue;
           }
           else
