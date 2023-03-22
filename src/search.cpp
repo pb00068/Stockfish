@@ -1022,7 +1022,10 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning (~11 Elo)
-              if (!((ss-1)->threatenedPieces & pos.pieces() & to_sq(move)) && !pos.see_ge(move, Value(-206) * depth))
+              bool doSEE = true;
+              if ((ss-1)->threatenedPieces & pos.pieces() & to_sq(move))
+                  doSEE = type_of(pos.piece_on(to_sq(move))) <=  type_of(movedPiece);
+              if (doSEE && !pos.see_ge(move, Value(-206) * depth))
                   continue;
           }
           else
