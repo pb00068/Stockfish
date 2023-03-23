@@ -1023,20 +1023,28 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                if (depth < 3 - 2 * capture)
+                if (depth < 2 - capture || (type_of(movedPiece) == QUEEN && depth < 5))
                     continue;
-                // don't prune move if a enemy piece (KQRB) is under attack after the exchanges
-                // exclude a priori already threatened Pieces
+                // don't prune move if a enemy piece is gets attacked by a slider after the exchanges
                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
                 Bitboard attacks = 0;
                 occupied |= to_sq(move);
                 while (leftEnemies && !attacks)
                 {
                     Square sq = pop_lsb(leftEnemies);
+                    PieceType newTarget = type_of(pos.piece_on(sq));
                     attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                    // exclude Queen attacking defended piece
+                    if ((attacks  & pos.pieces(us, QUEEN)) && (pos.state()->defended & sq))
+                         attacks ^= pos.pieces(us, QUEEN);
+                    if ( attacks && newTarget == KNIGHT && (pos.state()->defended & sq))
+                         attacks = 0;  // QRBxN trades are bad when Knight is defended
+                    if ( attacks && newTarget == BISHOP && (pos.state()->defended & sq))
+                         attacks ^= pos.pieces(us, QUEEN, ROOK);  // QRxB trades are bad when Bishop is defended
+
                     // exclude attacks which were already there before SEE-exchanges
-                    if (attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                        attacks = 0;
+                    if ( attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                         attacks = 0;
                 }
                 if (!attacks)
                     continue;

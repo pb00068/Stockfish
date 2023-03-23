@@ -336,7 +336,7 @@ void Position::set_check_info() const {
 
 void Position::set_state() const {
 
-  st->key = st->materialKey = 0;
+  st->key = st->materialKey = st->defended = 0;
   st->pawnKey = Zobrist::noPawns;
   st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
   st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
@@ -891,6 +891,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
       }
   }
+  st->defended = st->previous && st->previous->previous ? st->previous->previous->defended : 0;
 
   assert(pos_is_ok());
 }
@@ -1026,6 +1027,7 @@ void Position::do_null_move(StateInfo& newSt) {
   set_check_info();
 
   st->repetition = 0;
+  st->defended = st->previous && st->previous->previous ?  st->previous->previous->defended : 0;
 
   assert(pos_is_ok());
 }
@@ -1090,6 +1092,10 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
   occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
+  if (attackers & pieces(~stm))
+    st->defended |= to;
+  else
+    st->defended &= AllSquares ^ to;
   Bitboard stmAttackers, bb;
   int res = 1;
 
