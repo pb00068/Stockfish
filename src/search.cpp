@@ -1023,7 +1023,7 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                if (depth < 2 - capture || (type_of(movedPiece) == QUEEN && depth < 5))
+                if (depth < 2 - capture || (type_of(movedPiece) >= ROOK && depth < 3))
                     continue;
                 // don't prune move if a enemy piece is gets attacked by a slider after the exchanges
                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
@@ -1034,14 +1034,15 @@ moves_loop: // When in check, search starts here
                     Square sq = pop_lsb(leftEnemies);
                     PieceType newTarget = type_of(pos.piece_on(sq));
                     attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                    // exclude Queen attacking defended piece
-                    if ((attacks  & pos.pieces(us, QUEEN)) && (pos.state()->defended & sq))
-                         attacks ^= pos.pieces(us, QUEEN);
-                    if ( attacks && newTarget == KNIGHT && (pos.state()->defended & sq))
-                         attacks = 0;  // QRBxN trades are bad when Knight is defended
-                    if ( attacks && newTarget == BISHOP && (pos.state()->defended & sq))
-                         attacks ^= pos.pieces(us, QUEEN, ROOK);  // QRxB trades are bad when Bishop is defended
-
+                    if (attacks && (pos.state()->defended & sq))
+                    {
+                       if (newTarget == KNIGHT )
+                          attacks = 0;  // QRBxN trades are bad when Knight is defended
+                       else if (newTarget == BISHOP)
+                          attacks &= ~pos.pieces(us, ROOK, QUEEN);  // QRxB trades are bad when Bishop is defended
+                       else if (newTarget == ROOK)
+                          attacks &= ~pos.pieces(us, QUEEN);
+                    }
                     // exclude attacks which were already there before SEE-exchanges
                     if ( attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                          attacks = 0;
