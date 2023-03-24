@@ -1023,10 +1023,10 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                if (depth < 2 - capture || (type_of(movedPiece) >= ROOK && depth < 3))
+                if (depth < 2 - capture || (type_of(movedPiece) >= ROOK && depth < 2))
                     continue;
                 // don't prune move if a enemy piece is gets attacked by a slider after the exchanges
-                Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
+                Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING, BISHOP)) & occupied;
                 Bitboard attacks = 0;
                 occupied |= to_sq(move);
                 while (leftEnemies && !attacks)
@@ -1036,9 +1036,7 @@ moves_loop: // When in check, search starts here
                     attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                     if (attacks && (pos.state()->defended & sq))
                     {
-                       if (newTarget == KNIGHT )
-                          attacks = 0;  // QRBxN trades are bad when Knight is defended
-                       else if (newTarget == BISHOP)
+                       if (newTarget == BISHOP)
                           attacks &= ~pos.pieces(us, ROOK, QUEEN);  // QRxB trades are bad when Bishop is defended
                        else if (newTarget == ROOK)
                           attacks &= ~pos.pieces(us, QUEEN);
