@@ -1093,9 +1093,9 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   if (attackers & pieces(~stm))
-    st->defended |= to;
+    st->defended |= to; // Prediction Hit Rate (%) 73.8817
   else
-    st->defended &= AllSquares ^ to;
+    st->defended &= AllSquares ^ to; // Prediction Hit Rate (%) 86.6476
   Bitboard stmAttackers, bb;
   int res = 1;
 
