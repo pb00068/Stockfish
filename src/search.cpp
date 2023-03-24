@@ -607,6 +607,7 @@ namespace {
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
+    ss->pvDistance       = PvNode ? 0 : (ss-1)->pvDistance + 1;
 
     // Initialize statScore to zero for the grandchildren of the current position.
     // So statScore is shared between all grandchildren and only the first grandchild
@@ -628,7 +629,7 @@ namespace {
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
     if (!excludedMove)
-        ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+        ss->ttPv = PvNode || (ss->ttHit && tte->is_pv() && ss->pvDistance < 6);
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
