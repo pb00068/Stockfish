@@ -811,6 +811,9 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       move_piece(from, to);
   }
 
+  st->defended = st->previous && st->previous->previous && st->previous->previous->defended ? st->previous->previous->defended :
+      (sideToMove == WHITE ?  pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN)) : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN)));
+
   // If the moving piece is a pawn do some special extra work
   if (type_of(pc) == PAWN)
   {
@@ -855,9 +858,17 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       // Update pawn hash key
       st->pawnKey ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
+      st->defended |= pawn_attacks_bb(us, to);
+
       // Reset rule 50 draw counter
       st->rule50 = 0;
   }
+  else if (type_of(pc) == KNIGHT)
+    st->defended |= attacks_bb<KNIGHT>(to);
+  else if (type_of(pc) == ROOK)
+      st->defended |= attacks_bb<ROOK>(to, pieces());
+  else if (type_of(pc) == KING)
+      st->defended |= attacks_bb<KING>(to);
 
   // Set capture piece
   st->capturedPiece = captured;
@@ -891,7 +902,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
       }
   }
-  st->defended = st->previous && st->previous->previous ? st->previous->previous->defended : 0;
+
 
   assert(pos_is_ok());
 }
@@ -1022,12 +1033,14 @@ void Position::do_null_move(StateInfo& newSt) {
 
   st->pliesFromNull = 0;
 
+  st->defended = st->previous && st->previous->previous && st->previous->previous->defended ? st->previous->previous->defended :
+      (sideToMove == WHITE ?  pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN)) : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN)));
   sideToMove = ~sideToMove;
 
   set_check_info();
 
   st->repetition = 0;
-  st->defended = st->previous && st->previous->previous ?  st->previous->previous->defended : 0;
+
 
   assert(pos_is_ok());
 }
@@ -1093,9 +1106,10 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   if (attackers & pieces(~stm))
-    st->defended |= to; // Prediction Hit Rate (%) 73.8817
+    st->defended |= to; // Prediction Hit Rate (%) ~80
   else
-    st->defended &= AllSquares ^ to; // Prediction Hit Rate (%) 86.6476
+    st->defended &= AllSquares ^ to; // Prediction Hit Rate (%) ~80
+
   Bitboard stmAttackers, bb;
   int res = 1;
 

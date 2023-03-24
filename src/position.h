@@ -55,7 +55,7 @@ struct StateInfo {
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
-  Bitboard   defended; // squares occupied by defended opponent, will be filled by SEE
+  Bitboard   defended; // squares attacked/defended by opponent, will be filled by SEE and do_move
   Piece      capturedPiece;
   int        repetition;
 

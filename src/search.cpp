@@ -1023,7 +1023,7 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                if (depth < 2 - capture || (type_of(movedPiece) >= ROOK && depth < 3))
+                if (depth < 2 - capture || (type_of(movedPiece) == QUEEN && depth < 3))
                     continue;
                 // don't prune move if a enemy piece is gets attacked by a slider after the exchanges
                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
@@ -1033,7 +1033,10 @@ moves_loop: // When in check, search starts here
                 {
                     Square sq = pop_lsb(leftEnemies);
                     PieceType newTarget = type_of(pos.piece_on(sq));
+                    if (type_of(movedPiece) > newTarget)
+                     continue;
                     attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+
                     if (attacks && (pos.state()->defended & sq))
                     {
                        if (newTarget == KNIGHT )
@@ -1044,7 +1047,7 @@ moves_loop: // When in check, search starts here
                           attacks &= ~pos.pieces(us, QUEEN);
                     }
                     // exclude attacks which were already there before SEE-exchanges
-                    if ( attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                    if ( attacks && (newTarget != KING && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                          attacks = 0;
                 }
                 if (!attacks)
