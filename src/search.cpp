@@ -1027,7 +1027,7 @@ moves_loop: // When in check, search starts here
                       Square sq = pop_lsb(leftEnemies);
                       attacks |= pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // exclude pieces being already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                           attacks = 0;
                       if (attacks)
                       {
