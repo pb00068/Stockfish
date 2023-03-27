@@ -70,7 +70,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
   threatenedPieces = 0;
-  occupied = pos.pieces();
 }
 
 /// MovePicker constructor for quiescence search
@@ -199,6 +198,7 @@ top:
 
   case GOOD_CAPTURE:
       if (select<Next>([&](){
+                       occupied = pos.pieces();
                        return pos.see_ge(*cur, occupied, Value(-cur->value)) ?
                               // Move losing capture to endBadCaptures to be tried later
                               true : (*endBadCaptures++ = *cur, false); }))
@@ -266,7 +266,7 @@ top:
       return select<Best>([](){ return true; });
 
   case PROBCUT:
-      return select<Next>([&](){ return pos.see_ge(*cur, occupied, threshold); });
+      return select<Next>([&](){ return occupied = pos.pieces(), pos.see_ge(*cur, occupied, threshold); });
 
   case QCAPTURE:
       if (select<Next>([&](){ return   depth > DEPTH_QS_RECAPTURES

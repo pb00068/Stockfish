@@ -1554,7 +1554,6 @@ moves_loop: // When in check, search starts here
                                       prevSq);
 
     int quietCheckEvasions = 0;
-    Bitboard occupied = pos.pieces();
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1591,6 +1590,7 @@ moves_loop: // When in check, search starts here
               continue;
           }
 
+          Bitboard occupied = pos.pieces();
           if (futilityBase <= alpha && !pos.see_ge(move, occupied, VALUE_ZERO + 1))
           {
               bestValue = std::max(bestValue, futilityBase);
@@ -1610,6 +1610,7 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Do not search moves with bad enough SEE values (~5 Elo)
+      Bitboard occupied = pos.pieces();
       if (!pos.see_ge(move, occupied, Value(-110)))
           continue;
     }
