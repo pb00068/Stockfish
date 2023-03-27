@@ -282,6 +282,12 @@ void Thread::search() {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
       (ss-i)->staticEval = VALUE_NONE;
   }
+  if (rootPos.state()->previous)
+  {
+      Move pm = (Move) rootPos.state()->accumulator.psqtAccumulation[0][0];
+      //sync_cout << "info previous move was " << UCI::move(pm, false) << sync_endl;
+      (ss-1)->continuationHistory = &this->continuationHistory[false][bool(rootPos.captured_piece())][rootPos.piece_on(to_sq(pm))][to_sq(pm)];
+  }
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
       (ss+i)->ply = i;

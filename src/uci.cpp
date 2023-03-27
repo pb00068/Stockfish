@@ -75,6 +75,7 @@ namespace {
     {
         states->emplace_back();
         pos.do_move(m, states->back());
+        pos.state()->accumulator.psqtAccumulation[0][0]=m;
     }
   }
 
