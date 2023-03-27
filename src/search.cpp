@@ -1019,24 +1019,21 @@ moves_loop: // When in check, search starts here
                   if (depth < 2 - capture)
                       continue;
                   // don't prune move if a heavy enemy piece is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
+                  Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN, KNIGHT)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
+                  Square sq;
                   while (leftEnemies && !attacks)
                   {
-                      Square sq = pop_lsb(leftEnemies);
+                      sq = pop_lsb(leftEnemies);
                       attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // exclude pieces being already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                          attacks = 0;
-                      if (attacks)
+                      if (attacks && (sq != pos.square<KING>(~us)))
                       {
-                         Bitboard o = occupied;
-                         if(!pos.see_ge(make_move(lsb(attacks), sq), o, VALUE_ZERO + 1))
-                         {
-                            attacks = 0;
-                            continue;
-                         }
+                        Bitboard o = occupied;
+                        // exclude already threatened pieces a priori
+                        // exchange on new target must be neutral at least
+                        if ((pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)) || !pos.see_ge(make_move(lsb(attacks), sq), o))
+                          attacks = 0;
                       }
                   }
                   if (!attacks)
@@ -1067,9 +1064,9 @@ moves_loop: // When in check, search starts here
 
               lmrDepth = std::max(lmrDepth, 0);
 
-              Bitboard occupied = pos.pieces();
+              Bitboard occupied2 = pos.pieces();
               // Prune moves with negative SEE (~4 Elo)
-              if (!pos.see_ge(move, occupied, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
+              if (!pos.see_ge(move, occupied2, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                   continue;
           }
       }
@@ -1610,8 +1607,8 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Do not search moves with bad enough SEE values (~5 Elo)
-      Bitboard occupied = pos.pieces();
-      if (!pos.see_ge(move, occupied, Value(-110)))
+      Bitboard occupied2 = pos.pieces();
+      if (!pos.see_ge(move, occupied2, Value(-110)))
           continue;
     }
 
