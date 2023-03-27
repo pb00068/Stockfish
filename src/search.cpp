@@ -1025,7 +1025,7 @@ moves_loop: // When in check, search starts here
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // exclude pieces being already threatened before SEE
                       if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                           attacks = 0;
@@ -1037,18 +1037,10 @@ moves_loop: // When in check, search starts here
                             attacks = 0;
                             continue;
                          }
-                         //sync_cout << pos << UCI::move(move, false) << " second move " << UCI::move(make_move(lsb(attacks), sq), false) << Bitboards::pretty(occupied) << sync_endl;
                       }
                   }
                   if (!attacks)
                       continue;
-//                  dbg_hit_on(!capture , 0);
-//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == PAWN, 1);
-//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == KNIGHT, 2);
-//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == BISHOP, 3);
-//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == ROOK, 4);
-//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == QUEEN, 5);
-
               }
           }
           else
