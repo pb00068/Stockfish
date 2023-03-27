@@ -282,11 +282,18 @@ void Thread::search() {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
       (ss-i)->staticEval = VALUE_NONE;
   }
-  if (rootPos.state()->previous)
+  if (rootPos.state()->previous && !rootPos.state()->accumulator.computed[WHITE])
   {
       Move pm = (Move) rootPos.state()->accumulator.psqtAccumulation[0][0];
-      //sync_cout << "info previous move was " << UCI::move(pm, false) << sync_endl;
-      (ss-1)->continuationHistory = &this->continuationHistory[false][bool(rootPos.captured_piece())][rootPos.piece_on(to_sq(pm))][to_sq(pm)];
+      StateInfo* rst = rootPos.state()->previous;
+      (ss-1)->currentMove = pm;
+      (ss-1)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][bool(rootPos.captured_piece())][rootPos.piece_on(to_sq(pm))][to_sq(pm)];
+      if (rst->previous)
+      {
+         Move ppm = (Move) rst->accumulator.psqtAccumulation[0][0];
+         (ss-2)->currentMove = ppm;
+         (ss-2)->continuationHistory = &this->continuationHistory[bool(rst->previous->checkersBB)][rst->dirtyPiece.dirty_num == 2][rootPos.piece_on(to_sq(ppm))][to_sq(ppm)];
+      }
   }
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
