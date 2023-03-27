@@ -1019,13 +1019,14 @@ moves_loop: // When in check, search starts here
                   if (depth < 2 - capture)
                       continue;
                   // don't prune move if a heavy enemy piece is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN, KNIGHT)) & occupied;
+                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) ^ pos.pieces(~us, KING, BISHOP)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
-                  Square sq;
                   while (leftEnemies && !attacks)
                   {
-                      sq = pop_lsb(leftEnemies);
+                      Square sq  = pop_lsb(leftEnemies);
+                      if (type_of(pos.piece_on(sq)) + 1 < type_of(pos.piece_on(from_sq(move))))
+                          continue;
                       attacks = pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       if (attacks && (sq != pos.square<KING>(~us)))
                       {
