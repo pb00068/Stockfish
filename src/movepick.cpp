@@ -70,6 +70,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
   threatenedPieces = 0;
+  occupied = pos.pieces();
 }
 
 /// MovePicker constructor for quiescence search
@@ -93,6 +94,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
 {
   assert(!pos.checkers());
 
+  occupied = pos.pieces();
   stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm)
                              && pos.pseudo_legal(ttm)
                              && pos.see_ge(ttm, occupied, threshold));

@@ -1012,26 +1012,43 @@ moves_loop: // When in check, search starts here
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
                   continue;
 
-              Bitboard occupied;
+              Bitboard occupied = pos.pieces();
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
                   if (depth < 2 - capture)
                       continue;
-                  // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
+                  // don't prune move if a heavy enemy piece is under attack after the exchanges
+                  Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                      attacks |= pos.slider_attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      // exclude pieces being already threatened before SEE
+                      if (attacks && (sq != pos.square<KING>(~us) && (pos.slider_attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                           attacks = 0;
+                      if (attacks)
+                      {
+                         Bitboard o = occupied;
+                         if(!pos.see_ge(make_move(lsb(attacks), sq), o, VALUE_ZERO + 1))
+                         {
+                            attacks = 0;
+                            continue;
+                         }
+                         //sync_cout << pos << UCI::move(move, false) << " second move " << UCI::move(make_move(lsb(attacks), sq), false) << Bitboards::pretty(occupied) << sync_endl;
+                      }
                   }
                   if (!attacks)
                       continue;
+//                  dbg_hit_on(!capture , 0);
+//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == PAWN, 1);
+//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == KNIGHT, 2);
+//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == BISHOP, 3);
+//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == ROOK, 4);
+//                  dbg_hit_on(capture && type_of(pos.piece_on(to_sq(move))) == QUEEN, 5);
+
               }
           }
           else
@@ -1058,7 +1075,7 @@ moves_loop: // When in check, search starts here
 
               lmrDepth = std::max(lmrDepth, 0);
 
-              Bitboard occupied;
+              Bitboard occupied = pos.pieces();
               // Prune moves with negative SEE (~4 Elo)
               if (!pos.see_ge(move, occupied, Value(-24 * lmrDepth * lmrDepth - 15 * lmrDepth)))
                   continue;
@@ -1545,7 +1562,7 @@ moves_loop: // When in check, search starts here
                                       prevSq);
 
     int quietCheckEvasions = 0;
-    Bitboard occupied;
+    Bitboard occupied = pos.pieces();
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.

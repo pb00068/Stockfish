@@ -489,6 +489,12 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
+Bitboard Position::slider_attackers_to(Square s, Bitboard occupied) const {
+
+  return  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN));
+}
+
 
 /// Position::legal() tests whether a pseudo-legal move is legal
 
@@ -1081,9 +1087,10 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       return true;
 
   assert(color_of(piece_on(from)) == sideToMove);
-  occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
+  occupied ^= from;
+  occupied ^= to; // important for pinned piece logic
   Color stm = sideToMove;
-  Bitboard attackers = attackers_to(to, occupied);
+  Bitboard attackers = attackers_to(to, occupied) & occupied;
   Bitboard stmAttackers, bb;
   int res = 1;
 
@@ -1155,9 +1162,15 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       }
 
       else // KING
+      {
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+        if (attackers & ~pieces(stm))
+           res ^= 1;
+        else
+           occupied ^= stmAttackers;
+        break;
+      }
   }
 
   return bool(res);
