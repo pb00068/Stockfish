@@ -1198,9 +1198,10 @@ moves_loop: // When in check, search starts here
           r--;
 
       ss->statScore =  2 * thisThread->mainHistory[us][from_to(move)]
+                     + (depth >= 17 ? -12000 :
                      + (*contHist[0])[movedPiece][to_sq(move)]
                      + (*contHist[1])[movedPiece][to_sq(move)]
-                     + (*contHist[3])[movedPiece][to_sq(move)]
+                     + (*contHist[3])[movedPiece][to_sq(move)])
                      - 4182;
 
       // Decrease/increase reduction for moves with a good/bad history (~25 Elo)
