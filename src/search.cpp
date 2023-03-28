@@ -282,17 +282,17 @@ void Thread::search() {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
       (ss-i)->staticEval = VALUE_NONE;
   }
-  if (rootPos.state()->previous && !rootPos.state()->accumulator.computed[WHITE])
+  if (Eval::useNNUE)
   {
-      Move pm = (Move) rootPos.state()->accumulator.psqtAccumulation[0][0];
-      StateInfo* rst = rootPos.state()->previous;
-      (ss-1)->currentMove = pm;
-      (ss-1)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][bool(rootPos.captured_piece())][rootPos.piece_on(to_sq(pm))][to_sq(pm)];
-      if (rst->previous)
+      StateInfo* st = rootPos.state();
+      int i=1;
+      while (st->previous && i < 7)
       {
-         Move ppm = (Move) rst->accumulator.psqtAccumulation[0][0];
-         (ss-2)->currentMove = ppm;
-         (ss-2)->continuationHistory = &this->continuationHistory[bool(rst->previous->checkersBB)][rst->dirtyPiece.dirty_num == 2][rootPos.piece_on(to_sq(ppm))][to_sq(ppm)];
+         StateInfo* rst = st->previous;
+         (ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);;
+         (ss-i)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][bool(rst->dirtyPiece.piece[1])][rst->dirtyPiece.piece[0]][rst->dirtyPiece.to[0]];
+         st = st->previous;
+         i++;
       }
   }
 
