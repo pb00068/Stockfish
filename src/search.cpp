@@ -285,12 +285,12 @@ void Thread::search() {
   if (Eval::useNNUE)
   {
       StateInfo* st = rootPos.state();
-      int i=1;
-      while (st->previous && i++ < 7)
+      int i=0;
+      while (st->previous && ++i < 7)
       {
          if (st->dirtyPiece.dirty_num == 1) // handle quiet moves only
          {
-             (ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);
+             //(ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);
              StateInfo* rst = st->previous;
              (ss-i)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][false][rst->dirtyPiece.piece[0]][rst->dirtyPiece.to[0]];
          }
