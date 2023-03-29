@@ -286,13 +286,15 @@ void Thread::search() {
   {
       StateInfo* st = rootPos.state();
       int i=1;
-      while (st->previous && i < 7)
+      while (st->previous && i++ < 7)
       {
-         StateInfo* rst = st->previous;
-         (ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);;
-         (ss-i)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][bool(rst->dirtyPiece.piece[1])][rst->dirtyPiece.piece[0]][rst->dirtyPiece.to[0]];
+         if (st->dirtyPiece.dirty_num == 1) // handle quiet moves only
+         {
+             (ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);
+             StateInfo* rst = st->previous;
+             (ss-i)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][false][rst->dirtyPiece.piece[0]][rst->dirtyPiece.to[0]];
+         }
          st = st->previous;
-         i++;
       }
   }
 
