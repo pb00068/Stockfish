@@ -290,7 +290,7 @@ void Thread::search() {
       {
          if (st->dirtyPiece.dirty_num == 1) // handle quiet moves only
          {
-             //(ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);
+             (ss-i)->currentMove = make_move(st->dirtyPiece.from[0], st->dirtyPiece.to[0]);
              StateInfo* rst = st->previous;
              (ss-i)->continuationHistory = &this->continuationHistory[bool(rst->checkersBB)][false][rst->dirtyPiece.piece[0]][rst->dirtyPiece.to[0]];
          }
