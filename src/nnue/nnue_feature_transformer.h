@@ -345,7 +345,7 @@ namespace Stockfish::Eval::NNUE {
     [[nodiscard]] std::pair<StateInfo*, StateInfo*> try_find_computed_accumulator(const Position& pos) const {
       // Look for a usable accumulator of an earlier position. We keep track
       // of the estimated gain in terms of features to be added/subtracted.
-      StateInfo *st = pos.state(), *next;
+      StateInfo *st = pos.state(), *next = nullptr;
       int gain = FeatureSet::refresh_cost(pos);
       while (st->previous && !st->accumulator.computed[Perspective])
       {
@@ -364,8 +364,10 @@ namespace Stockfish::Eval::NNUE {
     //       All states must be sequential, that is states_to_update[i] must either be reachable
     //       by repeatedly applying ->previous from states_to_update[i+1] or states_to_update[i] == nullptr.
     //       computed_st must be reachable by repeatedly applying ->previous on states_to_update[0], if not nullptr.
-    template<Color Perspective>
-    void update_accumulator_incremental(const Position& pos, StateInfo* computed_st, StateInfo** states_to_update) const {
+    template<Color Perspective, size_t N>
+    void update_accumulator_incremental(const Position& pos, StateInfo* computed_st, StateInfo* states_to_update[N]) const {
+      static_assert(N > 0);
+      assert(states_to_update[N-1] == nullptr);
 
   #ifdef VECTOR
       // Gcc-10.2 unnecessarily spills AVX2 registers if this array
@@ -374,36 +376,36 @@ namespace Stockfish::Eval::NNUE {
       psqt_vec_t psqt[NumPsqtRegs];
   #endif
 
+      if (states_to_update[0] == nullptr)
+        return;
 
       // Update incrementally going back through states_to_update.
 
       // Gather all features to be updated.
       const Square ksq = pos.square<KING>(Perspective);
 
-      int z=0;
-      while (states_to_update[z])
-          z++;
-      z--;
-
       // The size must be enough to contain the largest possible update.
       // That might depend on the feature set and generally relies on the
       // feature set's update cost calculation to be correct and never
       // allow updates with more added/removed features than MaxActiveDimensions.
-      FeatureSet::IndexList removed[2], added[2];
+      FeatureSet::IndexList removed[N-1], added[N-1];
 
       {
+        int i = N-2; // last potential state to update. Skip last element because it must be nullptr.
+        while (states_to_update[i] == nullptr)
+          --i;
 
-        StateInfo *st2 = states_to_update[z];
+        StateInfo *st2 = states_to_update[i];
 
-        for (; z >= 0; --z)
+        for (; i >= 0; --i)
         {
-          states_to_update[z]->accumulator.computed[Perspective] = true;
+          states_to_update[i]->accumulator.computed[Perspective] = true;
 
-          StateInfo* end_state = z == 0 ? computed_st : states_to_update[z - 1];
+          StateInfo* end_state = i == 0 ? computed_st : states_to_update[i - 1];
 
           for (; st2 != end_state; st2 = st2->previous)
             FeatureSet::append_changed_indices<Perspective>(
-              ksq, st2->dirtyPiece, removed[z], added[z]);
+              ksq, st2->dirtyPiece, removed[i], added[i]);
         }
       }
 
@@ -628,7 +630,7 @@ namespace Stockfish::Eval::NNUE {
       {
         // Only update current position accumulator to minimize work.
         StateInfo* states_to_update[2] = { pos.state(), nullptr };
-        update_accumulator_incremental<Perspective>(pos, oldest_st, states_to_update);
+        update_accumulator_incremental<Perspective, 2>(pos, oldest_st, states_to_update);
       }
       else
       {
@@ -638,13 +640,14 @@ namespace Stockfish::Eval::NNUE {
 
     template<Color Perspective>
     void update_accumulator(const Position& pos) const {
-      if (pos.state()->accumulator.computed[Perspective])
-         return;
 
       auto [oldest_st, next] = try_find_computed_accumulator<Perspective>(pos);
 
       if (oldest_st->accumulator.computed[Perspective])
       {
+        if (next == nullptr)
+          return;
+
         // Now update the accumulators listed in states_to_update[], where the last element is a sentinel.
         // Currently we update 2 accumulators.
         //     1. for the current position
@@ -653,7 +656,7 @@ namespace Stockfish::Eval::NNUE {
         StateInfo *states_to_update[3] =
           { next, next == pos.state() ? nullptr : pos.state(), nullptr };
 
-        update_accumulator_incremental<Perspective>(pos, oldest_st, states_to_update);
+        update_accumulator_incremental<Perspective, 3>(pos, oldest_st, states_to_update);
       }
       else
       {
