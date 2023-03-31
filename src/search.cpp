@@ -1017,20 +1017,28 @@ moves_loop: // When in check, search starts here
               {
                   if (depth < 2 - capture)
                       continue;
-                  // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
+                  // don't prune move if a heavy enemy piece (Queen, Rook or Bishop) is under attack after the exchanges
+                  Bitboard leftEnemies = pos.pieces(~us, QUEEN, ROOK);
+                  if (type_of(movedPiece) < ROOK)
+                     leftEnemies |= pos.pieces(~us, BISHOP);
+                  leftEnemies &= occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
+                  Square sq;
                   while (leftEnemies && !attacks)
                   {
-                      Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                      sq = pop_lsb(leftEnemies);
+                      attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      // exclude pieces which were already threatened before SEE
+                      if (attacks && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                           attacks = 0;
                   }
                   if (!attacks)
                       continue;
+//                  dbg_hit_on(type_of(pos.piece_on(sq)) == BISHOP, 0);
+//                  dbg_hit_on(type_of(pos.piece_on(sq)) == ROOK, 1);
+//                  dbg_hit_on(type_of(pos.piece_on(sq)) == QUEEN, 2);
+
               }
           }
           else
