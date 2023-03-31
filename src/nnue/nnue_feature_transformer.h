@@ -376,9 +376,6 @@ namespace Stockfish::Eval::NNUE {
       psqt_vec_t psqt[NumPsqtRegs];
   #endif
 
-      if (states_to_update[0] == nullptr)
-        return;
-
       // Update incrementally going back through states_to_update.
 
       // Gather all features to be updated.
@@ -391,11 +388,11 @@ namespace Stockfish::Eval::NNUE {
       FeatureSet::IndexList removed[N-1], added[N-1];
 
       {
-        int i = N-2; // last potential state to update. Skip last element because it must be nullptr.
-        while (states_to_update[i] == nullptr)
-          --i;
+        int i = 0;
+        while (states_to_update[i+1])
+          i++;
 
-        StateInfo *st2 = states_to_update[i];
+        StateInfo *st2 = states_to_update[i]; // last filled element
 
         for (; i >= 0; --i)
         {
@@ -640,14 +637,13 @@ namespace Stockfish::Eval::NNUE {
 
     template<Color Perspective>
     void update_accumulator(const Position& pos) const {
+      if (pos.state()->accumulator.computed[Perspective])
+        return;
 
       auto [oldest_st, next] = try_find_computed_accumulator<Perspective>(pos);
 
       if (oldest_st->accumulator.computed[Perspective])
       {
-        if (next == nullptr)
-          return;
-
         // Now update the accumulators listed in states_to_update[], where the last element is a sentinel.
         // Currently we update 2 accumulators.
         //     1. for the current position
