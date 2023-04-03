@@ -1020,7 +1020,7 @@ moves_loop: // When in check, search starts here
               {
                   if (depth < 2 - capture)
                       continue;
-                  // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
+                  // don't prune move if a heavy enemy piece (KQR) is under attack (after or even before the exchanges)
                   Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
