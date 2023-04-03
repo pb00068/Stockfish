@@ -1020,16 +1020,16 @@ moves_loop: // When in check, search starts here
               {
                   if (depth < 2 - capture)
                       continue;
-                  // don't prune move if a heavy enemy piece (QR) is under attack after the exchanges
-                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK)) & occupied;
+                  // don't prune move if a heavy enemy piece (KQR) is under attack after the exchanges
+                  Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
+                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                           attacks = 0;
                   }
                   if (!attacks)
