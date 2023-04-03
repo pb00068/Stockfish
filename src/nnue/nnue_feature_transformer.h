@@ -345,16 +345,17 @@ namespace Stockfish::Eval::NNUE {
     [[nodiscard]] std::pair<StateInfo*, StateInfo*> try_find_computed_accumulator(const Position& pos) const {
       // Look for a usable accumulator of an earlier position. We keep track
       // of the estimated gain in terms of features to be added/subtracted.
-      StateInfo *st = pos.state(), *next = nullptr;
+      StateInfo *st = pos.state(), *next = pos.state();
       int gain = FeatureSet::refresh_cost(pos);
       while (st->previous && !st->accumulator.computed[Perspective])
       {
         // This governs when a full feature refresh is needed and how many
         // updates are better than just one full refresh.
         if (   FeatureSet::requires_refresh(st, Perspective)
-            || (gain -= FeatureSet::update_cost(st) + 1) < 0)
+            || (gain -= FeatureSet::update_cost(st)) < 0)
           break;
-        next = st;
+        if (st->dirtyPiece.dirty_num > 0) // exclude state after null-move
+          next = st;
         st = st->previous;
       }
       return { st, next };
@@ -640,14 +641,13 @@ namespace Stockfish::Eval::NNUE {
 
     template<Color Perspective>
     void update_accumulator(const Position& pos) const {
+      if (pos.state()->accumulator.computed[Perspective])
+           return;
 
       auto [oldest_st, next] = try_find_computed_accumulator<Perspective>(pos);
 
       if (oldest_st->accumulator.computed[Perspective])
       {
-        if (next == nullptr)
-          return;
-
         // Now update the accumulators listed in states_to_update[], where the last element is a sentinel.
         // Currently we update 2 accumulators.
         //     1. for the current position

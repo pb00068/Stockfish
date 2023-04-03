@@ -70,7 +70,7 @@ namespace Stockfish::Eval::NNUE::Features {
   template void HalfKAv2_hm::append_changed_indices<BLACK>(Square ksq, const DirtyPiece& dp, IndexList& removed, IndexList& added);
 
   int HalfKAv2_hm::update_cost(const StateInfo* st) {
-    return st->dirtyPiece.dirty_num;
+    return st->dirtyPiece.dirty_num ? st->dirtyPiece.dirty_num + 1 : 0; // cost of trasforming after null move is zero
   }
 
   int HalfKAv2_hm::refresh_cost(const Position& pos) {
