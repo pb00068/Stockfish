@@ -1025,15 +1025,9 @@ moves_loop: // When in check, search starts here
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
-                  {
-                      Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                          attacks = 0;
-                  }
+                      attacks = pos.attackers_to(pop_lsb(leftEnemies), occupied) & pos.pieces(us) & occupied;
                   if (!attacks)
-                      continue;
+                      continue; // prune the move
               }
           }
           else
