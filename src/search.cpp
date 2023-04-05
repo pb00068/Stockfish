@@ -1012,19 +1012,22 @@ moves_loop: // When in check, search starts here
 
               Bitboard occupied;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, occupied, Value(-206) * depth))
+              if (!pos.see_ge(move, occupied, Value(-170) * depth))
               {
-                  // don't prune move if a opp. Queen/Rook is under attack after the exchanges
-                  // or opp. King is under attack either during or after the exchanges
+                   if (depth < 2 - capture)
+                       continue;
+                  // don't prune the move if a opp. Queen/Rook is attacked by a slider after the exchanges
+                  // or opp. King gets attacked by a slider either during or after the exchanges
                   Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      attacks =  (attacks_bb<  ROOK>(sq, occupied) & pos.pieces(  ROOK, QUEEN))
+                               | (attacks_bb<BISHOP>(sq, occupied) & pos.pieces(BISHOP, QUEEN));
                       // exclude Queen/Rook(s) which were already threatened before SEE
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                      if (attacks && sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                           attacks = 0;
                   }
                   if (!attacks)
