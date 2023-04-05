@@ -1030,11 +1030,10 @@ moves_loop: // When in check, search starts here
                       // exclude Queen/Rook(s) which were already threatened before SEE
                       if (attacks && sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                           attacks = 0;
-                      if (attacks && (sq != pos.square<KING>(~us)))
-                        exchanges = popcount(pos.pieces() & ~occupied);
                   }
                   if (!attacks)
                       continue;
+                  exchanges = popcount(pos.pieces() & ~occupied) - 1;
               }
           }
           else
