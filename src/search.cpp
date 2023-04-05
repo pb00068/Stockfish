@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts here
 
               Bitboard occupied;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, occupied, Value(-170) * depth))
+              if (!pos.see_ge(move, occupied, Value(-196) * depth))
               {
                    if (depth < 2 - capture)
                        continue;
@@ -1026,6 +1026,7 @@ moves_loop: // When in check, search starts here
                       Square sq = pop_lsb(leftEnemies);
                       attacks =  (attacks_bb<  ROOK>(sq, occupied) & pos.pieces(  ROOK, QUEEN))
                                | (attacks_bb<BISHOP>(sq, occupied) & pos.pieces(BISHOP, QUEEN));
+                      attacks &= occupied;
                       // exclude Queen/Rook(s) which were already threatened before SEE
                       if (attacks && sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                           attacks = 0;
