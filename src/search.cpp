@@ -945,6 +945,7 @@ moves_loop: // When in check, search starts here
                          && ttMove
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
+    int exchanges = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -966,6 +967,7 @@ moves_loop: // When in check, search starts here
       // Check for legality
       if (!rootNode && !pos.legal(move))
           continue;
+      exchanges = 0;
 
       ss->moveCount = ++moveCount;
 
@@ -1012,10 +1014,10 @@ moves_loop: // When in check, search starts here
 
               Bitboard occupied;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, occupied, Value(-196) * depth))
+              if (!pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                   if (depth < 2 - capture)
-                       continue;
+                  if (depth < 2 - capture)
+                      continue;
                   // don't prune the move if a opp. Queen/Rook is attacked by a slider after the exchanges
                   // or opp. King gets attacked by a slider either during or after the exchanges
                   Bitboard leftEnemies = (pos.pieces(~us, QUEEN, ROOK) | pos.pieces(~us, KING)) & occupied;
@@ -1024,12 +1026,12 @@ moves_loop: // When in check, search starts here
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks =  (attacks_bb<  ROOK>(sq, occupied) & pos.pieces(  ROOK, QUEEN))
-                               | (attacks_bb<BISHOP>(sq, occupied) & pos.pieces(BISHOP, QUEEN));
-                      attacks &= occupied;
+                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // exclude Queen/Rook(s) which were already threatened before SEE
                       if (attacks && sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                           attacks = 0;
+                      if (attacks && (sq != pos.square<KING>(~us)))
+                        exchanges = popcount(pos.pieces() & ~occupied);
                   }
                   if (!attacks)
                       continue;
@@ -1064,6 +1066,7 @@ moves_loop: // When in check, search starts here
                   continue;
           }
       }
+
 
       // Step 15. Extensions (~100 Elo)
       // We take care to not overdo to avoid search getting stuck.
@@ -1214,7 +1217,7 @@ moves_loop: // When in check, search starts here
           // In general we want to cap the LMR depth search at newDepth, but when
           // reduction is negative, we allow this move a limited search extension
           // beyond the first move depth. This may lead to hidden double extensions.
-          Depth d = std::clamp(newDepth - r, 1, newDepth + 1);
+          Depth d = std::clamp(newDepth - r, 1 + exchanges, newDepth + 1 + exchanges);
 
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
