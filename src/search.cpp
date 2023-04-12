@@ -1018,10 +1018,8 @@ moves_loop: // When in check, search starts here
               {
                   if (depth < 2 - capture)
                       continue;
-                  // Don't prune the move if opp. King/Queen/Rook is attacked by a slider after the exchanges.
-                  // also don't prune the move when the opp. King/Queen gets a discovered slider attack DURING the exchanges.
-                  Bitboard leftEnemies = pos.pieces(~us, ROOK) & occupied;
-                  leftEnemies |=  pos.pieces(~us, QUEEN, KING);
+                  // Don't prune the move if opp. King/Queen/Rook is attacked by a slider after or during the exchanges.
+                  Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
