@@ -1019,9 +1019,9 @@ moves_loop: // When in check, search starts here
                   if (depth < 2 - capture)
                       continue;
                   // Don't prune the move if opp. King/Queen/Rook is attacked by a slider after the exchanges.
-                  // Since in see_ge we don't update occupied when the king recaptures, we also don't prune the
-                  // move when the opp. King gets a discovered slider attack DURING the exchanges.
-                  Bitboard leftEnemies = pos.pieces(~us, ROOK, QUEEN, KING) & occupied;
+                  // also don't prune the move when the opp. King/Queen gets a discovered slider attack DURING the exchanges.
+                  Bitboard leftEnemies = pos.pieces(~us, ROOK) & occupied;
+                  leftEnemies |=  pos.pieces(~us, QUEEN, KING);
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
