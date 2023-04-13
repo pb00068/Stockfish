@@ -823,10 +823,18 @@ namespace {
             // Do not return unproven mate or TB scores
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
-            bool improvi = ((ss-4)->staticEval != VALUE_NONE ? ss->staticEval - (ss-4)->staticEval : 0) > 40;
-            bool doVerification = (abs(beta) >= VALUE_KNOWN_WIN || (depth >= 14 && !improvi)) && !thisThread->nmpMinPly;
+
+            bool doVerification = (depth >= 14 || abs(beta) >= VALUE_KNOWN_WIN) && !thisThread->nmpMinPly;
+
+            if (doVerification)
+            {
+               bool improvi = (ss-4)->staticEval != VALUE_NONE && ss->staticEval - (ss-4)->staticEval > 380;
+               if (improvi) // don't need to verify Zugzwang if still improving
+                 doVerification = false;
+            }
             if (!doVerification)
                 return nullValue;
+
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
