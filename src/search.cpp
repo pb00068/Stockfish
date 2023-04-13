@@ -823,8 +823,8 @@ namespace {
             // Do not return unproven mate or TB scores
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
-
-            bool doVerification = (abs(beta) >= VALUE_KNOWN_WIN || (depth >= 14 && !improving)) && !thisThread->nmpMinPly;
+            bool improvi = ((ss-4)->staticEval != VALUE_NONE ? ss->staticEval - (ss-4)->staticEval : 0) > 40;
+            bool doVerification = (abs(beta) >= VALUE_KNOWN_WIN || (depth >= 14 && !improvi)) && !thisThread->nmpMinPly;
             if (!doVerification)
                 return nullValue;
 
