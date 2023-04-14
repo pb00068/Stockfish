@@ -1020,11 +1020,11 @@ moves_loop: // When in check, search starts here
                       continue;
                   // Don't prune the move if opp. King/Queen/Rook is attacked by a slider after or during the exchanges.
                   Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
-
-//                  if (depth < 4 && exchanges <= 2)
-//                    leftEnemies &= occupied;
-                  Bitboard attacks = 0;
                   occupied |= to_sq(move);
+                  if (exchanges <= 2 && depth < 3)
+                    leftEnemies &= occupied;
+
+                  Bitboard attacks = 0;
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
