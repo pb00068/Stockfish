@@ -1012,8 +1012,9 @@ moves_loop: // When in check, search starts here
                   continue;
 
               Bitboard occupied;
+              int exchanges = capture;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, occupied, Value(-206) * depth))
+              if (!pos.see_ge(move, occupied, exchanges, Value(-206) * depth))
               {
                   if (depth < 2 - capture)
                       continue;
@@ -1021,6 +1022,8 @@ moves_loop: // When in check, search starts here
                   Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
+                  if (depth < exchanges)
+                    leftEnemies &= occupied;
                   while (leftEnemies && !attacks)
                   {
                       Square sq = pop_lsb(leftEnemies);
