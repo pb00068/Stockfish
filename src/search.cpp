@@ -1533,6 +1533,9 @@ moves_loop: // When in check, search starts here
       givesCheck = pos.gives_check(move);
       capture = pos.capture_stage(move);
 
+      if (pos.psq_eg_stm() < -1600 && (ss-1)->inCheck && type_of(pos.moved_piece(move)) == KING)
+        return bestValue; // fail low
+
       moveCount++;
 
     // Step 6. Pruning.
