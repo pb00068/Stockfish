@@ -780,10 +780,10 @@ namespace {
     // Step 9. Null move search with verification search (~35 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 18755
+        && (((ss-1)->statScore < 18755
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 20 * depth - improvement / 13 + 253
+        &&  ss->staticEval >= beta - 20 * depth - improvement / 13 + 253) || (ss->ttHit && ttMove == MOVE_NULL))
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly))
@@ -809,7 +809,10 @@ namespace {
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
+            {
+                tte->save(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER, depth-R, MOVE_NULL, ss->staticEval);
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
@@ -822,7 +825,10 @@ namespace {
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                tte->save(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER, depth-R, MOVE_NULL, ss->staticEval);
                 return nullValue;
+            }
         }
     }
 
@@ -845,7 +851,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove != MOVE_NULL ? ttMove : MOVE_NONE, probCutBeta - ss->staticEval, &captureHistory);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
@@ -915,7 +921,7 @@ moves_loop: // When in check, search starts here
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove != MOVE_NULL ? ttMove : MOVE_NONE, depth, &thisThread->mainHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
