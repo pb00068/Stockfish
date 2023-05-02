@@ -592,7 +592,7 @@ namespace {
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
-    (ss+1)->excludedMove = (ss+1)->nmprudedMove = bestMove = MOVE_NONE;
+    (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
@@ -600,7 +600,7 @@ namespace {
     ss->statScore        = 0;
 
     // Step 4. Transposition table lookup.
-    excludedMove = (ss-1)->currentMove == MOVE_NULL ? ss->nmprudedMove : ss->excludedMove;
+    excludedMove = ss->excludedMove;
     posKey = pos.key();
     tte = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
@@ -804,7 +804,6 @@ namespace {
 
         if (nullValue >= beta)
         {
-            (ss+1)->nmprudedMove = (ss-1)->currentMove;
             // Do not return unproven mate or TB scores
             if (nullValue >= VALUE_TB_WIN_IN_MAX_PLY)
                 nullValue = beta;
