@@ -782,7 +782,8 @@ namespace {
         && (ss-1)->currentMove != MOVE_NULL
         && (ss-1)->statScore < 18755
         &&  eval >= beta
-        &&  std::min(ss->staticEval, eval) >= beta - 20 * depth - improvement / 13 + 253
+        &&  eval >= ss->staticEval
+        &&  ss->staticEval >= beta - 20 * depth - improvement / 13 + 253
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly))
