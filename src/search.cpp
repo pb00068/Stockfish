@@ -1000,6 +1000,9 @@ moves_loop: // When in check, search starts here
                       continue;
                   // Don't prune the move if opp. King/Queen/Rook gets a discovered attack during or after the exchanges
                   Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
+                  if (pos.count<ROOK>(~us) == 2 && (attacks_bb<ROOK>(lsb(pos.pieces(~us, ROOK)), occupied) & msb(pos.pieces(~us, ROOK))))
+                      leftEnemies ^= pos.pieces(~us, ROOK);
+
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
