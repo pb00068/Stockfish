@@ -994,9 +994,9 @@ moves_loop: // When in check, search starts here
 
               Bitboard occupied;
               // SEE based pruning (~11 Elo)
-              if (!pos.see_ge(move, occupied, Value(-206) * depth))
+              if (!ss->inCheck && !pos.see_ge(move, occupied, Value(-206) * depth))
               {
-                  if (givesCheck && !capture && depth <= 4)
+                  if (givesCheck && !capture && depth <= 3)
                       continue;
                   // Don't prune the move if opp. King/Queen/Rook gets a discovered attack during or after the exchanges
                   Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
