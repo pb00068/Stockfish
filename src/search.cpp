@@ -995,7 +995,7 @@ moves_loop: // When in check, search starts here
               if (!pos.see_ge(move, occupied, Value(-205) * depth))
               {
                   // Don't prune the move if opponent King/Queen/Rook gets a discovered attack during or after the exchanges
-                  Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
+                  Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK, BISHOP);
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
@@ -1004,6 +1004,8 @@ moves_loop: // When in check, search starts here
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // Exclude Queen/Rook(s) which were already threatened before SEE (opponent King can't be in check when it's our turn)
                       if (attacks && sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
+                          attacks = 0;
+                      if (attacks && (pos.pieces(~us, BISHOP) & sq) && !(attacks & pos.pieces(us, BISHOP)))
                           attacks = 0;
                   }
                   if (!attacks)
