@@ -993,8 +993,8 @@ moves_loop: // When in check, search starts here
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-205) * depth))
               {
-                  // Don't prune the move if opponent King/Queen/Rook gets a discovered attack during or after the exchanges
-                  Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN, ROOK);
+                  // Don't prune the move if opponent King/Queen is under discovered attack after the exchanges
+                  Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN) & occupied;
                   Bitboard attacks = 0;
                   occupied |= to_sq(move);
                   while (leftEnemies && !attacks)
