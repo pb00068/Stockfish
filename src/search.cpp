@@ -120,6 +120,7 @@ namespace {
 
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply, int r50c);
+  bool isSEEPruneOK(Position& pos, Bitboard occupied, Color us, Move move);
   void update_pv(Move* pv, Move move, const Move* childPv);
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
@@ -254,7 +255,6 @@ void MainThread::search() {
 
   std::cout << sync_endl;
 }
-
 
 /// Thread::search() is the main iterative deepening loop. It calls search()
 /// repeatedly with increasing depth until the allocated thinking time has been
@@ -993,26 +993,8 @@ moves_loop: // When in check, search starts here
               Bitboard occupied;
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-205) * depth))
-              {
-                 if (depth < 2 - capture)
+                 if (depth < 2 - capture || isSEEPruneOK(pos, occupied, us, move))
                     continue;
-                 // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
-                 // or even during the exchanges if first recapture was not made by Queen/Rook
-                 // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
-                 Bitboard attacks = 0;
-                 occupied |= to_sq(move);
-                 while (leftEnemies && !attacks)
-                 {
-                      Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // don't consider pieces which were already threatened/hanging before SEE exchanges
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                         attacks = 0;
-                 }
-                 if (!attacks)
-                    continue;
-              }
           }
           else
           {
@@ -1039,8 +1021,10 @@ moves_loop: // When in check, search starts here
               lmrDepth = std::max(lmrDepth, 0);
 
               // Prune moves with negative SEE (~4 Elo)
-              if (!pos.see_ge(move, Value(-27 * lmrDepth * lmrDepth - 16 * lmrDepth)))
-                  continue;
+              Bitboard occupied;
+              if (!pos.see_ge(move, occupied, Value(-27 * lmrDepth * lmrDepth - 16 * lmrDepth)))
+                 if (type_of(movedPiece) >= ROOK || isSEEPruneOK(pos, occupied, us, move))
+                   continue;
           }
       }
 
@@ -1394,7 +1378,6 @@ moves_loop: // When in check, search starts here
     return bestValue;
   }
 
-
   // qsearch() is the quiescence search function, which is called by the main search
   // function with zero depth, or recursively with further decreasing depth per call.
   // (~155 Elo)
@@ -1688,6 +1671,22 @@ moves_loop: // When in check, search starts here
     *pv = MOVE_NONE;
   }
 
+  bool isSEEPruneOK(Position& pos, Bitboard occupied, Color us, Move move) {
+    // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
+    // Don't prune the move if opponent King is under discovered attack after or during the exchanges
+    Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
+    Bitboard attacks = 0;
+    occupied |= to_sq(move);
+    while (leftEnemies && !attacks)
+    {
+      Square sq = pop_lsb(leftEnemies);
+      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+      // don't consider pieces which were already threatened/hanging before SEE exchanges
+      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+         attacks = 0;
+    }
+    return !attacks;
+  }
 
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
