@@ -1085,6 +1085,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
+  bool firstRound = true;
 
   while (true)
   {
@@ -1136,18 +1137,24 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
 
       else if ((bb = stmAttackers & pieces(ROOK)))
       {
-          occupied ^= least_significant_square_bb(bb);
+          if (firstRound)
+             occupied ^= least_significant_square_bb(bb);
           if ((swap = RookValueMg - swap) < res)
               break;
+          if (!firstRound)
+            occupied ^= least_significant_square_bb(bb);
 
           attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
       }
 
       else if ((bb = stmAttackers & pieces(QUEEN)))
       {
-          occupied ^= least_significant_square_bb(bb);
+          if (firstRound)
+             occupied ^= least_significant_square_bb(bb);
           if ((swap = QueenValueMg - swap) < res)
               break;
+          if (!firstRound)
+             occupied ^= least_significant_square_bb(bb);
 
           attackers |=  (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                       | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK  , QUEEN));
@@ -1157,6 +1164,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
           return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+      firstRound = false;
   }
 
   return bool(res);
