@@ -1008,6 +1008,8 @@ moves_loop: // When in check, search starts here
                       // don't consider pieces which were already threatened/hanging before SEE exchanges
                       if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
                          attacks = 0;
+                      if (attacks && type_of(movedPiece) == QUEEN)
+                         sync_cout << pos << UCI::move(move, false) << Bitboards::pretty(occupied) << Bitboards::pretty(attacks) << sync_endl;
                  }
                  if (!attacks)
                     continue;
