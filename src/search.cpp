@@ -701,6 +701,7 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
+    Bitboard attackedEnemies = 0;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -867,6 +868,7 @@ namespace {
                                                                           [true]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
+                attackedEnemies |= to_sq(move);
 
                 pos.do_move(move, st);
 
@@ -909,7 +911,6 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
-    Bitboard attackedEnemies = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -999,21 +1000,25 @@ moves_loop: // When in check, search starts here
               {
                  if (depth < 2 - capture)
                     continue;
-                 // Don't prune the move if opponent QRBN is under discovered attack after the exchanges
+                 // Don't prune the move if opponent QR   is under discovered attack after the exchanges
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied & ~attackedEnemies;
+                 Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied & ~attackedEnemies;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (leftEnemies && !attacks)
                  {
                       Square sq = pop_lsb(leftEnemies);
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      // don't consider pieces which were already threatened/hanging before SEE exchanges
                       if (attacks && sq != pos.square<KING>(~us))
                       {
                           Bitboard b = occupied;
-                          attackedEnemies |= pos.attackers_to(sq, pos.pieces()) & pos.pieces(us);
-                          if (attackedEnemies || !pos.see_ge(make_move(lsb(attacks), sq), b), Value(-100) * depth)
+                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
+                             attackedEnemies |= sq;
+                          // don't consider pieces which were already threatened/hanging before SEE exchanges
+                          if ((attackedEnemies & sq))
+                              attacks = 0;
+                          // prune anyway if attacking the discovered piece is very SEE negative
+                          if (attacks && !pos.see_ge(make_move(lsb(attacks), sq), b), Value(-100) * depth)
                               attacks = 0;
                       }
                  }
