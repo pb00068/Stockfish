@@ -996,9 +996,9 @@ moves_loop: // When in check, search starts here
               {
                  if (depth < 2 - capture)
                     continue;
-                 // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
+                 // Don't prune the move if opponent QRBN is under discovered attack after the exchanges
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
+                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (leftEnemies && !attacks)
