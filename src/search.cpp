@@ -909,6 +909,7 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
+    Bitboard attackedEnemies = 0;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -958,6 +959,8 @@ moves_loop: // When in check, search starts here
 
       extension = 0;
       capture = pos.capture_stage(move);
+      if (capture)
+         attackedEnemies |= to_sq(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -998,7 +1001,7 @@ moves_loop: // When in check, search starts here
                     continue;
                  // Don't prune the move if opponent QRBN is under discovered attack after the exchanges
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied;
+                 Bitboard leftEnemies = (pos.pieces(~us) ^ pos.pieces(~us, PAWN)) & occupied & ~attackedEnemies;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (leftEnemies && !attacks)
@@ -1009,7 +1012,8 @@ moves_loop: // When in check, search starts here
                       if (attacks && sq != pos.square<KING>(~us))
                       {
                           Bitboard b = occupied;
-                          if ((pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)) || !pos.see_ge(make_move(lsb(attacks), sq), b))
+                          attackedEnemies |= pos.attackers_to(sq, pos.pieces()) & pos.pieces(us);
+                          if (attackedEnemies || !pos.see_ge(make_move(lsb(attacks), sq), b), Value(-100) * depth)
                               attacks = 0;
                       }
                  }
