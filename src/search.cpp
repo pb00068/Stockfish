@@ -1004,10 +1004,14 @@ moves_loop: // When in check, search starts here
                  while (leftEnemies && !attacks)
                  {
                       Square sq = pop_lsb(leftEnemies);
-                      attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                      attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       // don't consider pieces which were already threatened/hanging before SEE exchanges
-                      if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
-                         attacks = 0;
+                      if (attacks && sq != pos.square<KING>(~us))
+                      {
+                          Bitboard b = occupied;
+                          if ((pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)) || !pos.see_ge(make_move(lsb(attacks), sq), b))
+                              attacks = 0;
+                      }
                  }
                  if (!attacks)
                     continue;
