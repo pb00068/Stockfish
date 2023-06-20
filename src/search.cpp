@@ -1011,15 +1011,9 @@ moves_loop: // When in check, search starts here
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       if (attacks && sq != pos.square<KING>(~us))
                       {
-                          Bitboard b = occupied;
-                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
-                             attackedEnemies |= sq;
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
-                          if ((attackedEnemies & sq))
-                              attacks = 0;
-                          // prune anyway if attacking the discovered piece is very SEE negative
-                          if (attacks && !pos.see_ge(make_move(lsb(attacks), sq), b), Value(-100) * depth)
-                              attacks = 0;
+                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
+                             attackedEnemies |= sq, attacks = 0;
                       }
                  }
                  if (!attacks)
