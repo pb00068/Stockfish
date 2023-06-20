@@ -701,7 +701,6 @@ namespace {
     }
 
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
-    Bitboard attackedEnemies = 0;
 
     // Step 6. Static evaluation of the position
     if (ss->inCheck)
@@ -868,7 +867,6 @@ namespace {
                                                                           [true]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
-                attackedEnemies |= to_sq(move);
 
                 pos.do_move(move, st);
 
@@ -960,8 +958,6 @@ moves_loop: // When in check, search starts here
 
       extension = 0;
       capture = pos.capture_stage(move);
-      if (capture)
-         attackedEnemies |= to_sq(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -1000,9 +996,11 @@ moves_loop: // When in check, search starts here
               {
                  if (depth < 2 - capture)
                     continue;
-                 // Don't prune the move if opponent QR   is under discovered attack after the exchanges
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied & ~attackedEnemies;
+                 // Don't prune the move if opponent QR   is under discovered attack after the exchanges
+                 // Consider enemy rook only if connected with the king (or protecting it)
+                 Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK) & pos.state()->checkSquares[QUEEN]);
+                 leftEnemies &= occupied;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (leftEnemies && !attacks)
@@ -1013,7 +1011,7 @@ moves_loop: // When in check, search starts here
                       {
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
                           if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
-                             attackedEnemies |= sq, attacks = 0;
+                             attacks = 0;
                       }
                  }
                  if (!attacks)
