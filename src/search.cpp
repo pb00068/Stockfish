@@ -868,6 +868,8 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
+                if (pos.captured_piece() && prevSq == to_sq(move))
+                   (ss-1)->recaptable = true;
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -958,6 +960,9 @@ moves_loop: // When in check, search starts here
 
       extension = 0;
       capture = pos.capture_stage(move);
+      ss->recaptable = false;
+      if (pos.captured_piece() && prevSq == to_sq(move))
+         (ss-1)->recaptable = true;
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
@@ -987,7 +992,7 @@ moves_loop: // When in check, search starts here
                   && lmrDepth < 7
                   && !ss->inCheck
                   && ss->staticEval + 197 + 248 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
-                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
+                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][ss->recaptable] / 7 < alpha)
                   continue;
 
               Bitboard occupied;
@@ -1720,7 +1725,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        captureHistory[moved_piece][to_sq(bestMove)][captured][ss->recaptable] << bonus1;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
@@ -1735,7 +1740,7 @@ moves_loop: // When in check, search starts here
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured = type_of(pos.piece_on(to_sq(capturesSearched[i])));
-        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -bonus1;
+        captureHistory[moved_piece][to_sq(capturesSearched[i])][captured][ss->recaptable] << -bonus1;
     }
   }
 
