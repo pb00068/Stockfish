@@ -982,15 +982,7 @@ moves_loop: // When in check, search starts here
           if (   capture
               || givesCheck)
           {
-              // Futility pruning for captures (~2 Elo)
-              if (   !givesCheck
-                  && lmrDepth < 7
-                  && !ss->inCheck
-                  && ss->staticEval + 197 + 248 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
-                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
-                  continue;
-
-              Bitboard occupied;
+              Bitboard occupied, attacks = 0;
               // SEE based pruning (~11 Elo)
               if (!pos.see_ge(move, occupied, Value(-205) * depth))
               {
@@ -999,7 +991,7 @@ moves_loop: // When in check, search starts here
                  // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
                  Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
-                 Bitboard attacks = 0;
+                 attacks = 0;
                  occupied |= to_sq(move);
                  while (leftEnemies && !attacks)
                  {
@@ -1012,6 +1004,15 @@ moves_loop: // When in check, search starts here
                  if (!attacks)
                     continue;
               }
+
+              // Futility pruning for captures (~2 Elo)
+              if (   !givesCheck
+                  && !attacks
+                  && lmrDepth < 7
+                  && !ss->inCheck
+                  && ss->staticEval + 197 + 248 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
+                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
+                  continue;
           }
           else
           {
