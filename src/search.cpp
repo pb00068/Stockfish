@@ -1007,15 +1007,11 @@ moves_loop: // When in check, search starts here
                  {
                       Square sq = pop_lsb(leftEnemies);
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      PieceType target = type_of(pos.piece_on(sq));
-                      if (attacks && target != KING)
+                      if (attacks && sq != pos.square<KING>(~us))
                       {
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
-                          // N.B.: by having several attacks (2%) second condition turns to be true around 98%
+                          // N.B.: by having multiple attacks (2%) second condition turns to be true by ~98%
                           if (more_than_one(attacks) || (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
-                             attacks = 0;
-                          // consider ROOK/BISHOP retake only if is with check
-                          if (attacks && target <= ROOK && !(pos.state()->checkSquares[type_of(pos.piece_on(lsb(attacks)))] & sq))
                              attacks = 0;
                       }
                  }
