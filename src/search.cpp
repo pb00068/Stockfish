@@ -997,15 +997,14 @@ moves_loop: // When in check, search starts here
                  if (depth < 2 - capture)
                     continue;
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 // Don't prune the move if opponent QRB  is under discovered attack after the exchanges
-                 // Consider enemy rook/bishop only if connected with the king (or protecting it from slider attacks)
-                 Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK, BISHOP) & pos.state()->checkSquares[QUEEN]);
-                 leftEnemies &= occupied;
+                 // Don't prune the move if opponent Queen is under discovered attack after the exchanges
+                 // Don't prune the move if opponent piece is under discovered attack after the exchanges and we can take it with check
+                 Bitboard targets = (pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us) & pos.state()->checkSquares[QUEEN])) & occupied;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
-                 while (leftEnemies && !attacks)
+                 while (targets && !attacks)
                  {
-                      Square sq = pop_lsb(leftEnemies);
+                      Square sq = pop_lsb(targets);
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
                       PieceType target = type_of(pos.piece_on(sq));
                       if (attacks && target != KING)
@@ -1014,7 +1013,7 @@ moves_loop: // When in check, search starts here
                           // N.B.: by having several attacks (2%) second condition turns to be true around 98%
                           if (more_than_one(attacks) || (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                              attacks = 0;
-                          // consider ROOK/BISHOP retake only if is with check
+                          // consider retake only if it's with check
                           if (attacks && target <= ROOK && !(pos.state()->checkSquares[type_of(pos.piece_on(lsb(attacks)))] & sq))
                              attacks = 0;
                       }
