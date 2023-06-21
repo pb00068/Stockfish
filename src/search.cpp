@@ -997,9 +997,9 @@ moves_loop: // When in check, search starts here
                  if (depth < 2 - capture)
                     continue;
                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
-                 // Don't prune the move if opponent QR   is under discovered attack after the exchanges
-                 // Consider enemy rook only if connected with the king (or protecting it)
-                 Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK) & pos.state()->checkSquares[QUEEN]);
+                 // Don't prune the move if opponent QRB  is under discovered attack after the exchanges
+                 // Consider enemy rook/bishop only if connected with the king (or protecting it from slider attacks)
+                 Bitboard leftEnemies = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK, BISHOP) & pos.state()->checkSquares[QUEEN]);
                  leftEnemies &= occupied;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
@@ -1010,7 +1010,8 @@ moves_loop: // When in check, search starts here
                       if (attacks && sq != pos.square<KING>(~us))
                       {
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
-                          if (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))
+                          // N.B.: by having multiple attacks (2%) second condition turns to be true by ~98%
+                          if (more_than_one(attacks) || (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                              attacks = 0;
                       }
                  }
