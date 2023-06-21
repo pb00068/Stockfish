@@ -982,12 +982,13 @@ moves_loop: // When in check, search starts here
           if (   capture
               || givesCheck)
           {
+              bool retakable = capture && !givesCheck && bool(pos.attackers_to(to_sq(move), pos.pieces() ^ from_sq(move)) & pos.pieces(~us));
               // Futility pruning for captures (~2 Elo)
               if (   !givesCheck
                   && lmrDepth < 7
                   && !ss->inCheck
                   && ss->staticEval + 197 + 248 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
-                   + (captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][false] +  captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][true])/ 14 < alpha)
+                   + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))][retakable]/ 7 < alpha)
                   continue;
 
               Bitboard occupied;

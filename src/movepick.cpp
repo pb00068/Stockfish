@@ -124,8 +124,7 @@ void MovePicker::score() {
       if constexpr (Type == CAPTURES)
       {
           bool recapturable = bool(pos.attackers_to(to_sq(m), pos.pieces() ^ from_sq(m)) & pos.pieces(~pos.side_to_move()));
-          m.value =  (7 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
-                   -     (recapturable * 7 * int(PieceValue[MG][pos.piece_on(from_sq(m))]))
+          m.value =  (7 * int(PieceValue[MG][pos.piece_on(to_sq(m)) - recapturable * PieceValue[MG][pos.piece_on(from_sq(m))]])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))][recapturable]) / 16;
       }
 
