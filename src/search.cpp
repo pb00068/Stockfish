@@ -1006,12 +1006,17 @@ moves_loop: // When in check, search starts here
                  {
                       Square sq = pop_lsb(targets);
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      if (attacks && sq != pos.square<KING>(~us))
+                      PieceType target = type_of(pos.piece_on(sq));
+                      if (attacks && target != KING)
                       {
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
                           // N.B.: by having multiple attacks (2%) second condition turns to be true by ~98%
                           if (more_than_one(attacks) || (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                              attacks = 0;
+                          Bitboard b = occupied;
+                          if (attacks && (((target < BISHOP && !(pos.state()->checkSquares[type_of(pos.piece_on(lsb(attacks)))] & sq))) ||
+                                       !pos.see_ge(make_move(lsb(attacks), sq), b)))
+                              attacks = 0;
                       }
                  }
                  if (!attacks)
