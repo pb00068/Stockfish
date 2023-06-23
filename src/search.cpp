@@ -999,6 +999,7 @@ moves_loop: // When in check, search starts here
                  // Don't prune the move if opponent Queen is under discovered attack after the exchanges
                  // Don't prune the move if opponent RBN   is under discovered attack after the exchanges and we might capture it possibly with check
                  Bitboard targets = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK, BISHOP, KNIGHT) & pos.state()->checkSquares[QUEEN]);
+                 targets &= occupied;
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (targets && !attacks)
