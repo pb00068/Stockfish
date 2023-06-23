@@ -995,27 +995,22 @@ moves_loop: // When in check, search starts here
               {
                  if (depth < 2 - capture)
                     continue;
-                 // Don't prune the move if opponent King is under discovered attack after or during the exchanges
+                 // Don't prune the move if opponent King  is under discovered attack after or during the exchanges
                  // Don't prune the move if opponent Queen is under discovered attack after the exchanges
-                 // Don't prune the move if opponent piece is under discovered attack after the exchanges and we might capture it possibly with check
-                 Bitboard targets = (pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us) & pos.state()->checkSquares[QUEEN])) & occupied;
+                 // Don't prune the move if opponent RBN   is under discovered attack after the exchanges and we might capture it possibly with check
+                 Bitboard targets = pos.pieces(~us, KING, QUEEN) | (pos.pieces(~us, ROOK, BISHOP, KNIGHT) & pos.state()->checkSquares[QUEEN]);
                  Bitboard attacks = 0;
                  occupied |= to_sq(move);
                  while (targets && !attacks)
                  {
                       Square sq = pop_lsb(targets);
                       attacks = pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
-                      PieceType target = type_of(pos.piece_on(sq));
-                      if (attacks && target != KING)
+                      if (attacks && sq != pos.square<KING>(~us))
                       {
                           // don't consider pieces which were already threatened/hanging before SEE exchanges
                           // N.B.: by having multiple attacks (2%) second condition turns to be true by ~98%
                           if (more_than_one(attacks) || (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us)))
                              attacks = 0;
-                          Bitboard b = occupied;
-                          if (attacks && (((target < BISHOP && !(pos.state()->checkSquares[type_of(pos.piece_on(lsb(attacks)))] & sq))) ||
-                                       !pos.see_ge(make_move(lsb(attacks), sq), b)))
-                              attacks = 0;
                       }
                  }
                  if (!attacks)
