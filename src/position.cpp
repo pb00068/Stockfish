@@ -315,17 +315,15 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info() const {
 
-  Bitboard dummy;
-  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK], dummy);
-  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE], dummy);
-
+  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK], false);
+  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE], false);
   st->queenXRay = 0;
+
   if (pieces(sideToMove, QUEEN)) {
-     Square s = lsb(pieces(sideToMove, QUEEN));
-     slider_blockers(pieces(~sideToMove), s, dummy, st->queenXRay);
-//     if (st->queenXRay) {
-//         sync_cout << *this << Bitboards::pretty(st->queenXRay) << sync_endl;
-//     }
+     Bitboard dummy;
+     st->queenXRay = slider_blockers(pieces(~sideToMove, ROOK, BISHOP), lsb(pieces(sideToMove, QUEEN)), dummy, true);
+     //if (st->queenXRay) sync_cout << *this << Bitboards::pretty(st->queenXRay) << sync_endl;
+
   }
 
 
@@ -460,7 +458,7 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& queenXRay) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, bool queen) const {
 
   Bitboard blockers = 0;
   pinners = 0;
@@ -477,14 +475,34 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 
     if (b && !more_than_one(b))
     {
-        blockers |= b;
-        if (b & pieces(color_of(piece_on(s))))
+        if (queen)
+        {
+          // blocker is enemy piece
+          if (!(b & pieces(sideToMove)))
+          {
+            Square pawnsq = lsb(b);
+            // ignore pawns which can't discover
+            if (type_of(piece_on(pawnsq)) == PAWN)
+            {
+              if (file_of(s) == file_of(sniperSq)) {
+                 if (!(pieces(sideToMove) & pawn_attacks_bb(~sideToMove, pawnsq)))
+                   continue;
+              }
+              else if ((pieces() & (pawnsq + pawn_push(~sideToMove))))
+                  continue;
+            }
+            blockers |= LineBB[s][sniperSq];
+          }
+        }
+        else {
+          blockers |= b;
+          if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
-        else if (type_of(piece_on(s)) == QUEEN)
-          queenXRay = (attacks_bb<QUEEN>(s) & LineBB[s][sniperSq]) | s;
+        }
     }
   }
   return blockers;
+
 }
 
 
