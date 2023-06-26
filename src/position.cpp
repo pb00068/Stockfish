@@ -485,11 +485,13 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
             // ignore pawns which can't discover
             if (type_of(piece_on(pawnsq)) == PAWN)
             {
-              if (file_of(s) == file_of(sniperSq)) {
+              if (file_of(s) == file_of(sniperSq))
+              {
                  if (!(pieces(sideToMove) & pawn_attacks_bb(~sideToMove, pawnsq)))
                    continue;
-              }
-              else if ((pieces() & (pawnsq + pawn_push(~sideToMove))))
+              } // if no push, no capture
+              else if (((pieces() & (pawnsq + pawn_push(~sideToMove)))) &&
+                 !(pieces(sideToMove) & pawn_attacks_bb(~sideToMove, pawnsq)))
                   continue;
             }
             blockers |= LineBB[s][sniperSq];
