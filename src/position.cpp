@@ -315,13 +315,13 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info() const {
 
-  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK], false);
-  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE], false);
+  st->blockersForKing[WHITE] = slider_blockers<false>(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK]);
+  st->blockersForKing[BLACK] = slider_blockers<false>(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE]);
   st->queenXRay = 0;
 
   if (pieces(sideToMove, QUEEN)) {
      Bitboard dummy;
-     st->queenXRay = slider_blockers(pieces(~sideToMove, ROOK, BISHOP), lsb(pieces(sideToMove, QUEEN)), dummy, true);
+     st->queenXRay = slider_blockers<true>(pieces(~sideToMove, ROOK, BISHOP), lsb(pieces(sideToMove, QUEEN)), dummy);
      //if (st->queenXRay) sync_cout << *this << Bitboards::pretty(st->queenXRay) << sync_endl;
 
   }
@@ -458,7 +458,8 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, bool queen) const {
+template<bool queen>
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
 
   Bitboard blockers = 0;
   pinners = 0;
