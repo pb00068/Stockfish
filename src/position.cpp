@@ -315,8 +315,19 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 void Position::set_check_info() const {
 
-  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK]);
-  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE]);
+  Bitboard dummy;
+  st->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), st->pinners[BLACK], dummy);
+  st->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), st->pinners[WHITE], dummy);
+
+  st->queenXRay = 0;
+  if (pieces(sideToMove, QUEEN)) {
+     Square s = lsb(pieces(sideToMove, QUEEN));
+     slider_blockers(pieces(~sideToMove), s, dummy, st->queenXRay);
+//     if (st->queenXRay) {
+//         sync_cout << *this << Bitboards::pretty(st->queenXRay) << sync_endl;
+//     }
+  }
+
 
   Square ksq = square<KING>(~sideToMove);
 
@@ -449,7 +460,7 @@ string Position::fen() const {
 /// a pinned or a discovered check piece, according if its color is the opposite
 /// or the same of the color of the slider.
 
-Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const {
+Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Bitboard& queenXRay) const {
 
   Bitboard blockers = 0;
   pinners = 0;
@@ -469,6 +480,8 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
         blockers |= b;
         if (b & pieces(color_of(piece_on(s))))
             pinners |= sniperSq;
+        else if (type_of(piece_on(s)) == QUEEN)
+          queenXRay = (attacks_bb<QUEEN>(s) & LineBB[s][sniperSq]) | s;
     }
   }
   return blockers;
