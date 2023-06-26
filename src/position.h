@@ -313,7 +313,7 @@ inline Bitboard Position::blockers_for_king(Color c) const {
 }
 
 inline Bitboard Position::pinners(Color c) const {
-  return st->pinners[c] & pieces(c);
+  return st->pinners[c];
 }
 
 inline Bitboard Position::check_squares(PieceType pt) const {
