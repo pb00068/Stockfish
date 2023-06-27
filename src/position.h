@@ -54,6 +54,7 @@ struct StateInfo {
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
+  Bitboard   queenXRay; // squares where our Queen is under XRayAttack
   Bitboard   checkSquares[PIECE_TYPE_NB];
   Piece      capturedPiece;
   int        repetition;
@@ -118,7 +119,7 @@ public:
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
-  Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, bool queen) const;
+  template<bool queen> Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners) const;
   template<PieceType Pt> Bitboard attacks_by(Color c) const;
 
   // Properties of moves
