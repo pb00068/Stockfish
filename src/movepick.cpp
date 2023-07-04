@@ -61,9 +61,9 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
-                                                             const Move* killers)
+                                                             const Move* killers, Move captKill)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, captKiller(captKill), depth(d)
 {
   assert(d > 0);
 
@@ -75,8 +75,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
-                                                             Square rs)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), ttMove(ttm), recaptureSquare(rs), depth(d)
+                                                             Square rs, Move captKill)
+           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch), ttMove(ttm), captKiller(captKill), recaptureSquare(rs), depth(d)
 {
   assert(d <= 0);
 
@@ -87,8 +87,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
-           : pos(p), captureHistory(cph), ttMove(ttm), threshold(th)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph, Move captKill)
+           : pos(p), captureHistory(cph), ttMove(ttm), captKiller(captKill), threshold(th)
 {
   assert(!pos.checkers());
 
@@ -122,8 +122,13 @@ void MovePicker::score() {
 
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
-          m.value =  (7 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
-                   +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))]) / 16;
+      {
+          m.value = (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
+          if (m.value < 0 && m == captKiller)
+              m.value = 0;
+          m.value += 7 * int(PieceValue[MG][pos.piece_on(to_sq(m))]);
+          m.value /= 16;
+      }
 
       else if constexpr (Type == QUIETS)
           m.value =  2 * (*mainHistory)[pos.side_to_move()][from_to(m)]
