@@ -626,7 +626,9 @@ namespace {
             if (ttValue >= beta)
             {
                 // Bonus for a quiet ttMove that fails high (~2 Elo)
-                if (!ttCapture)
+                if (ttCapture)
+                    ss->killerCapture = ttMove;
+                else
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of the previous ply (~0 Elo on STC, ~2 Elo on LTC)
@@ -1463,7 +1465,11 @@ moves_loop: // When in check, search starts here
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race or if !ttHit
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
+    {
+        if (pos.capture_stage(ttMove))
+           ss->killerCapture = ttMove;
         return ttValue;
+    }
 
     // Step 4. Static evaluation of the position
     if (ss->inCheck)
