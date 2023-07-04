@@ -593,7 +593,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
-    (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
+    (ss+2)->killers[0]   = (ss+2)->killers[1] =  (ss+2)->killerCapture = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
@@ -855,7 +855,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory, ss->killerCapture);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
@@ -914,7 +914,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, ss->killerCapture);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1515,7 +1515,7 @@ moves_loop: // When in check, search starts here
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
-                                      prevSq);
+                                      prevSq, ss->killerCapture);
 
     int quietCheckEvasions = 0;
 
@@ -1725,6 +1725,7 @@ moves_loop: // When in check, search starts here
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
+        ss->killerCapture = bestMove;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
