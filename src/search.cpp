@@ -628,7 +628,7 @@ namespace {
                 // Bonus for a quiet ttMove that fails high (~2 Elo)
                 if (ttCapture)
                 {
-                  if (depth < 4)
+                  if (tte->depth() < 2)
                    ss->killerCapture = ttMove;
                 }
                 else
@@ -1734,7 +1734,7 @@ moves_loop: // When in check, search starts here
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << bonus1;
-        if (depth < 4)
+        if (depth < 2)
             ss->killerCapture = bestMove;
     }
 

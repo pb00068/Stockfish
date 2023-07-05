@@ -125,7 +125,7 @@ void MovePicker::score() {
       {
           m.value = (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
           if (m.value < 0 && m == captKiller)
-              m.value = 100;
+              m.value = 32;
           m.value += 7 * int(PieceValue[MG][pos.piece_on(to_sq(m))]);
           m.value /= 16;
       }
