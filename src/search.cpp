@@ -630,12 +630,7 @@ namespace {
                 {
                   if (tte->depth() < 5 &&
                       thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] < -440)
-                  {
-                  	dbg_mean_of(thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))]);
-                  	dbg_hit_on(true, 0);
-
                       thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] << stat_bonus(depth);
-                  }
                 }
                 else
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
