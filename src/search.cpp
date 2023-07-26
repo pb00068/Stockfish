@@ -1715,11 +1715,11 @@ moves_loop: // When in check, search starts here
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bestMoveBonus);
         }
     }
-    else if (!ss->ttHit || captureCount)
+    else
     {
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
-        captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << ((ss->ttHit && !captureCount && !quietCount) ? stat_bonus(depth) : quietMoveBonus);
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
