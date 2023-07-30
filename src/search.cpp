@@ -628,8 +628,8 @@ namespace {
                 // Bonus for a quiet ttMove that fails high (~2 Elo)
                 if (ttCapture)
                 {
-                   if (thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] < stat_bonus(depth)/2)
-                       thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] = stat_bonus(depth);
+                   if (thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] < stat_bonus(depth+1))
+                       thisThread->captureHistory[pos.moved_piece(ttMove)][to_sq(ttMove)][type_of(pos.piece_on(to_sq(ttMove)))] = stat_bonus(depth+1);
                 }
                 else
                     update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
@@ -750,8 +750,8 @@ namespace {
     }
 
     // Set up the improving flag, which is true if current static evaluation is
-    // bigger than the previous static evaluation at our turn (if we were in 
-    // check at our previous move we look at static evaluaion at move prior to it
+    // bigger than the previous static evaluation at our turn (if we were in
+    // check at our previous move we look at static evaluation at move prior to it
     // and if we were in check at move prior to it flag is set to true) and is
     // false otherwise. The improving flag is used in various pruning heuristics.
     improving =   (ss-2)->staticEval != VALUE_NONE ? ss->staticEval > (ss-2)->staticEval
