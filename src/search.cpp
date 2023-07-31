@@ -1719,8 +1719,7 @@ moves_loop: // When in check, search starts here
     {
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
-        if (captureCount > 1 || captured != QUEEN)
-            captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
+        captureHistory[moved_piece][to_sq(bestMove)][captured] << ((!captureCount && captured >= ROOK) ? stat_bonus(depth)/2 : quietMoveBonus);
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
