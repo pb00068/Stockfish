@@ -1140,12 +1140,13 @@ bool Position::see_ge(Move m, Value threshold) const {
       }
   }
 
-  if (!res && threshold < 0 && (piece_on(to) || (blockers_for_king(~sideToMove) & from)))
+  if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied;
       Bitboard attacks = 0;
       occupied |= to_sq(m);
-      while (leftEnemies && !attacks)
+      bool rooksVerified = false;
+      while (leftEnemies)
       {
           Square sq = pop_lsb(leftEnemies);
           attacks |= attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
@@ -1154,6 +1155,13 @@ bool Position::see_ge(Move m, Value threshold) const {
               attacks = 0;
           if (attacks)
              return true;
+          if (!leftEnemies && !rooksVerified)
+          {
+              rooksVerified = true;
+              // Consider Rooks only if connected with King so that they can be captured either with check (tempo gain) or with Bishop
+              if (attacks_bb<ROOK>(square<KING>(~sideToMove), occupied) & pieces(~sideToMove, ROOK))
+                 leftEnemies = pieces(~sideToMove, ROOK) & occupied;
+          }
       }
   }
 
