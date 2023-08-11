@@ -1140,27 +1140,28 @@ bool Position::see_ge(Move m, Value threshold) const {
       }
   }
 
-  if (!res && threshold < 0 && piece_on(to))
+  if (!res && threshold < 0 && !piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied;
-      Bitboard attacks = 0;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied;
       occupied |= to_sq(m);
-      bool rooksVerified = false;
+      bool bnVerified = false;
       while (leftEnemies)
       {
           Square sq = pop_lsb(leftEnemies);
-          attacks |= attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
+          Bitboard attacks = attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
           // Don't consider pieces that were already threatened/hanging before SEE exchanges
-          if (attacks && (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove))))
+          if (attacks && (more_than_one(attacks) || (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove)))))
               attacks = 0;
           if (attacks)
-             return true;
-          if (!leftEnemies && !rooksVerified)
           {
-              rooksVerified = true;
-              // Consider Rooks only if connected with King so that they can be captured either with check (tempo gain) or with Bishop
-              if (attacks_bb<ROOK>(square<KING>(~sideToMove), occupied) & pieces(~sideToMove, ROOK))
-                 leftEnemies = pieces(~sideToMove, ROOK) & occupied;
+             if (!bnVerified || see_ge(make_move(lsb(attacks), sq), VALUE_ZERO + 1))
+                return true;
+          }
+          if (!leftEnemies && !bnVerified)
+          {
+              bnVerified = true;
+              // Consider BISHOP, KNIGHT only if connected with King so that they can be captured either with check (tempo gain) or with Bishop
+              leftEnemies = attacks_bb<ROOK>(square<KING>(~sideToMove), occupied) & pieces(~sideToMove, BISHOP, KNIGHT) & occupied;
           }
       }
   }
