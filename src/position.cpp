@@ -1140,7 +1140,7 @@ bool Position::see_ge(Move m, Value threshold) const {
       }
   }
 
-  if (!res && threshold < 0 && piece_on(to))
+  if (!res && threshold < 0 && (piece_on(to) || (blockers_for_king(~sideToMove) & from)))
   {
       Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied;
       Bitboard attacks = 0;
