@@ -1038,7 +1038,7 @@ Key Position::key_after(Move m) const {
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
 
-bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
+bool Position::see_ge(Move m, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1057,7 +1057,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       return true;
 
   assert(color_of(piece_on(from)) == sideToMove);
-  occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
+  Bitboard occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
@@ -1133,15 +1133,31 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       else // KING
            // If we "capture" with the king but opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+      {
+          if (attackers & ~pieces(stm))
+               res = res ^ 1;
+          break;
+      }
+  }
+
+  if (!res && threshold < 0 && piece_on(to))
+  {
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied;
+      Bitboard attacks = 0;
+      occupied |= to_sq(m);
+      while (leftEnemies && !attacks)
+      {
+          Square sq = pop_lsb(leftEnemies);
+          attacks |= attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
+          // Don't consider pieces that were already threatened/hanging before SEE exchanges
+          if (attacks && (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove))))
+              attacks = 0;
+          if (attacks)
+             return true;
+      }
   }
 
   return bool(res);
-}
-
-bool Position::see_ge(Move m, Value threshold) const {
-    Bitboard occupied;
-    return see_ge(m, occupied, threshold);
 }
 
 
