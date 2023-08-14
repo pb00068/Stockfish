@@ -1140,9 +1140,9 @@ bool Position::see_ge(Move m, Value threshold) const {
       }
   }
 
-  if (!res && threshold <= VALUE_ZERO + 1  && piece_on(to))
+  if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied;
       occupied |= to_sq(m);
       while (leftEnemies)
       {
