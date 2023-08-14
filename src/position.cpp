@@ -1059,9 +1059,11 @@ bool Position::see_ge(Move m, Value threshold) const {
   assert(color_of(piece_on(from)) == sideToMove);
   Bitboard occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
   Color stm = sideToMove;
-  Bitboard attackers = attackers_to(to, occupied);
+  Bitboard origAttackers;
+  Bitboard attackers = origAttackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
+  bool firstTakeBack = true;
 
   while (true)
   {
@@ -1136,13 +1138,17 @@ bool Position::see_ge(Move m, Value threshold) const {
       {
           if (attackers & ~pieces(stm))
              res = res ^ 1;
-                break;
+          else if (firstTakeBack)
+             occupied ^= stmAttackers;
+          break;
       }
+
+      firstTakeBack = false;
   }
 
   if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied & (~origAttackers);
       occupied |= to_sq(m);
       while (leftEnemies)
       {
