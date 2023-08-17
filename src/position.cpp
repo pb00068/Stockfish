@@ -1150,8 +1150,16 @@ bool Position::see_ge(Move m, Value threshold) const {
       occupied |= to_sq(m);
       while (leftEnemies)
       {
-          if (attackers_to(pop_lsb(leftEnemies), occupied) & pieces(sideToMove) & occupied)
-             return true;
+       Square sq = pop_lsb(leftEnemies);
+       Bitboard attacks = attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
+       // Don't consider pieces that were already threatened/hanging before SEE exchanges
+       if (attacks && (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove))))
+       {
+          st->captureTargets |= sq;
+          continue;
+       }
+       if (attacks)
+            return true;
       }
   }
 
