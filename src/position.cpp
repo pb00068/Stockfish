@@ -1037,8 +1037,12 @@ Key Position::key_after(Move m) const {
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given threshold. We'll use an
 /// algorithm similar to alpha-beta pruning with a null window.
-
 bool Position::see_ge(Move m, Value threshold) const {
+    Bitboard occupied;
+    return see_ge(m, occupied, threshold);
+}
+
+bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
 
   assert(is_ok(m));
 
@@ -1057,10 +1061,10 @@ bool Position::see_ge(Move m, Value threshold) const {
       return true;
 
   assert(color_of(piece_on(from)) == sideToMove);
-  Bitboard occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
+  occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
   Color stm = sideToMove;
-  Bitboard origAttackers;
-  Bitboard attackers = origAttackers = attackers_to(to, occupied);
+  Bitboard retakers;
+  Bitboard attackers = retakers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
 
@@ -1143,19 +1147,23 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & ~origAttackers;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & ~retakers;
       occupied |= to_sq(m);
       while (leftEnemies)
       {
           Square sq = pop_lsb(leftEnemies);
           Bitboard attacks = attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
-          if (attacks && more_than_one(attacks))
-              continue;
           // Don't consider pieces that were already threatened/hanging before SEE exchanges
           if (attacks && (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove))))
               continue;
+
           if (attacks)
-             return true;
+          {
+             if (sq != square<KING>(~sideToMove))
+                 return see_ge(make_move(lsb(attacks), sq), occupied, VALUE_ZERO + 1);
+             else
+                 return true;
+          }
       }
   }
 
