@@ -1063,7 +1063,6 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard attackers = origAttackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
-  bool firstTakeBack = true;
 
   while (true)
   {
@@ -1138,17 +1137,13 @@ bool Position::see_ge(Move m, Value threshold) const {
       {
           if (attackers & ~pieces(stm))
              res = res ^ 1;
-          else if (firstTakeBack)
-             occupied ^= stmAttackers;
           break;
       }
-
-      firstTakeBack = false;
   }
 
   if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN) & occupied & (~origAttackers);
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & (~origAttackers);
       occupied |= to_sq(m);
       while (leftEnemies)
       {
