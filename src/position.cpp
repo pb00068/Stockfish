@@ -686,7 +686,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   std::memcpy(&newSt, st, offsetof(StateInfo, key));
   newSt.previous = st;
   st = &newSt;
-  st->captureTargets = 0;
 
   // Increment ply counters. In particular, rule50 will be reset to zero later on
   // in case of a capture or a pawn move.
@@ -726,7 +725,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   if (captured)
   {
       Square capsq = to;
-      st->previous->captureTargets |= capsq;
 
       // If the captured piece is a pawn, update pawn hash key, otherwise
       // update non-pawn material.
@@ -975,7 +973,6 @@ void Position::do_null_move(StateInfo& newSt) {
 
   newSt.previous = st;
   st = &newSt;
-  st->captureTargets = 0;
 
   st->dirtyPiece.dirty_num = 0;
   st->dirtyPiece.piece[0] = NO_PIECE; // Avoid checks in UpdateAccumulator()
@@ -1062,8 +1059,8 @@ bool Position::see_ge(Move m, Value threshold) const {
   assert(color_of(piece_on(from)) == sideToMove);
   Bitboard occupied = pieces() ^ from ^ to; // xoring to is important for pinned piece logic
   Color stm = sideToMove;
-  Bitboard recapturers;
-  Bitboard attackers = recapturers = attackers_to(to, occupied);
+  Bitboard origAttackers;
+  Bitboard attackers = origAttackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   int res = 1;
 
@@ -1146,11 +1143,18 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   if (!res && threshold < 0 && piece_on(to))
   {
-      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & ~recapturers & ~st->captureTargets;
+      Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & ~origAttackers;
       occupied |= to_sq(m);
       while (leftEnemies)
       {
-          if (attackers_to(pop_lsb(leftEnemies), occupied) & pieces(sideToMove) & occupied)
+          Square sq = pop_lsb(leftEnemies);
+          Bitboard attacks = attackers_to(sq, occupied) & pieces(sideToMove) & occupied;
+          if (attacks && more_than_one(attacks))
+              continue;
+          // Don't consider pieces that were already threatened/hanging before SEE exchanges
+          if (attacks && (sq != square<KING>(~sideToMove) && (attackers_to(sq, pieces()) & pieces(sideToMove))))
+              continue;
+          if (attacks)
              return true;
       }
   }

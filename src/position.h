@@ -49,7 +49,6 @@ struct StateInfo {
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
   Bitboard   checkersBB;
-  Bitboard   captureTargets;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];
