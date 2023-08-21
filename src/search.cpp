@@ -776,8 +776,8 @@ namespace {
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
         && (ss-1)->statScore < 17329
-        &&  eval >= beta - 10
-        &&  eval >= ss->staticEval - 10
+        &&  eval >= beta - 20
+        &&  eval >= ss->staticEval - 20
         &&  ss->staticEval >= beta - 21 * depth + 258
         && !excludedMove
         &&  pos.non_pawn_material(us)
