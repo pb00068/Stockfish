@@ -1145,7 +1145,7 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
       }
   }
 
-  if (!res && threshold < 0 && piece_on(to))
+  if (!res && threshold == 1 && piece_on(to))
   {
       Bitboard leftEnemies = pieces(~sideToMove, KING, QUEEN, ROOK) & occupied & ~retakers;
       occupied |= to_sq(m);
@@ -1159,7 +1159,6 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
 
           if (attacks)
              return true;
-
       }
   }
 
