@@ -1158,12 +1158,8 @@ bool Position::see_ge(Move m, Bitboard& occupied, Value threshold) const {
               continue;
 
           if (attacks)
-          {
-             if (sq != square<KING>(~sideToMove))
-                 return see_ge(make_move(lsb(attacks), sq), occupied, VALUE_ZERO + 1);
-             else
-                 return true;
-          }
+             return true;
+
       }
   }
 
