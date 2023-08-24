@@ -308,8 +308,6 @@ inline Key Position::key() const {
   return adjust_key50<false>(st->key);
 }
 
-
-
 template<bool AfterMove>
 inline Key Position::adjust_key50(Key k) const
 {

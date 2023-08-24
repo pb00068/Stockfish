@@ -787,14 +787,13 @@ namespace {
         assert(eval - beta >= 0);
 
         bool ok  = true;
-        if(!ss->ttHit) {
-          bool hit;
-          TTEntry* ttentry = TT.probe(pos.keyafterNullmove(), hit);
-          if (hit) {
-              Value ttval = value_from_tt(ttentry->value(), ss->ply, pos.rule50_count());
-              if (  ttval != VALUE_NONE && (ttentry->bound() & (ttval > -eval ? BOUND_LOWER : BOUND_UPPER)))
-                 ok = -ttval >= beta && -ttval >= ss->staticEval;
-          }
+        bool hit;
+        TTEntry* ttentry = TT.probe(pos.keyafterNullmove(), hit);
+        if (hit)
+        {
+           Value ttval = value_from_tt(ttentry->value(), ss->ply, pos.rule50_count());
+           if (  ttval != VALUE_NONE && (ttentry->bound() & (ttval > -eval ? BOUND_LOWER : BOUND_UPPER)))
+              ok = -ttval >= beta && -ttval >= ss->staticEval;
         }
 
 
@@ -1487,9 +1486,7 @@ moves_loop: // When in check, search starts here
             // ttValue can be used as a better position evaluation (~13 Elo)
             if (    ttValue != VALUE_NONE
                 && (tte->bound() & (ttValue > bestValue ? BOUND_LOWER : BOUND_UPPER)))
-            {
                 bestValue = ttValue;
-            }
         }
         else
             // In case of null move search use previous static eval with a different sign
