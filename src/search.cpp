@@ -792,7 +792,7 @@ namespace {
           TTEntry* ttentry = TT.probe(pos.keyafterNullmove(), hit);
           if (hit) {
               Value ttval = value_from_tt(ttentry->value(), ss->ply, pos.rule50_count());
-              if (  ttval != VALUE_NONE && (ttentry->bound() & (-ttval > eval ? BOUND_LOWER : BOUND_UPPER)))
+              if (  ttval != VALUE_NONE && (ttentry->bound() & (ttval > -eval ? BOUND_LOWER : BOUND_UPPER)))
                  ok = -ttval >= beta && -ttval >= ss->staticEval;
           }
         }
