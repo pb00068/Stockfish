@@ -141,6 +141,7 @@ public:
   // Accessing hash keys
   Key key() const;
   Key key_after(Move m) const;
+  Key keyafterNullmove() const;
   Key material_key() const;
 
   // Other properties of the position
@@ -306,6 +307,8 @@ inline Bitboard Position::check_squares(PieceType pt) const {
 inline Key Position::key() const {
   return adjust_key50<false>(st->key);
 }
+
+
 
 template<bool AfterMove>
 inline Key Position::adjust_key50(Key k) const
