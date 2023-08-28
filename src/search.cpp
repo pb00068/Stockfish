@@ -1712,18 +1712,13 @@ moves_loop: // When in check, search starts here
               (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
                   thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
 
-           if (is_ok((ss-4)->currentMove) &&
-               (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-4)->currentMove)))
-                  thisThread->clearingHistory[us][from_sq((ss-4)->currentMove)] << quietMoveBonus;
-
            if (is_ok((ss-1)->currentMove) &&
               (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-1)->currentMove)))
                   thisThread->clearingHistory[~us][from_sq((ss-1)->currentMove)] << -bestMoveBonus;
-
-           if (is_ok((ss-3)->currentMove) &&
-              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-3)->currentMove)))
-                  thisThread->clearingHistory[~us][from_sq((ss-3)->currentMove)] << -bestMoveBonus;
         }
+        else if (is_ok((ss-2)->currentMove) && to_sq(bestMove) == from_sq((ss-2)->currentMove))
+              thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
+
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
