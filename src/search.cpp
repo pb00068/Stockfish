@@ -1706,13 +1706,24 @@ moves_loop: // When in check, search starts here
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
 
-        if (is_ok((ss-2)->currentMove) && type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING  // slider
-           && (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
-             thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
+        if (type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING)  // slider
+        {
+           if (is_ok((ss-2)->currentMove) &&
+              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
+                  thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
 
-        if (is_ok((ss-1)->currentMove) && type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING  // slider
-                  && (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-1)->currentMove)))
-            thisThread->clearingHistory[~us][from_sq((ss-1)->currentMove)] << -bestMoveBonus;
+           if (is_ok((ss-4)->currentMove) &&
+               (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-4)->currentMove)))
+                  thisThread->clearingHistory[us][from_sq((ss-4)->currentMove)] << quietMoveBonus;
+
+           if (is_ok((ss-1)->currentMove) &&
+              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-1)->currentMove)))
+                  thisThread->clearingHistory[~us][from_sq((ss-1)->currentMove)] << -bestMoveBonus;
+
+           if (is_ok((ss-3)->currentMove) &&
+              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-3)->currentMove)))
+                  thisThread->clearingHistory[~us][from_sq((ss-3)->currentMove)] << -bestMoveBonus;
+        }
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
