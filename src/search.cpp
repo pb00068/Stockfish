@@ -909,7 +909,7 @@ moves_loop: // When in check, search starts here
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->clearingHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
@@ -1706,6 +1706,12 @@ moves_loop: // When in check, search starts here
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
 
+        if (is_ok((ss-2)->currentMove) && type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING  // slider
+           && (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
+        {
+             thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << stat_bonus(depth + 2);
+        }
+
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
@@ -1719,6 +1725,7 @@ moves_loop: // When in check, search starts here
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
     }
+
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.

@@ -59,6 +59,7 @@ void Thread::clear() {
 
   counterMoves.fill(MOVE_NONE);
   mainHistory.fill(0);
+  clearingHistory.fill(0);
   captureHistory.fill(0);
 
   for (bool inCheck : { false, true })
@@ -204,6 +205,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
       th->rootMoves = rootMoves;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);
       th->rootState = setupStates->back();
+      th->clearingHistory.fill(0);
   }
 
   main()->start_searching();

@@ -57,12 +57,12 @@ namespace {
 /// ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh, const ClearingHistory* clh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
                                                              const Move* killers)
-           : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
+           : pos(p), mainHistory(mh), clearHistory(clh), captureHistory(cph), continuationHistory(ch),
              ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
 {
   assert(d > 0);
@@ -134,6 +134,7 @@ void MovePicker::score() {
 
           // histories
           m.value =  2 * (*mainHistory)[pos.side_to_move()][from_to(m)];
+          m.value +=     (*clearHistory)[pos.side_to_move()][from_sq(m)];
           m.value += 2 * (*continuationHistory[0])[pc][to];
           m.value +=     (*continuationHistory[1])[pc][to];
           m.value +=     (*continuationHistory[3])[pc][to];
