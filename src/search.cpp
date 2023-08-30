@@ -1694,7 +1694,7 @@ moves_loop: // When in check, search starts here
     Thread* thisThread = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
-    PieceType captured;
+    PieceType captured = NO_PIECE_TYPE;
 
     int quietMoveBonus = stat_bonus(depth + 1);
 
@@ -1705,20 +1705,6 @@ moves_loop: // When in check, search starts here
 
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
-
-        if (type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING)  // slider
-        {
-           if (is_ok((ss-2)->currentMove) &&
-              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
-                  thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
-
-           if (is_ok((ss-1)->currentMove) &&
-              (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-1)->currentMove)))
-                  thisThread->clearingHistory[~us][from_sq((ss-1)->currentMove)] << -bestMoveBonus;
-        }
-        else if (is_ok((ss-2)->currentMove) && to_sq(bestMove) == from_sq((ss-2)->currentMove))
-              thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << quietMoveBonus;
-
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1734,6 +1720,17 @@ moves_loop: // When in check, search starts here
         captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
     }
 
+    if (type_of(moved_piece) > KNIGHT && type_of(moved_piece) != KING)  // slider
+    {
+       if (!captured && is_ok((ss-2)->currentMove) &&
+          (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-2)->currentMove)))
+              thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << stat_bonus(depth);
+       if (is_ok((ss-1)->currentMove) && !pos.captured_piece() &&
+           (between_bb(from_sq(bestMove), to_sq(bestMove)) | from_sq((ss-1)->currentMove)))
+               thisThread->clearingHistory[~us][from_sq((ss-1)->currentMove)] << -quietMoveBonus;
+    }
+    else if (!captured && is_ok((ss-2)->currentMove) && to_sq(bestMove) == from_sq((ss-2)->currentMove))
+           thisThread->clearingHistory[us][from_sq((ss-2)->currentMove)] << stat_bonus(depth);
 
     // Extra penalty for a quiet early move that was not a TT move or
     // main killer move in previous ply when it gets refuted.
