@@ -173,11 +173,6 @@ void Search::init() {
 
   for (int i = 1; i < MAX_MOVES; ++i)
       Reductions[i] = int((20.57 + std::log(Threads.size()) / 2) * std::log(i));
-
-
-//  for (int y : {14, 26, 44, 0, -1, -2 , -3 , -4, -6, -10}) {
-//  	sync_cout << y - (y % 4) << sync_endl;
-//  }
 }
 
 
