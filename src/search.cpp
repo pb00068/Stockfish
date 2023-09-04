@@ -173,6 +173,11 @@ void Search::init() {
 
   for (int i = 1; i < MAX_MOVES; ++i)
       Reductions[i] = int((20.57 + std::log(Threads.size()) / 2) * std::log(i));
+
+
+//  for (int y : {14, 26, 44, 0, -1, -2 , -3 , -4, -6, -10}) {
+//  	sync_cout << y - (y % 4) << sync_endl;
+//  }
 }
 
 
@@ -405,15 +410,20 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-
+                  alpha = bestValue - delta;
+                  if (Threads.size() > 1 && delta > 4)
+                      alpha -= (alpha % 4);
+                  alpha = std::max(alpha, -VALUE_INFINITE);
                   failedHighCnt = 0;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  beta = bestValue + delta;
+                  if (Threads.size() > 1 && delta > 4)
+                    beta -= (beta % 4);
+                  beta = std::min(beta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
