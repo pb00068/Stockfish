@@ -134,7 +134,7 @@ namespace {
   void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
+                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth, bool givesCheck);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
   // to the given depth are generated and counted, and the sum is returned.
@@ -554,7 +554,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, priorCapture, singularQuietLMR;
+    bool givesCheck, improving, priorCapture, singularQuietLMR, bmgivesCheck;
     bool capture, moveCountPruning, ttCapture;
     Piece movedPiece;
     int moveCount, captureCount, quietCount;
@@ -917,6 +917,7 @@ moves_loop: // When in check, search starts here
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
+    bmgivesCheck = false;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
@@ -1300,6 +1301,7 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              bmgivesCheck = givesCheck;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
@@ -1360,7 +1362,7 @@ moves_loop: // When in check, search starts here
     // If there is a move that produces search value greater than alpha we update the stats of searched moves
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq,
-                         quietsSearched, quietCount, capturesSearched, captureCount, depth);
+                         quietsSearched, quietCount, capturesSearched, captureCount, depth, bmgivesCheck);
 
     // Bonus for prior countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
@@ -1696,13 +1698,13 @@ moves_loop: // When in check, search starts here
   // update_all_stats() updates stats at the end of search() when a bestMove is found
 
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
-                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
+                        Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth, bool givesCheck) {
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
-    PieceType captured;
+    PieceType captured = NO_PIECE_TYPE;
 
     int quietMoveBonus = stat_bonus(depth + 1);
 
@@ -1736,6 +1738,8 @@ moves_loop: // When in check, search starts here
             update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, -quietMoveBonus);
 
     // Decrease stats for all non-best capture moves
+    // unless quiet move gives check
+    if (captured || givesCheck)
     for (int i = 0; i < captureCount; ++i)
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
