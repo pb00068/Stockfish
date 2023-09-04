@@ -1704,8 +1704,8 @@ moves_loop: // When in check, search starts here
     Thread* thisThread = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
-    PieceType captured = NO_PIECE_TYPE;
-    bool localCheck = givesCheck && prevSq != SQ_NONE && type_of(pos.piece_on(prevSq)) == KING;
+    PieceType captured;
+
 
     int quietMoveBonus = stat_bonus(depth + 1);
 
@@ -1716,12 +1716,13 @@ moves_loop: // When in check, search starts here
 
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
+        bool localCheck = givesCheck && prevSq != SQ_NONE && type_of(pos.piece_on(prevSq)) == KING;
 
         // Decrease stats for all non-best quiet moves
-        if (!localCheck)
         for (int i = 0; i < quietCount; ++i)
         {
-            thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bestMoveBonus;
+            if (!localCheck)
+               thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bestMoveBonus;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bestMoveBonus);
         }
     }
@@ -1741,7 +1742,6 @@ moves_loop: // When in check, search starts here
 
     // Decrease stats for all non-best capture moves
     // unless best move is a special check
-    if (!localCheck)
     for (int i = 0; i < captureCount; ++i)
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
