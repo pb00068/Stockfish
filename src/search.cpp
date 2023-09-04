@@ -1739,7 +1739,7 @@ moves_loop: // When in check, search starts here
 
     // Decrease stats for all non-best capture moves
     // unless quiet move gives check
-    if (captured || givesCheck)
+    if (captured || !givesCheck)
     for (int i = 0; i < captureCount; ++i)
     {
         moved_piece = pos.moved_piece(capturesSearched[i]);
