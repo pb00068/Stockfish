@@ -405,38 +405,24 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  for (Thread* th : Threads)
-                  {
-                     if (th == this)
-                       continue;
-                     if (th->alphaAF.load(std::memory_order_relaxed) == alpha)
-                        alpha += 1;
-                  }
-                  alphaAF = alpha;
+                  alpha = bestValue - delta;
+                  if (Threads.size() > 1 && delta > 4)
+                      alpha -= (alpha % 4);
+                  alpha = std::max(alpha, -VALUE_INFINITE);
                   failedHighCnt = 0;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  for (Thread* th : Threads)
-                  {
-                     if (th == this)
-                         continue;
-                     if (th->betaAF.load(std::memory_order_relaxed) == beta)
-                         beta -= 1;
-                  }
-                  betaAF = beta;
+                  beta = bestValue + delta;
+                  if (Threads.size() > 1 && delta > 4)
+                    beta -= (beta % 4);
+                  beta = std::min(beta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
-              {
-                  alphaAF = VALUE_INFINITE;
-                  betaAF = -VALUE_INFINITE;
                   break;
-              }
 
               delta += delta / 3;
 
