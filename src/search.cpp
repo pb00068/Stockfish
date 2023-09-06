@@ -375,6 +375,7 @@ void Thread::search() {
           {
               // Adjust the effective depth searched, but ensure at least one effective increment for every
               // four searchAgain steps (see issue #2717).
+              failH_PV = 0;
               Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
@@ -413,7 +414,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  int estimation = (bestValue - beta) / std::max(failH_PV/3, 1);
+                  beta = std::min(beta + estimation + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
               else
@@ -1081,7 +1083,11 @@ moves_loop: // When in check, search starts here
               // that multiple moves fail high, and we can prune the whole subtree by returning
               // a softbound.
               else if (singularBeta >= beta)
+              {
+                if (PvNode)
+                   thisThread->failH_PV++;
                   return singularBeta;
+              }
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension) (~7 Elo)
               else if (ttValue >= beta)
@@ -1308,6 +1314,8 @@ moves_loop: // When in check, search starts here
               {
                   ss->cutoffCnt += 1 + !ttMove;
                   assert(value >= beta); // Fail high
+                  if (PvNode)
+                    thisThread->failH_PV++;
                   break;
               }
               else
@@ -1495,6 +1503,8 @@ moves_loop: // When in check, search starts here
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
+            if (PvNode)
+              thisThread->failH_PV++;
             return bestValue;
         }
 
@@ -1613,7 +1623,11 @@ moves_loop: // When in check, search starts here
                 if (value < beta) // Update alpha here!
                     alpha = value;
                 else
+                {
+                  if (PvNode)
+                     thisThread->failH_PV++;
                     break; // Fail high
+                }
             }
         }
     }
