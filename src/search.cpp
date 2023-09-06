@@ -414,7 +414,7 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  int estimation = (bestValue - beta) / std::max(failH_PV/3, 1);
+                  int estimation = std::max(int(bestValue - beta) - 2 * failH_PV, 0);
                   beta = std::min(beta + estimation + delta, VALUE_INFINITE);
                   ++failedHighCnt;
               }
