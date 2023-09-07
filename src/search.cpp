@@ -362,6 +362,22 @@ void Thread::search() {
           alpha = std::max(prev - delta,-VALUE_INFINITE);
           beta  = std::min(prev + delta, VALUE_INFINITE);
 
+          for (Thread* th : Threads)
+          {
+            if (th == this)
+              continue;
+            int ttalpha = th->talpha.load(std::memory_order_relaxed);
+            int ttbeta  = th->tbeta. load(std::memory_order_relaxed);
+            if (abs (ttalpha - alpha) <= 16 && abs (ttbeta - beta) <= 16)
+            {
+                 alpha = Value(ttalpha);
+                 beta  = Value(ttbeta);
+                 break;
+            }
+          }
+          talpha = alpha;
+          tbeta = beta;
+
           // Adjust optimism based on root move's previousScore
           int opt = 109 * prev / (std::abs(prev) + 141);
           optimism[ us] = Value(opt);
@@ -406,14 +422,6 @@ void Thread::search() {
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-                  for (Thread* th : Threads)
-                  {
-                     if (th == this)
-                       continue;
-                     if (th->alphaAF.load(std::memory_order_relaxed) == alpha)
-                        alpha += 1;
-                  }
-                  alphaAF = alpha;
                   failedHighCnt = 0;
                   if (mainThread)
                       mainThread->stopOnPonderhit = false;
@@ -421,20 +429,12 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
-                  for (Thread* th : Threads)
-                  {
-                     if (th == this)
-                         continue;
-                     if (th->betaAF.load(std::memory_order_relaxed) == beta)
-                         beta -= 1;
-                  }
-                  betaAF = beta;
                   ++failedHighCnt;
               }
               else
               {
-                  alphaAF = VALUE_INFINITE;
-                  betaAF = -VALUE_INFINITE;
+                  talpha = VALUE_INFINITE;
+                  tbeta = -VALUE_INFINITE;
                   break;
               }
 
