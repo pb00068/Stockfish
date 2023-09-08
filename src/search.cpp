@@ -362,13 +362,14 @@ void Thread::search() {
           alpha = std::max(prev - delta,-VALUE_INFINITE);
           beta  = std::min(prev + delta, VALUE_INFINITE);
 
+          if (!pvIdx)
           for (Thread* th : Threads)
           {
             if (th == this)
               continue;
             int ttalpha = th->talpha.load(std::memory_order_relaxed);
             int ttbeta  = th->tbeta. load(std::memory_order_relaxed);
-            if (abs (ttalpha - alpha) <= 16 && abs (ttbeta - beta) <= 16)
+            if (abs(ttalpha - alpha) <= 64 && abs(ttbeta - beta) <= 64 && ttalpha < prev && prev < ttbeta)
             {
                  alpha = Value(ttalpha);
                  beta  = Value(ttbeta);
@@ -432,11 +433,7 @@ void Thread::search() {
                   ++failedHighCnt;
               }
               else
-              {
-                  talpha = VALUE_INFINITE;
-                  tbeta = -VALUE_INFINITE;
                   break;
-              }
 
               delta += delta / 3;
 
@@ -1272,6 +1269,12 @@ moves_loop: // When in check, search starts here
                                     thisThread->rootMoves.end(), move);
 
           rm.averageScore = rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
+
+          if (moveCount >= (int)(thisThread->rootMoves.size() / 4))
+          {
+              thisThread->talpha = VALUE_INFINITE;
+              thisThread->tbeta = -VALUE_INFINITE;
+          }
 
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)
