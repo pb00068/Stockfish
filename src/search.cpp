@@ -361,25 +361,19 @@ void Thread::search() {
           delta = Value(10) + int(prev) * prev / 15799;
           alpha = std::max(prev - delta,-VALUE_INFINITE);
           beta  = std::min(prev + delta, VALUE_INFINITE);
-          int mask = 0;
+
           for (Thread* th : Threads)
           {
             if (th == this)
               continue;
             int ttalpha = th->talpha.load(std::memory_order_relaxed);
             int ttbeta  = th->tbeta. load(std::memory_order_relaxed);
-            if (abs (ttalpha - alpha) <= 24 && ttalpha < beta)
+            if (abs (ttalpha - alpha) <= 16 && abs (ttbeta - beta) <= 16)
             {
-                alpha = Value(ttalpha);
-                mask |= 1;
+                 alpha = Value(ttalpha);
+                 beta  = Value(ttbeta);
+                 break;
             }
-            if (abs (ttbeta - beta) <= 24 && ttbeta > alpha)
-            {
-               beta  = Value(ttbeta);
-               mask |= 2;
-            }
-            if (mask == 3)
-              break;
           }
           talpha = alpha;
           tbeta = beta;
