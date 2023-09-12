@@ -731,6 +731,12 @@ namespace {
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos);
+        else if (pos.state()->key % 10 == 0 && ss->staticEval == (ss-2)->staticEval && depth > 5)
+        {
+           ss->staticEval = eval = evaluate(pos);
+           if (ss->staticEval == (ss-2)->staticEval)
+               ss->staticEval = ss->staticEval + 1;
+        }
         else if (PvNode)
             Eval::NNUE::hint_common_parent_position(pos);
 
@@ -741,7 +747,10 @@ namespace {
     }
     else
     {
-        ss->staticEval = eval = evaluate(pos);
+        if ((ss-2)->staticEval != VALUE_NONE && (ss-2)->moveCount > 6 && (ss-1)->moveCount > 6 && pos.state()->key % 10 == 0)
+           ss->staticEval = eval = (ss-2)->staticEval;
+        else
+           ss->staticEval = eval = evaluate(pos);
         // Save static evaluation into the transposition table
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
