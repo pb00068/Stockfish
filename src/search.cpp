@@ -731,10 +731,10 @@ namespace {
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos);
-        else if (pos.state()->key % 10 == 0 && ss->staticEval == (ss-2)->staticEval && depth > 5)
+        else if (pos.state()->key % 10 == 0 && ss->staticEval == -(ss-1)->staticEval && depth > 3)
         {
            ss->staticEval = eval = evaluate(pos);
-           if (ss->staticEval == (ss-2)->staticEval)
+           if (ss->staticEval == -(ss-1)->staticEval)
                ss->staticEval = ss->staticEval + 1;
         }
         else if (PvNode)
@@ -747,8 +747,10 @@ namespace {
     }
     else
     {
-        if ((ss-2)->staticEval != VALUE_NONE && (ss-2)->moveCount > 6 && (ss-1)->moveCount > 6 && pos.state()->key % 10 == 0)
-           ss->staticEval = eval = (ss-2)->staticEval;
+        if ((ss-1)->moveCount > 12 && pos.state()->key % 10 == 0 && ((ss-1)->staticEval + (ss-2)->staticEval) < -80 )
+        {
+           ss->staticEval = eval = -(ss-1)->staticEval;
+        }
         else
            ss->staticEval = eval = evaluate(pos);
         // Save static evaluation into the transposition table
