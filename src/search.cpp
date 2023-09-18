@@ -1565,15 +1565,15 @@ moves_loop: // When in check, search starts here
             if (quietCheckEvasions > 1)
                 break;
 
-            // Continuation history based pruning (~3 Elo)
-            if (   !capture
+            // Continuation history based pruning (~3 Elo) & SEE based pruning (~5 Elo)
+            if ((   !capture
                 && (*contHist[0])[pos.moved_piece(move)][to_sq(move)] < 0
-                && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 0)
+                && (*contHist[1])[pos.moved_piece(move)][to_sq(move)] < 0) ||
+                !pos.see_ge(move, Value(-95)))
+            {
+                bestValue = alpha;
                 continue;
-
-            // Do not search moves with bad enough SEE values (~5 Elo)
-            if (!pos.see_ge(move, Value(-95)))
-                continue;
+            }
         }
 
         // Speculative prefetch as early as possible
