@@ -1535,7 +1535,7 @@ moves_loop: // When in check, search starts here
         capture = pos.capture_stage(move);
 
         moveCount++;
-        bool negSeeTried = false;
+        Value passedSEEVal = -VALUE_INFINITE;
 
         // Step 6. Pruning.
         if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -1577,7 +1577,7 @@ moves_loop: // When in check, search starts here
                         continue;
                     }
                     else
-                      negSeeTried = true;
+                        passedSEEVal = (alpha - futilityBase) * 4;
                 }
             }
 
@@ -1594,7 +1594,7 @@ moves_loop: // When in check, search starts here
                 continue;
 
             // Do not search moves with bad enough SEE values (~5 Elo)
-            if (!negSeeTried && !pos.see_ge(move, Value(-95)))
+            if (passedSEEVal < -95 && !pos.see_ge(move, Value(-95)))
                 continue;
         }
 
