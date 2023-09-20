@@ -133,6 +133,7 @@ public:
                                            Square);
   MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
   Move next_move(bool skipQuiets = false);
+  int generatedMoves();
 
 private:
   template<PickType T, typename Pred> Move select(Pred);
