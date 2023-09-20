@@ -290,6 +290,7 @@ void Thread::search() {
   for (int i = 7; i > 0; --i)
   {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
+      (ss-i)->continuationHistoryPly = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
       (ss-i)->staticEval = VALUE_NONE;
   }
 
@@ -799,7 +800,7 @@ namespace {
         Depth R = std::min(int(eval - beta) / 173, 6) + depth / 3 + 4;
 
         ss->currentMove = MOVE_NULL;
-        ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->continuationHistory = ss->continuationHistoryPly = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
 
@@ -871,7 +872,11 @@ namespace {
                 assert(pos.capture_stage(move));
 
                 ss->currentMove = move;
-                ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+                ss->continuationHistory = &thisThread->continuationHistory[false]
+                                                                          [true]
+                                                                          [pos.moved_piece(move)]
+                                                                          [to_sq(move)];
+                ss->continuationHistoryPly = &thisThread->continuationHistory[true]
                                                                           [true]
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
@@ -913,7 +918,7 @@ moves_loop: // When in check, search starts here
         return probCutBeta;
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
+                                         (ss-1)->continuationHistoryPly, (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
@@ -1119,9 +1124,13 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
-      ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+      ss->continuationHistory = &thisThread->continuationHistory[false]
                                                                 [capture]
                                                                 [movedPiece]
+                                                                [to_sq(move)];
+      ss->continuationHistoryPly = &thisThread->continuationHistory[true]
+                                                                [capture]
+                                                                [pos.moved_piece(move)]
                                                                 [to_sq(move)];
 
       // Step 16. Make the move
@@ -1506,7 +1515,7 @@ moves_loop: // When in check, search starts here
     }
 
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
-                                          nullptr                   , (ss-4)->continuationHistory,
+                                         (ss-1)->continuationHistoryPly,(ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
 
     // Initialize a MovePicker object for the current position, and prepare
@@ -1597,7 +1606,11 @@ moves_loop: // When in check, search starts here
 
         // Update the current move
         ss->currentMove = move;
-        ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
+        ss->continuationHistory = &thisThread->continuationHistory[false]
+                                                                  [capture]
+                                                                  [pos.moved_piece(move)]
+                                                                  [to_sq(move)];
+        ss->continuationHistoryPly = &thisThread->continuationHistory[true]
                                                                   [capture]
                                                                   [pos.moved_piece(move)]
                                                                   [to_sq(move)];
@@ -1769,7 +1782,11 @@ moves_loop: // When in check, search starts here
         if (ss->inCheck && i > 2)
             break;
         if (is_ok((ss-i)->currentMove))
+        {
             (*(ss-i)->continuationHistory)[pc][to] << bonus;
+            if (i == 1)
+               (*(ss-i)->continuationHistoryPly)[pc][to] << bonus;
+        }
     }
   }
 
