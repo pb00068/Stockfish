@@ -966,8 +966,7 @@ moves_loop: // When in check, search starts here
           (ss+1)->pv = nullptr;
 
       ss->extension = 0;
-      if (ss->inCheck && (ss-1)->extension == 0 && depth > 6 &&
-         ((move == ttMove && tte->depth() > depth) || mp.generatedMoves() < 4))
+      if (ss->inCheck && (ss-1)->extension == 0 && (move == ttMove || mp.generatedMoves() < 5))
           ss->extension = 1;
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
