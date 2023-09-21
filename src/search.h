@@ -52,7 +52,6 @@ struct Stack {
   bool ttHit;
   int doubleExtensions;
   int cutoffCnt;
-  Depth extension;
 };
 
 

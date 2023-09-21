@@ -552,7 +552,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth newDepth;
+    Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, priorCapture, singularQuietLMR;
     bool capture, moveCountPruning, ttCapture;
@@ -965,9 +965,7 @@ moves_loop: // When in check, search starts here
       if (PvNode)
           (ss+1)->pv = nullptr;
 
-      ss->extension = 0;
-      if (ss->inCheck && (ss-1)->extension == 0 && (move == ttMove || mp.generatedMoves() < 5))
-          ss->extension = 1;
+      extension = 0;
       capture = pos.capture_stage(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
@@ -1037,7 +1035,7 @@ moves_loop: // When in check, search starts here
 
       // Step 15. Extensions (~100 Elo)
       // We take care to not overdo to avoid search getting stuck.
-      if (!ss->extension && ss->ply < thisThread->rootDepth * 2)
+      if (ss->ply < thisThread->rootDepth * 2)
       {
           // Singular extension search (~94 Elo). If all moves but one fail low on a
           // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
@@ -1065,7 +1063,7 @@ moves_loop: // When in check, search starts here
 
               if (value < singularBeta)
               {
-                  ss->extension = 1;
+                  extension = 1;
                   singularQuietLMR = !ttCapture;
 
                   // Avoid search explosion by limiting the number of double extensions
@@ -1073,7 +1071,7 @@ moves_loop: // When in check, search starts here
                       && value < singularBeta - 21
                       && ss->doubleExtensions <= 11)
                   {
-                      ss->extension = 2;
+                      extension = 2;
                       depth += depth < 13;
                   }
               }
@@ -1088,28 +1086,33 @@ moves_loop: // When in check, search starts here
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension) (~7 Elo)
               else if (ttValue >= beta)
-                  ss->extension = -2 - !PvNode;
+                  extension = -2 - !PvNode;
 
               // If we are on a cutNode, reduce it based on depth (negative extension) (~1 Elo)
               else if (cutNode)
-                  ss->extension = depth < 17 ? -3 : -1;
+                  extension = depth < 17 ? -3 : -1;
 
               // If the eval of ttMove is less than value, we reduce it (negative extension) (~1 Elo)
               else if (ttValue <= value)
-                  ss->extension = -1;
+                  extension = -1;
           }
+
+          // Check extensions (~1 Elo)
+          else if (   givesCheck
+                   && depth > 9)
+              extension = 1;
 
           // Quiet ttMove extensions (~1 Elo)
           else if (   PvNode
                    && move == ttMove
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5168)
-              ss->extension = 1;
+              extension = 1;
       }
 
       // Add extension to new depth
-      newDepth += ss->extension;
-      ss->doubleExtensions = (ss-1)->doubleExtensions + (ss->extension == 2);
+      newDepth += extension;
+      ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
       prefetch(TT.first_entry(pos.key_after(move)));
