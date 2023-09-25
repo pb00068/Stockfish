@@ -33,6 +33,7 @@ Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
 Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 Bitboard PawnAttacks[COLOR_NB][SQUARE_NB];
+Bitboard discoTargets;
 
 Magic RookMagics[SQUARE_NB];
 Magic BishopMagics[SQUARE_NB];
@@ -115,6 +116,45 @@ void Bitboards::init() {
               BetweenBB[s1][s2] |= s2;
           }
   }
+
+
+  discoTargets = 0;
+//  Hit #27: Total 408 Hits 408 Hit Rate (%) 100
+//  Hit #33: Total 370 Hits 370 Hit Rate (%) 100
+//  Hit #36: Total 356 Hits 356 Hit Rate (%) 100
+//  Hit #55: Total 330 Hits 330 Hit Rate (%) 100
+//  Hit #13: Total 325 Hits 325 Hit Rate (%) 100
+//  Hit #35: Total 248 Hits 248 Hit Rate (%) 100
+//  Hit #28: Total 147 Hits 147 Hit Rate (%) 100
+//  Hit #25: Total 120 Hits 120 Hit Rate (%) 100
+//  Hit #53: Total 109 Hits 109 Hit Rate (%) 100
+//  Hit #46: Total 89 Hits 89 Hit Rate (%) 100
+//  Hit #15: Total 89 Hits 89 Hit Rate (%) 100
+//  Hit #44: Total 82 Hits 82 Hit Rate (%) 100
+//  Hit #42: Total 72 Hits 72 Hit Rate (%) 100
+//  Hit #26: Total 64 Hits 64 Hit Rate (%) 100
+
+//  Hit #34: Total 47 Hits 47 Hit Rate (%) 100
+//  Hit #43: Total 36 Hits 36 Hit Rate (%) 100
+//  Hit #21: Total 31 Hits 31 Hit Rate (%) 100
+//  Hit #10: Total 29 Hits 29 Hit Rate (%) 100
+//  Hit #18: Total 27 Hits 27 Hit Rate (%) 100
+//  Hit #37: Total 25 Hits 25 Hit Rate (%) 100
+  discoTargets |= SQ_D4;
+  discoTargets |= SQ_B5;
+  discoTargets |= SQ_E5;
+  discoTargets |= SQ_H7;
+  discoTargets |= SQ_F2;
+  discoTargets |= SQ_D5;
+  discoTargets |= SQ_E4;
+  discoTargets |= SQ_B4;
+  discoTargets |= SQ_F7;
+  discoTargets |= SQ_G6;
+  discoTargets |= SQ_H2;
+  discoTargets |= SQ_E6;
+  discoTargets |= SQ_C6;
+  discoTargets |= SQ_C4;
+
 }
 
 namespace {

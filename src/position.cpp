@@ -481,11 +481,14 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
   return  (pawn_attacks_bb(BLACK, s)       & pieces(WHITE, PAWN))
         | (pawn_attacks_bb(WHITE, s)       & pieces(BLACK, PAWN))
         | (attacks_bb<KNIGHT>(s)           & pieces(KNIGHT))
-        | (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
-        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
+        | slider_attacks_to(s, occupied)
         | (attacks_bb<KING>(s)             & pieces(KING));
 }
 
+Bitboard Position::slider_attacks_to(Square s, Bitboard occupied) const {
+  return  (attacks_bb<  ROOK>(s, occupied) & pieces(  ROOK, QUEEN))
+        | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN));
+}
 
 /// Position::legal() tests whether a pseudo-legal move is legal
 
