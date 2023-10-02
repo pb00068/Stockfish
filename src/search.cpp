@@ -938,6 +938,7 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    Move resqued = MOVE_NONE;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -1001,8 +1002,29 @@ moves_loop: // When in check, search starts here
                   continue;
 
               // SEE based pruning for captures and checks (~11 Elo)
-              if (!pos.see_ge(move, Value(-205) * depth))
-                  continue;
+              Bitboard occupied;
+              if (!pos.see_ge(move, occupied, Value(-205) * (depth + 2 * givesCheck)))
+              {
+                  // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
+                  // Don't prune the move if opponent King is under discovered attack after or during the exchanges
+                  Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
+                  Bitboard attacks = 0;
+                  occupied |= to_sq(move);
+                  while (leftEnemies && !attacks)
+                  {
+                       Square sq = pop_lsb(leftEnemies);
+                       attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                       // don't consider pieces which were already threatened/hanging before SEE exchanges
+                       if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                           attacks = 0;
+                       else if (attacks && givesCheck && sq == pos.square<KING>(~us))
+                           attacks = 0;
+                  }
+                  if (!attacks)
+                      continue;
+                  else
+                     resqued = move;
+              }
           }
           else
           {
@@ -1302,6 +1324,11 @@ moves_loop: // When in check, search starts here
           if (value > alpha)
           {
               bestMove = move;
+              if (move == resqued)
+              {
+              	dbg_mean_of(depth, 0);
+              	dbg_mean_of(pos.non_pawn_material(), 1);
+              }
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
                   update_pv(ss->pv, move, (ss+1)->pv);
