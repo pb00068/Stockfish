@@ -451,8 +451,8 @@ void Position::update_slider_blockers(Color c) const {
 
   Square ksq =  square<KING>(c);
 
-  st->blockersForKing[c] = 0;
-  st->pinners[~c] = 0;
+  st->blockersForKing[c] =  st->kingSniperBetween[c] = 0;
+  st->pinners[~c][0] = st->pinners[~c][1] = 0;
 
   // Snipers are sliders that attack 's' when a piece and other snipers are removed
   Bitboard snipers = (  (attacks_bb<  ROOK>(ksq) & pieces(QUEEN, ROOK))
@@ -468,7 +468,12 @@ void Position::update_slider_blockers(Color c) const {
     {
         st->blockersForKing[c] |= b;
         if (b & pieces(c))
-            st->pinners[~c] |= sniperSq;
+            st->pinners[~c][0] |= sniperSq;
+    }
+    else if (b & pieces(c)) // at least 2 pieces in between with at least one of our color
+    {
+       st->kingSniperBetween[c] = b;
+       st->pinners[~c][1] |= sniperSq;
     }
   }
 }
@@ -1082,6 +1087,18 @@ bool Position::see_ge(Move m, Value threshold) const {
       {
           stmAttackers &= ~blockers_for_king(stm);
 
+          if (!stmAttackers)
+              break;
+      }
+
+      if ((st->pinners[~stm][1] & occupied)
+         && (st->kingSniperBetween[stm] & stmAttackers)
+         && !more_than_one(st->kingSniperBetween[stm] & occupied)
+         && !(st->kingSniperBetween[stm] & to))
+      {
+          // sync_cout << *this << UCI::move(m, false) <<  Bitboards::pretty(st->kingSniperBetween[stm]) << Bitboards::pretty(stmAttackers) << sync_endl
+          // TODO proper handling of pawn push on king-sniper line
+          stmAttackers &= ~st->kingSniperBetween[stm];
           if (!stmAttackers)
               break;
       }
