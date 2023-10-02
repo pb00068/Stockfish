@@ -462,7 +462,8 @@ void Position::update_slider_blockers(Color c) const {
   while (snipers)
   {
     Square sniperSq = pop_lsb(snipers);
-    Bitboard b = between_bb(ksq, sniperSq) & occupancy;
+    Bitboard bb = between_bb(ksq, sniperSq);
+    Bitboard b = bb & occupancy;
 
     if (b && !more_than_one(b))
     {
@@ -472,7 +473,7 @@ void Position::update_slider_blockers(Color c) const {
     }
     else if (b & pieces(c)) // at least 2 pieces in between with at least one of our color
     {
-       st->kingSniperBetween[c] = b;
+       st->kingSniperBetween[c] = bb ^ sniperSq;
        st->pinners[~c][1] |= sniperSq;
     }
   }
@@ -1096,8 +1097,7 @@ bool Position::see_ge(Move m, Value threshold) const {
          && !more_than_one(st->kingSniperBetween[stm] & occupied)
          && !(st->kingSniperBetween[stm] & to))
       {
-          // sync_cout << *this << UCI::move(m, false) <<  Bitboards::pretty(st->kingSniperBetween[stm]) << Bitboards::pretty(stmAttackers) << sync_endl
-          // TODO proper handling of pawn push on king-sniper line
+          //sync_cout << *this << UCI::move(m, false) <<  Bitboards::pretty(st->kingSniperBetween[stm]) << Bitboards::pretty(stmAttackers) << sync_endl;
           stmAttackers &= ~st->kingSniperBetween[stm];
           if (!stmAttackers)
               break;
