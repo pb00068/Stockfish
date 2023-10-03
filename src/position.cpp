@@ -471,10 +471,10 @@ void Position::update_slider_blockers(Color c) const {
         if (b & pieces(c))
             st->pinners[~c][0] |= sniperSq;
     }
-    else if (b & pieces(c)) // at least 2 pieces in between with at least one of our color
+    else if ((b & pieces(c)) && popcount(bb & pieces()) == 3) // 2 pieces in between (3 with sniper)with at least one of our color
     {
        st->kingSniperBetween[c] = bb ^ sniperSq;
-       st->pinners[~c][1] |= sniperSq;
+       st->pinners[~c][1] =  Bitboard(0) | sniperSq;
     }
   }
 }
@@ -1071,7 +1071,10 @@ bool Position::see_ge(Move m, Value threshold) const {
   Color stm = sideToMove;
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
-  int res = 1;
+  Bitboard repl[4];
+  int res = 1, i = 0;
+  bool replaced[2] = {false, false};
+
 
   while (true)
   {
@@ -1082,23 +1085,24 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (!(stmAttackers = attackers & pieces(stm)))
           break;
 
+      if (i < 2)
+      {
+        if ((st->kingSniperBetween[stm] & from) && !(st->kingSniperBetween[stm] & to) && !(pinners(~stm) & occupied))
+        {
+            replaced[stm] = true;
+            repl[~stm] = st->pinners[~stm][0];
+            repl[2 + stm] = st->blockersForKing[stm];
+            st->pinners[~stm][0] = st->pinners[~stm][1];
+            st->blockersForKing[stm] = st->kingSniperBetween[stm];
+        }
+      }
+      i++;
       // Don't allow pinned pieces to attack as long as there are
       // pinners on their original square.
       if (pinners(~stm) & occupied)
       {
           stmAttackers &= ~blockers_for_king(stm);
 
-          if (!stmAttackers)
-              break;
-      }
-
-      if ((st->pinners[~stm][1] & occupied)
-         && (st->kingSniperBetween[stm] & stmAttackers)
-         && !more_than_one(st->kingSniperBetween[stm] & occupied)
-         && !(st->kingSniperBetween[stm] & to))
-      {
-          //sync_cout << *this << UCI::move(m, false) <<  Bitboards::pretty(st->kingSniperBetween[stm]) << Bitboards::pretty(stmAttackers) << sync_endl;
-          stmAttackers &= ~st->kingSniperBetween[stm];
           if (!stmAttackers)
               break;
       }
@@ -1154,8 +1158,21 @@ bool Position::see_ge(Move m, Value threshold) const {
       else // KING
            // If we "capture" with the king but the opponent still has attackers,
            // reverse the result.
-          return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+      {
+          if (attackers & ~pieces(stm))
+            res ^= 1;
+          break;
+      }
   }
+
+  if (replaced[WHITE]) {
+    st->pinners[BLACK][0] = repl[BLACK];
+    st->blockersForKing[WHITE] = repl[2 + WHITE];
+  }
+  if (replaced[BLACK]) {
+     st->pinners[WHITE][0] = repl[WHITE];
+     st->blockersForKing[BLACK] = repl[2 + BLACK];
+   }
 
   return bool(res);
 }
