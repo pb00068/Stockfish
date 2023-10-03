@@ -472,11 +472,8 @@ void Position::update_slider_blockers(Color c) const {
     }
     else if (b & pieces(c)) // at least 2 pieces in between with at least one of our color
     {
-       if (!st->kingSniperBetween[c] || popcount(b) < popcount(st->kingSniperBetween[c]))
-       {
-         st->kingSniperBetween[c] = b;
-         st->pinners[~c][1] |= sniperSq;
-       }
+       st->kingSniperBetween[c] = b;
+       st->pinners[~c][1] |= sniperSq;
     }
   }
 }
