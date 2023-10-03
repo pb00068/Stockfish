@@ -1072,6 +1072,7 @@ bool Position::see_ge(Move m, Value threshold) const {
   Bitboard attackers = attackers_to(to, occupied);
   Bitboard stmAttackers, bb;
   Bitboard repl[4];
+  Bitboard left = Bitboard(0) | from;
   int res = 1, i = 0;
   bool replaced[2] = {false, false};
 
@@ -1087,7 +1088,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       if (i < 2)
       {
-        if ((st->kingSniperBetween[stm] & from) && !(st->kingSniperBetween[stm] & to) && !(pinners(~stm) & occupied))
+        if ((st->kingSniperBetween[stm] & left) && !(st->kingSniperBetween[stm] & to) && !(pinners(~stm) & occupied))
         {
             replaced[stm] = true;
             repl[~stm] = st->pinners[~stm][0];
@@ -1163,6 +1164,8 @@ bool Position::see_ge(Move m, Value threshold) const {
             res ^= 1;
           break;
       }
+
+      left |= least_significant_square_bb(bb);
   }
 
   if (replaced[WHITE]) {
