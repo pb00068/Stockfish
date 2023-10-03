@@ -1164,7 +1164,6 @@ bool Position::see_ge(Move m, Value threshold) const {
             res ^= 1;
           break;
       }
-
       left |= least_significant_square_bb(bb);
   }
 
