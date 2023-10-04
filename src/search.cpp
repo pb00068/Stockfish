@@ -1000,8 +1000,9 @@ moves_loop: // When in check, search starts here
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
                   continue;
 
+              bool isSharp = PvNode && bestMove && captureCount >= 2 && quietCount <= 1;
               // SEE based pruning for captures and checks (~11 Elo)
-              if (!pos.see_ge(move, Value(-205) * depth))
+              if (!isSharp && !pos.see_ge(move, Value(-205) * depth))
                   continue;
           }
           else
