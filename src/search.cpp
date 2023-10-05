@@ -939,7 +939,6 @@ moves_loop: // When in check, search starts here
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     int escapesCount = 0;
-    Bitboard escapesTried = 0;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -986,7 +985,7 @@ moves_loop: // When in check, search starts here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~8 Elo)
-          moveCountPruning = moveCount + ((threatenedByMinors == escapesTried) ? 2 * escapesCount : 0) >= futility_move_count(improving, depth);
+          moveCountPruning = moveCount + escapesCount >= futility_move_count(improving, depth);
 
           // Reduced depth of the next LMR search
           int lmrDepth = newDepth - r;
@@ -1328,8 +1327,9 @@ moves_loop: // When in check, search starts here
               }
           }
       }
-      escapesCount += bool(threatenedByMinors & from_sq(move));
-      escapesTried |= threatenedByMinors & from_sq(move);
+      if (threatenedByMinors & from_sq(move))
+         moveCountPruning = moveCount + ++escapesCount >= futility_move_count(improving, depth);
+
 
       // If the move is worse than some previously searched move, remember it, to update its stats later
       if (move != bestMove)
