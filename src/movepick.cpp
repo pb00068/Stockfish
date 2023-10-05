@@ -62,7 +62,7 @@ namespace {
 /// move ordering is at the current node.
 
 /// MovePicker constructor for the main search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
+MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
@@ -74,10 +74,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
 
   stage = (pos.checkers() ? EVASION_TT : MAIN_TT) +
           !(ttm && pos.pseudo_legal(ttm));
+  threatenedPieces = &threatened;
 }
 
 /// MovePicker constructor for quiescence search
-MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
+MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Square rs)
@@ -88,11 +89,12 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
   stage = (pos.checkers() ? EVASION_TT : QSEARCH_TT) +
           !(   ttm
             && pos.pseudo_legal(ttm));
+  threatenedPieces = &threatened;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
+MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Value th, const CapturePieceToHistory* cph)
            : pos(p), captureHistory(cph), ttMove(ttm), threshold(th)
 {
   assert(!pos.checkers());
@@ -100,6 +102,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
   stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm)
                              && pos.pseudo_legal(ttm)
                              && pos.see_ge(ttm, threshold));
+  threatenedPieces = &threatened;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
@@ -110,7 +113,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
+  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
@@ -120,7 +123,7 @@ void MovePicker::score() {
       threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
 
       // Pieces threatened by pieces of lesser material value
-      threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
+      *threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                        | (pos.pieces(us, ROOK)  & threatenedByMinor)
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
   }
@@ -148,7 +151,7 @@ void MovePicker::score() {
           m.value += bool(pos.check_squares(pt) & to) * 16384;
 
           // bonus for escaping from capture
-          m.value += threatenedPieces & from ?
+          m.value += *threatenedPieces & from ?
                        (pt == QUEEN && !(to & threatenedByRook)  ? 50000
                       : pt == ROOK  && !(to & threatenedByMinor) ? 25000
                       :                !(to & threatenedByPawn)  ? 15000
@@ -156,7 +159,7 @@ void MovePicker::score() {
                       :                                            0 ;
 
           // malus for putting piece en prise
-          m.value -= !(threatenedPieces & from) ?
+          m.value -= !(*threatenedPieces & from) ?
                         (pt == QUEEN ?   bool(to & threatenedByRook)  * 50000
                                        + bool(to & threatenedByMinor) * 10000
                                        + bool(to & threatenedByPawn)  * 20000
