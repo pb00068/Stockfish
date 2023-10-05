@@ -864,8 +864,8 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ss->threatenedMyMinors, ttMove, probCutBeta - ss->staticEval, &captureHistory);
-        ss->threatenedMyMinors = 0;
+        Bitboard threatenedByMinors = 0;
+        MovePicker mp(pos, threatenedByMinors, ttMove, probCutBeta - ss->staticEval, &captureHistory);
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
@@ -919,7 +919,8 @@ moves_loop: // When in check, search starts here
 
     Move countermove = prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
-    MovePicker mp(pos, ss->threatenedMyMinors, ttMove, depth, &thisThread->mainHistory,
+    Bitboard threatenedByMinors = 0;
+    MovePicker mp(pos, threatenedByMinors, ttMove, depth, &thisThread->mainHistory,
                                       &captureHistory,
                                       contHist,
                                       countermove,
@@ -938,7 +939,6 @@ moves_loop: // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    ss->threatenedMyMinors = 0;
     int escapesCount = 0;
     Bitboard escapesTried = 0;
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -987,7 +987,7 @@ moves_loop: // When in check, search starts here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~8 Elo)
-          moveCountPruning = moveCount + ((ss->threatenedMyMinors == escapesTried) ? 2 * escapesCount : 0) >= futility_move_count(improving, depth);
+          moveCountPruning = moveCount + ((threatenedByMinors == escapesTried) ? 2 * escapesCount : 0) >= futility_move_count(improving, depth);
 
           // Reduced depth of the next LMR search
           int lmrDepth = newDepth - r;
@@ -1329,8 +1329,8 @@ moves_loop: // When in check, search starts here
               }
           }
       }
-      escapesCount += bool(ss->threatenedMyMinors & from_sq(move));
-      escapesTried |= ss->threatenedMyMinors & from_sq(move);
+      escapesCount += bool(threatenedByMinors & from_sq(move));
+      escapesTried |= threatenedByMinors & from_sq(move);
 
       // If the move is worse than some previously searched move, remember it, to update its stats later
       if (move != bestMove)
@@ -1519,7 +1519,8 @@ moves_loop: // When in check, search starts here
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
     Square prevSq = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
-    MovePicker mp(pos, ss->threatenedMyMinors, ttMove, depth, &thisThread->mainHistory,
+    Bitboard threatenedByMinors = 0;
+    MovePicker mp(pos, threatenedByMinors, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       prevSq);
@@ -1528,7 +1529,6 @@ moves_loop: // When in check, search starts here
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    ss->threatenedMyMinors = 0;
     while ((move = mp.next_move()) != MOVE_NONE)
     {
         assert(is_ok(move));
