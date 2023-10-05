@@ -865,7 +865,7 @@ namespace {
         assert(probCutBeta < VALUE_INFINITE);
 
         MovePicker mp(pos, ss->threatenedMyMinors, ttMove, probCutBeta - ss->staticEval, &captureHistory);
-
+        ss->threatenedMyMinors = 0;
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
@@ -993,24 +993,26 @@ moves_loop: // When in check, search starts here
           if (   capture
               || givesCheck)
           {
+            bool skip = false;
+            if ((ss->threatenedMyMinors & from_sq(move)) && ((ss-1)->threatenedMyMinors & pos.pieces()))
+            {
+                if (pos.attackers_to(lsb((ss-1)->threatenedMyMinors & pos.pieces())) & pos.pieces(us))
+                  for (PieceType pt = type_of(movedPiece); pt < KING; ++pt) {
+                      skip |= ((ss-1)->threatenedMyMinors & pos.pieces(pt));
+                  }
+            }
+
               // Futility pruning for captures (~2 Elo)
               if (   !givesCheck
                   && lmrDepth < 7
+                  && !skip
                   && !ss->inCheck
                   && ss->staticEval + 197 + 248 * lmrDepth + PieceValue[pos.piece_on(to_sq(move))]
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 7 < alpha)
                   continue;
 
-              bool skipSee = false;
-              if ((ss->threatenedMyMinors & from_sq(move)) && ((ss-1)->threatenedMyMinors & pos.pieces()))
-              {
-                  for (PieceType pt = type_of(movedPiece); pt < KING; ++pt) {
-                      skipSee |= ((ss-1)->threatenedMyMinors & pos.pieces(pt));
-                  }
-              }
-
               // SEE based pruning for captures and checks (~11 Elo)
-              if (!skipSee && !pos.see_ge(move, Value(-205) * depth))
+              if (!skip && !pos.see_ge(move, Value(-205) * depth))
                   continue;
           }
           else
@@ -1534,6 +1536,7 @@ moves_loop: // When in check, search starts here
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
+    ss->threatenedMyMinors = 0;
     while ((move = mp.next_move()) != MOVE_NONE)
     {
         assert(is_ok(move));
