@@ -127,11 +127,11 @@ public:
                                            const PieceToHistory**,
                                            Move,
                                            const Move*);
-  MovePicker(const Position&, Bitboard& threatened, Move, Depth, const ButterflyHistory*,
+  MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Square);
-  MovePicker(const Position&, Bitboard& threatened, Move, Value, const CapturePieceToHistory*);
+  MovePicker(const Position&, Move, Value, const CapturePieceToHistory*);
   Move next_move(bool skipQuiets = false);
 
 private:

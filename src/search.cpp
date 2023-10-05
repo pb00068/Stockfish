@@ -864,8 +864,7 @@ namespace {
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        Bitboard threatenedByMinors = 0;
-        MovePicker mp(pos, threatenedByMinors, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
@@ -1519,8 +1518,7 @@ moves_loop: // When in check, search starts here
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
     Square prevSq = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
-    Bitboard threatenedByMinors = 0;
-    MovePicker mp(pos, threatenedByMinors, ttMove, depth, &thisThread->mainHistory,
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory,
                                       &thisThread->captureHistory,
                                       contHist,
                                       prevSq);

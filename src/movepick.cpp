@@ -78,7 +78,7 @@ MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Depth 
 }
 
 /// MovePicker constructor for quiescence search
-MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Depth d, const ButterflyHistory* mh,
+MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHistory* mh,
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Square rs)
@@ -89,12 +89,11 @@ MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Depth 
   stage = (pos.checkers() ? EVASION_TT : QSEARCH_TT) +
           !(   ttm
             && pos.pseudo_legal(ttm));
-  threatenedPieces = &threatened;
 }
 
 /// MovePicker constructor for ProbCut: we generate captures with SEE greater
 /// than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Value th, const CapturePieceToHistory* cph)
+MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph)
            : pos(p), captureHistory(cph), ttMove(ttm), threshold(th)
 {
   assert(!pos.checkers());
@@ -102,7 +101,6 @@ MovePicker::MovePicker(const Position& p, Bitboard& threatened, Move ttm, Value 
   stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm)
                              && pos.pseudo_legal(ttm)
                              && pos.see_ge(ttm, threshold));
-  threatenedPieces = &threatened;
 }
 
 /// MovePicker::score() assigns a numerical value to each move in a list, used
