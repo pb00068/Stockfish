@@ -201,7 +201,7 @@ Move MovePicker::select(Pred filter) {
 /// returns a new pseudo-legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
 Move MovePicker::next_move(bool skipQuiets) {
-
+  int i;
 top:
   switch (stage) {
 
@@ -264,12 +264,15 @@ top:
       [[fallthrough]];
 
   case QUIET:
-      if (select<Next>([&](){return   *cur != refutations[0].move
+      i=0;
+      while (select<Next>([&](){return   *cur != refutations[0].move
                                       && *cur != refutations[1].move
                                       && *cur != refutations[2].move;}))
       {
           if (!skipQuiets || (threatenedPieces & from_sq(*(cur - 1))))
               return *(cur - 1);
+          if (++i > 3)
+             break;
       }
 
       // Prepare the pointers to loop over the bad captures
