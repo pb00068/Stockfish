@@ -989,7 +989,7 @@ moves_loop: // When in check, search starts here
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~8 Elo)
           if (!moveCountPruning)
-               moveCountPruning = moveCount + escapesCount * (1 + !cutNode) >= futility_move_count(improving, depth);
+               moveCountPruning = moveCount >= futility_move_count(improving, depth);
 
 
           // Reduced depth of the next LMR search
@@ -1019,6 +1019,13 @@ moves_loop: // When in check, search starts here
               // Continuation history based pruning (~2 Elo)
               if (   lmrDepth < 6
                   && history < -3832 * depth)
+                  continue;
+
+              if (lmrDepth < 6
+                &&  escapesCount
+                && !bool(threatenedByMinors & from_sq(move))
+                && type_of(move) == NORMAL
+                && type_of(movedPiece) >= BISHOP)
                   continue;
 
               history += 2 * thisThread->mainHistory[us][from_to(move)];
