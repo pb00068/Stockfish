@@ -66,9 +66,9 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
-                                                             const Move* killers)
+                                                             const Move* killers, bool tthit)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), ttHit(tthit)
 {
   assert(d > 0);
 
@@ -113,6 +113,7 @@ void MovePicker::score() {
   [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
   if constexpr (Type == QUIETS)
   {
+  	  if (!ttHit) {
       Color us = pos.side_to_move();
 
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
@@ -123,6 +124,7 @@ void MovePicker::score() {
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                        | (pos.pieces(us, ROOK)  & threatenedByMinor)
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+  	  }
   }
 
   for (auto& m : *this)
@@ -147,6 +149,8 @@ void MovePicker::score() {
           // bonus for checks
           m.value += bool(pos.check_squares(pt) & to) * 16384;
 
+          if (!ttHit)
+          {
           // bonus for escaping from capture
           m.value += threatenedPieces & from ?
                        (pt == QUEEN && !(to & threatenedByRook)  ? 50000
@@ -165,6 +169,7 @@ void MovePicker::score() {
                        : pt != PAWN ?    bool(to & threatenedByPawn)  * 15000
                        :                                                0 )
                        :                                                0 ;
+          }
       }
 
       else // Type == EVASIONS
