@@ -110,7 +110,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
+  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
@@ -264,11 +264,13 @@ top:
       [[fallthrough]];
 
   case QUIET:
-      if (   !skipQuiets
-          && select<Next>([&](){return   *cur != refutations[0].move
+      if (select<Next>([&](){return   *cur != refutations[0].move
                                       && *cur != refutations[1].move
                                       && *cur != refutations[2].move;}))
-          return *(cur - 1);
+      {
+          if (!skipQuiets || (threatenedPieces & from_sq(*(cur - 1))))
+              return *(cur - 1);
+      }
 
       // Prepare the pointers to loop over the bad captures
       cur = moves;
