@@ -151,6 +151,7 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  Bitboard threatenedPieces;
 };
 
 } // namespace Stockfish

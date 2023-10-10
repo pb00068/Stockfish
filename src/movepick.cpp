@@ -110,7 +110,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
+  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
@@ -268,7 +268,7 @@ top:
                                       && *cur != refutations[1].move
                                       && *cur != refutations[2].move;}))
       {
-          if (!skipQuiets || (cur - 1)->value > 2000)
+          if (!skipQuiets || (threatenedPieces & from_sq(*(cur - 1))))
               return *(cur - 1);
       }
 
