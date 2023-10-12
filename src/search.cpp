@@ -608,7 +608,7 @@ namespace {
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
     ss->statScore        = 0;
-    ss->threatsMap[PAWN] = ss->threatsMap[KNIGHT] = ss->threatsMap[BISHOP] = ss->threatsMap[ROOK] = ss->threatsMap[QUEEN] = ss->threatsMap[KING] = 0;
+    (ss+2)->threatsMap[PAWN] = (ss+2)->threatsMap[KNIGHT] = (ss+2)->threatsMap[BISHOP] =(ss+2)->threatsMap[ROOK] = (ss+2)->threatsMap[QUEEN] = (ss+2)->threatsMap[KING] = 0;
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
@@ -929,7 +929,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers, ss->threatsMap);
+                                      ss->killers, (ss+2)->threatsMap);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
