@@ -126,7 +126,7 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           const Move*);
+                                           const Move*, Bitboard* threatsMap);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
@@ -150,6 +150,7 @@ private:
   Square recaptureSquare;
   Value threshold;
   Depth depth;
+  Bitboard* threatsMap;
   ExtMove moves[MAX_MOVES];
 };
 

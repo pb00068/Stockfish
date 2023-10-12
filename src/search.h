@@ -52,6 +52,7 @@ struct Stack {
   bool ttHit;
   int doubleExtensions;
   int cutoffCnt;
+  Bitboard threatsMap[PIECE_TYPE_NB];
 };
 
 

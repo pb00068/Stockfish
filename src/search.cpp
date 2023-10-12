@@ -608,6 +608,7 @@ namespace {
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     Square prevSq        = is_ok((ss-1)->currentMove) ? to_sq((ss-1)->currentMove) : SQ_NONE;
     ss->statScore        = 0;
+    ss->threatsMap[PAWN] = ss->threatsMap[KNIGHT] = ss->threatsMap[BISHOP] = ss->threatsMap[ROOK] = ss->threatsMap[QUEEN] = ss->threatsMap[KING] = 0;
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
@@ -881,6 +882,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
+                ss->threatsMap[type_of(pos.moved_piece(move))] |= from_sq(move);
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -927,7 +929,7 @@ moves_loop: // When in check, search starts here
                                       &captureHistory,
                                       contHist,
                                       countermove,
-                                      ss->killers);
+                                      ss->killers, ss->threatsMap);
 
     value = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1007,6 +1009,8 @@ moves_loop: // When in check, search starts here
               // SEE based pruning for captures and checks (~11 Elo)
               if (!pos.see_ge(move, Value(-205) * depth))
                   continue;
+
+              ss->threatsMap[type_of(movedPiece)] |= from_sq(move);
           }
           else
           {
@@ -1595,6 +1599,7 @@ moves_loop: // When in check, search starts here
             // Do not search moves with bad enough SEE values (~5 Elo)
             if (!pos.see_ge(move, Value(-95)))
                 continue;
+            ss->threatsMap[type_of(pos.moved_piece(move))] |= from_sq(move);
         }
 
         // Speculative prefetch as early as possible
