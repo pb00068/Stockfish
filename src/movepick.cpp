@@ -165,8 +165,7 @@ void MovePicker::score() {
                        : pt != PAWN ?    bool(to & threatenedByPawn)  * 15000
                        :                                                0 )
                        :                                                0 ;
-          // encourage move to squares that possibly creates a new threat
-          m.value += threatsMap[pt] & to ? 7000 : 0;
+          m.value += threatsMap[pt] & to ? 6000 : 0;
       }
 
       else // Type == EVASIONS
