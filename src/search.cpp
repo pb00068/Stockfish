@@ -1789,20 +1789,18 @@ moves_loop: // When in check, search starts here
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
-    if (bonus < 0)
-      return;
-
-    Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
-    thisThread->mainHistory[us][from_to(move)] << bonus;
-    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
-
     // Update countermove history
     if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
+    if (bonus <= 0)
+      return;
+
+    thisThread->mainHistory[pos.side_to_move()][from_to(move)] << bonus;
+    update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
   }
 
   // When playing with strength handicap, choose the best move among a set of RootMoves
