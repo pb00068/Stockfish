@@ -1744,6 +1744,8 @@ moves_loop: // When in check, search starts here
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
+        if (type_of(moved_piece) > PAWN)
+           thisThread->mainHistory[us][from_to(make_move(to_sq(bestMove), from_sq(bestMove)))] << quietMoveBonus;
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
