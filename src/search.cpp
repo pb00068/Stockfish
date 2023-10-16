@@ -1733,7 +1733,7 @@ moves_loop: // When in check, search starts here
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
 
         // Decrease stats for all non-best quiet moves
-        for (int i = 0; i < quietCount; ++i)
+        for (int i = 0; i < quietCount && bestMoveBonus > 0; ++i)
         {
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bestMoveBonus;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]), to_sq(quietsSearched[i]), -bestMoveBonus);
@@ -1789,6 +1789,8 @@ moves_loop: // When in check, search starts here
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
     }
+    if (bonus < 0)
+      return;
 
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
