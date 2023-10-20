@@ -25,6 +25,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "uci.h"
 
 namespace Stockfish {
 
@@ -169,7 +170,9 @@ void MovePicker::score() {
                       :                                            0 )
                       :                                            0 ;
           // indifferent piece type malus for putting piece en prise
-          m.value -= bool(threatened & unprotected & to) * 9000;
+          //m.value -= bool(threatened & unprotected & to) * 9000;
+
+          int v = m.value;
 
           // malus for putting piece en prise
           m.value -= !(threatenedPieces & from) ?
@@ -181,6 +184,16 @@ void MovePicker::score() {
                        : pt != PAWN ?    bool(to & threatenedByPawn)  * 15000
                        :                                                0 )
                        :                                                0 ;
+
+          if (v == m.value && bool(threatened & unprotected & to))
+          {
+          	if (pt == KNIGHT)
+          	{
+          	    sync_cout << pos << UCI::move(m.move, false) << Bitboards::pretty(unprotected) << sync_endl;
+
+          		 	 dbg_hit_on(pos.pieces(pos.side_to_move(), ROOK) & file_of(from));
+          	}
+          }
       }
 
       else // Type == EVASIONS
