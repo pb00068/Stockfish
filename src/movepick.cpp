@@ -110,7 +110,7 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
+  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces, threatened, unprotected;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
@@ -118,15 +118,23 @@ void MovePicker::score() {
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
       threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+      threatened = threatenedByPawn | threatenedByMinor | threatenedByRook;
 
-      pos.state()->unprotected = ~(pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | pos.attacks_by<ROOK>(~us) | pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us));
+      pos.state()->unAttacked = ~(pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | pos.attacks_by<ROOK>(~us) | pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us));
 
       // Pieces threatened by pieces of lesser material value
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                        | (pos.pieces(us, ROOK)  & threatenedByMinor)
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-      if (pos.state()->previous) //handle hanging pieces
-          threatenedPieces |= (pos.state()->previous->unprotected & pos.pieces(us) & (threatenedByRook | pos.attacks_by<QUEEN>(~us)));
+
+      // and Pieces threatened by pieces of equal/bigger material value if unprotected
+      if (pos.state()->previous && !pos.captured_piece()) // previous->unAttacked are the squares most probably not protected by us
+      {
+         threatened |= pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
+         threatenedPieces |= (pos.state()->previous->unAttacked & pos.pieces(us) & threatened);
+         unprotected = pos.state()->previous->unAttacked;
+      }
+      else unprotected = 0;
 
   }
 
@@ -160,6 +168,8 @@ void MovePicker::score() {
                       :                !(to & threatenedByPawn)  ? 15000
                       :                                            0 )
                       :                                            0 ;
+          // indifferent piece type malus for putting piece en prise
+          m.value -= bool(threatened & unprotected & to) * 9000;
 
           // malus for putting piece en prise
           m.value -= !(threatenedPieces & from) ?
