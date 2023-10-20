@@ -345,7 +345,6 @@ void Position::set_state() const {
   st->key = st->materialKey = 0;
   st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
   st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
-  st->unprotected = 0;
 
   set_check_info();
 
