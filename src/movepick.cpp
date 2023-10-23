@@ -148,7 +148,7 @@ void MovePicker::score() {
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
       // and Pieces threatened by pieces of equal/bigger material value if unprotected
-      if (pos.state()->previous && !pos.captured_piece()) // previous->unAttacked are the squares most probably not protected by us
+      if (pos.state()->previous) // previous->unAttacked are the squares most probably not protected by us
       {
          threatened |= pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
          unprotected = pos.state()->previous->unAttacked;
@@ -205,9 +205,9 @@ void MovePicker::score() {
           if (v == m.value)
           {
              if (pt == PAWN && (unprotected & from) && (threatened & unprotected & to))
-                 m.value -= 6000;
+                 m.value -= 8000;
              else if (pt != PAWN && pos.state()->previous && (threatened & to) && !(pos.state()->previous->doubleAttacked & to))
-                 m.value -= 10000;
+                 m.value -= 12000;
           }
       }
 
