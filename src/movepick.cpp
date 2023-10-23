@@ -150,34 +150,32 @@ void MovePicker::score() {
   {
       Color us = pos.side_to_move();
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
-      threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
-      threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+      Bitboard knight = pos.attacks_by<KNIGHT>(~us), bishop = pos.attacks_by<BISHOP>(~us);
+      threatenedByMinor = knight | bishop | threatenedByPawn;
+      Bitboard rook = pos.attacks_by<ROOK>(~us), queen = pos.attacks_by<QUEEN>(~us), king = pos.attacks_by<KING>(~us);
+      threatenedByRook  = rook | threatenedByMinor;
       threatened = threatenedByPawn | threatenedByMinor | threatenedByRook;
-      pos.state()->doubleAttacked =  pos.attacks_by<PAWN>(~us) & pos.attacks_by<KNIGHT>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<BISHOP>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<ROOK>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<QUEEN>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<KING>(~us);
+      pos.state()->doubleAttacked =  threatenedByPawn & knight;
+      pos.state()->doubleAttacked|=  threatenedByPawn & bishop;
+      pos.state()->doubleAttacked|=  threatenedByPawn & rook;
+      pos.state()->doubleAttacked|=  threatenedByPawn & queen;
+      pos.state()->doubleAttacked|=  threatenedByPawn & king;
 
-      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<BISHOP>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<ROOK>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<QUEEN>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<KING>(~us);
+      pos.state()->doubleAttacked|=  knight & bishop;
+      pos.state()->doubleAttacked|=  knight & rook;
+      pos.state()->doubleAttacked|=  knight & queen;
+      pos.state()->doubleAttacked|=  knight & king;
 
-      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<ROOK>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<QUEEN>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<KING>(~us);
+      pos.state()->doubleAttacked|=  bishop & rook;
+      pos.state()->doubleAttacked|=  bishop & queen;
+      pos.state()->doubleAttacked|=  bishop & king;
 
-      pos.state()->doubleAttacked|=  pos.attacks_by<ROOK>(~us) & pos.attacks_by<QUEEN>(~us);
-      pos.state()->doubleAttacked|=  pos.attacks_by<ROOK>(~us) & pos.attacks_by<KING>(~us);
+      pos.state()->doubleAttacked|=  rook & queen;
+      pos.state()->doubleAttacked|=  rook & king;
 
-      pos.state()->doubleAttacked|=  pos.attacks_by<QUEEN>(~us) & pos.attacks_by<KING>(~us);
+      pos.state()->doubleAttacked|=  queen & king;
 
-      pos.state()->unAttacked = ~(pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | pos.attacks_by<ROOK>(~us) | pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us));
-
-      threatenedByPawn = pos.attacks_by<PAWN>(~us);
-      threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
-      threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+      pos.state()->unAttacked = ~(threatenedByPawn | knight | bishop | rook | queen | king);
 
       // Pieces threatened by pieces of lesser material value
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
@@ -185,9 +183,9 @@ void MovePicker::score() {
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
       // and Pieces threatened by pieces of equal/bigger material value if unprotected
-      if (pos.state()->previous) // previous->unAttacked are the squares most probably not protected by us
+      if (pos.state()->previous && !pos.captured_piece()) // previous->unAttacked are the squares most probably not protected by us
       {
-         threatened |= pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
+         threatened |= queen | king;
          unprotected = pos.state()->previous->unAttacked;
          threatenedPieces |= (unprotected & pos.pieces(us) & threatened);
       }

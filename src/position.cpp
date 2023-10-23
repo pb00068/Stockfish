@@ -342,7 +342,6 @@ void Position::set_check_info() const {
 
 void Position::set_state() const {
 
-
     st->key = st->materialKey = 0;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
@@ -454,11 +453,10 @@ void Position::update_slider_blockers(Color c) const {
 
     Square ksq = square<KING>(c);
 
-
-  st->blockersForKing[c] = 0;
-  st->pinners[~c] = 0;
-  st->unAttacked = 0;
-  st->doubleAttacked = ~Bitboard(0);
+    st->blockersForKing[c] = 0;
+    st->pinners[~c] = 0;
+    st->unAttacked = 0;
+    st->doubleAttacked = ~Bitboard(0);
 
     // Snipers are sliders that attack 's' when a piece and other snipers are removed
     Bitboard snipers = ((attacks_bb<ROOK>(ksq) & pieces(QUEEN, ROOK))
