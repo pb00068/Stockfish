@@ -120,6 +120,25 @@ void MovePicker::score() {
       threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
       threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
       threatened = threatenedByPawn | threatenedByMinor | threatenedByRook;
+      pos.state()->doubleAttacked =  pos.attacks_by<PAWN>(~us) & pos.attacks_by<KNIGHT>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<BISHOP>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<ROOK>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<QUEEN>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<PAWN>(~us) & pos.attacks_by<KING>(~us);
+
+      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<BISHOP>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<ROOK>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<QUEEN>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<KNIGHT>(~us) & pos.attacks_by<KING>(~us);
+
+      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<ROOK>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<QUEEN>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<BISHOP>(~us) & pos.attacks_by<KING>(~us);
+
+      pos.state()->doubleAttacked|=  pos.attacks_by<ROOK>(~us) & pos.attacks_by<QUEEN>(~us);
+      pos.state()->doubleAttacked|=  pos.attacks_by<ROOK>(~us) & pos.attacks_by<KING>(~us);
+
+      pos.state()->doubleAttacked|=  pos.attacks_by<QUEEN>(~us) & pos.attacks_by<KING>(~us);
 
       pos.state()->unAttacked = ~(pos.attacks_by<PAWN>(~us) | pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | pos.attacks_by<ROOK>(~us) | pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us));
 
@@ -132,8 +151,8 @@ void MovePicker::score() {
       if (pos.state()->previous && !pos.captured_piece()) // previous->unAttacked are the squares most probably not protected by us
       {
          threatened |= pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
-         threatenedPieces |= (pos.state()->previous->unAttacked & pos.pieces(us) & threatened);
          unprotected = pos.state()->previous->unAttacked;
+         threatenedPieces |= (unprotected & pos.pieces(us) & threatened);
       }
       else unprotected = 0;
 
@@ -163,16 +182,14 @@ void MovePicker::score() {
           m.value += bool(pos.check_squares(pt) & to) * 16384;
 
           // bonus for escaping from capture
+          int v = m.value;
           m.value += threatenedPieces & from ?
                        (pt == QUEEN && !(to & threatenedByRook)  ? 50000
                       : pt == ROOK  && !(to & threatenedByMinor) ? 25000
                       :                !(to & threatenedByPawn)  ? 15000
                       :                                            0 )
                       :                                            0 ;
-          // indifferent piece type malus for putting piece en prise
-          //m.value -= bool(threatened & unprotected & to) * 9000;
 
-          int v = m.value;
 
           // malus for putting piece en prise
           m.value -= !(threatenedPieces & from) ?
@@ -185,14 +202,12 @@ void MovePicker::score() {
                        :                                                0 )
                        :                                                0 ;
 
-          if (v == m.value && bool(threatened & unprotected & to))
+          if (v == m.value)
           {
-          	if (pt == KNIGHT)
-          	{
-          	    sync_cout << pos << UCI::move(m.move, false) << Bitboards::pretty(unprotected) << sync_endl;
-
-          		 	 dbg_hit_on(pos.pieces(pos.side_to_move(), ROOK) & file_of(from));
-          	}
+             if (pt == PAWN && (unprotected & from) && (threatened & unprotected & to))
+                 m.value -= 6000;
+             else if (pt != PAWN && pos.state()->previous && (threatened & to) && !(pos.state()->previous->doubleAttacked & to))
+                 m.value -= 10000;
           }
       }
 
