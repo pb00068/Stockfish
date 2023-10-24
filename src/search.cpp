@@ -94,7 +94,7 @@ constexpr int futility_move_count(bool improving, Depth depth) {
 }
 
 // History and stats update bonus, based on depth
-int stat_bonus(Depth d) { return std::min(334 * d - 531, 1538); }
+int stat_bonus(Depth d) { return std::min(std::max(334 * d - 531, 100), 1538); }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
 Value value_draw(const Thread* thisThread) {
@@ -1582,6 +1582,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         return mated_in(ss->ply);  // Plies to mate from the root
     }
+
+    if (depth == 0 && bestValue > beta + 168)
+        update_quiet_stats(pos, ss, bestMove, stat_bonus(1));
 
     // Save gathered info in transposition table
     tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
