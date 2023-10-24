@@ -171,9 +171,7 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
 
     Bitboard bb = pos.pieces(Us, Pt);
 
-    Color us = pos.side_to_move();
-
-    Bitboard threatenedByPawn = pos.attacks_by<PAWN>(~us);
+    Bitboard threatenedByPawn = pos.attacks_by<PAWN>(~Us);
 
     while (bb)
     {
