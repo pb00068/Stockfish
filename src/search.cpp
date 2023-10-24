@@ -1466,6 +1466,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                   contHist, prevSq);
 
     int quietCheckEvasions = 0;
+    bool bestIsCapture = false;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1557,6 +1558,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         if (value > bestValue)
         {
             bestValue = value;
+            bestIsCapture = capture;
 
             if (value > alpha)
             {
@@ -1583,7 +1585,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
-    if (depth == 0 && bestValue > beta + 168)
+    if (depth == 0 && bestValue > beta + 168 && !bestIsCapture)
         update_quiet_stats(pos, ss, bestMove, stat_bonus(1));
 
     // Save gathered info in transposition table
