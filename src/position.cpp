@@ -1139,7 +1139,7 @@ bool Position::see_ge(Move m, Value threshold) const {
             sliders[-2 + sliderOnTo]--;
             occupied ^= least_significant_square_bb(bb);
             sliderOnTo = BISHOP;
-            if (sliders[1] + sliders[3] > 0)
+            if (sliders[1] + sliders[3] - 1 - more_than_one(bb) > 0)
                 attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
@@ -1152,7 +1152,7 @@ bool Position::see_ge(Move m, Value threshold) const {
             sliderOnTo = ROOK;
             occupied ^= least_significant_square_bb(bb);
 
-            if (sliders[2] + sliders[3] > 0)
+            if (sliders[2] + sliders[3] - 1 - more_than_one(bb) > 0)
                 attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
@@ -1165,9 +1165,9 @@ bool Position::see_ge(Move m, Value threshold) const {
             sliderOnTo = QUEEN;
             occupied ^= least_significant_square_bb(bb);
 
-            if (sliders[1] + sliders[3] > 0)
+            if (sliders[1] + sliders[3] - 1 - more_than_one(bb) > 0)
                 attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN));
-            if (sliders[2] + sliders[3] > 0)
+            if (sliders[2] + sliders[3] - 1 - more_than_one(bb) > 0)
                 attackers |= (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
         }
 
