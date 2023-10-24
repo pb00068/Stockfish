@@ -1072,15 +1072,11 @@ bool Position::see_ge(Move m, Value threshold) const {
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
-    int      res = 1;
-    int sliders[3];
-    sliders[0] = st->numSliders[0]; // BISHOPS
-    sliders[1] = st->numSliders[1]; // ROOKS
-    sliders[2] = st->numSliders[2]; // QUEENS
-    if (type_of(piece_on(to)) > KNIGHT)
-       sliders[-3 + type_of(piece_on(to))]--;
+    int      res = 1, cycle = 0;
+    int sliders[4];
 
-    PieceType sliderOnTo = type_of(piece_on(from));
+
+    PieceType sliderOnTo = std::max(KNIGHT, type_of(piece_on(from)));
 
     while (true)
     {
@@ -1100,6 +1096,14 @@ bool Position::see_ge(Move m, Value threshold) const {
             if (!stmAttackers)
                 break;
         }
+        if (cycle++ == 0)
+        {
+          sliders[1] = st->numSliders[0]; // BISHOPS
+          sliders[2] = st->numSliders[1]; // ROOKS
+          sliders[3] = st->numSliders[2]; // QUEENS
+          if (type_of(piece_on(to)) > KNIGHT)
+             sliders[-2 + type_of(piece_on(to))]--;
+        }
 
         res ^= 1;
 
@@ -1109,11 +1113,11 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = PawnValue - swap) < res)
                 break;
-            if (sliderOnTo > KNIGHT)
-                sliders[-3 + sliderOnTo]--;
+
+            sliders[-2 + sliderOnTo]--;
             occupied ^= least_significant_square_bb(bb);
-            sliderOnTo = NO_PIECE_TYPE;
-            if (sliders[0] + sliders[2] > 0)
+            sliderOnTo = KNIGHT;
+            if (sliders[1] + sliders[3] > 0)
                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
@@ -1121,9 +1125,9 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = KnightValue - swap) < res)
                 break;
-            if (sliderOnTo > KNIGHT)
-                sliders[-3 + sliderOnTo]--;
-            sliderOnTo = NO_PIECE_TYPE;
+
+            sliders[-2 + sliderOnTo]--;
+            sliderOnTo = KNIGHT;
             occupied ^= least_significant_square_bb(bb);
         }
 
@@ -1131,11 +1135,11 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = BishopValue - swap) < res)
                 break;
-            if (sliderOnTo > KNIGHT)
-                sliders[-3 + sliderOnTo]--;
+
+            sliders[-2 + sliderOnTo]--;
             occupied ^= least_significant_square_bb(bb);
             sliderOnTo = BISHOP;
-            if (sliders[0] + sliders[2] > 0)
+            if (sliders[1] + sliders[3] > 0)
                 attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
@@ -1143,12 +1147,12 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = RookValue - swap) < res)
                 break;
-            if (sliderOnTo > KNIGHT)
-                sliders[-3 + sliderOnTo]--;
+
+            sliders[-2 + sliderOnTo]--;
             sliderOnTo = ROOK;
             occupied ^= least_significant_square_bb(bb);
 
-            if (sliders[1] + sliders[2] > 0)
+            if (sliders[2] + sliders[3] > 0)
                 attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
@@ -1156,14 +1160,14 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = QueenValue - swap) < res)
                 break;
-            if (sliderOnTo > KNIGHT)
-                sliders[-3 + sliderOnTo]--;
+
+            sliders[-2 + sliderOnTo]--;
             sliderOnTo = QUEEN;
             occupied ^= least_significant_square_bb(bb);
 
-            if (sliders[0] + sliders[2] > 0)
+            if (sliders[1] + sliders[3] > 0)
                 attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN));
-            if (sliders[1] + sliders[2] > 0)
+            if (sliders[2] + sliders[3] > 0)
                 attackers |= (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
         }
 
