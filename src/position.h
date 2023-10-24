@@ -40,6 +40,7 @@ struct StateInfo {
     // Copied when making a move
     Key    materialKey;
     Value  nonPawnMaterial[COLOR_NB];
+    int    numSliders[3]; //amount of slider pieces, 0 QUEENS, 1 ROOKS, 2 BISHOPS
     int    castlingRights;
     int    rule50;
     int    pliesFromNull;

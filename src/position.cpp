@@ -369,6 +369,10 @@ void Position::set_state() const {
     for (Piece pc : Pieces)
         for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
             st->materialKey ^= Zobrist::psq[pc][cnt];
+
+    st->numSliders[0] = popcount(pieces(BISHOP));
+    st->numSliders[1] = popcount(pieces(ROOK));
+    st->numSliders[2] = popcount(pieces(QUEEN));
 }
 
 
@@ -743,7 +747,11 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
             }
         }
         else
+        {
             st->nonPawnMaterial[them] -= PieceValue[captured];
+            if (type_of(captured) > KNIGHT) // slider
+               st->numSliders[-3 + type_of(captured)]--;
+        }
 
         dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
         dp.piece[1]  = captured;
@@ -809,6 +817,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
             remove_piece(to);
             put_piece(promotion, to);
+            if (promotion_type(m) != KNIGHT)
+               st->numSliders[-3 + promotion_type(m)]++;
 
             // Promoting pawn to SQ_NONE, promoted piece from SQ_NONE
             dp.to[0]               = SQ_NONE;
@@ -1063,6 +1073,14 @@ bool Position::see_ge(Move m, Value threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
+    int sliders[3];
+    sliders[0] = st->numSliders[0]; // BISHOPS
+    sliders[1] = st->numSliders[1]; // ROOKS
+    sliders[2] = st->numSliders[2]; // QUEENS
+    if (type_of(piece_on(to)) > KNIGHT)
+       sliders[-3 + type_of(piece_on(to))]--;
+
+    PieceType sliderOnTo = type_of(piece_on(from));
 
     while (true)
     {
@@ -1091,15 +1109,21 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = PawnValue - swap) < res)
                 break;
+            if (sliderOnTo > KNIGHT)
+                sliders[-3 + sliderOnTo]--;
             occupied ^= least_significant_square_bb(bb);
-
-            attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+            sliderOnTo = NO_PIECE_TYPE;
+            if (sliders[0] + sliders[2] > 0)
+               attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(KNIGHT)))
         {
             if ((swap = KnightValue - swap) < res)
                 break;
+            if (sliderOnTo > KNIGHT)
+                sliders[-3 + sliderOnTo]--;
+            sliderOnTo = NO_PIECE_TYPE;
             occupied ^= least_significant_square_bb(bb);
         }
 
@@ -1107,28 +1131,40 @@ bool Position::see_ge(Move m, Value threshold) const {
         {
             if ((swap = BishopValue - swap) < res)
                 break;
+            if (sliderOnTo > KNIGHT)
+                sliders[-3 + sliderOnTo]--;
             occupied ^= least_significant_square_bb(bb);
-
-            attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+            sliderOnTo = BISHOP;
+            if (sliders[0] + sliders[2] > 0)
+                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(ROOK)))
         {
             if ((swap = RookValue - swap) < res)
                 break;
+            if (sliderOnTo > KNIGHT)
+                sliders[-3 + sliderOnTo]--;
+            sliderOnTo = ROOK;
             occupied ^= least_significant_square_bb(bb);
 
-            attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
+            if (sliders[1] + sliders[2] > 0)
+                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
             if ((swap = QueenValue - swap) < res)
                 break;
+            if (sliderOnTo > KNIGHT)
+                sliders[-3 + sliderOnTo]--;
+            sliderOnTo = QUEEN;
             occupied ^= least_significant_square_bb(bb);
 
-            attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
-                       | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
+            if (sliders[0] + sliders[2] > 0)
+                attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN));
+            if (sliders[1] + sliders[2] > 0)
+                attackers |= (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
         }
 
         else  // KING
