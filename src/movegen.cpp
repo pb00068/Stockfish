@@ -171,13 +171,17 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
 
     Bitboard bb = pos.pieces(Us, Pt);
 
+    Color us = pos.side_to_move();
+
+    Bitboard threatenedByPawn = pos.attacks_by<PAWN>(~us);
+
     while (bb)
     {
         Square   from = pop_lsb(bb);
         Bitboard b    = attacks_bb<Pt>(from, pos.pieces()) & target;
 
         // To check, you either move freely a blocker or make a direct check.
-        if (Checks && (Pt == QUEEN || !(pos.blockers_for_king(~Us) & from)))
+        if (Checks && !(threatenedByPawn & from) && (Pt == QUEEN || !(pos.blockers_for_king(~Us) & from)))
             b &= pos.check_squares(Pt);
 
         while (b)
