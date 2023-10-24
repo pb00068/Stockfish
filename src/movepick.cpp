@@ -145,37 +145,40 @@ void MovePicker::score() {
 
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces, threatened, unprotected;
+  [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces, threatened, unprotected, doubleAttacked;
   if constexpr (Type == QUIETS)
   {
       Color us = pos.side_to_move();
       threatenedByPawn  = pos.attacks_by<PAWN>(~us);
-      Bitboard knight = pos.attacks_by<KNIGHT>(~us), bishop = pos.attacks_by<BISHOP>(~us);
-      threatenedByMinor = knight | bishop | threatenedByPawn;
-      Bitboard rook = pos.attacks_by<ROOK>(~us), queen = pos.attacks_by<QUEEN>(~us), king = pos.attacks_by<KING>(~us);
-      threatenedByRook  = rook | threatenedByMinor;
+
+      threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
+      threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
       threatened = threatenedByPawn | threatenedByMinor | threatenedByRook;
-      pos.state()->doubleAttacked =  threatenedByPawn & knight;
-      pos.state()->doubleAttacked|=  threatenedByPawn & bishop;
-      pos.state()->doubleAttacked|=  threatenedByPawn & rook;
-      pos.state()->doubleAttacked|=  threatenedByPawn & queen;
-      pos.state()->doubleAttacked|=  threatenedByPawn & king;
 
-      pos.state()->doubleAttacked|=  knight & bishop;
-      pos.state()->doubleAttacked|=  knight & rook;
-      pos.state()->doubleAttacked|=  knight & queen;
-      pos.state()->doubleAttacked|=  knight & king;
+      Bitboard pwn =  pos.attacks_by<PAWN>(us), knight = pos.attacks_by<KNIGHT>(us), bishop = pos.attacks_by<BISHOP>(us);
+      Bitboard rook = pos.attacks_by<ROOK>(us), queen =  pos.attacks_by<QUEEN> (us), king = pos.attacks_by<KING>(us);
 
-      pos.state()->doubleAttacked|=  bishop & rook;
-      pos.state()->doubleAttacked|=  bishop & queen;
-      pos.state()->doubleAttacked|=  bishop & king;
+      doubleAttacked =  threatenedByPawn & knight;
+      doubleAttacked|=  threatenedByPawn & bishop;
+      doubleAttacked|=  threatenedByPawn & rook;
+      doubleAttacked|=  threatenedByPawn & queen;
+      doubleAttacked|=  threatenedByPawn & king;
 
-      pos.state()->doubleAttacked|=  rook & queen;
-      pos.state()->doubleAttacked|=  rook & king;
+      doubleAttacked|=  knight & bishop;
+      doubleAttacked|=  knight & rook;
+      doubleAttacked|=  knight & queen;
+      doubleAttacked|=  knight & king;
 
-      pos.state()->doubleAttacked|=  queen & king;
+      doubleAttacked|=  bishop & rook;
+      doubleAttacked|=  bishop & queen;
+      doubleAttacked|=  bishop & king;
 
-      pos.state()->unAttacked = ~(threatenedByPawn | knight | bishop | rook | queen | king);
+      doubleAttacked|=  rook & queen;
+      doubleAttacked|=  rook & king;
+
+      doubleAttacked|=  queen & king;
+
+      unprotected = ~(pwn | knight | bishop | rook | queen | king);
 
       // Pieces threatened by pieces of lesser material value
       threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
@@ -183,13 +186,9 @@ void MovePicker::score() {
                        | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
       // and Pieces threatened by pieces of equal/bigger material value if unprotected
-      if (pos.state()->previous && !pos.captured_piece()) // previous->unAttacked are the squares most probably not protected by us
-      {
-         threatened |= queen | king;
-         unprotected = pos.state()->previous->unAttacked;
-         threatenedPieces |= (unprotected & pos.pieces(us) & threatened);
-      }
-      else unprotected = 0;
+      threatened |= pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
+      threatenedPieces |= (unprotected & pos.pieces(us) & threatened);
+
 
   }
 
@@ -242,7 +241,7 @@ void MovePicker::score() {
             {
                if (pt == PAWN && (unprotected & from) && (threatened & unprotected & to))
                    m.value -= 8000;
-               else if (pt != PAWN && pos.state()->previous && (threatened & to) && !(pos.state()->previous->doubleAttacked & to))
+               else if (pt != PAWN && (threatened & to) && !(doubleAttacked & to))
                    m.value -= 12000;
             }
         }
