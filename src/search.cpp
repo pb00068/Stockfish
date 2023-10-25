@@ -1377,7 +1377,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     Move     ttMove, move, bestMove;
     Depth    ttDepth;
     Value    bestValue, value, ttValue, futilityValue, futilityBase;
-    bool     pvHit, givesCheck, capture;
+    bool     pvHit, givesCheck, capture, escape;
     int      moveCount;
     Color    us = pos.side_to_move();
 
@@ -1466,6 +1466,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                   contHist, prevSq);
 
     int quietCheckEvasions = 0;
+    Bitboard triedEscapes = 0;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1479,8 +1480,12 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
+        escape = moveCount && (!givesCheck & !capture);
 
-        moveCount += givesCheck | capture; // left out quiete escape moves, we try them but not will prune to fast
+        if (!ss->inCheck && escape && (triedEscapes & from_sq(move)))
+           continue;
+
+        moveCount += !escape; // left out quiete escape moves, we try them but not will prune to fast
 
         // Step 6. Pruning
         if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us))
@@ -1550,6 +1555,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         pos.do_move(move, st, givesCheck);
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
         pos.undo_move(move);
+
+        if (escape)
+          triedEscapes |= from_sq(move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 

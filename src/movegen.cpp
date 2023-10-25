@@ -171,8 +171,8 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
 
     Bitboard bb = pos.pieces(Us, Pt);
 
-    Bitboard threatened = pos.attacks_by<PAWN>(~Us);
-    if (Pt > BISHOP)
+    Bitboard threatened = Pt == KNIGHT ? 0 : pos.attacks_by<PAWN>(~Us);
+    if (Pt >= ROOK)
        threatened |= pos.attacks_by<KNIGHT>(~Us) | pos.attacks_by<BISHOP>(~Us);
     if (Pt == QUEEN)
        threatened |= pos.attacks_by<ROOK>(~Us);
