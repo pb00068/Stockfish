@@ -20,9 +20,9 @@
 ### ==========================================================================
 
 ### Establish the operating system name
-KERNEL = $(shell uname -s)
+KERNEL := $(shell uname -s)
 ifeq ($(KERNEL),Linux)
-	OS = $(shell uname -o)
+	OS := $(shell uname -o)
 endif
 
 ### Target Windows OS
@@ -33,7 +33,7 @@ ifeq ($(OS),Windows_NT)
 else ifeq ($(COMP),mingw)
 	target_windows = yes
 	ifeq ($(WINE_PATH),)
-		WINE_PATH = $(shell which wine)
+		WINE_PATH := $(shell which wine)
 	endif
 endif
 
@@ -116,7 +116,7 @@ ifeq ($(ARCH),)
 endif
 
 ifeq ($(ARCH), native)
-   override ARCH = $(shell $(SHELL) ../scripts/get_native_properties.sh | cut -d " " -f 1)
+   override ARCH := $(shell $(SHELL) ../scripts/get_native_properties.sh | cut -d " " -f 1)
 endif
 
 # explicitly check for the list of supported architectures (as listed with make help),
@@ -153,7 +153,7 @@ dotprod = no
 arm_version = 0
 STRIP = strip
 
-ifneq ($(shell command -v clang-format-17),)
+ifneq ($(shell which clang-format-17 2> /dev/null),)
 	CLANG-FORMAT = clang-format-17
 else
 	CLANG-FORMAT = clang-format
@@ -542,8 +542,8 @@ endif
 
 ### Sometimes gcc is really clang
 ifeq ($(COMP),gcc)
-	gccversion = $(shell $(CXX) --version 2>/dev/null)
-	gccisclang = $(findstring clang,$(gccversion))
+	gccversion := $(shell $(CXX) --version 2>/dev/null)
+	gccisclang := $(findstring clang,$(gccversion))
 	ifneq ($(gccisclang),)
 		profile_make = clang-profile-make
 		profile_use = clang-profile-use
@@ -601,7 +601,7 @@ ifeq ($(optimize),yes)
 	endif
 
 	ifeq ($(comp),clang)
-		clangmajorversion = $(shell $(CXX) -dumpversion 2>/dev/null | cut -f1 -d.)
+		clangmajorversion := $(shell $(CXX) -dumpversion 2>/dev/null | cut -f1 -d.)
 		ifeq ($(shell expr $(clangmajorversion) \< 16),1)
 			CXXFLAGS += -fexperimental-new-pass-manager
 		endif
@@ -717,13 +717,13 @@ ifeq ($(pext),yes)
 endif
 
 ### 3.8.1 Try to include git commit sha for versioning
-GIT_SHA = $(shell git rev-parse HEAD 2>/dev/null | cut -c 1-8)
+GIT_SHA := $(shell git rev-parse HEAD 2>/dev/null | cut -c 1-8)
 ifneq ($(GIT_SHA), )
 	CXXFLAGS += -DGIT_SHA=$(GIT_SHA)
 endif
 
 ### 3.8.2 Try to include git commit date for versioning
-GIT_DATE = $(shell git show -s --date=format:'%Y%m%d' --format=%cd HEAD 2>/dev/null)
+GIT_DATE := $(shell git show -s --date=format:'%Y%m%d' --format=%cd HEAD 2>/dev/null)
 ifneq ($(GIT_DATE), )
 	CXXFLAGS += -DGIT_DATE=$(GIT_DATE)
 endif
@@ -854,7 +854,8 @@ endif
 	objclean profileclean config-sanity \
 	icx-profile-use icx-profile-make \
 	gcc-profile-use gcc-profile-make \
-	clang-profile-use clang-profile-make FORCE
+	clang-profile-use clang-profile-make FORCE \
+	format analyze
 
 analyze: net config-sanity objclean
 	$(MAKE) -k ARCH=$(ARCH) COMP=$(COMP) $(OBJS)
@@ -951,7 +952,7 @@ net: netvariables
 	fi; \
 
 format:
-	$(CLANG-FORMAT) -i $(SRCS) $(HEADERS) -style=file:../.clang-format
+	$(CLANG-FORMAT) -i $(SRCS) $(HEADERS) -style=file
 
 # default target
 default:
