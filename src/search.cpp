@@ -1578,7 +1578,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         postFetch = mp.next_move();
         if (doStep6 && postFetch == MOVE_NONE && !ss->inCheck && !qcaptures && prevSq != SQ_NONE
-             && type_of(pos.piece_on(prevSq)) != PAWN  && type_of(pos.piece_on(prevSq)) != QUEEN)
+             && type_of(pos.piece_on(prevSq)) != PAWN)
         {
            Bitboard threatened = attacks_bb(type_of(pos.piece_on(prevSq)), prevSq, pos.pieces() ^ pos.pieces(us, QUEEN));
            if (threatened & pos.pieces(us, QUEEN))
