@@ -1377,7 +1377,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     Move     ttMove, move, bestMove;
     Depth    ttDepth;
     Value    bestValue, value, ttValue, futilityValue, futilityBase;
-    bool     pvHit, givesCheck, capture, escape;
+    bool     pvHit, givesCheck, capture;
     int      moveCount;
     Color    us = pos.side_to_move();
 
@@ -1466,13 +1466,16 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                   contHist, prevSq);
 
     int quietCheckEvasions = 0;
-    Bitboard triedEscapes = 0;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != MOVE_NONE)
+    Move postFetch = MOVE_NONE;
+    bool doStep6 = true;
+    bool queenNoGoodMove = false;
+    while (postFetch ? move = postFetch : (move = mp.next_move()) != MOVE_NONE)
     {
         assert(is_ok(move));
+        postFetch = MOVE_NONE;
 
         // Check for legality
         if (!pos.legal(move))
@@ -1480,15 +1483,11 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
-        escape = moveCount && (!givesCheck & !capture);
 
-        if (!ss->inCheck && escape && (triedEscapes & from_sq(move)))
-           continue;
-
-        moveCount += !escape; // left out quiete escape moves, we try them but not will prune to fast
+        moveCount ++;
 
         // Step 6. Pruning
-        if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us))
+        if (doStep6 && bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us))
         {
             // Futility pruning and moveCount pruning (~10 Elo)
             if (!givesCheck && to_sq(move) != prevSq && futilityBase > VALUE_TB_LOSS_IN_MAX_PLY
@@ -1537,7 +1536,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
             // Do not search moves with bad enough SEE values (~5 Elo)
             if (!pos.see_ge(move, Value(-90)))
+            {
+            		queenNoGoodMove |= type_of(pos.moved_piece(move)) == QUEEN;
                 continue;
+            }
         }
 
         // Speculative prefetch as early as possible
@@ -1556,9 +1558,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
         pos.undo_move(move);
 
-        if (escape)
-          triedEscapes |= from_sq(move);
-
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
         // Step 8. Check for a new best move
@@ -1569,7 +1568,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             if (value > alpha)
             {
                 bestMove = move;
-
                 if (PvNode)  // Update pv even in fail-high case
                     update_pv(ss->pv, move, (ss + 1)->pv);
 
@@ -1578,6 +1576,21 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                 else
                     break;  // Fail high
             }
+        }
+
+        postFetch = mp.next_move();
+        if (doStep6 && postFetch == MOVE_NONE && !ss->inCheck && queenNoGoodMove && depth == 0)
+        {
+           Bitboard target = ~pos.pieces() & ~pos.check_squares(QUEEN);
+           Square s = lsb(pos.pieces(us, QUEEN));
+           Bitboard threatened = pos.attacks_by<PAWN>(~us) |  pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us);
+           //dbg_hit_on((threatened & s) && (target & ~threatened), 5);
+           if ((threatened & s) && (target & ~threatened))
+           {
+              postFetch = make_move(s, lsb(target & ~threatened)); // try one escape move
+              doStep6 = false;
+           }
+
         }
     }
 
