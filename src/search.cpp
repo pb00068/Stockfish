@@ -1471,7 +1471,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // or a beta cutoff occurs.
     Move postFetch = MOVE_NONE;
     bool doStep6 = true;
-    bool queenNoGoodMove = false;
+    int qcaptures =0;
     while (postFetch ? move = postFetch : (move = mp.next_move()) != MOVE_NONE)
     {
         assert(is_ok(move));
@@ -1483,6 +1483,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
+
 
         moveCount ++;
 
@@ -1536,10 +1537,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
             // Do not search moves with bad enough SEE values (~5 Elo)
             if (!pos.see_ge(move, Value(-90)))
-            {
-            		queenNoGoodMove |= type_of(pos.moved_piece(move)) == QUEEN;
                 continue;
-            }
         }
 
         // Speculative prefetch as early as possible
@@ -1552,7 +1550,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
              ->continuationHistory[ss->inCheck][capture][pos.moved_piece(move)][to_sq(move)];
 
         quietCheckEvasions += !capture && ss->inCheck;
-
+        qcaptures += capture && type_of(pos.moved_piece(move)) == QUEEN;
         // Step 7. Make and search the move
         pos.do_move(move, st, givesCheck);
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
@@ -1579,18 +1577,21 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         }
 
         postFetch = mp.next_move();
-        if (doStep6 && postFetch == MOVE_NONE && !ss->inCheck && queenNoGoodMove && depth == 0)
+        if (doStep6 && postFetch == MOVE_NONE && !ss->inCheck && !qcaptures && prevSq != SQ_NONE
+             && type_of(pos.piece_on(prevSq)) != PAWN  && type_of(pos.piece_on(prevSq)) != QUEEN)
         {
-           Bitboard target = ~pos.pieces() & ~pos.check_squares(QUEEN);
-           Square s = lsb(pos.pieces(us, QUEEN));
-           Bitboard threatened = pos.attacks_by<PAWN>(~us) |  pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us);
-           //dbg_hit_on((threatened & s) && (target & ~threatened), 5);
-           if ((threatened & s) && (target & ~threatened))
+           Bitboard threatened = attacks_bb(type_of(pos.piece_on(prevSq)), prevSq, pos.pieces() ^ pos.pieces(us, QUEEN));
+           if (threatened & pos.pieces(us, QUEEN))
            {
-              postFetch = make_move(s, lsb(target & ~threatened)); // try one escape move
+             Square s = lsb(pos.pieces(us, QUEEN));
+             Bitboard safe = ~pos.pieces() & ~threatened & attacks_bb(QUEEN, s, pos.pieces());
+             if (safe && !(safe & pos.check_squares(QUEEN)))
+             {
+              postFetch = make_move(s, us == WHITE ? lsb(safe) : msb(safe)); // try one escape move
+              //sync_cout << pos << UCI::move(postFetch, false) << Bitboards::pretty(safe) << " qcaptures " << qcaptures << sync_endl;
               doStep6 = false;
+              }
            }
-
         }
     }
 
