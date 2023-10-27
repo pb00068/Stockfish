@@ -524,9 +524,17 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
+    Color us           = pos.side_to_move();
+    Square prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
-        return qsearch < PvNode ? PV : NonPV > (pos, ss, alpha, beta);
+    {
+        if (prevSq != SQ_NONE && ((pos.attacks_by<PAWN>(~us) & pos.pieces(us, QUEEN)) ||
+           ( type_of(pos.piece_on(prevSq)) != PAWN && (attacks_bb(type_of(pos.piece_on(prevSq)), prevSq, pos.pieces()) & pos.pieces(us, QUEEN)))))
+           depth = 1;
+        if (depth <= 0)
+          return qsearch < PvNode ? PV : NonPV > (pos, ss, alpha, beta);
+    }
 
     // Check if we have an upcoming move that draws by repetition, or
     // if the opponent had an alternative move earlier to this position.
@@ -560,7 +568,6 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
@@ -601,7 +608,6 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = MOVE_NONE;
     (ss + 2)->cutoffCnt                         = 0;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
-    Square prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     ss->statScore = 0;
 
     // Step 4. Transposition table lookup.
