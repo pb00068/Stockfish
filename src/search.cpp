@@ -729,7 +729,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos);
-        else if (!PvNode && type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && ss->staticEval == -(ss - 1)->staticEval)
+        else if (type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && ss->staticEval == -(ss - 1)->staticEval)
         {
             ss->staticEval = eval = evaluate(pos);
             if(ss->staticEval == -(ss - 1)->staticEval)
@@ -1470,7 +1470,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         else
         {
             // In case of null move search or in case of king move (requires accumulator refresh) use previous static eval with a different sign
-            if ((ss - 1)->currentMove == MOVE_NULL || (type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1))
+            if ((ss - 1)->currentMove == MOVE_NULL
+                 || (!PvNode && type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && !(ss-1)->inCheck))
             {
                ss->staticEval = bestValue = -(ss - 1)->staticEval;
                //if (pos.captured_piece())
