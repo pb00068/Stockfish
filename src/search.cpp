@@ -729,7 +729,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
             ss->staticEval = eval = evaluate(pos);
-        else if (type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && ss->staticEval == -(ss - 1)->staticEval)
+        else if (!PvNode && type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && ss->staticEval == -(ss - 1)->staticEval)
         {
             ss->staticEval = eval = evaluate(pos);
             if(ss->staticEval == -(ss - 1)->staticEval)
