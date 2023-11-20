@@ -1445,6 +1445,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
         return ttValue;
 
+    Square     prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
+
     // Step 4. Static evaluation of the position
     if (ss->inCheck)
         bestValue = futilityBase = -VALUE_INFINITE;
@@ -1466,8 +1468,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             // In case of null move search use previous static eval with a different sign
             if ((ss - 1)->currentMove == MOVE_NULL)
                ss->staticEval = bestValue = -(ss - 1)->staticEval;
-            // king move requires accumulator refresh
-            else if (!PvNode && type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 && !(ss-1)->inCheck)
+            // king move requires accumulator refresh, so early return with fail low if stats are negative
+            else if (!PvNode && type_of(pos.state()->dirtyPiece.piece[0]) == KING && pos.state()->dirtyPiece.dirty_num == 1 &&
+              !(ss-1)->inCheck && thisThread->mainHistory[~us][from_to((ss-1)->currentMove)] < -50 && thisThread->pawnHistory[pos.state()->previous->pawnKey & (PAWN_HISTORY_SIZE - 1)][pos.state()->dirtyPiece.piece[0]][prevSq] < -50)
                return alpha;
             else
                ss->staticEval = bestValue = evaluate(pos);
@@ -1496,7 +1499,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions, and other checks (only if depth >= DEPTH_QS_CHECKS)
     // will be generated.
-    Square     prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory, prevSq);
 
