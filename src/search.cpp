@@ -1120,13 +1120,10 @@ moves_loop:  // When in check, search starts here
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
-        qcaptureTried |= capture && captureCount < 2 && type_of(pos.piece_on(to_sq(move))) == QUEEN && type_of(movedPiece) < QUEEN;
+        qcaptureTried |= capture && type_of(pos.piece_on(to_sq(move))) == QUEEN && type_of(movedPiece) < QUEEN;
 
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck);
-
-        if (!capture && !givesCheck && qcaptureTried)
-          r++;
 
         // Decrease reduction if position is or has been on the PV (~4 Elo)
         if (ss->ttPv && !likelyFailLow)
@@ -1141,7 +1138,7 @@ moves_loop:  // When in check, search starts here
             r += 2;
 
         // Increase reduction if ttMove is a capture (~3 Elo)
-        if (ttCapture)
+        if (ttCapture || (qcaptureTried && !capture && !givesCheck && type_of(movedPiece) != QUEEN))
             r++;
 
         // Decrease reduction for PvNodes (~2 Elo)
