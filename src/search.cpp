@@ -922,6 +922,7 @@ moves_loop:  // When in check, search starts here
     // at a depth equal to or greater than the current depth, and the result
     // of this search was a fail low.
     bool likelyFailLow = PvNode && ttMove && (tte->bound() & BOUND_UPPER) && tte->depth() >= depth;
+    bool qcaptureTried = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1121,6 +1122,11 @@ moves_loop:  // When in check, search starts here
 
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck);
+
+        qcaptureTried |= capture && captureCount < 2 && type_of(pos.piece_on(to_sq(move))) == QUEEN && type_of(movedPiece) < QUEEN;
+
+        if (!capture && !givesCheck && qcaptureTried)
+          r++;
 
         // Decrease reduction if position is or has been on the PV (~4 Elo)
         if (ss->ttPv && !likelyFailLow)
