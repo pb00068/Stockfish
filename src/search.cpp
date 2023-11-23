@@ -1120,10 +1120,10 @@ moves_loop:  // When in check, search starts here
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
+        qcaptureTried |= capture && captureCount < 2 && type_of(pos.piece_on(to_sq(move))) == QUEEN && type_of(movedPiece) < QUEEN;
+
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck);
-
-        qcaptureTried |= capture && captureCount < 2 && type_of(pos.piece_on(to_sq(move))) == QUEEN && type_of(movedPiece) < QUEEN;
 
         if (!capture && !givesCheck && qcaptureTried)
           r++;
