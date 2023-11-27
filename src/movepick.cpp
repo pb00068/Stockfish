@@ -148,13 +148,15 @@ void MovePicker::score() {
 
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
+    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByPawnUs, nonPawnEnemies, threatenedByMinor, threatenedByRook,
       threatenedPieces;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
 
         threatenedByPawn = pos.attacks_by<PAWN>(~us);
+        threatenedByPawnUs = pos.attacks_by<PAWN>(us);
+        nonPawnEnemies = pos.pieces(~us) & ~pos.pieces(~us, PAWN);
         threatenedByMinor =
           pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
         threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
@@ -187,6 +189,11 @@ void MovePicker::score() {
             m.value += (*continuationHistory[2])[pc][to] / 4;
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
+
+            // Bonus for safe fork (2 minors/majors) by pawn push
+            if (pt == PAWN && (threatenedByPawnUs & to) &&
+               more_than_one(pawn_attacks_bb(pos.side_to_move(), to) & nonPawnEnemies))
+                  m.value += 15000;
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;
