@@ -1119,6 +1119,14 @@ moves_loop:  // When in check, search starts here
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
+        // Increase reduction if ttMove is a capture (~3 Elo)
+        if (ttCapture)
+        {
+            r++;
+            if (capture && pos.see_ge(move, VALUE_ZERO + 1))
+              r--;
+        }
+
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck);
 
@@ -1134,9 +1142,7 @@ moves_loop:  // When in check, search starts here
         if (cutNode)
             r += 2;
 
-        // Increase reduction if ttMove is a capture and move is quiet or a 'bad' capture (~3 Elo)
-        if (ttCapture && (!capture || mp.getstage() == 6))
-            r++;
+
 
 
         // Decrease reduction for PvNodes (~2 Elo)
