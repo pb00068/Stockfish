@@ -1134,8 +1134,8 @@ moves_loop:  // When in check, search starts here
         if (cutNode)
             r += 2;
 
-        // Increase reduction if ttMove is a capture (~3 Elo)
-        if (ttCapture && !capture)
+        // Increase reduction if ttMove is a capture and move is quiete or a 'bad' capture (~3 Elo)
+        if (ttCapture && (!capture || quietCount > 1))
             r++;
 
         // Decrease reduction for PvNodes (~2 Elo)
