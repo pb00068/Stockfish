@@ -554,7 +554,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     Depth    extension, newDepth;
     Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
-    bool     capture, moveCountPruning, ttCapture;
+    bool     capture, moveCountPruning, ttCapture, ttMaterialGainingCapture;
     Piece    movedPiece;
     int      moveCount, captureCount, quietCount;
 
@@ -655,6 +655,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         if (pos.rule50_count() < 90)
             return ttValue;
     }
+
+    ttMaterialGainingCapture = ttCapture && type_of(pos.moved_piece(ttMove)) < type_of(pos.piece_on(to_sq(ttMove)));
 
     // Step 5. Tablebases probe
     if (!rootNode && !excludedMove && TB::Cardinality)
@@ -1134,8 +1136,8 @@ moves_loop:  // When in check, search starts here
         if (cutNode)
             r += 2;
 
-        // Increase reduction if ttMove is a capture and move is quiet (~3 Elo)
-        if (ttCapture && (!capture && type_of(move) != PROMOTION))
+        // Increase reduction if ttMove is a MaterialGainingCapture and move is quiet (~3 Elo)
+        if (ttMaterialGainingCapture && (!capture && type_of(move) != PROMOTION))
             r++;
 
         // Decrease reduction for PvNodes (~2 Elo)
