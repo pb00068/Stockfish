@@ -366,9 +366,4 @@ top:
     return MOVE_NONE;  // Silence warning
 }
 
-int MovePicker::getstage()
-   {
-  	 return stage;
-   }
-
 }  // namespace Stockfish
