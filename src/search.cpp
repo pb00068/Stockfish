@@ -554,7 +554,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     Depth    extension, newDepth;
     Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
-    bool     capture, moveCountPruning, ttCapture, ttMaterialGainingCapture;
+    bool     capture, moveCountPruning, ttCapture, ttMoveMaterialGaining;
     Piece    movedPiece;
     int      moveCount, captureCount, quietCount;
 
@@ -656,7 +656,14 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
             return ttValue;
     }
 
-    ttMaterialGainingCapture = ttCapture && type_of(pos.moved_piece(ttMove)) < type_of(pos.piece_on(to_sq(ttMove)));
+    ttMoveMaterialGaining = ttCapture && type_of(pos.moved_piece(ttMove)) < type_of(pos.piece_on(to_sq(ttMove)));
+    if (ttCapture && !ttMoveMaterialGaining)
+    {
+      // verify if opponent can recapture, if not then is material gaining
+      Bitboard recapturers = pos.attackers_to(to_sq(ttMove), pos.pieces() ^ from_sq(ttMove)) & pos.pieces(~us);
+      if (!recapturers)
+        ttMoveMaterialGaining = true;
+    }
 
     // Step 5. Tablebases probe
     if (!rootNode && !excludedMove && TB::Cardinality)
@@ -1136,8 +1143,8 @@ moves_loop:  // When in check, search starts here
         if (cutNode)
             r += 2;
 
-        // Increase reduction if ttMove is a MaterialGainingCapture and move is quiet (~3 Elo)
-        if (ttMaterialGainingCapture && (!capture && type_of(move) != PROMOTION))
+        // Increase reduction if ttMove is a material gaining capture and move is quiet (~3 Elo)
+        if (ttMoveMaterialGaining && (!capture && type_of(move) != PROMOTION))
             r++;
 
         // Decrease reduction for PvNodes (~2 Elo)
