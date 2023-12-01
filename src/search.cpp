@@ -627,7 +627,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
 
     if (ss->ttPv && depth > 12 && ss->ply < 5 && !priorCapture && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
+        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << 2000;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && tte->depth() > depth
@@ -1778,7 +1778,7 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, in
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if (depth > 12 && ss->ply < 4)
-       thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
+       thisThread->lowPlyHistory[ss->ply][from_to(move)] << 2000;
 
     // Update countermove history
     if (is_ok((ss - 1)->currentMove))
