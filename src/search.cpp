@@ -320,6 +320,10 @@ void Thread::search() {
                 mainThread->iterValue[i] = mainThread->bestPreviousScore;
     }
 
+    // shift values by 2 plies and zero the other 2 plies
+    std::copy(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, &lowPlyHistory[0][0]);
+    std::fill(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, 0);
+
     size_t multiPV = size_t(Options["MultiPV"]);
     Skill skill(Options["Skill Level"], Options["UCI_LimitStrength"] ? int(Options["UCI_Elo"]) : 0);
 
@@ -622,8 +626,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
 
-    if (ss->ttPv && depth > 12 && ss->ply < 5 && !pos.captured_piece() && is_ok((ss-1)->currentMove))
-        thisThread->lowPlyHistory[from_to((ss-1)->currentMove)][ss->ply - 1] << stat_bonus(depth - 5);
+    if (ss->ttPv && depth > 12 && ss->ply < 5 && !priorCapture && is_ok((ss-1)->currentMove))
+        thisThread->lowPlyHistory[ss->ply - 1][from_to((ss-1)->currentMove)] << stat_bonus(depth - 5);
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && tte->depth() > depth
@@ -1774,7 +1778,7 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, in
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if (depth > 12 && ss->ply < 4)
-       thisThread->lowPlyHistory[from_to(move)][ss->ply] << stat_bonus(depth - 7);
+       thisThread->lowPlyHistory[ss->ply][from_to(move)] << stat_bonus(depth - 7);
 
     // Update countermove history
     if (is_ok((ss - 1)->currentMove))

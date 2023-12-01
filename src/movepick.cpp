@@ -191,7 +191,7 @@ void MovePicker::score() {
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
             if (ply < 4)
-             m.value += 4 * (*lowPlyHistory)[from_to(m)][ply];
+             m.value += 8 * (*lowPlyHistory)[ply][from_to(m)];
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;
