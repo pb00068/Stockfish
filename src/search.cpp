@@ -552,7 +552,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     Key      posKey;
     Move     ttMove, move, excludedMove, bestMove;
     Depth    extension, newDepth;
-    Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
+    Value    bestValue, value, ttValue, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
     bool     capture, moveCountPruning, ttCapture;
     Piece    movedPiece;
@@ -712,7 +712,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        ss->staticEval = ss->eval = VALUE_NONE;
         improving             = false;
         goto moves_loop;
     }
@@ -721,26 +721,26 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         // Providing the hint that this node's accumulator will be used often
         // brings significant Elo gain (~13 Elo).
         Eval::NNUE::hint_common_parent_position(pos);
-        eval = ss->staticEval;
+        ss->eval = ss->staticEval;
     }
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
-        ss->staticEval = eval = tte->eval();
-        if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos);
+        ss->staticEval = ss->eval = tte->eval();
+        if (ss->eval == VALUE_NONE)
+            ss->staticEval = ss->eval = evaluate(pos);
         else if (PvNode)
             Eval::NNUE::hint_common_parent_position(pos);
 
         // ttValue can be used as a better position evaluation (~7 Elo)
-        if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
-            eval = ttValue;
+        if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > ss->eval ? BOUND_LOWER : BOUND_UPPER)))
+            ss->eval = ttValue;
     }
     else
     {
-        ss->staticEval = eval = evaluate(pos);
+        ss->staticEval = ss->eval = evaluate(pos);
         // Save static evaluation into the transposition table
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, ss->eval);
     }
 
     // Use static evaluation difference to improve quiet move ordering (~4 Elo)
@@ -748,7 +748,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     {
         int bonus = std::clamp(-18 * int((ss - 1)->staticEval + ss->staticEval), -1812, 1812);
         // don't update if ttValue tells another story (= goes in the opposite direction)
-        int bttVal = -int((ss - 1)->staticEval + eval);
+        int bttVal = -int((ss - 1)->eval + ss->eval);
         if (bonus * bttVal >= 0)
         {
             thisThread->mainHistory[~us][from_to((ss - 1)->currentMove)] << bonus;
@@ -770,7 +770,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
     // Adjust razor margin according to cutoffCnt. (~1 Elo)
-    if (eval < alpha - 474 - (270 - 174 * ((ss + 1)->cutoffCnt > 3)) * depth * depth)
+    if (ss->eval < alpha - 474 - (270 - 174 * ((ss + 1)->cutoffCnt > 3)) * depth * depth)
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
@@ -780,23 +780,23 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Step 8. Futility pruning: child node (~40 Elo)
     // The depth condition is important for mate finding.
     if (!ss->ttPv && depth < 9
-        && eval - futility_margin(depth, cutNode && !ss->ttHit, improving)
+        && ss->eval - futility_margin(depth, cutNode && !ss->ttHit, improving)
                - (ss - 1)->statScore / 321
              >= beta
-        && eval >= beta && eval < 29462  // smaller than TB wins
+        && ss->eval >= beta && ss->eval < 29462  // smaller than TB wins
         && (!ttMove || ttCapture))
-        return eval;
+        return ss->eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != MOVE_NULL && (ss - 1)->statScore < 17257 && eval >= beta
-        && eval >= ss->staticEval && ss->staticEval >= beta - 24 * depth + 281 && !excludedMove
+    if (!PvNode && (ss - 1)->currentMove != MOVE_NULL && (ss - 1)->statScore < 17257 && ss->eval >= beta
+        && ss->eval >= ss->staticEval && ss->staticEval >= beta - 24 * depth + 281 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
-        assert(eval - beta >= 0);
+        assert(ss->eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
-        Depth R = std::min(int(eval - beta) / 152, 6) + depth / 3 + 4;
+        Depth R = std::min(int(ss->eval - beta) / 152, 6) + depth / 3 + 4;
 
         ss->currentMove         = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
