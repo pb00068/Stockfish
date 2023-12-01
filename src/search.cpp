@@ -712,9 +712,13 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
-        improving             = false;
-        goto moves_loop;
+        if (ss->ttHit)
+           ss->staticEval = eval = tte->eval();
+        else
+        {
+           ss->staticEval = eval = !priorCapture && (ss - 1)->staticEval != VALUE_NONE ? -(ss - 1)->staticEval : evaluate(pos);
+           tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        }
     }
     else if (excludedMove)
     {
@@ -760,6 +764,9 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     improving = (ss - 2)->staticEval != VALUE_NONE ? ss->staticEval > (ss - 2)->staticEval
               : (ss - 4)->staticEval != VALUE_NONE ? ss->staticEval > (ss - 4)->staticEval
                                                    : true;
+
+    if (ss->inCheck)
+       goto moves_loop;
 
     // Step 7. Razoring (~1 Elo)
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
