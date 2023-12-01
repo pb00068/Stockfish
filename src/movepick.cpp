@@ -87,19 +87,22 @@ MovePicker::MovePicker(const Position&              p,
                        Move                         ttm,
                        Depth                        d,
                        const ButterflyHistory*      mh,
+                       const LowPlyHistory*         lp,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
                        Move                         cm,
-                       const Move*                  killers) :
+                       const Move*                  killers, int pl) :
     pos(p),
     mainHistory(mh),
+    lowPlyHistory(lp),
     captureHistory(cph),
     continuationHistory(ch),
     pawnHistory(ph),
     ttMove(ttm),
     refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}},
-    depth(d) {
+    depth(d),
+    ply(pl){
     assert(d > 0);
 
     stage = (pos.checkers() ? EVASION_TT : MAIN_TT) + !(ttm && pos.pseudo_legal(ttm));
@@ -187,6 +190,8 @@ void MovePicker::score() {
             m.value += (*continuationHistory[2])[pc][to] / 4;
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
+            if (ply < 4)
+             m.value += 4 * (*lowPlyHistory)[from_to(m)][ply];
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;

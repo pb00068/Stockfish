@@ -138,7 +138,7 @@ Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-void  update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
+void  update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int d);
 void  update_all_stats(const Position& pos,
                        Stack*          ss,
                        Move            bestMove,
@@ -621,6 +621,10 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     if (!excludedMove)
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
+
+    if (ss->ttPv && depth > 12 && ss->ply < 5 && !pos.captured_piece() && is_ok((ss-1)->currentMove))
+        thisThread->lowPlyHistory[from_to((ss-1)->currentMove)][ss->ply - 1] << stat_bonus(depth - 5);
+
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && tte->depth() > depth
         && ttValue != VALUE_NONE  // Possible in case of TT access race or if !ttHit
@@ -633,7 +637,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
             {
                 // Bonus for a quiet ttMove that fails high (~2 Elo)
                 if (!ttCapture)
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth), depth);
 
                 // Extra penalty for early quiet moves of
                 // the previous ply (~0 Elo on STC, ~2 Elo on LTC).
@@ -912,8 +916,8 @@ moves_loop:  // When in check, search starts here
     Move countermove =
       prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
-    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &captureHistory, contHist,
-                  &thisThread->pawnHistory, countermove, ss->killers);
+    MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory, &captureHistory, contHist,
+                  &thisThread->pawnHistory, countermove, ss->killers, ss->ply);
 
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1696,7 +1700,7 @@ void update_all_stats(const Position& pos,
                                                    : stat_bonus(depth);  // smaller bonus
 
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
+        update_quiet_stats(pos, ss, bestMove, bestMoveBonus, depth);
         thisThread->pawnHistory[pawn_structure(pos)][moved_piece][to_sq(bestMove)]
           << quietMoveBonus;
 
@@ -1755,7 +1759,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 
 // Updates move sorting heuristics
-void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
+void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus, int depth) {
 
     // Update killers
     if (ss->killers[0] != move)
@@ -1768,6 +1772,9 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
     Thread* thisThread = pos.this_thread();
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
+
+    if (depth > 12 && ss->ply < 4)
+       thisThread->lowPlyHistory[from_to(move)][ss->ply] << stat_bonus(depth - 7);
 
     // Update countermove history
     if (is_ok((ss - 1)->currentMove))

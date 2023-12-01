@@ -121,6 +121,8 @@ using ContinuationHistory = Stats<PieceToHistory, NOT_USED, PIECE_NB, SQUARE_NB>
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory = Stats<int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
+using LowPlyHistory = Stats<int16_t, 10692, int(SQUARE_NB) * int(SQUARE_NB), 4>;
+
 // MovePicker class is used to pick one pseudo-legal move at a time from the
 // current position. The most important method is next_move(), which returns a
 // new pseudo-legal move each time it is called, until there are no moves left,
@@ -140,12 +142,12 @@ class MovePicker {
     MovePicker(const Position&,
                Move,
                Depth,
-               const ButterflyHistory*,
+               const ButterflyHistory*, const LowPlyHistory*,
                const CapturePieceToHistory*,
                const PieceToHistory**,
                const PawnHistory*,
                Move,
-               const Move*);
+               const Move*, int);
     MovePicker(const Position&,
                Move,
                Depth,
@@ -167,6 +169,7 @@ class MovePicker {
 
     const Position&              pos;
     const ButterflyHistory*      mainHistory;
+    const LowPlyHistory*         lowPlyHistory;
     const CapturePieceToHistory* captureHistory;
     const PieceToHistory**       continuationHistory;
     const PawnHistory*           pawnHistory;
@@ -176,6 +179,7 @@ class MovePicker {
     Square                       recaptureSquare;
     Value                        threshold;
     Depth                        depth;
+    int                          ply;
     ExtMove                      moves[MAX_MOVES];
 };
 
