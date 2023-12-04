@@ -1478,9 +1478,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         futilityBase = ss->staticEval + 200;
     }
 
-    if (!ttMove && ss->killers[0] &&
-      (pos.capture(ss->killers[0]) || (pos.check_squares(type_of(pos.piece_on(from_sq(ss->killers[0])))) & to_sq(ss->killers[0]))))
-      ttMove = ss->killers[0];
+    if (!ttMove && ss->killers[0] && (pos.capture(ss->killers[0]) || (pos.gives_check(ss->killers[0]))))
+         ttMove = ss->killers[0];
+    else if (!ttMove && ss->killers[1] && (pos.capture(ss->killers[1]) || (pos.gives_check(ss->killers[1]))))
+         ttMove = ss->killers[1];
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
