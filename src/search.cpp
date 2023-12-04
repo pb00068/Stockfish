@@ -1437,15 +1437,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
 
     if (!ttMove && ss->killers[0] && (pos.capture(ss->killers[0]) || pos.gives_check(ss->killers[0])))
-    {
       ttMove = ss->killers[0];
-      dbg_hit_on(ttMove == ss->killers[0], 0);
-    }
-    if (!ttMove && ss->killers[1] && (pos.capture(ss->killers[1]) || pos.gives_check(ss->killers[1])))
-     {
+    else if (!ttMove && ss->killers[1] && (pos.capture(ss->killers[1]) || pos.gives_check(ss->killers[1])))
        ttMove = ss->killers[1];
-       dbg_hit_on(ttMove == ss->killers[1], 1);
-     }
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && tte->depth() >= ttDepth
