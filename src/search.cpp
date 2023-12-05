@@ -1477,11 +1477,11 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         futilityBase = ss->staticEval + 200;
     }
-    (ss + 2)->killers[0] = (ss + 2)->killers[1] = MOVE_NONE;
+    (ss + 2)->killers[2] = MOVE_NONE;
 
-    if (!ttMove && ss->killers[0] &&
-      (pos.capture(ss->killers[0]) || (pos.check_squares(type_of(pos.piece_on(from_sq(ss->killers[0])))) & to_sq(ss->killers[0]))))
-      ttMove = ss->killers[0];
+    if (!ttMove && ss->killers[2] &&
+      (pos.capture(ss->killers[2]) || (pos.check_squares(type_of(pos.piece_on(from_sq(ss->killers[2])))) & to_sq(ss->killers[2]))))
+      ttMove = ss->killers[2];
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
@@ -1612,11 +1612,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
-    if (bestMove && ss->killers[0] != bestMove) // for qsearch accept captures too
-    {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = bestMove;
-    }
+    if (bestMove) // for qsearch accept captures too
+        ss->killers[2] = bestMove;
     // Save gathered info in transposition table
     tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, ttDepth, bestMove, ss->staticEval);
