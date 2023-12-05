@@ -1616,7 +1616,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     }
 
 
-     if (ss->killers[2] != bestMove)
+     if (bestMove && ss->killers[2] != bestMove)
      {
              ss->killers[3] = ss->killers[2];
              ss->killers[2] = bestMove;
