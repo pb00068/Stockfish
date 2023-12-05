@@ -1406,6 +1406,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     bool     pvHit, givesCheck, capture;
     int      moveCount;
     Color    us = pos.side_to_move();
+    (ss + 2)->killers[2] = (ss + 2)->killers[3] = MOVE_NONE;
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1477,7 +1478,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         futilityBase = ss->staticEval + 200;
     }
-    (ss + 2)->killers[2] = (ss + 2)->killers[3] = MOVE_NONE;
 
     if (!ttMove && ss->killers[2] &&
       (pos.capture(ss->killers[2]) || (pos.check_squares(type_of(pos.piece_on(from_sq(ss->killers[2])))) & to_sq(ss->killers[2]))))
