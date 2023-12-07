@@ -525,7 +525,6 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
-    Key      posKey       = pos.key();
     TTEntry* tte = nullptr;
     Move     ttMove;
     Value ttValue = VALUE_NONE;
@@ -534,7 +533,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
-       tte          = TT.probe(posKey, ss->ttHit);
+       tte          = TT.probe(pos.key(), ss->ttHit);
        ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
 
 
@@ -570,6 +569,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
     Move     move, excludedMove, bestMove;
     Depth    extension, newDepth;
+    Key      posKey;
     Value    bestValue, value, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
     bool     capture, moveCountPruning, ttCapture;
@@ -626,7 +626,10 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
     if (tte == nullptr)
+    {
+        posKey  = pos.key();
         tte          = TT.probe(posKey, ss->ttHit);
+    }
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
@@ -1417,7 +1420,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, TT
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
     TTEntry* tte;
-    Key      posKey;
     Move     ttMove, move, bestMove;
     Depth    ttDepth;
     Value    bestValue, value, ttValue, futilityValue, futilityBase;
@@ -1447,11 +1449,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, TT
     ttDepth = ss->inCheck || depth >= DEPTH_QS_CHECKS ? DEPTH_QS_CHECKS : DEPTH_QS_NO_CHECKS;
 
     // Step 3. Transposition table lookup
-    posKey  = pos.key();
     if (ttentry != nullptr)
       tte = ttentry;
     else
-      tte     = TT.probe(posKey, ss->ttHit);
+      tte     = TT.probe(pos.key(), ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
@@ -1487,7 +1488,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, TT
         if (bestValue >= beta)
         {
             if (!ss->ttHit)
-                tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
+                tte->save(pos.key(), value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
                           MOVE_NONE, ss->staticEval);
 
             return bestValue;
@@ -1629,7 +1630,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, TT
     }
 
     // Save gathered info in transposition table
-    tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
+    tte->save(pos.key(), value_to_tt(bestValue, ss->ply), pvHit,
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, ttDepth, bestMove, ss->staticEval);
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
