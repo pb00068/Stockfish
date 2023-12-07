@@ -1490,6 +1490,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                   contHist, &thisThread->pawnHistory);
 
     int quietCheckEvasions = 0;
+    value = -VALUE_INFINITE;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1572,7 +1573,19 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         // Step 7. Make and search the move
         pos.do_move(move, st, givesCheck);
-        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
+        if (move == ttMove && tte->depth() > 0)
+        {
+          if (PvNode)
+          {
+              (ss + 1)->pv    = pv;
+              (ss + 1)->pv[0] = MOVE_NONE;
+          }
+          value = -search<nodeType>(pos, ss + 1, -beta, -alpha, tte->depth(), true);
+          if (value > alpha)
+              ttDepth = tte->depth();
+        }
+        else
+          value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
         pos.undo_move(move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
