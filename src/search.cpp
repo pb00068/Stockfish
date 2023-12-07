@@ -132,7 +132,7 @@ template<NodeType nodeType>
 Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
 template<NodeType nodeType>
-Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
+Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0, TTEntry *ttentry = nullptr);
 
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
@@ -525,10 +525,30 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
+    Key      posKey       = pos.key();
+    TTEntry* tte = nullptr;
+    Move     ttMove;
+    Value ttValue = VALUE_NONE;
+    Thread* thisThread = pos.this_thread();
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
-        return qsearch < PvNode ? PV : NonPV > (pos, ss, alpha, beta);
+    {
+       tte          = TT.probe(posKey, ss->ttHit);
+       ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
+
+
+       if (ss->ttHit && !PvNode && tte->depth() >= 0
+               && ttValue != VALUE_NONE  // Only in case of TT access race or if !ttHit
+               && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
+          return ttValue;
+
+       ttMove    = ss->ttHit ? tte->move() : MOVE_NONE;
+       if (ss->ttHit && !PvNode && tte->depth() > 1)
+          depth=1; // to early to go into qsearch
+       else
+        return qsearch < PvNode ? PV : NonPV > (pos, ss, alpha, beta, 0, tte);
+    }
 
     // Check if we have an upcoming move that draws by repetition, or
     // if the opponent had an alternative move earlier to this position.
@@ -548,18 +568,15 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
-    TTEntry* tte;
-    Key      posKey;
-    Move     ttMove, move, excludedMove, bestMove;
+    Move     move, excludedMove, bestMove;
     Depth    extension, newDepth;
-    Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
+    Value    bestValue, value, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
     bool     capture, moveCountPruning, ttCapture;
     Piece    movedPiece;
     int      moveCount, captureCount, quietCount;
 
     // Step 1. Initialize node
-    Thread* thisThread = pos.this_thread();
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
@@ -608,12 +625,13 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
-    posKey       = pos.key();
-    tte          = TT.probe(posKey, ss->ttHit);
+    if (tte == nullptr)
+        tte          = TT.probe(posKey, ss->ttHit);
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
                           : MOVE_NONE;
+
     ttCapture = ttMove && pos.capture_stage(ttMove);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -767,7 +785,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Adjust razor margin according to cutoffCnt. (~1 Elo)
     if (eval < alpha - 474 - (270 - 174 * ((ss + 1)->cutoffCnt > 3)) * depth * depth)
     {
-        value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
+        value = qsearch<NonPV>(pos, ss, alpha - 1, alpha, 0, tte);
         if (value < alpha)
             return value;
     }
@@ -832,7 +850,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         depth -= 2 + 2 * (ss->ttHit && tte->depth() >= depth);
 
     if (depth <= 0)
-        return qsearch<PV>(pos, ss, alpha, beta);
+        return qsearch<PV>(pos, ss, alpha, beta, 0, tte);
 
     // For cutNodes without a ttMove, we decrease depth by 2 if depth is high enough.
     if (cutNode && depth >= 8 && !ttMove)
@@ -1376,7 +1394,7 @@ moves_loop:  // When in check, search starts here
 // function with zero depth, or recursively with further decreasing depth per call.
 // (~155 Elo)
 template<NodeType nodeType>
-Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
+Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, TTEntry * ttentry) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1430,7 +1448,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     // Step 3. Transposition table lookup
     posKey  = pos.key();
-    tte     = TT.probe(posKey, ss->ttHit);
+    if (ttentry != nullptr)
+      tte = ttentry;
+    else
+      tte     = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
