@@ -1506,6 +1506,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         moveCount++;
 
+        if (!ss->inCheck && moveCount == 2 && ttMove && !pos.capture(ttMove) && !pos.gives_check(ttMove) && tte->depth() < 4)
+           tte->resetMove();
+
         // Step 6. Pruning
         if (bestValue > VALUE_TB_LOSS_IN_MAX_PLY && pos.non_pawn_material(us))
         {

@@ -55,6 +55,10 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
     }
 }
 
+void TTEntry::resetMove() {
+	move16 = 0;
+}
+
 
 // Sets the size of the transposition table,
 // measured in megabytes. Transposition table consists of a power of 2 number
@@ -104,7 +108,6 @@ void TranspositionTable::clear() {
     for (std::thread& th : threads)
         th.join();
 }
-
 
 // Looks up the current position in the transposition
 // table. It returns true and a pointer to the TTEntry if the position is found.
