@@ -1506,7 +1506,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         moveCount++;
 
-        if (!ss->inCheck && moveCount == 2 && ttMove && !pos.capture(ttMove) && !pos.gives_check(ttMove) && tte->depth() < 4)
+        if (bestValue < alpha && !ss->inCheck && moveCount == 2 && ttMove && !pos.capture(ttMove) && !pos.gives_check(ttMove) && tte->depth() < 2)
            tte->resetMove();
 
         // Step 6. Pruning
