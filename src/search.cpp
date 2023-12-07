@@ -543,8 +543,10 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
           return ttValue;
 
        ttMove    = ss->ttHit ? tte->move() : MOVE_NONE;
-       if (ss->ttHit && ttMove && !PvNode && tte->depth() > 1)
-          depth=1; // to early to go into qsearch
+       if (ss->ttHit && ttMove && tte->depth() > 0)
+       {
+          depth= std::max(tte->depth(), 1); // to early to go into qsearch
+       }
        else
         return qsearch < PvNode ? PV : NonPV > (pos, ss, alpha, beta, 0, tte);
     }
