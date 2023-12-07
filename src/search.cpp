@@ -1580,7 +1580,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
               (ss + 1)->pv    = pv;
               (ss + 1)->pv[0] = MOVE_NONE;
           }
-          value = -search<nodeType>(pos, ss + 1, -beta, -alpha, tte->depth(), true);
+          value = -search<nodeType>(pos, ss + 1, -beta, -alpha, tte->depth(), false);
           if (value > alpha)
               ttDepth = tte->depth();
         }
