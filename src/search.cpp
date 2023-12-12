@@ -1490,6 +1490,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                   contHist, &thisThread->pawnHistory);
 
     int quietCheckEvasions = 0;
+    bool ttMoveIsQuiet = false;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1504,9 +1505,11 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
 
+        ttMoveIsQuiet |= move == ttMove && !givesCheck && !capture;
+
         moveCount++;
 
-        if (bestValue < alpha && !ss->inCheck && moveCount == 2 && ttMove && !pos.capture(ttMove) && !pos.gives_check(ttMove) && tte->depth() < 2)
+        if (depth > 5 && bestValue < alpha - 10 && moveCount == 2 && ttMoveIsQuiet && tte->depth() < 6)
            tte->resetMove();
 
         // Step 6. Pruning
