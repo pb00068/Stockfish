@@ -1476,8 +1476,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             alpha = bestValue;
 
         futilityBase = ss->staticEval + 182;
-        if (bestValue < ss->staticEval)
-            futilityBase = std::max(ss->staticEval + 91, bestValue + 182);
+        if (bestValue > futilityBase)
+            futilityBase += std::min(Value(100), bestValue - futilityBase);
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
