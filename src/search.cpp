@@ -1509,7 +1509,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         moveCount++;
 
-        if (depth > 5 && bestValue < alpha - 10 && moveCount == 2 && ttMoveIsQuiet && tte->depth() < 6)
+        if (bestValue < alpha - 10 && moveCount == 2 && ttMoveIsQuiet && tte->depth() < 6)
            tte->resetMove();
 
         // Step 6. Pruning
