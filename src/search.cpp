@@ -1418,7 +1418,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     bestMove           = MOVE_NONE;
     ss->inCheck        = pos.checkers();
     moveCount          = 0;
-    (ss + 2)->killers[0] = MOVE_NONE;
 
     // Step 2. Check for an immediate draw or maximum ply reached
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
@@ -1510,7 +1509,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         moveCount++;
 
-        if (bestValue < alpha - 6 && moveCount == 2 && ttMoveIsQuiet && tte->depth() < 6 && ttMove != ss->killers[0] && ttMove != (ss-2)->killers[0])
+        if (bestValue < alpha - 12 && moveCount == 2 && ttMoveIsQuiet && tte->depth() < 6 && depth == 0 && ttMove != (ss-2)->killers[0] && ttMove != (ss-2)->killers[1])
            tte->resetMove();
 
         // Step 6. Pruning
