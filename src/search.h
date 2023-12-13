@@ -52,7 +52,8 @@ struct Stack {
     int             doubleExtensions;
     int             cutoffCnt;
     int             failedQueenMoves;
-    Square          probCutTarget;
+    Square          toBabySit;
+    PieceType capturer;
 };
 
 

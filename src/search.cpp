@@ -603,6 +603,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = MOVE_NONE;
     (ss + 2)->cutoffCnt                         = 0;
     (ss + 2)->failedQueenMoves = 0;
+    ss->toBabySit = SQ_NONE;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
     Square prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     ss->statScore = 0;
@@ -872,6 +873,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
                 pos.do_move(move, st);
 
+                PieceType captured = type_of(pos.captured_piece());
+
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
@@ -885,11 +888,14 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 if (value >= probCutBeta)
                 {
                     if (is_ok((ss-1)->currentMove)
+                        && captured != PAWN
                         && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN
-                        && (pos.attacks_from<QUEEN>(from_sq((ss-1)->currentMove)) & to_sq(move)))
+                        && ((attacks_bb<ROOK>(from_sq((ss-1)->currentMove), pos.pieces() ^ from_sq((ss-1)->currentMove)) |
+                             attacks_bb<BISHOP>(from_sq((ss-1)->currentMove), pos.pieces() ^ from_sq((ss-1)->currentMove))) & to_sq(move)))
                     {
                        (ss-1)->failedQueenMoves++;
-                       (ss-1)->probCutTarget = to_sq(move);
+                       (ss-1)->toBabySit = to_sq(move);
+                       (ss-1)->capturer = type_of(pos.moved_piece(move));
                     }
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
@@ -1138,14 +1144,15 @@ moves_loop:  // When in check, search starts here
         if ((ss - 1)->moveCount > 7)
             r--;
 
-        // reduce when (babysitting) Queen abandons probCutTarget
-        if (ss->failedQueenMoves  &&
+        // reduce Queen move if it doesn't protect the BabySit square anymore
+        if (    ss->toBabySit != SQ_NONE &&
+                (to_sq(move) != ss->toBabySit) &&
+                (pos.pieces(us) & ss->toBabySit) &&
                 type_of(movedPiece) == QUEEN &&
-                !(pos.attacks_from<QUEEN>(to_sq(move)) & ss->probCutTarget))
-        {
-          r += 1 + ss->failedQueenMoves/2;
-          dbg_hit_on(true);
-        }
+                !givesCheck && !capture &&
+                !((attacks_bb<ROOK  >(to_sq(move), pos.pieces()) |
+                   attacks_bb<BISHOP>(to_sq(move), pos.pieces())) & ss->toBabySit))
+            r += 1 + ss->failedQueenMoves/2;
 
         // Increase reduction for cut nodes (~3 Elo)
         if (cutNode)
