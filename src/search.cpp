@@ -883,6 +883,13 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
                 if (value >= probCutBeta)
                 {
+                    if (is_ok((ss-1)->currentMove)
+                        && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN
+                        && (pos.attacks_from<QUEEN>(from_sq((ss-1)->currentMove)) & to_sq(move)))
+                    {
+                       (ss-1)->failedQueenMoves++;
+                       (ss-1)->probCutTarget = to_sq(move);
+                    }
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, ss->staticEval);
