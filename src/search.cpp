@@ -602,6 +602,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     (ss + 1)->excludedMove = bestMove = MOVE_NONE;
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = MOVE_NONE;
     (ss + 2)->cutoffCnt                         = 0;
+    (ss + 2)->failedQueenMoves = 0;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
     Square prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     ss->statScore = 0;
@@ -1136,6 +1137,15 @@ moves_loop:  // When in check, search starts here
         // Decrease reduction if opponent's move count is high (~1 Elo)
         if ((ss - 1)->moveCount > 7)
             r--;
+
+        // reduce when (babysitting) Queen abandons probCutTarget
+        if (ss->failedQueenMoves  &&
+                type_of(movedPiece) == QUEEN &&
+                !(pos.attacks_from<QUEEN>(to_sq(move)) & ss->probCutTarget))
+        {
+          r += 1 + ss->failedQueenMoves/2;
+          dbg_hit_on(true);
+        }
 
         // Increase reduction for cut nodes (~3 Elo)
         if (cutNode)
