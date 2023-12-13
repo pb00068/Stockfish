@@ -51,9 +51,7 @@ struct Stack {
     bool            ttHit;
     int             doubleExtensions;
     int             cutoffCnt;
-    int             failedQueenMoves;
     Square          toBabySit;
-    PieceType capturer;
 };
 
 
