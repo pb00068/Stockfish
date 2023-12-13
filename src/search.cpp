@@ -1149,7 +1149,7 @@ moves_loop:  // When in check, search starts here
                 !givesCheck && !capture &&
                 !((attacks_bb<ROOK  >(to_sq(move), pos.pieces()) |
                    attacks_bb<BISHOP>(to_sq(move), pos.pieces())) & ss->toBabySit))
-            r += 2;
+            r++;
 
         // Increase reduction for cut nodes (~3 Elo)
         if (cutNode)
@@ -1321,7 +1321,7 @@ moves_loop:  // When in check, search starts here
                     assert(value >= beta);  // Fail high
 
                     Square from = from_sq((ss-1)->currentMove);
-                    if (is_ok((ss-1)->currentMove)
+                    if (is_ok((ss-1)->currentMove) && depth > 2
                        && type_of(pos.piece_on(to_sq(move))) > PAWN
                        && type_of(pos.piece_on(to_sq((ss-1)->currentMove))) == QUEEN
                        && ((attacks_bb<ROOK  >(from, pos.pieces() ^ from) |
