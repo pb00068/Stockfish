@@ -1578,7 +1578,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         quietCheckEvasions += !capture && ss->inCheck;
 
         // calculate precise eval from current pos if we are going to search submoves
-        if (evalfromPrev)
+        if (givesCheck && evalfromPrev)
         {
            ss->staticEval = evaluate(pos);
            bestValue = std::max(bestValue, ss->staticEval);
