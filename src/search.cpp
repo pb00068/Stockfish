@@ -874,11 +874,11 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, bool altered, De
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, true);
+                value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, altered);
 
                 // If the qsearch held, perform the regular search
                 if (value >= probCutBeta)
-                    value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, true, depth - 4,
+                    value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, altered, depth - 4,
                                            !cutNode);
 
                 pos.undo_move(move);
@@ -1050,7 +1050,7 @@ moves_loop:  // When in check, search starts here
 
                 ss->excludedMove = move;
                 value =
-                  search<NonPV>(pos, ss, singularBeta - 1, singularBeta, altered, singularDepth, cutNode);
+                  search<NonPV>(pos, ss, singularBeta - 1, singularBeta, true, singularDepth, cutNode);
                 ss->excludedMove = MOVE_NONE;
 
                 if (value < singularBeta)
