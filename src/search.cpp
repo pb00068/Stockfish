@@ -1468,8 +1468,9 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             // In case of null move search, use previous static eval with a different sign
             if ((ss - 1)->currentMove == MOVE_NULL)
             {
-               ss->staticEval = bestValue = -(ss - 1)->staticEval + 286;
+               ss->staticEval = bestValue = -(ss - 1)->staticEval + 143;
                //dbg_mean_of(ss->staticEval - evaluate(pos));
+               //dbg_hit_on(evaluate(pos) > ss->staticEval); bench 18 -> Hit #0: Total 221869 Hits 185813 Hit Rate (%) 83.749
             }
             else
                ss->staticEval = bestValue = evaluate(pos);
