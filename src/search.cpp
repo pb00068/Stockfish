@@ -923,7 +923,7 @@ moves_loop:  // When in check, search starts here
     // Indicate Nodes that will probably fail low if the node was searched
     // at a depth equal to or greater than the current depth, and the result
     // of this search was a fail low.
-    bool likelyFailLow = ttMove && (tte->bound() & BOUND_UPPER) && tte->depth() >= depth && tte->value() <= alpha;
+    bool likelyFailLow = (tte->bound() & BOUND_UPPER) && tte->depth() >= depth && tte->value() <= alpha;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -936,10 +936,7 @@ moves_loop:  // When in check, search starts here
 
         // Check for legality
         if (!pos.legal(move))
-        {
-        	dbg_hit_on(move == ttMove);
             continue;
-        }
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
