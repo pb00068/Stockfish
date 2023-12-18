@@ -1466,12 +1466,15 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         else
         {
             // In case of null move search, use previous static eval with a different sign
-            if ((ss - 1)->currentMove == MOVE_NULL || (ss - 1)->moveCount > 20)
+            if ((ss - 1)->currentMove == MOVE_NULL)
             {
                ss->staticEval = bestValue = -(ss - 1)->staticEval;
             }
-            else
-               ss->staticEval = bestValue = evaluate(pos);
+            else if  ((ss - 1)->moveCount > 15 && pos.captured_piece() && type_of(pos.captured_piece()) < type_of(pos.piece_on(to_sq((ss - 1)->currentMove))))
+            {
+               ss->staticEval = bestValue = -(ss - 1)->staticEval - PieceValue[pos.piece_on(to_sq((ss - 1)->currentMove))] - 20;
+            }
+            else   ss->staticEval = bestValue = evaluate(pos);
         }
 
         // Stand pat. Return immediately if static value is at least beta
