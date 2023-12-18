@@ -936,7 +936,10 @@ moves_loop:  // When in check, search starts here
 
         // Check for legality
         if (!pos.legal(move))
+        {
+        	dbg_hit_on(move == ttMove);
             continue;
+        }
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
