@@ -1472,7 +1472,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             }
             else if  ((ss - 1)->moveCount > 15 && pos.captured_piece() && type_of(pos.captured_piece()) < type_of(pos.piece_on(to_sq((ss - 1)->currentMove))))
             {
-               ss->staticEval = bestValue = -(ss - 1)->staticEval - PieceValue[pos.piece_on(to_sq((ss - 1)->currentMove))] - 20;
+               ss->staticEval = bestValue = -(ss - 1)->staticEval - PieceValue[pos.piece_on(to_sq((ss - 1)->currentMove))] + PieceValue[pos.captured_piece()] + 250;
+               //dbg_hit_on(evaluate(pos) > ss->staticEval); Hit #0: Total 3182 Hits 1844 Hit Rate (%) 57.951
             }
             else   ss->staticEval = bestValue = evaluate(pos);
         }
