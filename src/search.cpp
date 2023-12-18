@@ -1464,9 +1464,16 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                 bestValue = ttValue;
         }
         else
+        {
             // In case of null move search, use previous static eval with a different sign
-            ss->staticEval = bestValue =
-              (ss - 1)->currentMove != MOVE_NULL ? evaluate(pos) : -(ss - 1)->staticEval;
+            if ((ss - 1)->currentMove == MOVE_NULL)
+            {
+               ss->staticEval = bestValue = -(ss - 1)->staticEval + 286;
+               //dbg_mean_of(ss->staticEval - evaluate(pos));
+            }
+            else
+               ss->staticEval = bestValue = evaluate(pos);
+        }
 
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
