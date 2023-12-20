@@ -1715,13 +1715,13 @@ void update_all_stats(const Position& pos,
 
     int quietMoveBonus = stat_bonus(depth + 1);
     int quietMoveMalus = stat_malus(depth);
+    if (bestValue > beta + 173 && (ss - 1)->ttPv && !isPvNode)
+        (ss - 1)->ttPv = false;
 
     if (!pos.capture_stage(bestMove))
     {
         int bestMoveBonus = bestValue > beta + 173 ? quietMoveBonus      // larger bonus
                                                    : stat_bonus(depth);  // smaller bonus
-        if (bestValue > beta + 173 && (ss - 1)->ttPv && !isPvNode)
-           (ss - 1)->ttPv = false;
 
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
