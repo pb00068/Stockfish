@@ -149,7 +149,7 @@ void  update_all_stats(const Position& pos,
                        int             quietCount,
                        Move*           capturesSearched,
                        int             captureCount,
-                       Depth           depth);
+                       Depth           depth, bool isPvNode);
 
 // Utility to verify move generation. All the leaf nodes up
 // to the given depth are generated and counted, and the sum is returned.
@@ -1339,7 +1339,7 @@ moves_loop:  // When in check, search starts here
     // If there is a move that produces search value greater than alpha we update the stats of searched moves
     else if (bestMove)
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
-                         capturesSearched, captureCount, depth);
+                         capturesSearched, captureCount, depth, PvNode);
 
     // Bonus for prior countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
@@ -1705,7 +1705,7 @@ void update_all_stats(const Position& pos,
                       int             quietCount,
                       Move*           capturesSearched,
                       int             captureCount,
-                      Depth           depth) {
+                      Depth           depth, bool isPvNode) {
 
     Color                  us             = pos.side_to_move();
     Thread*                thisThread     = pos.this_thread();
@@ -1720,6 +1720,8 @@ void update_all_stats(const Position& pos,
     {
         int bestMoveBonus = bestValue > beta + 173 ? quietMoveBonus      // larger bonus
                                                    : stat_bonus(depth);  // smaller bonus
+        if (bestValue > beta + 173 && (ss - 1)->ttPv && !isPvNode)
+           (ss - 1)->ttPv = false;
 
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
