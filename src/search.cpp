@@ -1345,9 +1345,8 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-
-        if (ss->pvDistance > 4 && bestValue > beta + 7 && (ss-1)->currentIsttMove)
-            (ss - 1)->ttPv = false; // Hit for (ss - 1)->ttPv == true : Total 4281 Hits 985 Hit Rate (%) 23.0086
+        if (ss->pvDistance > 3 && bestValue > beta + 40 && (ss-1)->currentIsttMove)
+            (ss - 1)->ttPv = false;
     }
 
     // Bonus for prior countermove that caused the fail low
