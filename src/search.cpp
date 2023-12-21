@@ -1344,7 +1344,7 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-        if (!PvNode && bestValue > beta + 173 && (ss-1)->currentIsttMove)
+        if (!PvNode && bestValue > beta + 80 && (ss-1)->currentIsttMove)
             (ss - 1)->ttPv = false;
     }
 
