@@ -1345,8 +1345,8 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-        if (ss->pvDistance > 3 && bestValue > beta + 40 && (ss-1)->currentIsttMove)
-            (ss - 1)->ttPv = false;
+        if (ss->pvDistance > 5 - 2 * (ss-1)->currentIsttMove && bestValue > beta + 40)
+            (ss - 1)->ttPv = ss->ttPv = false;
     }
 
     // Bonus for prior countermove that caused the fail low
