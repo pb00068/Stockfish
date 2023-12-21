@@ -268,6 +268,13 @@ enum Rank : int {
     RANK_NB
 };
 
+enum Side: int {
+    CENTER ,
+    LEFT_SIDE,
+    RIGHT_SIDE
+};
+
+
 // Keep track of what a move changes on the board (used by NNUE)
 struct DirtyPiece {
 
@@ -380,6 +387,15 @@ constexpr Square to_sq(Move m) {
 }
 
 constexpr int from_to(Move m) { return m & 0xFFF; }
+
+constexpr Side action_side(Square s) {
+    File f = file_of(s);
+    if (f < FILE_D)
+       return LEFT_SIDE;
+    else if (f > FILE_E)
+       return RIGHT_SIDE;
+    return CENTER;
+}
 
 constexpr MoveType type_of(Move m) { return MoveType(m & (3 << 14)); }
 

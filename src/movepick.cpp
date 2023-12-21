@@ -91,7 +91,7 @@ MovePicker::MovePicker(const Position&              p,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
                        Move                         cm,
-                       const Move*                  killers) :
+                       const Move*                  killers, const Side s1, const Side s2) :
     pos(p),
     mainHistory(mh),
     captureHistory(cph),
@@ -99,7 +99,7 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}},
-    depth(d) {
+    depth(d), side1(s1), side2(s2) {
     assert(d > 0);
 
     stage = (pos.checkers() ? EVASION_TT : MAIN_TT) + !(ttm && pos.pseudo_legal(ttm));
@@ -176,6 +176,8 @@ void MovePicker::score() {
             PieceType pt   = type_of(pos.moved_piece(m));
             Square    from = from_sq(m);
             Square    to   = to_sq(m);
+            Side s1         = action_side(from);
+            Side s2         = action_side(to);
 
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][from_to(m)];
@@ -188,6 +190,8 @@ void MovePicker::score() {
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;
+
+            m.value += (s1 == side1) * 700 +  (s1 == side2) * 700 + (s2 == side1) * 900 +  (s2 == side2) * 900;
 
             // bonus for escaping from capture
             m.value += threatenedPieces & from ? (pt == QUEEN && !(to & threatenedByRook)   ? 50000

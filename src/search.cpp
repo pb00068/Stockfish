@@ -796,6 +796,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
 
         ss->currentMove         = MOVE_NULL;
+        ss->sideOfCurrent = CENTER;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -867,6 +868,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 prefetch(TT.first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
+                ss->sideOfCurrent = action_side(to_sq(move));
                 ss->continuationHistory =
                   &thisThread
                      ->continuationHistory[ss->inCheck][true][pos.moved_piece(move)][to_sq(move)];
@@ -915,7 +917,7 @@ moves_loop:  // When in check, search starts here
       prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &captureHistory, contHist,
-                  &thisThread->pawnHistory, countermove, ss->killers);
+                  &thisThread->pawnHistory, countermove, ss->killers, (ss-1)->sideOfCurrent, (ss-2)->sideOfCurrent);
 
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1118,6 +1120,7 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
+        ss->sideOfCurrent = action_side(to_sq(move));
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
