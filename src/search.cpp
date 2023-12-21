@@ -604,6 +604,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     (ss + 2)->cutoffCnt                         = 0;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
     Square prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
+    ss->pvDistance       = PvNode ? 0 : (ss-1)->pvDistance + 1;
     ss->statScore = 0;
 
     // Step 4. Transposition table lookup.
@@ -1344,7 +1345,7 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-        if (!PvNode && bestValue > beta + 80 && (ss-1)->currentIsttMove)
+        if (ss->pvDistance > 3 && bestValue > beta + 40 && (ss-1)->currentIsttMove)
             (ss - 1)->ttPv = false;
     }
 
