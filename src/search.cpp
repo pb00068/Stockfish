@@ -609,6 +609,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     (ss + 2)->cutoffCnt                         = 0;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
+    ss->pvDistance       = PvNode ? 0 : (ss-1)->pvDistance + 1;
     ss->statScore = 0;
 
     // Step 4. Transposition table lookup.
@@ -825,6 +826,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
 
         ss->currentMove         = Move::null();
+        ss->currentIsttMove = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -1150,6 +1152,7 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
+        ss->currentIsttMove = move == ttMove;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
@@ -1371,8 +1374,12 @@ moves_loop:  // When in check, search starts here
 
     // If there is a move that produces search value greater than alpha we update the stats of searched moves
     else if (bestMove)
+    {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
+        if (ss->pvDistance > 4 && bestValue > beta + 7 && (ss-1)->currentIsttMove)
+           (ss - 1)->ttPv = false;
+    }
 
     // Bonus for prior countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
