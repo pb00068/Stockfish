@@ -106,6 +106,7 @@ class Position {
     int count() const;
     template<PieceType Pt>
     Square square(Color c) const;
+    Value to_corrected_static_eval(const Value v);
 
     // Castling
     CastlingRights castling_rights(Color c) const;

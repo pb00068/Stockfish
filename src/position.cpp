@@ -1293,4 +1293,11 @@ bool Position::pos_is_ok() const {
     return true;
 }
 
+// Add correctionHistory value to unadjusted staticEval and guarantee evaluation does not hit the tablebase range
+Value Position::to_corrected_static_eval(Value v) {
+    auto cv = this->thisThread->correctionHistory[sideToMove][pawn_structure_index<Correction>(*this)];
+    v += cv * std::abs(cv) / 16384;
+    return std::clamp(int(v), VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+}
+
 }  // namespace Stockfish
