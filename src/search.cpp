@@ -826,7 +826,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
 
         ss->currentMove         = Move::null();
-        ss->currentIsttMove = false;
+        ss->currentIsTTMove = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st);
@@ -1152,7 +1152,7 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
-        ss->currentIsttMove = move == ttMove;
+        ss->currentIsTTMove = move == ttMove;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
@@ -1377,7 +1377,7 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-        if (ss->pvDistance > 4 && bestValue > beta + 7 && (ss-1)->currentIsttMove)
+        if (ss->pvDistance > 5 && bestValue > beta + 14 && (ss-1)->currentIsTTMove)
            (ss - 1)->ttPv = false;
     }
 
