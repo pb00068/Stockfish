@@ -1377,8 +1377,8 @@ moves_loop:  // When in check, search starts here
     {
         update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
                          capturesSearched, captureCount, depth);
-        if (ss->pvDistance > 5 && bestValue > beta + 14 && (ss-1)->currentIsTTMove)
-           (ss - 1)->ttPv = false;
+       // if (ss->pvDistance > 5 && bestValue > beta + 14 && (ss-1)->currentIsTTMove)
+       //    (ss - 1)->ttPv = false;
     }
 
     // Bonus for prior countermove that caused the fail low
@@ -1398,7 +1398,7 @@ moves_loop:  // When in check, search starts here
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree. (~7 Elo)
     if (bestValue <= alpha)
-        ss->ttPv = ss->ttPv || ((ss - 1)->ttPv && depth > 3);
+        ss->ttPv |= (ss - 1)->ttPv && moveCount > 14;
 
     // Write gathered information in transposition table
     // Static evaluation is saved as it was before correction history
