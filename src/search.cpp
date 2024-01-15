@@ -551,7 +551,7 @@ Value Search::Worker::search(
     TTEntry* tte;
     Key      posKey;
     Move     ttMove, move, excludedMove, bestMove;
-    Depth    newDepth;
+    Depth    extension, newDepth;
     Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
     bool     capture, moveCountPruning, ttCapture;
@@ -982,7 +982,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        ss->extensionOnPly  = 0;
+        extension  = 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
@@ -1084,13 +1084,13 @@ moves_loop:  // When in check, search starts here
 
                 if (value < singularBeta)
                 {
-                    ss->extensionOnPly        = 1;
+                    extension        = 1;
                     singularQuietLMR = !ttCapture;
 
                     // Avoid search explosion by limiting the number of extensions
                     if (!PvNode && value < singularBeta - 17 && ss->treeExtensions <= 11)
                     {
-                        ss->extensionOnPly = 2;
+                        extension = 2;
                         depth += depth < 15;
                     }
                 }
@@ -1111,37 +1111,37 @@ moves_loop:  // When in check, search starts here
 
                 // If the ttMove is assumed to fail high over current beta (~7 Elo)
                 else if (ttValue >= beta)
-                    ss->extensionOnPly = -2 - !PvNode;
+                    extension = -2 - !PvNode;
 
                 // If we are on a cutNode but the ttMove is not assumed to fail high over current beta (~1 Elo)
                 else if (cutNode)
-                    ss->extensionOnPly = depth < 19 ? -2 : -1;
+                    extension = depth < 19 ? -2 : -1;
 
                 // If the ttMove is assumed to fail low over the value of the reduced search (~1 Elo)
                 else if (ttValue <= value)
-                    ss->extensionOnPly = -1;
+                    extension = -1;
             }
 
             // Check extensions (~1 Elo)
             else if (givesCheck && depth > 10)
-                ss->extensionOnPly = 1;
+                extension = 1;
 
             // Quiet ttMove extensions (~1 Elo)
             else if (PvNode && move == ttMove && move == ss->killers[0]
                      && (*contHist[0])[movedPiece][move.to_sq()] >= 4325)
-                ss->extensionOnPly = 1;
+                extension = 1;
 
             // Recapture extensions (~1 Elo)
             else if (PvNode && move == ttMove && move.to_sq() == prevSq
                      && thisThread->captureHistory[movedPiece][move.to_sq()]
                                                   [type_of(pos.piece_on(move.to_sq()))]
                           > 4146)
-                ss->extensionOnPly = 1;
+                extension = 1;
         }
 
         // Add extension to new depth
-        newDepth += ss->extensionOnPly;
-        ss->treeExtensions = (ss - 1)->treeExtensions + ss->extensionOnPly;
+        newDepth += extension;
+        ss->treeExtensions = (ss - 1)->treeExtensions + extension;
 
         // Speculative prefetch as early as possible
         prefetch(tt.first_entry(pos.key_after(move)));
