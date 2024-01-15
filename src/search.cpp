@@ -1852,7 +1852,7 @@ void update_quiet_stats(
     Color us = pos.side_to_move();
     // Update killers if move is'nt just good because of previous opponent move
     if (ss->killers[0] != move &&
-        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < 0 && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 5300))
+        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -1000 && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 2000))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
