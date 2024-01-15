@@ -602,7 +602,7 @@ Value Search::Worker::search(
     (ss + 1)->excludedMove = bestMove = Move::none();
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = Move::none();
     (ss + 2)->cutoffCnt                         = 0;
-    ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
+    ss->treeExtensions                        = (ss - 1)->treeExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
 
@@ -1074,7 +1074,7 @@ moves_loop:  // When in check, search starts here
                 && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && (tte->bound() & BOUND_LOWER)
                 && tte->depth() >= depth - 3)
             {
-                Value singularBeta  = ttValue - (66 + 58 * (ss->ttPv && !PvNode)) * depth / 64;
+                Value singularBeta  = ttValue - (48 + 3 * ss->treeExtensions + 58 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
@@ -1087,8 +1087,8 @@ moves_loop:  // When in check, search starts here
                     ss->extensionOnPly        = 1;
                     singularQuietLMR = !ttCapture;
 
-                    // Avoid search explosion by limiting the number of double extensions
-                    if (!PvNode && value < singularBeta - 17 && ss->doubleExtensions <= 11)
+                    // Avoid search explosion by limiting the number of extensions
+                    if (!PvNode && value < singularBeta - 17 && ss->treeExtensions <= 11)
                     {
                         ss->extensionOnPly = 2;
                         depth += depth < 15;
@@ -1141,7 +1141,7 @@ moves_loop:  // When in check, search starts here
 
         // Add extension to new depth
         newDepth += ss->extensionOnPly;
-        ss->doubleExtensions = (ss - 1)->doubleExtensions + (ss->extensionOnPly + (ss - 1)->extensionOnPly >= 2);
+        ss->treeExtensions = (ss - 1)->treeExtensions + ss->extensionOnPly;
 
         // Speculative prefetch as early as possible
         prefetch(tt.first_entry(pos.key_after(move)));
