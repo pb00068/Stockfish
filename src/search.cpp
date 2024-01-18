@@ -1830,9 +1830,9 @@ void update_quiet_stats(
   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus) {
 
     Color us = pos.side_to_move();
-    // Update killers if move is'nt just good because of previous opponent move
+    // Update killers if bestmove isn't just determined by previous move
     if (ss->killers[0] != move &&
-        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -1000 && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 2000))
+        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -1500 && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 1500))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
