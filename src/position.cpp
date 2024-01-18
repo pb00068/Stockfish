@@ -1123,7 +1123,7 @@ bool Position::see_ge(Move m, int threshold) const {
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
 
         if (!res)
-          swap += 77;
+          swap += 140;
     }
 
     return bool(res);
