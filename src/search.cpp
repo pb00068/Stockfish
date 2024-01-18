@@ -1609,7 +1609,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
                 continue;
 
             // Do not search moves with bad enough SEE values (~5 Elo)
-            if (!ss->inCheck && !pos.see_ge(move, alpha > ss->staticEval + 150 ? 0 : -77))
+            // if static eval is far beyond alpha then do not search moves with negative SEE
+            if (!pos.see_ge(move, ss->inCheck || ss->staticEval + 170 > alpha ? -77 : 0))
                 continue;
         }
 
