@@ -1832,9 +1832,9 @@ void update_quiet_stats(
     Color us = pos.side_to_move();
     // Update killers if bestmove isn't just determined by previous move
     if (ss->killers[0] != move &&
-        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -800
-          && (*(ss - 2)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] < 0
-          && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 800))
+        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -1200
+          && (*(ss - 2)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] < -100
+          && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 1200))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
