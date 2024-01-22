@@ -1048,7 +1048,7 @@ bool Position::see_ge(Move m, int threshold) const {
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
-    int      res = 1;
+    int      res = 1, complexity = 200 + 80 * bool(piece_on(to));
 
     while (true)
     {
@@ -1067,6 +1067,8 @@ bool Position::see_ge(Move m, int threshold) const {
 
             if (!stmAttackers)
                 break;
+
+            complexity += 40 * bool(attackers & pieces(stm) & blockers_for_king(stm));
         }
 
         res ^= 1;
@@ -1122,8 +1124,8 @@ bool Position::see_ge(Move m, int threshold) const {
               // reverse the result.
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
 
-        if (!res)
-            swap += 280;
+        if (sideToMove != stm)
+            swap += complexity;
     }
 
     return bool(res);
