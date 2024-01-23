@@ -1165,6 +1165,8 @@ moves_loop:  // When in check, search starts here
         if (ttCapture)
             r++;
 
+       // if (pos.blockers_for_king(WHITE))
+
         // Decrease reduction for PvNodes (~3 Elo)
         if (PvNode && tte->bound() != BOUND_UPPER)
             r--;
@@ -1181,10 +1183,14 @@ moves_loop:  // When in check, search starts here
         if ((ss + 1)->cutoffCnt > 3)
             r++;
 
+
         // Set reduction to 0 for first picked move (ttMove) (~2 Elo)
         // Nullifies all previous reduction adjustments to ttMove and leaves only history to do them
         else if (move == ttMove)
             r = 0;
+
+        if (r > 4 && more_than_one(pos.blockers_for_king(WHITE) | pos.blockers_for_king(BLACK)))
+            r--;
 
         ss->statScore = 2 * thisThread->mainHistory[us][move.from_to()]
                       + (*contHist[0])[movedPiece][move.to_sq()]
