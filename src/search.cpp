@@ -1165,8 +1165,6 @@ moves_loop:  // When in check, search starts here
         if (ttCapture)
             r++;
 
-       // if (pos.blockers_for_king(WHITE))
-
         // Decrease reduction for PvNodes (~3 Elo)
         if (PvNode && tte->bound() != BOUND_UPPER)
             r--;
