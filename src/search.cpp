@@ -1844,9 +1844,9 @@ void update_quiet_stats(
 
     // Update killers if bestmove isn't just determined by previous move
     if (ss->killers[0] != move &&
-        !(counterMoveAlreadySet && workerThread.mainHistory[us][move.from_to()] < -800
+        !(counterMoveAlreadySet && workerThread.mainHistory[us][move.from_to()] < -200
           && (*(ss - 2)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] < 0
-          && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 600))
+          && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 100))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
