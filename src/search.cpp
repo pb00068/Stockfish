@@ -1830,9 +1830,21 @@ void update_quiet_stats(
   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus) {
 
     Color us = pos.side_to_move();
+    workerThread.mainHistory[us][move.from_to()] << bonus;
+    update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
+
+    bool counterMoveAlreadySet = false;
+    // Update countermove history
+    if (((ss - 1)->currentMove).is_ok())
+    {
+        Square prevSq                                           = ((ss - 1)->currentMove).to_sq();
+        counterMoveAlreadySet = (Move)workerThread.counterMoves[pos.piece_on(prevSq)][prevSq]== move;
+        workerThread.counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+    }
+
     // Update killers if bestmove isn't just determined by previous move
     if (ss->killers[0] != move &&
-        !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -600
+        !(counterMoveAlreadySet && workerThread.mainHistory[us][move.from_to()] < -800
           && (*(ss - 2)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] < 0
           && (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 600))
     {
@@ -1840,15 +1852,6 @@ void update_quiet_stats(
         ss->killers[0] = move;
     }
 
-    workerThread.mainHistory[us][move.from_to()] << bonus;
-    update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
-
-    // Update countermove history
-    if (((ss - 1)->currentMove).is_ok())
-    {
-        Square prevSq                                           = ((ss - 1)->currentMove).to_sq();
-        workerThread.counterMoves[pos.piece_on(prevSq)][prevSq] = move;
-    }
 }
 }
 
