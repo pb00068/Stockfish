@@ -1348,7 +1348,11 @@ moves_loop:  // When in check, search starts here
                 capturesSearched[captureCount++] = move;
 
             else
+            {
                 quietsSearched[quietCount++] = move;
+                if (quietCount < 3 && value < alpha - 800)
+                    quietsSearched[quietCount++] = move;
+            }
         }
     }
 
