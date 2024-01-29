@@ -1088,6 +1088,7 @@ bool Position::see_ge(Move m, int threshold) const {
                   doDisco = false;
                   stm = ~stm;
                   res ^= 1;
+                  occupied ^= sq;
                   //continue;   resume with normal proceeding
                }
             }
