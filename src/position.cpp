@@ -1078,7 +1078,7 @@ bool Position::see_ge(Move m, int threshold) const {
             Square sq = lsb(bb);
             if ((swap = PieceValue[sq] - swap) < res)
                 break;
-            occupied ^= sq;
+
 
             if (type_of(piece_on(sq)) == KING)
             {
@@ -1088,9 +1088,9 @@ bool Position::see_ge(Move m, int threshold) const {
                   doDisco = false;
                   stm = ~stm;
                   res ^= 1;
-                  occupied ^= sq;
-                  //continue;   resume with normal proceeding
+                  continue;  // resume with normal proceeding
                }
+               occupied ^= sq;
             }
         }
         // Locate and remove the next least valuable attacker, and add to
