@@ -1796,7 +1796,7 @@ void update_quiet_stats(
     // Update killers if move is'nt just good because of previous opponent move
     if (ss->killers[0] != move && !ss->inCheck &&
         !(workerThread.mainHistory[pos.side_to_move()][move.from_to()] < -1000 &&
-         (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 2000))
+         (*(ss - 1)->continuationHistory)[pos.moved_piece(move)][move.to_sq()] > 1000))
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
