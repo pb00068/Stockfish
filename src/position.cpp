@@ -1049,6 +1049,7 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
+    bool doDisco = true;
 
     while (true)
     {
@@ -1071,9 +1072,29 @@ bool Position::see_ge(Move m, int threshold) const {
 
         res ^= 1;
 
+
+        if (doDisco && (bb = stmAttackers & blockers_for_king(~stm)))
+        {
+            Square sq = lsb(bb);
+            if ((swap = PieceValue[sq] - swap) < res)
+                break;
+            occupied ^= sq;
+
+            if (type_of(piece_on(sq)) == KING)
+            {
+               if (!(attackers & ~pieces(stm)))
+                    return res;
+               else {
+                  doDisco = false;
+                  stm = ~stm;
+                  res ^= 1;
+                  //continue;   resume with normal proceeding
+               }
+            }
+        }
         // Locate and remove the next least valuable attacker, and add to
         // the bitboard 'attackers' any X-ray attackers behind it.
-        if ((bb = stmAttackers & pieces(PAWN)))
+        else if ((bb = stmAttackers & pieces(PAWN)))
         {
             if ((swap = PawnValue - swap) < res)
                 break;
