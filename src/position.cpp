@@ -1090,6 +1090,8 @@ bool Position::see_ge(Move m, int threshold) const {
             else if ((swap = PieceValue[piece_on(sq)] - swap) < res)
                 break;
             occupied ^= sq;
+            // allow only the king to retake
+            attackers &= pieces(stm) | pieces(~stm, KING);
         }
         // Locate and remove the next least valuable attacker, and add to
         // the bitboard 'attackers' any X-ray attackers behind it.
