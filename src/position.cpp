@@ -1125,7 +1125,7 @@ bool Position::see_ge(Move m, int threshold) const {
               // reverse the result.
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
 
-        if (blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied) && (st->snipers[stm] & occupied))
+        if (sideToMove == stm && blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied) && (st->snipers[stm] & occupied))
             attackers &= pieces(stm) | pieces(~stm, KING);
     }
 
