@@ -465,7 +465,10 @@ void Position::update_slider_blockers(Color c) const {
             if (b & pieces(c))
                 st->pinners[~c] |= sniperSq;
             else
+            {
                 st->snipers[~c] |= sniperSq;
+                st->snipers[~c] |= ksq; // add the king too
+            }
         }
     }
 }
@@ -1125,7 +1128,8 @@ bool Position::see_ge(Move m, int threshold) const {
               // reverse the result.
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
 
-        if (sideToMove == stm && blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied) && (st->snipers[stm] & occupied))
+        if (blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied)
+            && more_than_one(st->snipers[stm] & occupied)) // verify king and sniper still on its place
             attackers &= pieces(stm) | pieces(~stm, KING);
     }
 
