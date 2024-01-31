@@ -446,6 +446,7 @@ void Position::update_slider_blockers(Color c) const {
 
     st->blockersForKing[c] = 0;
     st->pinners[~c]        = 0;
+    st->snipers[~c]        = 0;
 
     // Snipers are sliders that attack 's' when a piece and other snipers are removed
     Bitboard snipers = ((attacks_bb<ROOK>(ksq) & pieces(QUEEN, ROOK))
@@ -463,6 +464,8 @@ void Position::update_slider_blockers(Color c) const {
             st->blockersForKing[c] |= b;
             if (b & pieces(c))
                 st->pinners[~c] |= sniperSq;
+            else
+                st->snipers[~c] |= sniperSq;
         }
     }
 }
@@ -1122,7 +1125,7 @@ bool Position::see_ge(Move m, int threshold) const {
               // reverse the result.
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
 
-        if (blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied))
+        if (blockers_for_king(~stm) != (blockers_for_king(~stm) & occupied) && (st->snipers[stm] & occupied))
             attackers &= pieces(stm) | pieces(~stm, KING);
     }
 
