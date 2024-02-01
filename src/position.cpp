@@ -464,7 +464,7 @@ void Position::update_slider_blockers(Color c) const {
             st->blockersForKing[c] |= b;
             if (b & pieces(c))
                 st->pinners[~c] |= sniperSq;
-            else
+            else if (!st->snipers[~c])
             {
                 st->snipers[~c] |= sniperSq;
                 st->snipers[~c] |= ksq; // add the king too
@@ -1067,6 +1067,8 @@ bool Position::see_ge(Move m, int threshold) const {
               sniperValue = PieceValue[piece_on(to)];
               // adapt swap to new victim
               swap = swap - PieceValue[piece_on(from)] + sniperValue;
+              if(swap <= 0)
+                return true;
             }
             attackers = attackers_to(to, occupied);
          }
