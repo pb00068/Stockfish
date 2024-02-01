@@ -1053,6 +1053,8 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
+    if ((blockers_for_king(~stm) & from) && (piece_on(to) || PieceValue[piece_on(from)] != PawnValue))
+         attackers &= pieces(stm) | pieces(~stm, KING);
     Bitboard stmAttackers, bb;
     int      res = 1;
 
