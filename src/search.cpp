@@ -784,7 +784,7 @@ Value Search::Worker::search(
                if (tto->depth() >= DEPTH_QS_NO_CHECKS
                    && ttoValue != VALUE_NONE  // Only in case of TT access race
                    && (tto->bound() & (ttoValue >= (-beta + 1) ? BOUND_LOWER : BOUND_UPPER)))
-                   return -ttoValue;
+                   return beta;
             }
         }
 
