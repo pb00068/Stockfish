@@ -1089,7 +1089,8 @@ bool Position::see_ge(Move m, int threshold) const {
         {
             if ((swap = PawnValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
+            from = lsb(bb);
+            occupied ^= from;
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
@@ -1098,14 +1099,16 @@ bool Position::see_ge(Move m, int threshold) const {
         {
             if ((swap = KnightValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
+            from = lsb(bb);
+            occupied ^= from;
         }
 
         else if ((bb = stmAttackers & pieces(BISHOP)))
         {
             if ((swap = BishopValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
+            from = lsb(bb);
+            occupied ^= from;
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
@@ -1114,7 +1117,8 @@ bool Position::see_ge(Move m, int threshold) const {
         {
             if ((swap = RookValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
+            from = lsb(bb);
+            occupied ^= from;
 
             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
@@ -1123,7 +1127,8 @@ bool Position::see_ge(Move m, int threshold) const {
         {
             if ((swap = QueenValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
+            from = lsb(bb);
+            occupied ^= from;
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                        | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
@@ -1133,6 +1138,9 @@ bool Position::see_ge(Move m, int threshold) const {
               // If we "capture" with the king but the opponent still has attackers,
               // reverse the result.
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+
+        if (st->blockersForKing[1][stm] & from)
+           i[stm] = 1;
     }
 
     return bool(res);
