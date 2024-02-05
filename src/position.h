@@ -147,6 +147,7 @@ class Position {
 
     // Accessing hash keys
     Key key() const;
+    Key key_otherside() const;
     Key key_after(Move m) const;
     Key material_key() const;
     Key pawn_key() const;
@@ -289,6 +290,7 @@ inline Bitboard Position::pinners(Color c) const { return st->pinners[c]; }
 inline Bitboard Position::check_squares(PieceType pt) const { return st->checkSquares[pt]; }
 
 inline Key Position::key() const { return adjust_key50<false>(st->key); }
+
 
 template<bool AfterMove>
 inline Key Position::adjust_key50(Key k) const {

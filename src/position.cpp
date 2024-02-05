@@ -1138,6 +1138,11 @@ bool Position::is_draw(int ply) const {
     return st->repetition && st->repetition < ply;
 }
 
+Key Position::key_otherside() const
+{
+  return st->key ^ Zobrist::side;
+}
+
 
 // Tests whether there has been at least one repetition
 // of positions since the last capture or pawn move.

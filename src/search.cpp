@@ -782,10 +782,25 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
 
+        if (depth - R <= 0) // here often (more than 90% )we will dive into qsearch with an early TT cutoff so do it direclty here
+        {
+            bool hit;
+            TTEntry* tto = tt.probe(pos.key_otherside(), hit);
+            if (hit){
+               Value ttoValue = value_from_tt(tto->value(), ss->ply, pos.rule50_count());
+               if (tto->depth() >= DEPTH_QS_NO_CHECKS
+                   && ttoValue != VALUE_NONE  // Only in case of TT access race
+                   && (tto->bound() & (ttoValue >= (-beta + 1) ? BOUND_LOWER : BOUND_UPPER)))
+                   return -ttoValue;
+            }
+        }
+
+
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
+
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
