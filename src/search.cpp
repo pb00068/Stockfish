@@ -783,8 +783,8 @@ Value Search::Worker::search(
                Value ttoValue = value_from_tt(tto->value(), ss->ply, pos.rule50_count());
                if (tto->depth() >= DEPTH_QS_NO_CHECKS
                    && ttoValue != VALUE_NONE  // Only in case of TT access race
-                   && (tto->bound() & (ttoValue >= (-beta + 1) ? BOUND_LOWER : BOUND_UPPER)))
-                   return beta;
+                   && (tto->bound() & BOUND_UPPER) && ttoValue < (-beta + 1))
+                   return -ttoValue;
             }
         }
 
