@@ -444,8 +444,10 @@ void Position::update_slider_blockers(Color c) const {
 
     Square ksq = square<KING>(c);
 
-    st->blockersForKing[c] = 0;
-    st->pinners[~c]        = 0;
+    st->blockersForKing[0][c] = 0;
+    st->pinners[0][~c]        = 0;
+    st->blockersForKing[1][c] = 0;
+    st->pinners[1][~c]        = 0;
 
     // Snipers are sliders that attack 's' when a piece and other snipers are removed
     Bitboard snipers = ((attacks_bb<ROOK>(ksq) & pieces(QUEEN, ROOK))
@@ -460,9 +462,15 @@ void Position::update_slider_blockers(Color c) const {
 
         if (b && !more_than_one(b))
         {
-            st->blockersForKing[c] |= b;
+            st->blockersForKing[0][c] |= b;
             if (b & pieces(c))
-                st->pinners[~c] |= sniperSq;
+                st->pinners[0][~c] |= sniperSq;
+        }
+        else if (b && popcount(b) == 2 && !st->blockersForKing[1][c])
+        {
+            st->blockersForKing[1][c] |= b;
+            if (b & pieces(c))
+                st->pinners[1][~c] |= sniperSq;
         }
     }
 }
@@ -1049,6 +1057,10 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
+    int i[2] = {0,0};
+
+    if (st->blockersForKing[1][stm] & from)
+      i[stm] = 1;
 
     while (true)
     {
@@ -1061,9 +1073,9 @@ bool Position::see_ge(Move m, int threshold) const {
 
         // Don't allow pinned pieces to attack as long as there are
         // pinners on their original square.
-        if (pinners(~stm) & occupied)
+        if (pinners(~stm, i[stm]) & occupied)
         {
-            stmAttackers &= ~blockers_for_king(stm);
+            stmAttackers &= ~st->blockersForKing[i[stm]][stm];
 
             if (!stmAttackers)
                 break;
