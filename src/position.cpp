@@ -466,7 +466,7 @@ void Position::update_slider_blockers(Color c) const {
             if (b & pieces(c))
                 st->pinners[0][~c] |= sniperSq;
         }
-        else if (b && popcount(b) == 2 && !st->blockersForKing[1][c])
+        if (!st->blockersForKing[0][c] && !st->blockersForKing[1][c] && b && popcount(b) == 2)
         {
             st->blockersForKing[1][c] |= b;
             if (b & pieces(c))
@@ -1060,7 +1060,16 @@ bool Position::see_ge(Move m, int threshold) const {
     int i[2] = {0,0};
 
     if (st->blockersForKing[1][stm] & from)
+    {
       i[stm] = 1;
+
+      if (attackers & pieces(stm) & st->blockersForKing[0][stm])
+      {
+
+        	sync_cout << *this <<  UCI::move(m, false) << Bitboards::pretty(st->blockersForKing[1][stm]) << Bitboards::pretty(attackers & pieces(stm))  <<  sync_endl;
+        	abort();
+      }
+    }
 
     while (true)
     {
@@ -1076,6 +1085,7 @@ bool Position::see_ge(Move m, int threshold) const {
         if (pinners(~stm, i[stm]) & occupied)
         {
             stmAttackers &= ~st->blockersForKing[i[stm]][stm];
+
 
             if (!stmAttackers)
                 break;
