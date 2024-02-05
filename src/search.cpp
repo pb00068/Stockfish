@@ -781,8 +781,7 @@ Value Search::Worker::search(
             TTEntry* tto = tt.probe(pos.key_otherside(), hit);
             if (hit){
                Value ttoValue = value_from_tt(tto->value(), ss->ply, pos.rule50_count());
-               if (tto->depth() >= DEPTH_QS_NO_CHECKS
-                   && ttoValue != VALUE_NONE  // Only in case of TT access race
+               if (ttoValue != VALUE_NONE  // Only in case of TT access race
                    && (tto->bound() & BOUND_UPPER) && ttoValue < (-beta + 1))
                    return -ttoValue;
             }
