@@ -250,7 +250,7 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
     }
 
-    size_t multiPV = size_t(options["MultiPV"]);
+    multiPV = size_t(options["MultiPV"]);
     Skill skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     // When playing with strength handicap enable MultiPV search that we will
@@ -1027,6 +1027,7 @@ moves_loop:  // When in check, search starts here
                 Value singularBeta  = ttValue - (62 + 52 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
 
+
                 ss->excludedMove = move;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
@@ -1035,6 +1036,10 @@ moves_loop:  // When in check, search starts here
                 if (value < singularBeta)
                 {
                     extension = 1;
+
+                    // finish turn in multiPV 2 modus, solves difficult positions as 8/6pp/1K6/N5P1/3N4/8/npn1P3/k7 w - - 0 1 bm Nab3+
+                    if (thisThread->nmpMinPly && ss->doubleExtensions > 6 && pos.non_pawn_material() < 6000 && thisThread->multiPV == 1)
+                        thisThread->multiPV = 2;
 
                     // Avoid search explosion by limiting the number of double extensions
                     if (!PvNode && ss->doubleExtensions <= 16)
@@ -1873,10 +1878,10 @@ std::string SearchManager::pv(const Search::Worker&     worker,
     const auto& pos       = worker.rootPos;
     size_t      pvIdx     = worker.pvIdx;
     TimePoint   time      = tm.elapsed(nodes) + 1;
-    size_t      multiPV   = std::min(size_t(worker.options["MultiPV"]), rootMoves.size());
+    size_t      multipv   = std::min(size_t(worker.options["MultiPV"]), rootMoves.size());
     uint64_t    tbHits    = threads.tb_hits() + (worker.tbConfig.rootInTB ? rootMoves.size() : 0);
 
-    for (size_t i = 0; i < multiPV; ++i)
+    for (size_t i = 0; i < multipv; ++i)
     {
         bool updated = rootMoves[i].score != -VALUE_INFINITE;
 
