@@ -778,7 +778,7 @@ Value Search::Worker::search(
         pos.do_null_move(st, tt);
         int before = thisThread->nmpMinPly;
         if (depth > 16)
-           // disable nullmove for some plies to not get prone to zugzwang
+           // disable nullmove for some plies to be aware of zugzwang
            thisThread->nmpMinPly = ss->ply + (depth - R) / 2;
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
