@@ -196,13 +196,13 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     for (Thread* th : threads)
     {
         th->worker->limits = limits;
-        th->worker->nodes = th->worker->tbHits = th->worker->nmpMinPly =
-          th->worker->bestMoveChanges          = 0;
+        th->worker->nodes = th->worker->tbHits = th->worker->bestMoveChanges = 0;
         th->worker->rootDepth = th->worker->completedDepth = 0;
         th->worker->rootMoves                              = rootMoves;
         th->worker->rootPos.set(pos.fen(), pos.is_chess960(), &th->worker->rootState);
         th->worker->rootState = setupStates->back();
         th->worker->tbConfig  = tbConfig;
+        th->worker->nmpColor = WHITE;
     }
 
     main_thread()->start_searching();
