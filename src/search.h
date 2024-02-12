@@ -223,7 +223,8 @@ class Worker {
 
     size_t                pvIdx, pvLast;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
-    int                   selDepth, nmpMinPly;
+    int                   selDepth;
+    bool                  nmpLock[COLOR_NB];
 
     Value optimism[COLOR_NB];
 
