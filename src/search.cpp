@@ -764,7 +764,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search (~35 Elo)
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 17379
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 329
-        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= std::max(thisThread->nmpMinPly, 2)
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -776,14 +776,14 @@ Value Search::Worker::search(
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
-        // disable nullmove for some plies at higher depths to not get prone to zugzwang
+        int before = thisThread->nmpMinPly;
         if (depth > 16)
-           thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+           // disable nullmove for some plies to not get prone to zugzwang
+           thisThread->nmpMinPly = ss->ply + (depth - R) / 2;
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
-        if (depth > 16)
-            thisThread->nmpMinPly = 0;
+        thisThread->nmpMinPly = before;
 
         pos.undo_null_move();
 
