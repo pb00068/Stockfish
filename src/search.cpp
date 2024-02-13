@@ -764,7 +764,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search (~35 Elo)
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 17379
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 329
-        && !excludedMove && pos.non_pawn_material(us) && !thisThread->nmpLock[us] && ss->ply > 1
+        && !excludedMove && pos.non_pawn_material(us) && !thisThread->nmpLock[us] && (limits.use_time_management() || ss->ply > 1)
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -779,10 +779,10 @@ Value Search::Worker::search(
         Value nullValue;
         if (depth > 16 && !thisThread->nmpLock[us])
         {
-           // disable nullmove for side to move for remainig search tree to not get prone to zugzwang
-           thisThread->nmpLock[us] = true;
-           nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
-           thisThread->nmpLock[us] = false;
+            // disable nullmove for side to move for remaining search tree to not get prone to zugzwang
+            thisThread->nmpLock[us] = true;
+            nullValue  = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+            thisThread->nmpLock[us] = false;
         }
         else nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
