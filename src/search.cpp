@@ -788,7 +788,7 @@ Value Search::Worker::search(
         for (int i = 2; i <= maxply; i=i+2)
             (ss + i)->nullMoveAllowed = false;
 
-        Value nullValue  = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         for (int i = 2; i <= maxply; i=i+2)
             (ss + i)->nullMoveAllowed = true;
