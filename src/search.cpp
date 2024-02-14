@@ -241,7 +241,7 @@ void Search::Worker::iterative_deepening() {
         (ss + i)->ply = i;
         (ss + i)->nullMoveAllowed = true;
     }
-    if (!limits.use_time_management()) // on infinite analysis mode disallow nm on first ply
+    if (!limits.use_time_management()) // on infinite analysis mode disallow null move on first ply
        (ss + 1)->nullMoveAllowed = false;
     // needed to solve zugzwang problems where nullmove on ply 1 is problematic  for instance 8/8/8/2p5/1pp5/brpp4/1pprp2P/qnkbK3 w - - 0 1  bm h3
     // for normal game play this is supposed to not be a problem because of the gameply shifts (2 halfmoves earlier problematic position will be on ply 3 instead of ply 1)
@@ -781,20 +781,24 @@ Value Search::Worker::search(
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
-        bool dummy = (ss + 1)->nullMoveAllowed;
         (ss + 1)->nullMoveAllowed = false; // disallow subsequent nullmoves
-        // also disable nullmove for side to move for some plies to solve more complex zugzwangs
-        int maxply = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
-        for (int i = 2; i <= maxply; i=i+2)
-            (ss + i)->nullMoveAllowed = false;
+        Value nullValue;
+        if (depth > 16)
+        {
+            // disable nullmove for side to move for some plies to solve more complex zugzwangs
+            int maxply = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
+            for (int i = 2; i <= maxply; i=i+2)
+                (ss + i)->nullMoveAllowed = false;
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+            nullValue  = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
-        for (int i = 2; i <= maxply; i=i+2)
-            (ss + i)->nullMoveAllowed = true;
+            for (int i = 2; i <= maxply; i=i+2)
+                (ss + i)->nullMoveAllowed = true;
+        }
+        else nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
-        (ss + 1)->nullMoveAllowed = dummy; // restore
+        (ss + 1)->nullMoveAllowed = true; // restore
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
