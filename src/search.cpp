@@ -237,9 +237,14 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->staticEval = VALUE_NONE;
     }
 
-    for (int i = 0; i <= MAX_PLY + 2; ++i)
+    for (int i = 0; i <= MAX_PLY + 2; ++i) {
         (ss + i)->ply = i;
-
+        (ss + i)->nullMoveAllowed = true;
+    }
+    if (!limits.use_time_management()) // on infinite analysis mode disallow nm on first ply
+       (ss + 1)->nullMoveAllowed = false;
+    // needed to solve zugzwang problems where nullmove on ply 1 is problematic  for instance 8/8/8/2p5/1pp5/brpp4/1pprp2P/qnkbK3 w - - 0 1  bm h3
+    // for normal game play this is supposed to not be a problem because of the gameply shifts (2 halfmoves earlier problematic position will be on ply 3 instead of ply 1)
     ss->pv = pv;
 
     if (mainThread)
@@ -761,10 +766,10 @@ Value Search::Worker::search(
         && (!ttMove || ttCapture))
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
-    // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 17379
+    // Step 9. Null move search with zugzwang detection (~35 Elo)
+    if (!PvNode && ss->nullMoveAllowed && (ss - 1)->statScore < 17379
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 329
-        && !excludedMove && pos.non_pawn_material(us) && !thisThread->nmpLock[us] && (limits.use_time_management() || ss->ply > 1)
+        && !excludedMove && pos.non_pawn_material(us)
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -776,17 +781,20 @@ Value Search::Worker::search(
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
-        Value nullValue;
-        if (depth > 16 && !thisThread->nmpLock[us])
-        {
-            // disable nullmove for side to move for remaining search tree to not get prone to zugzwang
-            thisThread->nmpLock[us] = true;
-            nullValue  = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
-            thisThread->nmpLock[us] = false;
-        }
-        else nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        bool dummy = (ss + 1)->nullMoveAllowed;
+        (ss + 1)->nullMoveAllowed = false; // disallow subsequent nullmoves
+        // also disable nullmove for side to move for some plies to solve more complex zugzwangs
+        int maxply = std::min(depth - R, MAX_PLY - ss->ply);
+        for (int i = 2; i <= maxply; i=i+2)
+            (ss + i)->nullMoveAllowed = false;
+
+        Value nullValue  = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+
+        for (int i = 2; i <= maxply; i=i+2)
+            (ss + i)->nullMoveAllowed = true;
 
         pos.undo_null_move();
+        (ss + 1)->nullMoveAllowed = dummy; // restore
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
