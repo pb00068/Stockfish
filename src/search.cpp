@@ -784,7 +784,7 @@ Value Search::Worker::search(
         bool dummy = (ss + 1)->nullMoveAllowed;
         (ss + 1)->nullMoveAllowed = false; // disallow subsequent nullmoves
         // also disable nullmove for side to move for some plies to solve more complex zugzwangs
-        int maxply = std::min(depth - R, MAX_PLY - ss->ply);
+        int maxply = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
         for (int i = 2; i <= maxply; i=i+2)
             (ss + i)->nullMoveAllowed = false;
 
