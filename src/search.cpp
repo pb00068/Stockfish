@@ -798,7 +798,7 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16 || thisThread->nullmoves[us] <=1) // no need to do verification
+            if (thisThread->nmpMinPly || depth < 16 || thisThread->nullmoves[us] <=1 || ss->nullmoves[us] != 1) // no need to do verification
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
