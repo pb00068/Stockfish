@@ -68,6 +68,7 @@ struct Stack {
     bool            ttHit;
     int             multipleExtensions;
     int             cutoffCnt;
+    int             nullmoves[2];
 };
 
 
@@ -225,7 +226,7 @@ class Worker {
 
     size_t                pvIdx, pvLast;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
-    int                   selDepth, nmpMinPly;
+    int                   selDepth, nmpMinPly, nullmoves[2], nmpMinPly2[2];
 
     Value optimism[COLOR_NB];
 

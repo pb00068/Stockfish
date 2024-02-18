@@ -780,6 +780,15 @@ Value Search::Worker::search(
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
+
+        ss->nullmoves[us] = (ss-2)->nullmoves[us] + 1;
+        if (ss->nullmoves[us] == 1)
+        {
+            thisThread->nullmoves[us] = 0;
+            thisThread->nmpMinPly2[us] = ss->ply + 3 * (depth - R) / 4;
+        }
+        else if (ss->ply <= thisThread->nmpMinPly2[us])
+            thisThread->nullmoves[us] = std::max(thisThread->nullmoves[us], ss->nullmoves[us]);
         pos.do_null_move(st, tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
@@ -789,7 +798,7 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16)
+            if (thisThread->nmpMinPly || depth < 16 || thisThread->nullmoves[us] <=1) // no need to do verification
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
