@@ -582,7 +582,7 @@ Value Search::Worker::search(
     (ss + 1)->excludedMove = bestMove = Move::none();
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = Move::none();
     (ss + 2)->cutoffCnt                         = 0;
-    ss->nullmoves[us] = (ss-2)->nullmoves[us];
+    ss->nullmoves = (ss-2)->nullmoves;
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
@@ -776,27 +776,24 @@ Value Search::Worker::search(
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
-        Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
+        Depth R = std::min(int(eval - beta) / 154, std::min(6, ss->ply/2)) + depth / (3 + ss->nullmoves);
+        if (++ss->nullmoves == 1) // additional reduction for first null move
+           R += std::min(4, ss->ply/2);
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
-
-        ss->nullmoves[us]++;
         pos.do_null_move(st, tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+        ss->nullmoves--;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
             if (thisThread->nmpMinPly || depth < 16)
-                return nullValue;
-
-            // let do verification some plies near the root
-            if ( ss->nullmoves[us] > 1 &&  (ss-6)->nullmoves[us] != ss->nullmoves[us])
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed

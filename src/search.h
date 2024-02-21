@@ -68,7 +68,7 @@ struct Stack {
     bool            ttHit;
     int             multipleExtensions;
     int             cutoffCnt;
-    int             nullmoves[2];
+    int             nullmoves;
 };
 
 
