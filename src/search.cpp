@@ -236,6 +236,7 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationHistory =
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->staticEval = VALUE_NONE;
+        (ss - i)->nullmoves=0;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -777,7 +778,7 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, std::min(6, ss->ply/2)) + depth / (3 + ss->nullmoves);
-        if (++ss->nullmoves == 1) // additional reduction for first null move
+        if (++(ss->nullmoves) == 1) // additional reduction for first null move
            R += std::min(4, ss->ply/2);
 
         ss->currentMove         = Move::null();
