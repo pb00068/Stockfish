@@ -778,7 +778,8 @@ Value Search::Worker::search(
         Value nullValue;
         if (depth > 16)
         {
-            // disable nullmove for side to move for some plies to solve more complex zugzwangs
+            // disable nullmove for side to move for some plies to detect zugzwangs
+            // and limit horizon effect
             int maxply = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
             for (int i = 2; i <= maxply; i=i+2)
                 (ss + i)->nullMoveAllowed = false;
