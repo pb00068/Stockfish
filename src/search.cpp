@@ -243,12 +243,13 @@ void Search::Worker::iterative_deepening() {
         (ss + i)->ply = i;
         (ss + i)->nullMoveAllowed = true;
     }
-    if (!limits.use_time_management()) // on infinite analysis mode disallow nm on first ply
+    if (!limits.use_time_management()) // on infinite analysis mode prohibit nm on first ply
         (ss + 1)->nullMoveAllowed = false;
        // needed to solve zugzwang problems where nullmove on ply 1 is problematic for instance 8/8/8/2p5/1pp5/brpp4/1pprp2P/qnkbK3 w - - 0 1  bm h3
        // for normal game play this is supposed to not be a problem because of the gameply shifts (2 halfmoves earlier problematic position will be on ply 3 instead of ply 1)
 
     ss->pv = pv;
+    this->nullmoves = 0;
 
     if (mainThread)
     {
@@ -541,7 +542,7 @@ Value Search::Worker::search(
     Depth    extension, newDepth;
     Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool     givesCheck, improving, priorCapture;
-    bool     capture, moveCountPruning, ttCapture;
+    bool     capture, moveCountPruning, ttCapture, nmAllowed;
     Piece    movedPiece;
     int      moveCount, captureCount, quietCount;
 
@@ -773,10 +774,9 @@ Value Search::Worker::search(
         && (!ttMove || ttCapture))
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
-    // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && ss->nullMoveAllowed && (ss - 1)->statScore < 16620
+    // Step 9. Null move search (~35 Elo)
+    if (ss->nullMoveAllowed && this->nullmoves <=1
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
-        && !excludedMove && pos.non_pawn_material(us)
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -789,18 +789,20 @@ Value Search::Worker::search(
 
         pos.do_null_move(st, tt);
         bool dummy = (ss + 1)->nullMoveAllowed;
-        (ss + 1)->nullMoveAllowed = false; // disallow subsequent nullmoves
-        // also disable nullmove for side to move for some plies to solve more complex zugzwangs
-        int maxply = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
-        for (int i = 2; i <= maxply; i=i+2)
+        this->nullmoves++;
+        (ss + 1)->nullMoveAllowed = false; // prohibit subsequent nullmoves
+        // also disable nullmove on side to move for some plies
+        int untilPly = std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply);
+        for (int i = 2; i <= untilPly; i=i+2)
           (ss + i)->nullMoveAllowed = false;
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
-        for (int i = 2; i <= maxply; i=i+2)
+        for (int i = 2; i <= untilPly; i=i+2)
             (ss + i)->nullMoveAllowed = true;
 
         pos.undo_null_move();
+        this->nullmoves--;
         (ss + 1)->nullMoveAllowed = dummy; // restore
 
         // Do not return unproven mate or TB scores
@@ -1028,11 +1030,13 @@ moves_loop:  // When in check, search starts here
             {
                 Value singularBeta  = ttValue - (60 + 54 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
-
+                bool nmallow = ss->nullMoveAllowed;
+                ss->nullMoveAllowed = false;
                 ss->excludedMove = move;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
+                ss->nullMoveAllowed = nmallow;
 
                 if (value < singularBeta)
                 {
@@ -1094,6 +1098,7 @@ moves_loop:  // When in check, search starts here
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
         uint64_t nodeCount = rootNode ? uint64_t(nodes) : 0;
+        nmAllowed =  (ss + 1)->nullMoveAllowed;
 
         // Step 16. Make the move
         thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
@@ -1132,6 +1137,9 @@ moves_loop:  // When in check, search starts here
                       + (*contHist[0])[movedPiece][move.to_sq()]
                       + (*contHist[1])[movedPiece][move.to_sq()]
                       + (*contHist[3])[movedPiece][move.to_sq()] - 4392;
+
+        if (ss->statScore >= 16620)
+           (ss + 1)->nullMoveAllowed = false;
 
         // Decrease/increase reduction for moves with a good/bad history (~8 Elo)
         r -= ss->statScore / 14189;
@@ -1187,9 +1195,11 @@ moves_loop:  // When in check, search starts here
         {
             (ss + 1)->pv    = pv;
             (ss + 1)->pv[0] = Move::none();
+            (ss + 1)->nullMoveAllowed = false;
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
+        (ss + 1)->nullMoveAllowed = nmAllowed; // restore
 
         // Step 19. Undo move
         pos.undo_move(move);
