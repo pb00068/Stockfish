@@ -775,7 +775,7 @@ Value Search::Worker::search(
         pos.do_null_move(st, tt);
         (ss + 1)->nullMoveAllowed = false; // prohibit subsequent nullmoves
 
-        // at higher depth disable nullmove for side to move for some plies to detect zugzwang and limit horizon effect
+        // at higher depth disable nullmove on side to move for some plies to get less prone to zugzwang and horizon effect
         int untilPly = depth > 16 ? std::min(3 * (depth - R) / 4, MAX_PLY - ss->ply) : 0;
         for (int i = 2; i <= untilPly; i=i+2)
             (ss + i)->nullMoveAllowed = false;
