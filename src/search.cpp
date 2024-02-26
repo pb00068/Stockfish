@@ -767,7 +767,7 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620
+    if (!PvNode &&  (ss - 1)->statScore < 16620
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -775,8 +775,12 @@ Value Search::Worker::search(
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
-        Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
+        Depth R = depth / 3;
+        if (!thisThread->nmpMinPly) // more reduction on first null move, less on recursive
+          R += std::min(int(eval - beta) / 154, 6) + 4;
 
+        int restore = thisThread->nmpMinPly;
+        thisThread->nmpMinPly = ss->ply + 3;
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -785,6 +789,7 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+        thisThread->nmpMinPly = restore;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
