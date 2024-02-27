@@ -60,6 +60,7 @@ Value futility_margin(Depth d, bool noTtCutNode, bool improving) {
     return (futilityMult * d - 3 * futilityMult / 2 * improving);
 }
 
+const int NULLMOVE_BARRIER = 17379;
 constexpr int futility_move_count(bool improving, Depth depth) {
     return improving ? (3 + depth * depth) : (3 + depth * depth) / 2;
 }
@@ -767,9 +768,9 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode &&  (ss - 1)->statScore < 16620
+    if ((ss - 1)->statScore < NULLMOVE_BARRIER
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
-        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -1034,6 +1035,7 @@ moves_loop:  // When in check, search starts here
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
+                ss->statScore = NULLMOVE_BARRIER; // no nullmove with excludedMove
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
@@ -1191,6 +1193,7 @@ moves_loop:  // When in check, search starts here
         {
             (ss + 1)->pv    = pv;
             (ss + 1)->pv[0] = Move::none();
+            ss->statScore = NULLMOVE_BARRIER; // disables nullmoves on PV
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
