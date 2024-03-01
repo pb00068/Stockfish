@@ -775,8 +775,11 @@ Value Search::Worker::search(
         assert(eval - beta >= 0);
 
         // no null move search for passer pawn pushes, these suffer from horizon effect
-        if (type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN && !(pawn_waytoPromotion(~us, (ss - 1)->currentMove.to_sq()) & pos.pieces(us, PAWN)))
-          goto step10;
+        if ((ss - 1)->statScore >  -10000 && pos.non_pawn_material(us) <= 3 * BishopValue && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN)
+        {
+             if (!(pawn_waytoPromotion(~us, (ss - 1)->currentMove.to_sq()) & pos.pieces(us, PAWN)))
+                goto step10;
+        }
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
