@@ -767,12 +767,16 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620
+    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 17379
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
+
+        // no null move search for passer pawn pushes, these suffer from horizon effect
+        if (type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN && !(pawn_waytoPromotion(~us, (ss - 1)->currentMove.to_sq()) & pos.pieces(us, PAWN)))
+          goto step10;
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
@@ -806,6 +810,7 @@ Value Search::Worker::search(
                 return nullValue;
         }
     }
+    step10:
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 2,

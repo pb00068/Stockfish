@@ -166,6 +166,13 @@ inline Bitboard line_bb(Square s1, Square s2) {
     return LineBB[s1][s2];
 }
 
+/// adjacent_files_bb() returns a bitboard representing all the squares on the
+/// adjacent files and the file itself of a given square.
+
+constexpr Bitboard adjacent_files_bb(Square s) {
+  return file_bb(s) | shift<EAST>(file_bb(s)) | shift<WEST>(file_bb(s));
+}
+
 
 // Returns a bitboard representing the squares in the semi-open
 // segment between the squares s1 and s2 (excluding s1 but including s2). If the
@@ -179,7 +186,14 @@ inline Bitboard between_bb(Square s1, Square s2) {
     assert(is_ok(s1) && is_ok(s2));
     return BetweenBB[s1][s2];
 }
+/// forward_ranks_bb() returns a bitboard representing the squares on the ranks
+/// in front of the given one, from the point of view of the given color. For instance,
+/// forward_ranks_bb(BLACK, SQ_D3) will return the 16 squares on ranks 1 and 2.
 
+constexpr Bitboard forward_ranks_bb(Color c, Square s) {
+  return c == WHITE ? ~Rank1BB << 8 * relative_rank(WHITE, s)
+                    : ~Rank8BB >> 8 * relative_rank(BLACK, s);
+}
 // Returns true if the squares s1, s2 and s3 are aligned either on a
 // straight or on a diagonal line.
 inline bool aligned(Square s1, Square s2, Square s3) { return line_bb(s1, s2) & s3; }
@@ -238,6 +252,14 @@ inline Bitboard attacks_bb(Square s, Bitboard occupied) {
         return PseudoAttacks[Pt][s];
     }
 }
+
+/// pawn_waytoPromotion() returns a bitboard representing all the squares that
+/// determine with presence of a enemy pawn it if is a passed pawn of not
+
+constexpr Bitboard pawn_waytoPromotion(Color c, Square s) {
+  return forward_ranks_bb(c, s) & adjacent_files_bb(s);
+}
+
 
 // Returns the attacks by the given piece
 // assuming the board is occupied according to the passed Bitboard.

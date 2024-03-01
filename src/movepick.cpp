@@ -25,6 +25,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "uci.h"
 
 namespace Stockfish {
 
@@ -188,6 +189,13 @@ void MovePicker::score() {
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;
+
+//            // bonus for passed pawns moving forward (or becoming a passer)
+//            if (type_of(pc) == PAWN && !(pawn_waytoPromotion(pos.side_to_move(), to) & pos.pieces(~pos.side_to_move(), PAWN)))
+//            {
+//            	//sync_cout << pos << UCI::move(m, false) << sync_endl;
+//            	m.value += 16384;
+//            }
 
             // bonus for escaping from capture
             m.value += threatenedPieces & from ? (pt == QUEEN && !(to & threatenedByRook)   ? 50000
