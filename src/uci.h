@@ -49,7 +49,7 @@ class UCI {
     static int         to_cp(Value v);
     static std::string value(Value v);
     static std::string square(Square s);
-    static std::string move(Move m, bool chess960);
+    static std::string move(Move m, bool chess960 = false);
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 

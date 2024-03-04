@@ -71,6 +71,9 @@ Value to_corrected_static_eval(Value v, const Worker& w, const Position& pos) {
     return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
+
+const Bitboard pattern = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2 | SQ_B3 | SQ_B5 | SQ_B6;
+
 // History and stats update bonus, based on depth
 int stat_bonus(Depth d) { return std::min(246 * d - 351, 1136); }
 
@@ -768,26 +771,37 @@ Value Search::Worker::search(
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
+				//&&  (ss - 1)->currentMove != Move(SQ_D4, SQ_B5))
     {
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
 
+        //if ( (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern && file_of((ss - 1)->currentMove.to_sq()) == FILE_E)
+        // goto step10;
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-
+        if (!thisThread->nmpMinPly)
+        thisThread->nmpMinPly=1;
         pos.do_null_move(st, tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+        if (thisThread->nmpMinPly==1)
+                thisThread->nmpMinPly=0;
 
+        if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
+                            sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16)
+            if (thisThread->nmpMinPly>1 || depth < 16) {
+                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
+                     sync_cout << pos << UCI::move((ss-1)->currentMove) << " refuted nm search with depth : " <<  depth  << " R:" << R << " effective d:" << depth -R << sync_endl;
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
 
@@ -803,6 +817,7 @@ Value Search::Worker::search(
                 return nullValue;
         }
     }
+    step10:
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -921,11 +936,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread()
-            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
-            sync_cout << "info depth " << depth << " currmove "
-                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
-                      << moveCount + thisThread->pvIdx << sync_endl;
+//        if (rootNode && is_mainthread()
+//            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+//            sync_cout << "info depth " << depth << " currmove "
+//                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
+//                      << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
