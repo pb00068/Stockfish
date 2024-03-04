@@ -774,6 +774,13 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
 
+        // limit reduction on recursive nullmove if testing a pawn move
+        if (thisThread->nmpMinPly == 1 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN)
+          R = 1;
+
+        int restore = thisThread->nmpMinPly;
+        if (!restore)
+            thisThread->nmpMinPly = 1; // use this to know that we have at least one nullmove in search tree
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -782,6 +789,8 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+
+        thisThread->nmpMinPly = restore;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
@@ -797,7 +806,7 @@ Value Search::Worker::search(
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 
-            thisThread->nmpMinPly = 0;
+            thisThread->nmpMinPly = restore;
 
             if (v >= beta)
                 return nullValue;
