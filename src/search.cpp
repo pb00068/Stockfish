@@ -793,7 +793,7 @@ Value Search::Worker::search(
                 thisThread->nmpMinPly=0;
 
         if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
-                            sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
+                         sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
