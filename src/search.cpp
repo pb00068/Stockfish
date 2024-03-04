@@ -803,7 +803,7 @@ Value Search::Worker::search(
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 
-            thisThread->nmpMinPly = 0;
+            thisThread->nmpMinPly = restore;
 
             if (v >= beta)
                 return nullValue;
