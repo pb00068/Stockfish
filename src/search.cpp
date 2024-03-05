@@ -585,6 +585,7 @@ Value Search::Worker::search(
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
+    ss->capturesOrChecks=0;
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
@@ -774,7 +775,7 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
 
-        if (depth - R > 0)
+        if (depth - R > 0 || (ss-1)->capturesOrChecks > 0)
         {
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
@@ -901,6 +902,7 @@ moves_loop:  // When in check, search starts here
     value            = bestValue;
     moveCountPruning = false;
 
+
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != Move::none())
@@ -936,6 +938,8 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
+
+        ss->capturesOrChecks += bool(givesCheck || capture);
 
         // Calculate new depth for this move
         newDepth = depth - 1;
