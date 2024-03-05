@@ -549,7 +549,10 @@ Value Search::Worker::search(
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
-    ss->depth = depth;
+    if (!ss->excludedMove)
+         ss->dept = depth;
+    //if (pos.checkers() && ss->ply==1)
+    //	sync_cout << "info checkers  on ply " << ss->ply  << " depth " << depth << sync_endl;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -746,6 +749,15 @@ Value Search::Worker::search(
                 ? ss->staticEval > (ss - 2)->staticEval
                 : (ss - 4)->staticEval != VALUE_NONE && ss->staticEval > (ss - 4)->staticEval;
 
+
+    if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+                    {
+                    	sync_cout << pos << sync_endl;
+                    	for (int p=0; p<= ss->ply; p++)
+                       sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+
+                         sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " before step 7  rootDepth: " << thisThread->rootDepth << sync_endl;
+                    }
     // Step 7. Razoring (~1 Elo)
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
@@ -798,12 +810,12 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly>1 || depth < 16) {
-                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+            if (thisThread->nmpMinPly || depth < 16) {
+                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
                 {
                 	sync_cout << pos << sync_endl;
                 	for (int p=0; p<= ss->ply; p++)
-                   sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->depth << sync_endl;
+                   sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
 
                      sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
                 }
@@ -1046,6 +1058,7 @@ moves_loop:  // When in check, search starts here
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
+                ss->newdepth = singularDepth;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
@@ -1174,8 +1187,10 @@ moves_loop:  // When in check, search starts here
 
                 newDepth += doDeeperSearch - doShallowerSearch;
 
+                ss->newdepth = newDepth;
                 if (newDepth > d)
                     value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+
 
                 // Post LMR continuation history updates (~1 Elo)
                 int bonus = value <= alpha ? -stat_malus(newDepth)
@@ -1192,6 +1207,7 @@ moves_loop:  // When in check, search starts here
             // Increase reduction if ttMove is not present (~1 Elo)
             if (!ttMove)
                 r += 2;
+            ss->newdepth = newDepth - (r > 3);
 
             // Note that if expected reduction is high, we reduce search depth by 1 here (~9 Elo)
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth - (r > 3), !cutNode);
@@ -1203,7 +1219,7 @@ moves_loop:  // When in check, search starts here
         {
             (ss + 1)->pv    = pv;
             (ss + 1)->pv[0] = Move::none();
-
+            ss->newdepth =  newDepth;
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
