@@ -764,6 +764,7 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
+    ss->nullmoves = (ss-2)->nullmoves;
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
@@ -775,12 +776,11 @@ Value Search::Worker::search(
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
 
         // limit reduction on recursive nullmove if testing a pawn move
-        if (thisThread->nmpMinPly == 1 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN)
-          R = 1;
+        //if (ss->nullmoves > 0 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN && !more_than_one(file_bb((ss - 1)->currentMove.to_sq()) & pos.pieces()))
+         // R = 1;
 
         int restore = thisThread->nmpMinPly;
-        if (!restore)
-            thisThread->nmpMinPly = 1; // use this to know that we have at least one nullmove in search tree
+        ss->nullmoves++;
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -789,6 +789,7 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+        ss->nullmoves--;
 
         thisThread->nmpMinPly = restore;
 
