@@ -793,32 +793,36 @@ Value Search::Worker::search(
 
         //if ( (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern && file_of((ss - 1)->currentMove.to_sq()) == FILE_E)
         // goto step10;
+
+        //if (thisThread->nmpMinPly == 1 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN)
+         // R = 1;
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        bool restore = false;
         if (!thisThread->nmpMinPly)
-        thisThread->nmpMinPly=1;
+             thisThread->nmpMinPly=1, restore = true;
         pos.do_null_move(st, tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
-        if (thisThread->nmpMinPly==1)
-                thisThread->nmpMinPly=0;
+        if (restore)
+          thisThread->nmpMinPly=0;
 
         //if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
         //                 sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16) {
-                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
-                {
-                	sync_cout << pos << sync_endl;
-                	for (int p=0; p<= ss->ply; p++)
-                   sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+        if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+                 {
+                        	sync_cout << pos << sync_endl;
+                        	for (int p=0; p<= ss->ply; p++)
+                           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
+	                }
+            if (thisThread->nmpMinPly>1 || depth < 16) {
 
-                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
-                }
                 return nullValue;
             }
 
@@ -833,7 +837,16 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+              if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+              {
+                   	sync_cout << pos << sync_endl;
+                   	for (int p=0; p<= ss->ply; p++)
+                      sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << sync_endl;
+               }
                 return nullValue;
+            }
         }
         else if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
         {
