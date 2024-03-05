@@ -549,6 +549,7 @@ Value Search::Worker::search(
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
+    ss->depth = depth;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -792,14 +793,20 @@ Value Search::Worker::search(
         if (thisThread->nmpMinPly==1)
                 thisThread->nmpMinPly=0;
 
-        if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
-                         sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
+        //if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
+        //                 sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
             if (thisThread->nmpMinPly>1 || depth < 16) {
-                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
-                     sync_cout << pos << UCI::move((ss-1)->currentMove) << " refuted nm search with depth : " <<  depth  << " R:" << R << " effective d:" << depth -R << sync_endl;
+                if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+                {
+                	sync_cout << pos << sync_endl;
+                	for (int p=0; p<= ss->ply; p++)
+                   sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->depth << sync_endl;
+
+                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
+                }
                 return nullValue;
             }
 
