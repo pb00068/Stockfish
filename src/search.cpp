@@ -750,14 +750,14 @@ Value Search::Worker::search(
                 : (ss - 4)->staticEval != VALUE_NONE && ss->staticEval > (ss - 4)->staticEval;
 
 
-    if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
-                    {
-                    	sync_cout << pos << sync_endl;
-                    	for (int p=0; p<= ss->ply; p++)
-                       sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-
-                         sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " before step 7  rootDepth: " << thisThread->rootDepth << sync_endl;
-                    }
+//    if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+//                    {
+//                    	sync_cout << pos << sync_endl;
+//                    	for (int p=0; p<= ss->ply; p++)
+//                       sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+//
+//                         sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " before step 7  rootDepth: " << thisThread->rootDepth << sync_endl;
+//                    }
     // Step 7. Razoring (~1 Elo)
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
@@ -835,8 +835,16 @@ Value Search::Worker::search(
             if (v >= beta)
                 return nullValue;
         }
+        else if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+        {
+        	sync_cout << pos << sync_endl;
+        	for (int p=0; p<= ss->ply; p++)
+           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+
+             sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " NOT REFUTED through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
+        }
     }
-    step10:
+   // step10:
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.

@@ -59,6 +59,8 @@ enum Stages {
     QCHECK
 };
 
+const Bitboard pattern = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2 | SQ_B3 | SQ_B5 | SQ_B6;
+
 // Sort moves in descending order up to and including
 // a given limit. The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
@@ -185,6 +187,9 @@ void MovePicker::score() {
             m.value += (*continuationHistory[2])[pc][to] / 4;
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
+
+//            if (pc == W_PAWN && (pos.pieces() & pattern) == pattern && from == SQ_E2)
+//               m.value += 900000;
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;
