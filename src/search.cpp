@@ -559,8 +559,20 @@ Value Search::Worker::search(
         main_manager()->check_time(*thisThread);
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
-    if (PvNode && thisThread->selDepth < ss->ply + 1)
+    if (thisThread->selDepth < ss->ply + 1)
+    {
         thisThread->selDepth = ss->ply + 1;
+
+    }
+    if (thisThread->nmpMinPly &&  (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
+           {
+    	if (pos.pieces(QUEEN))
+           sync_cout << pos << "info path: " << sync_endl;
+    	else
+    		 sync_cout << "info path: " << sync_endl;
+           for (int p=0; p< ss->ply; p++)
+                sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+           }
 
     if (!rootNode)
     {
@@ -803,6 +815,7 @@ Value Search::Worker::search(
              thisThread->nmpMinPly=1, restore = true;
         pos.do_null_move(st, tt);
 
+        thisThread->selDepth = 0;
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
@@ -816,10 +829,11 @@ Value Search::Worker::search(
         {
         if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
                  {
-                        	sync_cout << pos << sync_endl;
+
+                        	   sync_cout << pos << sync_endl;
                         	for (int p=0; p<= ss->ply; p++)
                            sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
+        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " seldepth " << thisThread->selDepth << sync_endl;
 	                }
             if (thisThread->nmpMinPly>1 || depth < 16) {
 
@@ -843,7 +857,7 @@ Value Search::Worker::search(
                    	sync_cout << pos << sync_endl;
                    	for (int p=0; p<= ss->ply; p++)
                       sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << sync_endl;
+   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << " seldepth " << thisThread->selDepth << sync_endl;
                }
                 return nullValue;
             }
@@ -966,6 +980,10 @@ moves_loop:  // When in check, search starts here
         if (!pos.legal(move))
             continue;
 
+        movedPiece = pos.moved_piece(move);
+        if (((pos.pieces() & pattern) == pattern) && (movedPiece == W_KING || type_of(movedPiece) == KNIGHT))
+           continue;
+
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
         // searched and those of lower "TB rank" if we are in a TB root position.
@@ -986,7 +1004,7 @@ moves_loop:  // When in check, search starts here
 
         extension  = 0;
         capture    = pos.capture_stage(move);
-        movedPiece = pos.moved_piece(move);
+
         givesCheck = pos.gives_check(move);
 
         // Calculate new depth for this move
@@ -1457,7 +1475,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
     moveCount          = 0;
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
-    if (PvNode && thisThread->selDepth < ss->ply + 1)
+    if (thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
 
     // Step 2. Check for an immediate draw or maximum ply reached
