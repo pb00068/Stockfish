@@ -775,9 +775,22 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 154, 6) + depth / 3 + 4;
 
-        // limit reduction on recursive nullmove if testing a pawn move
-        //if (ss->nullmoves > 0 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN && !more_than_one(file_bb((ss - 1)->currentMove.to_sq()) & pos.pieces()))
-         // R = 1;
+        Move pushToPromo = Move::none();
+        StateInfo st2,st3;
+        // on recursive nullmove if testing a passer pawn push, push it directly to promotion square
+        if (ss->nullmoves && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN && !more_than_one(file_bb((ss - 1)->currentMove.to_sq()) & pos.pieces()))
+        {
+           Square to = lsb(file_bb((ss - 1)->currentMove.to_sq()) & rank_bb(relative_rank(~us, RANK_8)));
+           pushToPromo = Move::make<PROMOTION>((ss - 1)->currentMove.to_sq(), to, QUEEN);
+           //sync_cout << pos << UCI::move(pushToPromo, false) << " "  <<  Bitboards::pretty(attacks_bb(QUEEN, to, pos.pieces()) & pos.square<KING>(~us)) << sync_endl;
+           if (!(attacks_bb(QUEEN, to, pos.pieces()) & pos.square<KING>(us)) && !(pos.blockers_for_king(~us) & (ss - 1)->currentMove.to_sq())) // we cant do a null move when in check
+           {
+             pos.do_null_move(st2, tt);
+             pos.do_move(pushToPromo, st3);
+             R = depth / 3;
+           }
+           else pushToPromo = Move::none();
+        }
 
         int restore = thisThread->nmpMinPly;
         ss->nullmoves++;
@@ -790,6 +803,11 @@ Value Search::Worker::search(
 
         pos.undo_null_move();
         ss->nullmoves--;
+        if (pushToPromo != Move::none())
+        {
+           pos.undo_move(pushToPromo);
+           pos.undo_null_move();
+        }
 
         thisThread->nmpMinPly = restore;
 
