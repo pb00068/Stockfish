@@ -72,6 +72,34 @@ Value to_corrected_static_eval(Value v, const Worker& w, const Position& pos) {
 }
 
 
+const int pvline[] = { 2065, 1, 1761, 3559, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3608, 2950, 644, 388, 74, 1115, 1563, 2139, 659, 1749, 530, 267, 1244, 722, 16961, 1169, 1821, 1089, 1877, 101, 1366, 3241, 1422, 2398, 909, 2658, 852, 2202, 1291, 1941, 706, 1682, 129, 1393, 66, 3143};
+                     //lommer simplified 8/7p/1K6/N7/3NP3/8/npn5/k7 w - - 0 1
+
+
+bool isOnPvLine(Stack * ss) {
+//    if (m.raw() != pvline[ss->ply])
+//      return false;
+	  int currentPly = ss->ply;
+    int i=0;
+    for (i=0; i< ss->ply; i+=2) {
+       if ((ss-currentPly+i)->currentMove.raw() != pvline[i])
+         return false;
+    }
+    return true;
+}
+
+bool isOnPvLine(Stack * ss, Move m) {
+    return m.raw() == pvline[ss->ply] && isOnPvLine(ss);
+}
+
+void printPath(Stack * ss)
+{
+     sync_cout << "info path: " << sync_endl;
+    for (int p=0; p< ss->ply; p++)
+                sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+}
+
+
 const Bitboard pattern = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2 | SQ_B3 | SQ_B5 | SQ_B6;
 
 // History and stats update bonus, based on depth
@@ -564,15 +592,15 @@ Value Search::Worker::search(
         thisThread->selDepth = ss->ply + 1;
 
     }
-    if (thisThread->nmpMinPly &&  (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
-           {
-    	if (pos.pieces(QUEEN))
-           sync_cout << pos << "info path: " << sync_endl;
-    	else
-    		 sync_cout << "info path: " << sync_endl;
-           for (int p=0; p< ss->ply; p++)
-                sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-           }
+//    if (thisThread->nmpMinPly &&  (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
+//           {
+//    	if (pos.pieces(QUEEN))
+//           sync_cout << pos << "info path: " << sync_endl;
+//    	else
+//    		 sync_cout << "info path: " << sync_endl;
+//           for (int p=0; p< ss->ply; p++)
+//                sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+//           }
 
     if (!rootNode)
     {
@@ -642,9 +670,15 @@ Value Search::Worker::search(
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
+        {
+        	if (ttMove && ttValue >= beta && isOnPvLine(ss, ttMove))
+        	    	    sync_cout << " leaving path tt early exit  ttValue >= beta  move " << UCI::move(ttMove)  << "  d: " << depth << pos << sync_endl;
+        	else if (ttValue < beta && isOnPvLine(ss))
+        	       sync_cout << " leaving path tt early exit  ttValue < beta  d: " << depth << pos << sync_endl;
             return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
                    ? (ttValue * 3 + beta) / 4
                    : ttValue;
+        }
     }
 
     // Step 5. Tablebases probe
@@ -778,7 +812,11 @@ Value Search::Worker::search(
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
+        {
+        	if (isOnPvLine(ss))
+        	    	    sync_cout << " leaving path Step 7. Razoring  d: " << 0 << pos << sync_endl;
             return value;
+        }
     }
 
     // Step 8. Futility pruning: child node (~40 Elo)
@@ -788,8 +826,13 @@ Value Search::Worker::search(
                - (ss - 1)->statScore / 314
              >= beta
         && eval >= beta && eval < 30016  // smaller than TB wins
+				&& !thisThread->nmpMinPly
         && (!ttMove || ttCapture))
+    {
+    	if (isOnPvLine(ss))
+    	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << pos << sync_endl;
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
+    }
 
     // Step 9. Null move search with verification search (~35 Elo)
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620
@@ -827,16 +870,18 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-        if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
-                 {
-
-                        	   sync_cout << pos << sync_endl;
-                        	for (int p=0; p<= ss->ply; p++)
-                           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " seldepth " << thisThread->selDepth << sync_endl;
-	                }
+//        if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+//                 {
+//
+//                        	   sync_cout << pos << sync_endl;
+//                        	for (int p=0; p<= ss->ply; p++)
+//                           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+//        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " seldepth " << thisThread->selDepth << sync_endl;
+//	                }
             if (thisThread->nmpMinPly>1 || depth < 16) {
 
+                if (isOnPvLine(ss) && ss->ply >= 3)
+              	   sync_cout << " leaving path null Move fail high " << (depth - R) << pos << sync_endl;
                 return nullValue;
             }
 
@@ -852,24 +897,26 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-              if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
-              {
-                   	sync_cout << pos << sync_endl;
-                   	for (int p=0; p<= ss->ply; p++)
-                      sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << " seldepth " << thisThread->selDepth << sync_endl;
-               }
+//              if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+//              {
+//                   	sync_cout << pos << sync_endl;
+//                   	for (int p=0; p<= ss->ply; p++)
+//                      sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+//   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << " seldepth " << thisThread->selDepth << sync_endl;
+//               }
+            	 if (isOnPvLine(ss) && ss->ply >= 3)
+            	    sync_cout << " leaving path null Move verification fail high: " << (depth - R) << pos << sync_endl;
                 return nullValue;
             }
         }
-        else if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
-        {
-        	sync_cout << pos << sync_endl;
-        	for (int p=0; p<= ss->ply; p++)
-           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
-
-             sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " NOT REFUTED through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
-        }
+//        else if ((ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)// && file_of((ss-1)->currentMove.to_sq()) == FILE_E)
+//        {
+//        	sync_cout << pos << sync_endl;
+//        	for (int p=0; p<= ss->ply; p++)
+//           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+//
+//             sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " NOT REFUTED through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
+//        }
     }
    // step10:
 
@@ -931,6 +978,8 @@ Value Search::Worker::search(
 
                 if (value >= probCutBeta)
                 {
+                	if (isOnPvLine(ss, move))
+                                sync_cout << " leaving path probcut  " << UCI::move(move) << "  d: " << depth << pos << sync_endl;
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, unadjustedStaticEval, tt.generation());
@@ -981,8 +1030,8 @@ moves_loop:  // When in check, search starts here
             continue;
 
         movedPiece = pos.moved_piece(move);
-        if (((pos.pieces() & pattern) == pattern) && (movedPiece == W_KING || type_of(movedPiece) == KNIGHT))
-           continue;
+//        if (((pos.pieces() & pattern) == pattern) && (movedPiece == W_KING || type_of(movedPiece) == KNIGHT))
+//           continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
@@ -1041,7 +1090,11 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks (~11 Elo)
                 if (!pos.see_ge(move, -197 * depth))
+                {
+                	  if (isOnPvLine(ss, move))
+                	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCI::move(move) << "  d: " << depth << pos << sync_endl;
                     continue;
+                }
             }
             else
             {
@@ -1061,16 +1114,26 @@ moves_loop:  // When in check, search starts here
 
                 // Futility pruning: parent node (~13 Elo)
                 if (!ss->inCheck && lmrDepth < 15
+                    && !thisThread->nmpMinPly
                     && ss->staticEval + (bestValue < ss->staticEval - 57 ? 144 : 57)
                            + 121 * lmrDepth
                          <= alpha)
-                    continue;
+                {
+                     	  if (isOnPvLine(ss, move))
+                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCI::move(move) << "  d: " << depth << pos << sync_endl;
+                     	  if (!thisThread->nmpMinPly)
+                             continue;
+                }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE (~4 Elo)
                 if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
+                {
+                	  if (isOnPvLine(ss, move))
+                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCI::move(move) << "  d: " << depth << pos << sync_endl;
                     continue;
+                }
             }
         }
 
@@ -1392,6 +1455,14 @@ moves_loop:  // When in check, search starts here
                                       stat_bonus(depth) * bonus);
         thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()]
           << stat_bonus(depth) * bonus / 2;
+    }
+    if (!bestMove && isOnPvLine(ss) && ss->ply > 3)
+    {
+    	sync_cout << " leaving path no bestmove (fail low) mc: " << moveCount << " d: " << depth << pos << sync_endl;
+    	std::stringstream sss;
+    	for (int i=0; i<quietCount; i++ )
+    		sss << UCI::move(quietsSearched[i], false) << " ";
+       	sync_cout << " tried quiets " << sss.str() << sync_endl;
     }
 
     if (PvNode)
@@ -1982,6 +2053,11 @@ std::string SearchManager::pv(const Search::Worker&     worker,
 
         for (Move m : rootMoves[i].pv)
             ss << " " << UCI::move(m, pos.is_chess960());
+
+//              ss << "\ninfo string pv ";
+//                for (Move m : rootMoves[i].pv)
+//                   ss << " " << m.raw() << ",";
+
     }
 
     return ss.str();
