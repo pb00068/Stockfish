@@ -58,7 +58,6 @@ Value futility_margin(Depth d, bool noTtCutNode, bool improving, bool oppWorseni
     Value futilityMult       = 117 - 44 * noTtCutNode;
     Value improvingDeduction = 3 * improving * futilityMult / 2;
     Value worseningDeduction = (331 + 45 * improving) * oppWorsening * futilityMult / 1024;
-
     return futilityMult * d - improvingDeduction - worseningDeduction;
 }
 
@@ -238,6 +237,7 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationHistory =
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->staticEval = VALUE_NONE;
+        (ss - i)->nullMoves = 0;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -552,6 +552,7 @@ Value Search::Worker::search(
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
+    ss->nullMoves = (ss-1)->nullMoves;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -764,7 +765,7 @@ Value Search::Worker::search(
     // Step 8. Futility pruning: child node (~40 Elo)
     // The depth condition is important for mate finding.
     if (!ss->ttPv && depth < 11
-        && eval - futility_margin(depth, cutNode && !ss->ttHit, improving, opponentWorsening)
+        && eval - futility_margin(depth + ss->nullMoves * 2, cutNode && !ss->ttHit, improving, opponentWorsening)
                - (ss - 1)->statScore / 314
              >= beta
         && eval >= beta && eval < 30016  // smaller than TB wins
@@ -784,12 +785,14 @@ Value Search::Worker::search(
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->nullMoves++;
 
         pos.do_null_move(st, tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
+        ss->nullMoves--;;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
