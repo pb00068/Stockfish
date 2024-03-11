@@ -265,6 +265,7 @@ void Search::Worker::iterative_deepening() {
 
     int searchAgainCounter = 0;
 
+
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
            && !(limits.depth && mainThread && rootDepth > limits.depth))
@@ -772,7 +773,7 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620
+    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16620 && (ss->ply > thisThread->rootDepth / 8 || abs(beta) > 50)
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 21 * depth + 330
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -929,11 +930,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread()
-            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
-            sync_cout << "info depth " << depth << " currmove "
-                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
-                      << moveCount + thisThread->pvIdx << sync_endl;
+//        if (rootNode && is_mainthread()
+//            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+//            sync_cout << "info depth " << depth << " currmove "
+//                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
+//                      << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
