@@ -96,9 +96,10 @@ bool isOnPvLine(Stack * ss, Move m) {
 
 void printPath(Stack * ss)
 {
-     sync_cout << "info path: " << sync_endl;
+	  std::stringstream sss;
     for (int p=0; p< ss->ply; p++)
-                sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
+            sss << UCI::move((ss-ss->ply+p)->currentMove) << " d:" << (ss-ss->ply+p)->dept << " nd:" << (ss-ss->ply+p)->newdepth <<  " ";
+    sync_cout << "info path: " << sss.str() << sync_endl;
 }
 
 
@@ -679,9 +680,15 @@ Value Search::Worker::search(
         if (pos.rule50_count() < 90)
         {
         	if (ttMove && ttValue >= beta && isOnPvLine(ss, ttMove))
+        	{
         	    	    sync_cout << " leaving path tt early exit  ttValue >= beta  move " << UCI::move(ttMove)  << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    printPath(ss);
+        	}
         	else if (ttValue < beta && isOnPvLine(ss))
+        	{
         	       sync_cout << " leaving path tt early exit  ttValue < beta  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	       printPath(ss);
+        	}
             return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
                    ? (ttValue * 3 + beta) / 4
                    : ttValue;
@@ -814,7 +821,10 @@ Value Search::Worker::search(
         if (value < alpha)
         {
         	if (isOnPvLine(ss))
+        	{
         	    	    sync_cout << " leaving path Step 7. Razoring  d: " << 0 << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    printPath(ss);
+        	}
             return value;
         }
     }
@@ -830,7 +840,10 @@ Value Search::Worker::search(
         && (!ttMove || ttCapture))
     {
     	if (isOnPvLine(ss))
+    	{
     	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	    printPath(ss);
+    	}
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
     }
 
@@ -881,7 +894,10 @@ Value Search::Worker::search(
             if (thisThread->nmpMinPly>1 || depth < 16) {
 
                 if (isOnPvLine(ss) && ss->ply >= 3)
+                {
               	   sync_cout << " leaving path null Move fail high d:" << (depth - R) << " prevmove " << UCI::move((ss - 1)->currentMove) << " mc: " << (ss-1)->moveCount << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+              	   printPath(ss);
+                }
                 return nullValue;
             }
 
@@ -905,7 +921,10 @@ Value Search::Worker::search(
 //   	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm verification search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " beta " << beta << " v " << v << " seldepth " << thisThread->selDepth << sync_endl;
 //               }
             	 if (isOnPvLine(ss) && ss->ply >= 3)
+            	 {
             	    sync_cout << " leaving path null Move verification fail high: " << (depth - R)  << pos << sync_endl;
+            	    printPath(ss);
+            	 }
                 return nullValue;
             }
         }
@@ -979,7 +998,10 @@ Value Search::Worker::search(
                 if (value >= probCutBeta)
                 {
                 	if (isOnPvLine(ss, move))
+                	{
                                 sync_cout << " leaving path probcut  " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                                printPath(ss);
+                	}
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, unadjustedStaticEval, tt.generation());
@@ -1093,7 +1115,10 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -197 * depth))
                 {
                 	  if (isOnPvLine(ss, move))
+                	  {
                 	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	     printPath(ss);
+                	  }
                     continue;
                 }
             }
@@ -1121,7 +1146,10 @@ moves_loop:  // When in check, search starts here
                          <= alpha)
                 {
                      	  if (isOnPvLine(ss, move))
+                     	  {
                        	  	sync_cout << " leaving path Futility pruning: parent node  " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                       	  	printPath(ss);
+                     	  }
                      	  if (!thisThread->nmpMinPly)
                              continue;
                 }
@@ -1132,7 +1160,10 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
                 {
                 	  if (isOnPvLine(ss, move))
+                	  {
                 	  	sync_cout << " leaving path Prune moves with negative SEE " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	  	printPath(ss);
+                	  }
                     continue;
                 }
             }
@@ -1469,6 +1500,7 @@ moves_loop:  // When in check, search starts here
     if (!bestMove && isOnPvLine(ss) && ss->ply > 3)
     {
     	sync_cout << " leaving path no bestmove (fail low) mc: " << moveCount << " d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	printPath(ss);
     	std::stringstream sss;
     	for (int i=0; i<quietCount; i++ )
     		sss << UCI::move(quietsSearched[i], false) << " d:" << quietsSearchedDepth[i] << " ";
