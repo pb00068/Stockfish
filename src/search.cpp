@@ -771,8 +771,8 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16211 
-        && (ss->ply > thisThread->rootDepth / 8 || abs(beta) > 50)
+    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16211
+        && (ss->ply > thisThread->rootDepth / 8 || abs(beta) > 40) // disable nm near root if at higher depths if drawish
         && eval >= beta && eval >= ss->staticEval && ss->staticEval >= beta - 20 * depth + 314
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -783,6 +783,7 @@ Value Search::Worker::search(
         Depth R = std::min(int(eval - beta) / 151, 6) + depth / 3 + 4;
 
         ss->currentMove         = Move::null();
+        ss->pawnPush = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
@@ -851,6 +852,7 @@ Value Search::Worker::search(
                 prefetch(tt.first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
+                ss->pawnPush = false;
                 ss->continuationHistory =
                   &this
                      ->continuationHistory[ss->inCheck][true][pos.moved_piece(move)][move.to_sq()];
@@ -1086,8 +1088,9 @@ moves_loop:  // When in check, search starts here
                 extension = 1;
         }
 
-        // Add extension to new depth
-        newDepth += extension;
+
+
+
         ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
 
         // Speculative prefetch as early as possible
@@ -1095,6 +1098,14 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
+        ss->pawnPush = !capture && type_of(movedPiece) == PAWN;
+
+        if (ss->pawnPush && (ss-1)->pawnPush && (ss-2)->pawnPush && (ss-2)->currentMove.to_sq() == move.from_sq()
+            && !more_than_one(file_bb(move.from_sq()) & pos.pieces())) // extend passed pawn races
+             extension++;
+
+        // Add extension to new depth
+        newDepth += extension;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
