@@ -66,6 +66,7 @@ struct Stack {
     bool            inCheck;
     bool            ttPv;
     bool            ttHit;
+    bool            nodeHasTTMove;
     int             multipleExtensions;
     int             cutoffCnt;
 };
@@ -144,14 +145,14 @@ class Worker;
 class ISearchManager {
    public:
     virtual ~ISearchManager() {}
-    virtual void check_time(Search::Worker&) = 0;
+    virtual void check_time(Search::Worker&, bool) = 0;
 };
 
 // SearchManager manages the search from the main thread. It is responsible for
 // keeping track of the time, and storing data strictly related to the main thread.
 class SearchManager: public ISearchManager {
    public:
-    void check_time(Search::Worker& worker) override;
+    void check_time(Search::Worker& worker, bool) override;
 
     std::string pv(const Search::Worker&     worker,
                    const ThreadPool&         threads,
@@ -173,7 +174,7 @@ class SearchManager: public ISearchManager {
 
 class NullSearchManager: public ISearchManager {
    public:
-    void check_time(Search::Worker&) override {}
+    void check_time(Search::Worker&, bool) override {}
 };
 
 // Search::Worker is the class that does the actual search.

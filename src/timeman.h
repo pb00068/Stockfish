@@ -42,6 +42,7 @@ class TimeManagement {
     TimePoint optimum() const;
     TimePoint maximum() const;
     TimePoint elapsed(std::size_t nodes) const;
+    void setMaximum(TimePoint m);
 
     void clear();
     void advance_nodes_time(std::int64_t nodes);

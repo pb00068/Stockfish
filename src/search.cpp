@@ -555,7 +555,7 @@ Value Search::Worker::search(
 
     // Check for the available remaining time
     if (is_mainthread())
-        main_manager()->check_time(*thisThread);
+        main_manager()->check_time(*thisThread, false);
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -601,6 +601,7 @@ Value Search::Worker::search(
               : ss->ttHit ? tte->move()
                           : Move::none();
     ttCapture = ttMove && pos.capture_stage(ttMove);
+    ss->nodeHasTTMove = ttMove != Move::none();
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -808,7 +809,12 @@ Value Search::Worker::search(
 
             if (v >= beta)
                 return nullValue;
+
+            else if (!(ss-1)->nodeHasTTMove && limits.use_time_management() && is_mainthread())
+                  main_manager()->check_time(*thisThread, true);
         }
+        else if (!(ss-1)->nodeHasTTMove && limits.use_time_management() && is_mainthread())
+                main_manager()->check_time(*thisThread, true);
     }
 
     // Step 10. Internal iterative reductions (~9 Elo)
@@ -1094,6 +1100,7 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
+
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
@@ -1833,7 +1840,7 @@ Move Skill::pick_best(const RootMoves& rootMoves, size_t multiPV) {
 
 // Used to print debug info and, more importantly,
 // to detect when we are out of available time and thus stop the search.
-void SearchManager::check_time(Search::Worker& worker) {
+void SearchManager::check_time(Search::Worker& worker, bool increase) {
     if (--callsCnt > 0)
         return;
 
@@ -1843,6 +1850,12 @@ void SearchManager::check_time(Search::Worker& worker) {
     static TimePoint lastInfoTime = now();
 
     TimePoint elapsed = tm.elapsed(worker.threads.nodes_searched());
+
+    if (increase) {
+       if (elapsed > tm.maximum() * 0.8)
+           tm.setMaximum(tm.maximum() * 1.1); // assure that PV can switch to the new best move before time is running out
+    }
+
     TimePoint tick    = worker.limits.startTime + elapsed;
 
     if (tick - lastInfoTime >= 1000)

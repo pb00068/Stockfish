@@ -30,6 +30,7 @@ namespace Stockfish {
 
 TimePoint TimeManagement::optimum() const { return optimumTime; }
 TimePoint TimeManagement::maximum() const { return maximumTime; }
+void      TimeManagement::setMaximum(TimePoint m) {maximumTime = m;}
 TimePoint TimeManagement::elapsed(size_t nodes) const {
     return useNodesTime ? TimePoint(nodes) : now() - startTime;
 }
