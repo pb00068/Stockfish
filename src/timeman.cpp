@@ -30,7 +30,7 @@ namespace Stockfish {
 
 TimePoint TimeManagement::optimum() const { return optimumTime; }
 TimePoint TimeManagement::maximum() const { return maximumTime; }
-void      TimeManagement::setMaximum(TimePoint m) {maximumTime = m;}
+void      TimeManagement::setMaximum(TimePoint m) {if (!timeExtended) maximumTime = m; timeExtended=true;}
 TimePoint TimeManagement::elapsed(size_t nodes) const {
     return useNodesTime ? TimePoint(nodes) : now() - startTime;
 }
@@ -55,6 +55,7 @@ void TimeManagement::init(Search::LimitsType& limits,
     // If we have no time, no need to initialize TM, except for the start time,
     // which is used by movetime.
     startTime = limits.startTime;
+    timeExtended = false;
     if (limits.time[us] == 0)
         return;
 

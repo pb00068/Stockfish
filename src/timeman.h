@@ -54,6 +54,7 @@ class TimeManagement {
 
     std::int64_t availableNodes = 0;      // When in 'nodes as time' mode
     bool         useNodesTime   = false;  // True if we are in 'nodes as time' mode
+    bool         timeExtended = false;
 };
 
 }  // namespace Stockfish

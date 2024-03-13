@@ -813,7 +813,7 @@ Value Search::Worker::search(
             else if (!(ss-1)->nodeHasTTMove && limits.use_time_management() && is_mainthread())
                   main_manager()->check_time(*thisThread, true);
         }
-        else if (!(ss-1)->nodeHasTTMove && limits.use_time_management() && is_mainthread())
+        else if (nullValue < beta && !(ss-1)->nodeHasTTMove && limits.use_time_management() && is_mainthread())
                 main_manager()->check_time(*thisThread, true);
     }
 
@@ -1852,8 +1852,9 @@ void SearchManager::check_time(Search::Worker& worker, bool increase) {
     TimePoint elapsed = tm.elapsed(worker.threads.nodes_searched());
 
     if (increase) {
-       if (elapsed > tm.maximum() * 0.8)
+       if (elapsed > tm.maximum() * 0.92)
            tm.setMaximum(tm.maximum() * 1.1); // assure that PV can switch to the new best move before time is running out
+       return;
     }
 
     TimePoint tick    = worker.limits.startTime + elapsed;
