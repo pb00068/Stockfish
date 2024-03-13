@@ -1088,11 +1088,6 @@ moves_loop:  // When in check, search starts here
                 extension = 1;
         }
 
-
-
-
-        ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
-
         // Speculative prefetch as early as possible
         prefetch(tt.first_entry(pos.key_after(move)));
 
@@ -1100,9 +1095,11 @@ moves_loop:  // When in check, search starts here
         ss->currentMove = move;
         ss->pawnPush = !capture && type_of(movedPiece) == PAWN;
 
-        if (ss->pawnPush && (ss-1)->pawnPush && (ss-2)->pawnPush && (ss-2)->currentMove.to_sq() == move.from_sq()
+        if (ss->pawnPush && (ss-2)->pawnPush && (ss-2)->currentMove.to_sq() == move.from_sq()
             && !more_than_one(file_bb(move.from_sq()) & pos.pieces())) // extend passed pawn races
-             extension++;
+             extension+=2;
+
+        ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
 
         // Add extension to new depth
         newDepth += extension;
