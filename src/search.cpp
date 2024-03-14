@@ -1094,11 +1094,6 @@ moves_loop:  // When in check, search starts here
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
-        ss->pawnPush = !capture && type_of(movedPiece) == PAWN;
-
-        if (ss->pawnPush && (ss-2)->pawnPush && (ss-2)->currentMove.to_sq() == move.from_sq()
-            && !more_than_one(file_bb(move.from_sq()) & pos.pieces())) // extend passed pawn races
-             extension+=2;
 
         ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
 
