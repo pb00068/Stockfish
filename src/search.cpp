@@ -784,7 +784,6 @@ Value Search::Worker::search(
         Depth R = std::min(int(eval - beta) / 151, 6) + depth / 3 + 4;
 
         ss->currentMove         = Move::null();
-        ss->pawnPush = false;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
@@ -853,7 +852,6 @@ Value Search::Worker::search(
                 prefetch(tt.first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
-                ss->pawnPush = false;
                 ss->continuationHistory =
                   &this
                      ->continuationHistory[ss->inCheck][true][pos.moved_piece(move)][move.to_sq()];
@@ -1089,16 +1087,15 @@ moves_loop:  // When in check, search starts here
                 extension = 1;
         }
 
+        // Add extension to new depth
+        newDepth += extension;
+        ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
+
         // Speculative prefetch as early as possible
         prefetch(tt.first_entry(pos.key_after(move)));
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
-
-        ss->multipleExtensions = (ss - 1)->multipleExtensions + (extension >= 2);
-
-        // Add extension to new depth
-        newDepth += extension;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
