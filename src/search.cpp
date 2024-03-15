@@ -777,8 +777,8 @@ Value Search::Worker::search(
 
         // Null move depth based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 151, 6) - 4;
-        if (abs(beta) < 40 && thisThread->rootDepth - ss->ply > 10)
-           nmDepth += (thisThread->rootDepth - ss->ply) / 3;
+        if (abs(beta) < 40 && std::max(0, nmDepth) < thisThread->rootDepth - ss->ply / 4)
+           nmDepth += (thisThread->rootDepth - ss->ply) / 4;
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
