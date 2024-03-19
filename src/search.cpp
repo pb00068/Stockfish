@@ -778,8 +778,26 @@ Value Search::Worker::search(
 
         // Null move depth based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 151, 6) - 4;
-        if (abs(beta) < 160 &&  (ss-1)->kingMoves==0 && nmDepth < (thisThread->rootDepth - ss->ply) / 4)
-           nmDepth = (thisThread->rootDepth - ss->ply) / 4;
+        if (abs(beta) < 160 && pos.non_pawn_material(us) <= 2 * BishopValue && nmDepth < (thisThread->rootDepth - ss->ply) / 3)
+        {
+         const Square   ksq    = pos.square<KING>(us);
+         Bitboard b = attacks_bb<KING>(ksq) & ~pos.pieces(us);
+         int kingMoves = popcount(b);
+         if (kingMoves < 3)
+            while (b)
+                if (pos.attackers_to(pop_lsb(b), pos.pieces() ^ ksq) & pos.pieces(~us))
+                  kingMoves--;
+         if (!kingMoves)
+         {
+            b = pos.pieces(~us, PAWN);
+            while (b)
+            if (!(pawn_waytoPromotion(~us, pop_lsb(b)) & pos.pieces(us)))
+            {
+               nmDepth = (thisThread->rootDepth - ss->ply) / 3;
+               break;
+            }
+         }
+        }
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
