@@ -588,7 +588,6 @@ Value Search::Worker::search(
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
-    ss->kingMoves=0;
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
@@ -961,7 +960,6 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
-        ss->kingMoves += type_of(movedPiece) == KING;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
