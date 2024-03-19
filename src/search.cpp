@@ -588,6 +588,7 @@ Value Search::Worker::search(
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
+    ss->kingMoves=0;
 
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
@@ -777,7 +778,7 @@ Value Search::Worker::search(
 
         // Null move depth based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 151, 6) - 4;
-        if (abs(beta) < 160 && nmDepth < (thisThread->rootDepth - ss->ply) / 4)
+        if (abs(beta) < 160 &&  (ss-1)->kingMoves==0 && nmDepth < (thisThread->rootDepth - ss->ply) / 4)
            nmDepth = (thisThread->rootDepth - ss->ply) / 4;
 
         ss->currentMove         = Move::null();
@@ -939,6 +940,7 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
+        ss->kingMoves += type_of(movedPiece) == KING;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
