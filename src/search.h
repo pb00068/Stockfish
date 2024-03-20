@@ -246,6 +246,7 @@ class Worker {
     Value     rootDelta;
 
     size_t thread_idx;
+    size_t multiPV;
 
     // Reductions lookup table initialized at startup
     std::array<int, MAX_MOVES> reductions;  // [depth or moveNumber]

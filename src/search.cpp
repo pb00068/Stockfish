@@ -254,7 +254,7 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
     }
 
-    size_t multiPV = size_t(options["MultiPV"]);
+    multiPV = size_t(options["MultiPV"]);
     Skill skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     // When playing with strength handicap enable MultiPV search that we will
@@ -263,8 +263,10 @@ void Search::Worker::iterative_deepening() {
         multiPV = std::max(multiPV, size_t(4));
 
     multiPV = std::min(multiPV, rootMoves.size());
+    size_t origVal = multiPV;
 
     int searchAgainCounter = 0;
+    Value pv1bestVal = bestValue;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -272,7 +274,19 @@ void Search::Worker::iterative_deepening() {
     {
         // Age out PV variability metric
         if (mainThread)
+        {
             totBestMoveChanges /= 2;
+            if (rootDepth > 20 && rootMoves.size() >= 3 && rootPos.non_pawn_material() <= BishopValue * 6)
+            {
+              if (pv1bestVal < 20 && abs(rootMoves[0].averageScore) < 20)
+              {
+                if (multiPV == 1)
+                    multiPV = 3;
+              }
+              else if (multiPV != origVal)
+                multiPV = origVal;
+            }
+        }
 
         // Save the last iteration's scores before the first PV line is searched and
         // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -320,6 +334,8 @@ void Search::Worker::iterative_deepening() {
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
+                if (pvIdx == 0)
+                  pv1bestVal = bestValue;
 
                 // Bring the best move to the front. It is critical that sorting
                 // is done with a stable algorithm because all the values but the
@@ -925,11 +941,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread()
-            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
-            sync_cout << "info depth " << depth << " currmove "
-                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
-                      << moveCount + thisThread->pvIdx << sync_endl;
+//        if (rootNode && is_mainthread()
+//            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+//            sync_cout << "info depth " << depth << " currmove "
+//                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
+//                      << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -1213,6 +1229,8 @@ moves_loop:  // When in check, search starts here
 
             rm.averageScore =
               rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
+            //if (depth > 20 && moveCount == 1 && move == Move(SQ_D4, SQ_C2))
+            //sync_cout << "info string average " <<  rm.averageScore << " val " << value << " cp " << UCI::value(value) << sync_endl;
 
             // PV move or new best move?
             if (moveCount == 1 || value > alpha)
