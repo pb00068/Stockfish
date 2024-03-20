@@ -276,24 +276,18 @@ void Search::Worker::iterative_deepening() {
         if (mainThread)
         {
             totBestMoveChanges /= 2;
-            if (rootDepth > 20 && rootMoves.size() >=3)
+            if (rootDepth > 20 && rootMoves.size() >=3 && origVal == 1)
             {
               if (pv1BestVal < 20 && abs(rootMoves[0].averageScore) < 20)
               {
                 if (multiPV == 1) {
                   multiPV = 3;
-                  sync_cout << "info pvmulti to 3!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
                 }
                 else if (rootDepth > 32)
-                {
-                   multiPV = std::min(rootMoves.size(), (size_t)6);
-                   sync_cout << "info pvmulti to " << multiPV << "!!!!!!!!!!!!!!!!" << sync_endl;
-                }
+                   multiPV = std::min(rootMoves.size(), (size_t)8);
               }
-              else if (multiPV != origVal){
-                sync_cout << "info reset multi pv !!!!!!!!! bestval " << pv1BestVal << " average " << rootMoves[0].averageScore << sync_endl;
+              else if (multiPV != origVal)
                 multiPV = origVal;
-              }
             }
         }
 
@@ -344,13 +338,8 @@ void Search::Worker::iterative_deepening() {
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
                 if (pvIdx == 0)
-                {
                   pv1BestVal = bestValue;
-                  if (pv1BestVal > 40 && multiPV != origVal){
-                    sync_cout << "info reset multi pv !!!!!!!!! bestval " << pv1BestVal << " average " << rootMoves[0].averageScore << sync_endl;
-                    multiPV = origVal;
-                  }
-                }
+
 
                 // Bring the best move to the front. It is critical that sorting
                 // is done with a stable algorithm because all the values but the
@@ -399,6 +388,12 @@ void Search::Worker::iterative_deepening() {
             // Sort the PV lines searched so far and update the GUI
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
+            if (mainThread &&  bestValue > 40 && multiPV != origVal) {
+                    multiPV = origVal;
+                    pv1BestVal = std::max(bestValue, pv1BestVal);
+                    break;
+            }
+
             if (mainThread
                 && (threads.stop || pvIdx + 1 == multiPV
                     || mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
@@ -441,13 +436,8 @@ void Search::Worker::iterative_deepening() {
                 || (rootMoves[0].score != -VALUE_INFINITE
                     && rootMoves[0].score <= VALUE_MATED_IN_MAX_PLY
                     && VALUE_MATE + rootMoves[0].score <= 2 * limits.mate)))
-        {
             threads.stop = true;
-            sync_cout << "info stop through matef ound " << sync_endl;
-        }
 
-        if (rootMoves[0].score >= VALUE_MATE_IN_MAX_PLY)
-        	 multiPV = origVal;
         // If the skill level is enabled and time is up, pick a sub-optimal best move
         if (skill.enabled() && skill.time_to_pick(rootDepth))
             skill.pick_best(rootMoves, multiPV);
@@ -961,11 +951,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-//        if (rootNode && is_mainthread()
-//            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
-//            sync_cout << "info depth " << depth << " currmove "
-//                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
-//                      << moveCount + thisThread->pvIdx << sync_endl;
+        if (rootNode && is_mainthread()
+            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+            sync_cout << "info depth " << depth << " currmove "
+                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
+                      << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
