@@ -155,7 +155,8 @@ void Search::Worker::start_searching() {
     {
         rootMoves.emplace_back(Move::none());
         sync_cout << "info depth 0 score "
-                  << UCI::value(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW) << sync_endl;
+                  << UCI::to_score(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos)
+                  << sync_endl;
     }
     else
     {
@@ -263,7 +264,7 @@ void Search::Worker::iterative_deepening() {
         multiPV = std::max(multiPV, size_t(4));
 
     multiPV = std::min(multiPV, rootMoves.size());
-    size_t origVal = multiPV;
+    size_t uciPVs = multiPV;
 
     int searchAgainCounter = 0;
     Value pv1BestVal = bestValue;
@@ -276,18 +277,15 @@ void Search::Worker::iterative_deepening() {
         if (mainThread)
         {
             totBestMoveChanges /= 2;
-            if (rootDepth > 20 && rootMoves.size() >=3 && origVal == 1)
+            if (rootDepth > 20 && rootMoves.size() >=3 && uciPVs == 1 && rootPos.non_pawn_material() <= BishopValue * 8)
             {
-              if (pv1BestVal < 20 && abs(rootMoves[0].averageScore) < 20)
+              if (pv1BestVal < 20 && rootMoves[0].averageScore < 20 && rootMoves[0].averageScore > -250)
               {
-                if (multiPV == 1) {
-                  multiPV = 3;
-                }
-                else if (rootDepth > 32)
-                   multiPV = std::min(rootMoves.size(), (size_t)8);
+                size_t newVal = std::min(rootMoves.size() , (size_t) (rootDepth / 8));
+                if (newVal != multiPV)
+                  sync_cout << "info string analzying " <<  newVal << " different PV's" << sync_endl;
+                 multiPV = newVal;
               }
-              else if (multiPV != origVal)
-                multiPV = origVal;
             }
         }
 
@@ -388,13 +386,14 @@ void Search::Worker::iterative_deepening() {
             // Sort the PV lines searched so far and update the GUI
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
-            if (mainThread &&  bestValue > 40 && multiPV != origVal) {
-                    multiPV = origVal;
+            if (mainThread &&  bestValue > 40 && multiPV != uciPVs) {
+                    multiPV = uciPVs;
                     pv1BestVal = std::max(bestValue, pv1BestVal);
+                    sync_cout << "info string Going back to analyze one single PV" << sync_endl;
                     break;
             }
 
-            if (mainThread
+            if (mainThread && (multiPV == uciPVs || pvIdx == 0)
                 && (threads.stop || pvIdx + 1 == multiPV
                     || mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
                 // A thread that aborted search can have mated-in/TB-loss PV and score
@@ -1141,10 +1140,6 @@ moves_loop:  // When in check, search starts here
         // Decrease reduction for PvNodes (~0 Elo on STC, ~2 Elo on LTC)
         if (PvNode)
             r--;
-
-        // Increase reduction on repetition (~1 Elo)
-        if (move == (ss - 4)->currentMove && pos.has_repeated())
-            r += 2;
 
         // Increase reduction if next ply has a lot of fail high (~5 Elo)
         if ((ss + 1)->cutoffCnt > 3)
@@ -1926,10 +1921,10 @@ std::string SearchManager::pv(const Search::Worker&     worker,
 
         ss << "info"
            << " depth " << d << " seldepth " << rootMoves[i].selDepth << " multipv " << i + 1
-           << " score " << UCI::value(v);
+           << " score " << UCI::to_score(v, pos);
 
         if (worker.options["UCI_ShowWDL"])
-            ss << UCI::wdl(v, pos.game_ply());
+            ss << UCI::wdl(v, pos);
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
             ss << (rootMoves[i].scoreLowerbound
