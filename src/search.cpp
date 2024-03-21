@@ -1234,8 +1234,6 @@ moves_loop:  // When in check, search starts here
 
             rm.averageScore =
               rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
-            //if (depth > 20 && moveCount == 1 && move == Move(SQ_D4, SQ_C2))
-            //sync_cout << "info string average " <<  rm.averageScore << " val " << value << " cp " << UCI::value(value) << sync_endl;
 
             // PV move or new best move?
             if (moveCount == 1 || value > alpha)
