@@ -277,13 +277,18 @@ void Search::Worker::iterative_deepening() {
         if (mainThread)
         {
             totBestMoveChanges /= 2;
-            if (rootDepth > 20 && rootMoves.size() >=3 && uciPVs == 1 && rootPos.non_pawn_material() <= BishopValue * 8)
+            if (rootDepth >= 21 && uciPVs == 1 && rootPos.non_pawn_material() <= QueenValue * 2 + RookValue * 2)
             {
-              if (pv1BestVal < 20 && rootMoves[0].averageScore < 20 && rootMoves[0].averageScore > -250)
+              if (pv1BestVal < 80 && rootMoves[0].averageScore < 80 && rootMoves[0].averageScore > -300)
               {
                 size_t newVal = std::min(rootMoves.size() , (size_t) (rootDepth / 8));
-                if (newVal != multiPV)
-                  sync_cout << "info string analzying " <<  newVal << " different PV's" << sync_endl;
+                if (newVal != multiPV) {
+                  std::stringstream moves;
+                  for (size_t pvId=0; pvId < multiPV; pvId++)
+                      moves << UCI::move(rootMoves[pvId].pv[0], rootPos.is_chess960()) << " ";
+                  sync_cout << "info string Now internally analyzing " <<  newVal << " different PV's. rootmoves so far: " << moves.str() << sync_endl;
+                  rootDepth--; /// stick to same rootdepth when adding new pv
+                }
                  multiPV = newVal;
               }
             }
@@ -333,7 +338,7 @@ void Search::Worker::iterative_deepening() {
                 // Adjust the effective depth searched, but ensure at least one effective increment
                 // for every four searchAgain steps (see issue #2717).
                 Depth adjustedDepth =
-                  std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+                  std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4 - (uciPVs != multiPV ? (int)pvIdx : 0));
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
                 if (pvIdx == 0)
                   pv1BestVal = bestValue;
@@ -386,15 +391,16 @@ void Search::Worker::iterative_deepening() {
             // Sort the PV lines searched so far and update the GUI
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
-            if (mainThread &&  bestValue > 40 && multiPV != uciPVs) {
+            if (mainThread && (bestValue > 80  ) && multiPV != uciPVs) {
                     multiPV = uciPVs;
                     pv1BestVal = std::max(bestValue, pv1BestVal);
-                    sync_cout << "info string Going back to analyze one single PV" << sync_endl;
+                    sync_cout << "info string Going back to analyze one single PV because bestValue is " << UCI::to_score(bestValue, rootPos) << sync_endl;
+                    sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
                     break;
             }
 
             if (mainThread && (multiPV == uciPVs || pvIdx == 0)
-                && (threads.stop || pvIdx + 1 == multiPV
+                && (threads.stop || pvIdx + 1 == uciPVs
                     || mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
                 // A thread that aborted search can have mated-in/TB-loss PV and score
                 // that cannot be trusted, i.e. it can be delayed or refuted if we would have
