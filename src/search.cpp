@@ -918,7 +918,7 @@ Value Search::Worker::search(
 //               }
             	 if (isOnPvLine(ss) && ss->ply >= 3)
             	 {
-            	    sync_cout << " leaving path null Move verification fail high: " << (depth - R)  << pos << sync_endl;
+            	    sync_cout << " leaving path null Move verification fail high searched depth: " << (depth - R)  << " ply " << ss->ply << pos << sync_endl;
             	    printPath(ss);
             	 }
                 return nullValue;
