@@ -840,6 +840,7 @@ Value Search::Worker::search(
     	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
     	    printPath(ss);
     	}
+    	//if (depth < 8 || !pos.king_danger())
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
     }
 
@@ -856,7 +857,8 @@ Value Search::Worker::search(
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
 
         //if ( (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern && file_of((ss - 1)->currentMove.to_sq()) == FILE_E)
-        // goto step10;
+        //if (depth > 20 && pos.king_danger())
+        //   goto step10;
 
         //if (thisThread->nmpMinPly == 1 && type_of(pos.piece_on((ss - 1)->currentMove.to_sq())) == PAWN)
          // R = 1;
@@ -933,7 +935,7 @@ Value Search::Worker::search(
 //             sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " NOT REFUTED through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << sync_endl;
 //        }
     }
-   // step10:
+    step10:
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.

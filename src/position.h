@@ -158,6 +158,7 @@ class Position {
     bool  is_draw(int ply) const;
     bool  has_game_cycle(int ply) const;
     bool  has_repeated() const;
+    bool  king_danger() const;
     int   rule50_count() const;
     Value non_pawn_material(Color c) const;
     Value non_pawn_material() const;
