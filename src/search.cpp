@@ -773,45 +773,50 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
-        && eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+    if (eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !ss->oneTimeDispableNm
+        && pos.non_pawn_material(us) && ss->ply >=nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
-        Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
+        Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 144, 6) - 4;
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        int restore = nmpMinPly;
+
+        nmpMinPly = ss->ply + 2;
 
         pos.do_null_move(st, tt);
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, nmDepth, !cutNode);
 
         pos.undo_null_move();
+
+        nmpMinPly = restore;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16)
+            if (nmpMinPly <= ss->ply || depth < 16)
                 return nullValue;
 
-            assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+            assert(nmpMinPly <= ss->ply);  // Recursive verification is not allowed
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * nmDepth / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, nmDepth, false);
 
-            thisThread->nmpMinPly = 0;
+            nmpMinPly = restore;
 
             if (v >= beta)
                 return nullValue;
         }
     }
+    ss->oneTimeDispableNm = false;
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -1038,6 +1043,7 @@ moves_loop:  // When in check, search starts here
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
+                ss->oneTimeDispableNm = true;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
@@ -1140,6 +1146,8 @@ moves_loop:  // When in check, search starts here
                       + (*contHist[1])[movedPiece][move.to_sq()]
                       + (*contHist[3])[movedPiece][move.to_sq()] - 4723;
 
+        (ss+1)->oneTimeDispableNm =  ss->statScore >= 16878;
+
         // Decrease/increase reduction for moves with a good/bad history (~8 Elo)
         r -= ss->statScore / 13659;
 
@@ -1194,6 +1202,7 @@ moves_loop:  // When in check, search starts here
         {
             (ss + 1)->pv    = pv;
             (ss + 1)->pv[0] = Move::none();
+            (ss + 1)->oneTimeDispableNm = true;
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }

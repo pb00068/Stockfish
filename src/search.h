@@ -70,6 +70,7 @@ struct Stack {
     bool            inCheck;
     bool            ttPv;
     bool            ttHit;
+    bool            oneTimeDispableNm;
     int             multipleExtensions;
     int             cutoffCnt;
 };
