@@ -784,9 +784,7 @@ Value Search::Worker::search(
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-        int restore = nmpMinPly;
 
-        nmpMinPly = ss->ply + 2;
 
         pos.do_null_move(st, tt);
 
@@ -794,23 +792,23 @@ Value Search::Worker::search(
 
         pos.undo_null_move();
 
-        nmpMinPly = restore;
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (nmpMinPly <= ss->ply || depth < 16)
+            if (nmpMinPly || depth < 16)
                 return nullValue;
 
-            assert(nmpMinPly <= ss->ply);  // Recursive verification is not allowed
+            assert(nmpMinPly);  // Recursive verification is not allowed
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
             nmpMinPly = ss->ply + 3 * nmDepth / 4;
 
+            ss->oneTimeDispableNm = true;
             Value v = search<NonPV>(pos, ss, beta - 1, beta, nmDepth, false);
 
-            nmpMinPly = restore;
+            nmpMinPly = 0;
 
             if (v >= beta)
                 return nullValue;
