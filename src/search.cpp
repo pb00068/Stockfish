@@ -868,17 +868,14 @@ Value Search::Worker::search(
          // R = 1;
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
-        bool restore = false;
-        if (!thisThread->nmpMinPly)
-             thisThread->nmpMinPly=1, restore = true;
+
         pos.do_null_move(st, tt);
 
         thisThread->selDepth = 0;
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
         pos.undo_null_move();
-        if (restore)
-          thisThread->nmpMinPly=0;
+
 
         //if (nullValue < beta && (ss-ss->ply)->currentMove==Move(SQ_A5, SQ_B3) && (ss-ss->ply+2)->currentMove == Move(SQ_D4, SQ_B5) && (pos.pieces() & pattern) == pattern)
         //                 sync_cout << pos << UCI::move((ss-1)->currentMove) << " not refuted nm search with depth : " <<  depth  << " R:" << R << " effective  !!!!!!!!!!!!!!!!! d:" << depth -R << sync_endl;
@@ -1148,7 +1145,7 @@ moves_loop:  // When in check, search starts here
                 {
                     if (bestValue <= futilityValue && std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY
                         && futilityValue < VALUE_TB_WIN_IN_MAX_PLY)
-                {
+                    {
                         bestValue = (bestValue + futilityValue * 3) / 4;
                         if (isOnPvLine(ss, move))
                         {
@@ -1157,6 +1154,7 @@ moves_loop:  // When in check, search starts here
                         }
                         if (!thisThread->nmpMinPly)
                              continue;
+                    }
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
