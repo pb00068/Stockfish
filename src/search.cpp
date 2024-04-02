@@ -1118,6 +1118,8 @@ moves_loop:  // When in check, search starts here
                 	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                 	     printPath(ss);
                 	  }
+                	  else if (ss->ply == 3 && isOnPvLine(ss))
+                	                  	  	sync_cout << "info see pruning move " << UCI::move(move) << sync_endl;
                     continue;
                 }
             }
@@ -1152,6 +1154,7 @@ moves_loop:  // When in check, search starts here
                        	  	sync_cout << " leaving path Futility pruning: parent node  " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                        	  	printPath(ss);
                         }
+
                         if (!thisThread->nmpMinPly)
                              continue;
                     }
@@ -1167,6 +1170,8 @@ moves_loop:  // When in check, search starts here
                 	  	sync_cout << " leaving path Prune moves with negative SEE " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                 	  	printPath(ss);
                 	  }
+                	  else if (ss->ply == 3 && isOnPvLine(ss))
+                	  	sync_cout << "info see pruning move " << UCI::move(move) << sync_endl;
                     continue;
                 }
             }
@@ -1450,6 +1455,8 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
+        else if (ss->ply == 3 && isOnPvLine(ss) && nmpMinPly)
+    	  	sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value < VALUE_MATED_IN_MAX_PLY) << sync_endl;
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
