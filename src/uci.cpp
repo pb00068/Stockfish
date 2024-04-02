@@ -425,7 +425,7 @@ std::string UCI::square(Square s) {
     return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
 }
 
-std::string UCI::move(Move m, bool chess960) {
+std::string UCI::move(Move m, bool chess960 = false) {
     if (m == Move::none())
         return "(none)";
 
