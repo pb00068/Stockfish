@@ -780,8 +780,6 @@ Value Search::Worker::search(
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
-        if (PvNode)
-        	abort();
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 144, 6) + depth / 3 + 4;
