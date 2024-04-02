@@ -53,6 +53,16 @@ void TTEntry::save(
     }
 }
 
+void TTEntry::overwrite(
+  Key k, bool pv, Bound b, uint8_t generation8) {
+
+
+        key16     = uint16_t(k);
+        genBound8 = uint8_t(generation8 | uint8_t(pv) << 2 | b);
+
+
+}
+
 
 uint8_t TTEntry::relative_age(const uint8_t generation8) const {
     // Due to our packed storage format for generation and its cyclic

@@ -683,12 +683,12 @@ Value Search::Worker::search(
         {
         	if (ttMove && ttValue >= beta && isOnPvLine(ss, ttMove))
         	{
-        	    	    sync_cout << " leaving path tt early exit  ttValue >= beta  move " << UCI::move(ttMove)  << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    sync_cout << " leaving path tt early exit  ttValue >= beta  move " << UCI::move(ttMove)  << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
         	    	    printPath(ss);
         	}
         	else if (ttValue < beta && isOnPvLine(ss))
         	{
-        	       sync_cout << " leaving path tt early exit  ttValue < beta  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	       sync_cout << " leaving path tt early exit  ttValue < beta  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
         	       printPath(ss);
         	}
             return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
@@ -824,7 +824,7 @@ Value Search::Worker::search(
         {
         	if (isOnPvLine(ss))
         	{
-        	    	    sync_cout << " leaving path Step 7. Razoring  d: " << 0 << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    sync_cout << " leaving path Step 7. Razoring  d: " << 0 << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
         	    	    printPath(ss);
         	}
             return value;
@@ -837,11 +837,12 @@ Value Search::Worker::search(
         && eval - futility_margin(depth, cutNode && !ss->ttHit, improving, opponentWorsening)
                - (ss - 1)->statScore / 267
              >= beta
+        && !nmpMinPly
         && eval >= beta && eval < VALUE_TB_WIN_IN_MAX_PLY && (!ttMove || ttCapture))
     {
     	if (isOnPvLine(ss))
     	{
-    	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
     	    printPath(ss);
     	}
     	//if (depth < 8 || !pos.king_danger())
@@ -849,7 +850,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
+    if (!PvNode && !ss->ttPv && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
         && eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -937,6 +938,10 @@ Value Search::Worker::search(
 //        }
     }
     step10:
+		 if (isOnPvLine(ss) && ss->ply == 3) {
+			 sync_cout << "SEARCHING critical pos on ply 3 with depth " << depth << " ttpv " << ss->ttPv << " nmpMinPly " << nmpMinPly << sync_endl;
+			 printPath(ss);
+		 }
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -1036,7 +1041,7 @@ moves_loop:  // When in check, search starts here
 
     value            = bestValue;
     moveCountPruning = false;
-    int kamikazes = 0;
+    ss->kamikazes = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1079,7 +1084,7 @@ moves_loop:  // When in check, search starts here
         givesCheck = pos.gives_check(move);
 
         // Calculate new depth for this move
-        newDepth = depth - 1;
+        newDepth = depth - 1;// + ss->kamikazes;
 
         int delta = beta - alpha;
         int usedDepth = newDepth;
@@ -1116,7 +1121,7 @@ moves_loop:  // When in check, search starts here
                 {
                 	  if (isOnPvLine(ss, move))
                 	  {
-                	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCI::move(move) << "  d: " << depth << " nmMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                 	     printPath(ss);
                 	  }
                 	  else if (ss->ply == 3 && isOnPvLine(ss))
@@ -1144,7 +1149,7 @@ moves_loop:  // When in check, search starts here
                   ss->staticEval + (bestValue < ss->staticEval - 59 ? 141 : 58) + 125 * lmrDepth;
 
                 // Futility pruning: parent node (~13 Elo)
-                if (!ss->inCheck && lmrDepth < 15 && futilityValue <= alpha)
+                if (!ss->inCheck && lmrDepth < 15 && futilityValue <= alpha && !nmpMinPly)
                 {
                     if (bestValue <= futilityValue && std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY
                         && futilityValue < VALUE_TB_WIN_IN_MAX_PLY)
@@ -1152,7 +1157,7 @@ moves_loop:  // When in check, search starts here
                         bestValue = (bestValue + futilityValue * 3) / 4;
                         if (isOnPvLine(ss, move))
                         {
-                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCI::move(move) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                        	  	printPath(ss);
                         }
 
@@ -1168,7 +1173,7 @@ moves_loop:  // When in check, search starts here
                 {
                 	  if (isOnPvLine(ss, move))
                 	  {
-                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCI::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCI::move(move) << "  d: " << depth << " nmpMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                 	  	printPath(ss);
                 	  }
                 	  else if (ss->ply == 3 && isOnPvLine(ss))
@@ -1205,6 +1210,12 @@ moves_loop:  // When in check, search starts here
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
+                if (ss->kamikazes >= 2 && isOnPvLine(ss) && !ss->ttPv)
+                {
+                    tte->overwrite(posKey, true, BOUND_UPPER, tt.generation());
+                    sync_cout << "info string SET TTPV TO 1!!!!" << UCI::move(move) << sync_endl;
+                    sync_cout << pos << sync_endl;
+                }
 
                 if (value < singularBeta)
                 {
@@ -1371,6 +1382,13 @@ moves_loop:  // When in check, search starts here
         // Step 19. Undo move
         pos.undo_move(move);
 
+        if (ss->kamikazes >= 2 && isOnPvLine(ss) && !ss->ttPv)
+                     {
+                         tte->overwrite(posKey, true, BOUND_UPPER, tt.generation());
+                         sync_cout << "info string SET TT_PV TO 1!!!!" << UCI::move(move) << sync_endl;
+                         sync_cout << pos << sync_endl;
+                     }
+
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
         // Step 20. Check for a new best move
@@ -1456,13 +1474,16 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
-        else if (ss->ply == 3 && nmpMinPly) {
-    	  	//sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
-    	  	kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
-    	  	if (kamikazes >= 3)
+        else  {
+
+    	  	ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
+    	  	if (value <= VALUE_MATED_IN_MAX_PLY)
     	  	{
-    	  		sync_cout << "info LET VERIFICATION SEARCH FAIL LOW"  << pos << sync_endl;
-    	  		return alpha;
+    	  		if (isOnPvLine(ss))
+    	  	    	  	  sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
+    	  		sync_cout << "info Kamikazes "  << ss->kamikazes << " d: " << depth <<  " excl move " << UCI::move(excludedMove) << pos << sync_endl;
+
+
     	  	}
         }
 
@@ -1513,7 +1534,7 @@ moves_loop:  // When in check, search starts here
     }
     if (!bestMove && isOnPvLine(ss) && ss->ply > 3)
     {
-    	sync_cout << " leaving path no bestmove (fail low) mc: " << moveCount << " d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	sync_cout << " leaving path no bestmove (fail low) mc: " << moveCount << " d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
     	printPath(ss);
     	std::stringstream sss;
     	for (int i=0; i<quietCount; i++ )
