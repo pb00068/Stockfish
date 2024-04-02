@@ -851,7 +851,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search (~35 Elo)
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
         && eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
 				//&&  (ss - 1)->currentMove != Move(SQ_D4, SQ_B5))
     {
@@ -890,7 +890,7 @@ Value Search::Worker::search(
 //                           sync_cout << UCI::move((ss-ss->ply+p)->currentMove) << " depth " << (ss-ss->ply+p)->dept << " newdepth " << (ss-ss->ply+p)->newdepth << " excl move " << bool((ss-ss->ply+p)->excludedMove != Move::none()) <<  sync_endl;
 //        	                     sync_cout << "move " << UCI::move((ss-1)->currentMove) << " mc: " <<  (ss-1)->moveCount << " at ply " << ss->ply << " refuted through nm search with node depth : " <<  depth  << " R:" << R << " eff. search dept:" << depth -R << " rootDepth: " << thisThread->rootDepth << " seldepth " << thisThread->selDepth << sync_endl;
 //	                }
-            if (thisThread->nmpMinPly>1 || depth < 16) {
+            if (nmpMinPly  || depth < 16) {
 
                 if (isOnPvLine(ss) && ss->ply >= 3)
                 {
@@ -900,15 +900,15 @@ Value Search::Worker::search(
                 return nullValue;
             }
 
-            assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+            assert(!nmpMinPly);  // Recursive verification is not allowed
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 
-            thisThread->nmpMinPly = 0;
+            nmpMinPly = 0;
 
             if (v >= beta)
             {
@@ -1036,6 +1036,7 @@ moves_loop:  // When in check, search starts here
 
     value            = bestValue;
     moveCountPruning = false;
+    int kamikazes = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1455,8 +1456,15 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
-        else if (ss->ply == 3 && isOnPvLine(ss) && nmpMinPly)
-    	  	sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value < VALUE_MATED_IN_MAX_PLY) << sync_endl;
+        else if (ss->ply == 3 && isOnPvLine(ss) && nmpMinPly) {
+    	  	sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
+    	  	kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
+    	  	if (kamikazes >= 3)
+    	  	{
+    	  		sync_cout << "info LET VERIFICATION SEARCH FAIL LOW"  << sync_endl;
+    	  		return alpha;
+    	  	}
+        }
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
