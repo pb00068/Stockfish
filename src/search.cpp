@@ -1456,12 +1456,12 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
-        else if (ss->ply == 3 && isOnPvLine(ss) && nmpMinPly) {
-    	  	sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
+        else if (ss->ply == 3 && nmpMinPly) {
+    	  	//sync_cout << "info fail low  move " << UCI::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
     	  	kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
     	  	if (kamikazes >= 3)
     	  	{
-    	  		sync_cout << "info LET VERIFICATION SEARCH FAIL LOW"  << sync_endl;
+    	  		sync_cout << "info LET VERIFICATION SEARCH FAIL LOW"  << pos << sync_endl;
     	  		return alpha;
     	  	}
         }
