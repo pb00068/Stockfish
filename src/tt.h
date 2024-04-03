@@ -44,9 +44,8 @@ struct TTEntry {
     Value eval() const { return Value(eval16); }
     Depth depth() const { return Depth(depth8 + DEPTH_OFFSET); }
     bool  is_pv() const { return bool(genBound8 & 0x4); }
-    bool  is_no_nullmove() const { return bool(genBound8 & 0x8); }
     Bound bound() const { return Bound(genBound8 & 0x3); }
-    void  save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8, bool no_nm);
+    void  save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8);
     // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
     uint8_t relative_age(const uint8_t generation8) const;
 
@@ -82,7 +81,7 @@ class TranspositionTable {
 
     // We have 8 bits available where the lowest 3 bits are
     // reserved for other things.
-    static constexpr unsigned GENERATION_BITS = 4;
+    static constexpr unsigned GENERATION_BITS = 3;
     // increment for generation field
     static constexpr int GENERATION_DELTA = (1 << GENERATION_BITS);
     // cycle length
