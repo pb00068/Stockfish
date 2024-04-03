@@ -72,7 +72,7 @@ struct Stack {
     bool            ttHit;
     int             multipleExtensions;
     int             cutoffCnt;
-    int gettingMated;
+    Square  gettingMated;
 };
 
 

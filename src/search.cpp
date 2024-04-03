@@ -590,7 +590,6 @@ Value Search::Worker::search(
     (ss + 1)->excludedMove = bestMove = Move::none();
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = Move::none();
     (ss + 2)->cutoffCnt                         = 0;
-    ss->gettingMated = 0;
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
@@ -804,17 +803,29 @@ Value Search::Worker::search(
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
-
+            ss->gettingMated = SQ_NONE;
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 
             thisThread->nmpMinPly = 0;
 
-            if (ss->gettingMated >= 2) // don't null move test this critical position anymore
-                   ss->ttPv = true;
-            else if (v >= beta)
+            if (ss->gettingMated == SQUARES_BABYSIT) // more moves (different pieces) lead to getting mated
+            {
+                  const Square   ksq    = pos.square<KING>(us);
+                  Bitboard b = attacks_bb<KING>(ksq) & ~pos.pieces(us);
+                  int kingMoves = popcount(b);
+                  if (kingMoves < 3)
+                       while (b)
+                           if (pos.attackers_to(pop_lsb(b), pos.pieces() ^ ksq) & pos.pieces(~us))
+                              kingMoves--;
+                  if (!kingMoves)
+                     goto step10; // no null move pruning if no kingmoves and more moves (different pieces) lead to getting mated
+            }
+            if (v >= beta)
                 return nullValue;
         }
     }
+
+    step10:
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -1289,7 +1300,13 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
-        ss->gettingMated += (value <= VALUE_MATED_IN_MAX_PLY);
+        if (value <= VALUE_MATED_IN_MAX_PLY && ss->gettingMated != move.from_sq())
+        {
+          if (ss->gettingMated == SQ_NONE )
+              ss->gettingMated = move.from_sq();
+          else
+              ss->gettingMated = SQUARES_BABYSIT;
+        }
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.

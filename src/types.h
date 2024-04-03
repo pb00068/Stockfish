@@ -208,7 +208,8 @@ enum Square : int {
     SQ_NONE,
 
     SQUARE_ZERO = 0,
-    SQUARE_NB   = 64
+    SQUARE_NB   = 64,
+    SQUARES_BABYSIT = 65
 };
 // clang-format on
 
