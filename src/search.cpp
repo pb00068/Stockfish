@@ -114,7 +114,7 @@ Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_stats(
-   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, Move excludedMove);
+   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, Move quieteExcludedMove);
 void update_all_stats(const Position& pos,
                       Stack*          ss,
                       Search::Worker& workerThread,
@@ -1725,7 +1725,7 @@ void update_all_stats(const Position& pos,
                                                    : stat_bonus(depth);  // smaller bonus
 
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, workerThread, bestMove, bestMoveBonus, excludedMove);
+        update_quiet_stats(pos, ss, workerThread, bestMove, bestMoveBonus, excludedMove != Move::none() && !pos.capture(excludedMove) ? excludedMove : Move::none());
 
 
         int pIndex = pawn_structure_index(pos);
@@ -1750,7 +1750,7 @@ void update_all_stats(const Position& pos,
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(bestMove.to_sq()));
         captureHistory[moved_piece][bestMove.to_sq()][captured] << quietMoveBonus;
-        if (excludedMove != Move::none())
+        if (excludedMove != Move::none() && pos.capture(excludedMove))
             captureHistory[pos.moved_piece(excludedMove)][excludedMove.to_sq()][type_of(pos.piece_on(excludedMove.to_sq()))] << quietMoveBonus;
 
     }
@@ -1790,10 +1790,10 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 // Updates move sorting heuristics
 void update_quiet_stats(
-  const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, Move excludedMove) {
+  const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, Move quieteExcludedMove) {
 
     // Update killers
-    if (excludedMove == Move::none() && ss->killers[0] != move)
+    if (quieteExcludedMove == Move::none() && ss->killers[0] != move)
     {
         ss->killers[1] = ss->killers[0];
         ss->killers[0] = move;
@@ -1802,16 +1802,16 @@ void update_quiet_stats(
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.from_to()] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
-    if (excludedMove != Move::none()) {
-        workerThread.mainHistory[us][excludedMove.from_to()] << bonus;
-        update_continuation_histories(ss, pos.moved_piece(excludedMove), excludedMove.to_sq(), bonus);
+    if (quieteExcludedMove != Move::none()) {
+        workerThread.mainHistory[us][quieteExcludedMove.from_to()] << bonus;
+        update_continuation_histories(ss, pos.moved_piece(quieteExcludedMove), quieteExcludedMove.to_sq(), bonus);
     }
 
     // Update countermove history
     if (((ss - 1)->currentMove).is_ok())
     {
         Square prevSq                                           = ((ss - 1)->currentMove).to_sq();
-        workerThread.counterMoves[pos.piece_on(prevSq)][prevSq] = excludedMove == Move::none() ? move : excludedMove;
+        workerThread.counterMoves[pos.piece_on(prevSq)][prevSq] = quieteExcludedMove == Move::none() ? move : quieteExcludedMove;
     }
 }
 }
