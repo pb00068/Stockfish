@@ -1730,8 +1730,6 @@ void update_all_stats(const Position& pos,
 
         int pIndex = pawn_structure_index(pos);
         workerThread.pawnHistory[pIndex][moved_piece][bestMove.to_sq()] << quietMoveBonus;
-        if (excludedMove != Move::none())
-           workerThread.pawnHistory[pIndex][pos.moved_piece(excludedMove)][excludedMove.to_sq()] << quietMoveBonus;
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1750,9 +1748,6 @@ void update_all_stats(const Position& pos,
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(bestMove.to_sq()));
         captureHistory[moved_piece][bestMove.to_sq()][captured] << quietMoveBonus;
-        if (excludedMove != Move::none() && pos.capture(excludedMove))
-            captureHistory[pos.moved_piece(excludedMove)][excludedMove.to_sq()][type_of(pos.piece_on(excludedMove.to_sq()))] << quietMoveBonus;
-
     }
 
     // Extra penalty for a quiet early move that was not a TT move or
@@ -1802,10 +1797,6 @@ void update_quiet_stats(
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.from_to()] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
-    if (quieteExcludedMove != Move::none()) {
-        workerThread.mainHistory[us][quieteExcludedMove.from_to()] << bonus;
-        update_continuation_histories(ss, pos.moved_piece(quieteExcludedMove), quieteExcludedMove.to_sq(), bonus);
-    }
 
     // Update countermove history
     if (((ss - 1)->currentMove).is_ok())
