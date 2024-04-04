@@ -773,7 +773,7 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!ss->ttPv && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
+    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
         && eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -817,8 +817,11 @@ Value Search::Worker::search(
                        while (b)
                            if (pos.attackers_to(pop_lsb(b), pos.pieces() ^ ksq) & pos.pieces(~us))
                               kingMoves--;
-                  if (!kingMoves)
-                     goto step10; // no null move pruning if no kingmoves and more moves (different pieces) lead to getting mated
+                 // if (!kingMoves)
+                  {
+                  	sync_cout << pos << sync_endl;
+                     abort();
+                  }// no null move pruning if no kingmoves and more moves (different pieces) lead to getting mated
             }
             if (v >= beta)
                 return nullValue;
@@ -1050,11 +1053,17 @@ moves_loop:  // When in check, search starts here
             {
                 Value singularBeta  = ttValue - (58 + 58 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
-
+                ss->gettingMated = SQ_NONE;
                 ss->excludedMove = move;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
+
+                if (ss->gettingMated == SQUARES_BABYSIT) // more moves (different pieces) lead to getting mated
+                           {
+                             	sync_cout << pos << sync_endl;
+                             	dbg_hit_on(true);
+                           }
 
                 if (value < singularBeta)
                 {
