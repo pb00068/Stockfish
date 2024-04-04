@@ -553,6 +553,7 @@ Value Search::Worker::search(
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
+    bool doNull = true;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -603,6 +604,10 @@ Value Search::Worker::search(
               : ss->ttHit ? tte->move()
                           : Move::none();
     ttCapture = ttMove && pos.capture_stage(ttMove);
+    if (ss->ttHit)
+      doNull = tte->doNull();
+
+    dbg_hit_on(doNull == false);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -773,7 +778,7 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
+    if (!PvNode && doNull && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 16878
         && eval >= beta && ss->staticEval >= beta - 20 * depth + 314 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
@@ -817,10 +822,12 @@ Value Search::Worker::search(
                        while (b)
                            if (pos.attackers_to(pop_lsb(b), pos.pieces() ^ ksq) & pos.pieces(~us))
                               kingMoves--;
-                 // if (!kingMoves)
+                  if (kingMoves <= 1)
                   {
-                  	sync_cout << pos << sync_endl;
-                     abort();
+                    // doNull = false;
+                     goto step10;
+                  //sync_cout << pos << sync_endl;
+                    // abort();
                   }// no null move pruning if no kingmoves and more moves (different pieces) lead to getting mated
             }
             if (v >= beta)
@@ -1059,11 +1066,8 @@ moves_loop:  // When in check, search starts here
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
 
-                if (ss->gettingMated == SQUARES_BABYSIT) // more moves (different pieces) lead to getting mated
-                           {
-                             	sync_cout << pos << sync_endl;
-                             	dbg_hit_on(true);
-                           }
+               // if (ss->gettingMated == SQUARES_BABYSIT) // more moves (different pieces) lead to getting mated
+                //    doNull = false;
 
                 if (value < singularBeta)
                 {
@@ -1372,7 +1376,7 @@ moves_loop:  // When in check, search starts here
     // Static evaluation is saved as it was before correction history
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
-                  bestValue >= beta    ? BOUND_LOWER
+                  bestValue >= beta    ? (doNull ? BOUND_LOWER : BOUND_NONE)
                   : PvNode && bestMove ? BOUND_EXACT
                                        : BOUND_UPPER,
                   depth, bestMove, unadjustedStaticEval, tt.generation());

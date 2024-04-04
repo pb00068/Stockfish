@@ -44,7 +44,14 @@ struct TTEntry {
     Value eval() const { return Value(eval16); }
     Depth depth() const { return Depth(depth8 + DEPTH_OFFSET); }
     bool  is_pv() const { return bool(genBound8 & 0x4); }
-    Bound bound() const { return Bound(genBound8 & 0x3); }
+    Bound bound() const {
+    	Bound b = Bound(genBound8 & 0x3);
+    	 if (b == BOUND_NONE)
+    		 return BOUND_LOWER;
+    	return b;
+    }
+    bool doNull() const { return Bound(genBound8 & 0x3) != 0;}
+
     void  save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8);
     // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
     uint8_t relative_age(const uint8_t generation8) const;
