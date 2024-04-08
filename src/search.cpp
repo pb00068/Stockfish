@@ -1798,8 +1798,10 @@ void update_quiet_stats(
 
     Square prevSq  = ((ss - 1)->currentMove).to_sq();
     // Update countermove history
-    if (((ss - 1)->currentMove).is_ok() && betterQuiet != workerThread.counterMoves[pos.piece_on(prevSq)][prevSq])
+    if (((ss - 1)->currentMove).is_ok() && betterQuiet != Move::null())
+    {
         workerThread.counterMoves[pos.piece_on(prevSq)][prevSq] = move;
+    }
 }
 }
 
