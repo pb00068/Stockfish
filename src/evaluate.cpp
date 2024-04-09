@@ -34,6 +34,9 @@
 
 namespace Stockfish {
 
+const Bitboard patternBlack = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2;
+const Bitboard patternWhite = Bitboard(0) | SQ_B3 | SQ_B5;
+
 // Returns a static, purely materialistic evaluation of the position from
 // the point of view of the given color. It can be divided by PawnValue to get
 // an approximation of the material advantage on the board in terms of pawns.
@@ -82,6 +85,11 @@ Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, 
     else
         adjustEval(499, 32793, 903, 9, 147, 1067, 208, 211);
 
+    if ((pos.pieces(BLACK) & patternBlack) == patternBlack && (pos.pieces(WHITE, KNIGHT) & patternWhite) == patternWhite)
+    {
+    	sync_cout << pos << sync_endl;
+          abort();
+    }
     // Guarantee evaluation does not hit the tablebase range
     v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 
