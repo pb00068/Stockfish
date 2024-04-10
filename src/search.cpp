@@ -1494,6 +1494,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
     Square     prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     if (!ttMove && (ss-2)->excludedMove)
          ttMove  = (ss-2)->excludedMove;
+    if (!ttMove && (ss-4)->excludedMove)
+         ttMove  = (ss-4)->excludedMove;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory);
