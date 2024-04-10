@@ -822,6 +822,9 @@ Value Search::Worker::search(
     if (depth <= 0)
         return qsearch<PV>(pos, ss, alpha, beta);
 
+    if (!ttMove && (ss-2)->excludedMove)
+         ttMove  = (ss-2)->excludedMove;
+
     // For cutNodes without a ttMove, we decrease depth by 2 if depth is high enough.
     if (cutNode && depth >= 8 && !ttMove)
         depth -= 2;
@@ -906,6 +909,7 @@ moves_loop:  // When in check, search starts here
 
     value            = bestValue;
     moveCountPruning = false;
+
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
