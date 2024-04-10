@@ -763,6 +763,7 @@ Value Search::Worker::search(
             return value;
     }
 
+
     // Step 8. Futility pruning: child node (~40 Elo)
     // The depth condition is important for mate finding.
     if (!ss->ttPv && depth < 12
@@ -783,8 +784,9 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 144, 6) - 4;
 
-        if (ss->ttHit && ttValue < beta && (tte->bound() & BOUND_UPPER) && tte->depth() > nmDepth)
+        if (eval == ttValue && tte->depth() > nmDepth + 1)
            nmDepth++;
+
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
