@@ -1160,7 +1160,7 @@ moves_loop:  // When in check, search starts here
             {
                  bool hit;
                  TTEntry* tte2  = tt.probe(pos.key(), hit);
-                 if (hit && tte2->depth() > d &&  value_from_tt(tte2->value(), ss->ply+1, pos.rule50_count()) == -eval)
+                 if (hit && tte2->depth() > d && tte2->value() == -eval)
                     d += (tte2->depth() + 1 - d) / 2;
             }
 
