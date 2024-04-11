@@ -688,6 +688,7 @@ Value Search::Worker::search(
             }
         }
     }
+    bool fromTT = false;
 
     // Step 6. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
@@ -718,7 +719,10 @@ Value Search::Worker::search(
 
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (ttValue != VALUE_NONE && (tte->bound() & (ttValue > eval ? BOUND_LOWER : BOUND_UPPER)))
+        {
             eval = ttValue;
+            fromTT = true;
+        }
     }
     else
     {
@@ -1152,6 +1156,13 @@ moves_loop:  // When in check, search starts here
             // To prevent problems when the max value is less than the min value,
             // std::clamp has been replaced by a more robust implementation.
             Depth d = std::max(1, std::min(newDepth - r, newDepth + 1));
+            if (d > 4 && fromTT && tte->depth() > d)
+            {
+                 bool hit;
+                 TTEntry* tte2  = tt.probe(pos.key(), hit);
+                 if (hit && tte2->depth() > d &&  value_from_tt(tte2->value(), ss->ply+1, pos.rule50_count()) == -eval)
+                    d += (tte2->depth() + 1 - d) / 2;
+            }
 
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
 
