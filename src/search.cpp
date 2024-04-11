@@ -1493,9 +1493,20 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
     // will be generated.
     Square     prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     if (!ttMove && (ss-2)->excludedMove)
-         ttMove  = (ss-2)->excludedMove;
-    if (!ttMove && (ss-4)->excludedMove)
-         ttMove  = (ss-4)->excludedMove;
+    {
+      Piece movedPiece = pos.piece_on((ss-2)->excludedMove.from_sq());
+      if (color_of(movedPiece) == us && !pos.capture((ss-2)->excludedMove))
+      {
+          const PieceToHistory* contHist2[] = {(ss - 3)->continuationHistory,
+                                               (ss - 4)->continuationHistory};
+          int score = 2 * thisThread->mainHistory[us][(ss-2)->excludedMove.from_to()]
+                        + (*contHist2[0])[movedPiece][(ss-2)->excludedMove.to_sq()]
+                        + (*contHist2[1])[movedPiece][(ss-2)->excludedMove.to_sq()];
+          if (score > 1600)
+            ttMove = (ss-2)->excludedMove;
+      }
+    }
+
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory);
