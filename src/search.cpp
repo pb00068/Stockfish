@@ -784,10 +784,6 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 144, 6) - 4;
 
-        if (eval == ttValue && tte->depth() > nmDepth + 1)
-           nmDepth++;
-
-
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -800,10 +796,13 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
-            if (thisThread->nmpMinPly || depth < 16)
+            if (thisThread->nmpMinPly || depth < 14)
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+
+            if (eval == ttValue && tte->depth() > nmDepth)
+               nmDepth += (tte->depth() + 1 - nmDepth) / 2;
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
