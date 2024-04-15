@@ -608,27 +608,34 @@ Value Search::Worker::search(
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
     // At non-PV nodes we check for an early TT cutoff
-    if (!PvNode && !excludedMove && tte->depth() > depth +  (threads.size() == 1 ? -1 : 0)
-        && ttValue != VALUE_NONE  // Possible in case of TT access race or if !ttHit
-        && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
-    {
-        // If ttMove is quiet, update move sorting heuristics on TT hit (~2 Elo)
-        if (ttMove && ttValue >= beta)
-        {
-            // Bonus for a quiet ttMove that fails high (~2 Elo)
-            if (!ttCapture)
-                update_quiet_stats(pos, ss, *this, ttMove, stat_bonus(depth));
+    if (!PvNode && !excludedMove
+        && ttValue != VALUE_NONE)  // Possible in case of TT access race or if !ttHit
 
-            // Extra penalty for early quiet moves of
-            // the previous ply (~1 Elo on STC, ~2 Elo on LTC)
-            if (prevSq != SQ_NONE && (ss - 1)->moveCount <= 2 && !priorCapture)
-                update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq,
-                                              -stat_malus(depth + 1));
+    {
+        dbg_hit_on(ttValue >= beta);
+        bool earlyCut = false;
+        if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 20, 2))
+        {
+              earlyCut = true;
+              // If ttMove is quiet, update move sorting heuristics on TT hit (~2 Elo)
+              if (ttMove)
+              {
+                  // Bonus for a quiet ttMove that fails high (~2 Elo)
+                  if (!ttCapture)
+                      update_quiet_stats(pos, ss, *this, ttMove, stat_bonus(depth));
+                 // Extra penalty for early quiet moves of
+                 // the previous ply (~1 Elo on STC, ~2 Elo on LTC)
+                 if (prevSq != SQ_NONE && (ss - 1)->moveCount <= 2 && !priorCapture)
+                      update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq,
+                                                    -stat_malus(depth + 1));
+              }
         }
+        else if ((tte->bound() & BOUND_UPPER) && ttValue < beta && tte->depth() > depth - std::min((beta - ttValue) / 20, 2))
+          earlyCut = true;
 
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
-        if (pos.rule50_count() < 90)
+        if (earlyCut && pos.rule50_count() < 90)
             return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
                    ? (ttValue * 3 + beta) / 4
                    : ttValue;
