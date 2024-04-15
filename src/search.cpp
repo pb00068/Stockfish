@@ -613,9 +613,10 @@ Value Search::Worker::search(
 
     {
         bool earlyCut = false;
-        if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 20, 2))
+        if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 60, 1))
         {
               earlyCut = true;
+
               // If ttMove is quiet, update move sorting heuristics on TT hit (~2 Elo)
               if (ttMove)
               {
@@ -629,8 +630,9 @@ Value Search::Worker::search(
                                                     -stat_malus(depth + 1));
               }
         }
-        else if ((tte->bound() & BOUND_UPPER) && ttValue < beta && tte->depth() > depth - std::min((beta - ttValue) / 20, 2))
+        else if ((tte->bound() & BOUND_UPPER) && ttValue < beta && tte->depth() > depth - std::min((beta - ttValue) / 60, 1))
           earlyCut = true;
+
 
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
