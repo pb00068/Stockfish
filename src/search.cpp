@@ -608,7 +608,7 @@ Value Search::Worker::search(
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
     // At non-PV nodes we check for an early TT cutoff
-    if (!PvNode && !excludedMove && tte->depth() > depth +  (threads.size() == 1 ? 1 : 0)
+    if (!PvNode && !excludedMove && tte->depth() > depth +  (threads.size() == 1 ? -1 : 0)
         && ttValue != VALUE_NONE  // Possible in case of TT access race or if !ttHit
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
     {
