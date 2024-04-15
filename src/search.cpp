@@ -612,7 +612,6 @@ Value Search::Worker::search(
         && ttValue != VALUE_NONE)  // Possible in case of TT access race or if !ttHit
 
     {
-        dbg_hit_on(ttValue >= beta);
         bool earlyCut = false;
         if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 20, 2))
         {
