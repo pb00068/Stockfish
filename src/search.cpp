@@ -613,7 +613,7 @@ Value Search::Worker::search(
 
     {
         bool earlyCut = false;
-        if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 60, 1))
+        if ((tte->bound() & BOUND_LOWER) && ttValue >= beta && tte->depth() > depth - std::min((ttValue - beta) / 90, 2))
         {
               earlyCut = true;
 
@@ -630,7 +630,7 @@ Value Search::Worker::search(
                                                     -stat_malus(depth + 1));
               }
         }
-        else if ((tte->bound() & BOUND_UPPER) && ttValue < beta && tte->depth() > depth - std::min((beta - ttValue) / 60, 1))
+        else if ((tte->bound() & BOUND_UPPER) && ttValue < beta && tte->depth() > depth - std::min((beta - ttValue) / 90, 2))
           earlyCut = true;
 
 
