@@ -1036,8 +1036,7 @@ moves_loop:  // When in check, search starts here
                 Value singularBeta  = ttValue - (64 + 59 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
 
-                if (type_of(movedPiece) == PAWN && !capture && (distance(move.from_sq(), move.to_sq()) == 2
-                   || (relative_rank(us, move.from_sq()) == RANK_2 && !(pos.pieces() & (move.from_sq() + pawn_push(us)  + pawn_push(us)))))
+                if (type_of(movedPiece) == PAWN && !capture && (distance(move.from_sq(), move.to_sq()) == 2)
                      && (pos.attacks_by<PAWN>(~us) & (move.from_sq() + pawn_push(us))))
                     goto afterSE;
 
