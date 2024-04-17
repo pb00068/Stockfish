@@ -1036,6 +1036,11 @@ moves_loop:  // When in check, search starts here
                 Value singularBeta  = ttValue - (64 + 59 * (ss->ttPv && !PvNode)) * depth / 64;
                 Depth singularDepth = newDepth / 2;
 
+                if (type_of(movedPiece) == PAWN && (distance(move.from_sq(), move.to_sq()) == 2
+                   || (relative_rank(us, move.from_sq()) == RANK_2 && !(pos.pieces() & (move.from_sq() + pawn_push(us)  + pawn_push(us)))))
+                     && (pos.attacks_by<PAWN>(~us) & (move.from_sq() + pawn_push(us))))
+                    goto afterSE;
+
                 ss->excludedMove = move;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
@@ -1090,6 +1095,8 @@ moves_loop:  // When in check, search starts here
                           > 3807)
                 extension = 1;
         }
+
+        afterSE:
 
         // Add extension to new depth
         newDepth += extension;
