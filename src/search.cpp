@@ -1038,9 +1038,15 @@ moves_loop:  // When in check, search starts here
 
                 Square from = move.from_sq();
                 Square to = move.to_sq();
+                // double pawn push which can be captured by en passant?
                 if (type_of(movedPiece) == PAWN && !capture && ((int(to) ^ int(from)) == 16)
                      && (pawn_attacks_bb(us, to - pawn_push(us)) & pos.pieces(~us, PAWN)))
-                    goto afterSE;
+                {
+                   if (singularBeta >= beta)
+                      return singularBeta; // multi-cut, if move is so good despite it can be captured, then also simple pawn push does
+                   else
+                      goto afterSE;
+                }
 
                 ss->excludedMove = move;
                 value =
