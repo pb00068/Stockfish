@@ -82,6 +82,17 @@ Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, 
     else
         adjustEval(499, 32793, 903, 9, 147, 1067, 208, 211);
 
+    // penalize King preventing own pawns on the way to promote
+    Bitboard b = pos.pieces(KING);
+    while (b)
+    {
+        const Square ksq  = pop_lsb(b);
+        Color c =  color_of(pos.piece_on(ksq));
+        if (pos.pieces(c, PAWN) & (ksq - pawn_push(c)))
+            v += relative_rank(c, ksq) * 100 * (pos.side_to_move() == c ? -1 : 1);
+    }
+
+
     // Guarantee evaluation does not hit the tablebase range
     v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 
