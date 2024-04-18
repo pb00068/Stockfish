@@ -278,6 +278,30 @@ inline Bitboard Position::attacks_by(Color c) const {
     }
 }
 
+/// adjacent_files_bb() returns a bitboard representing all the squares on the
+/// adjacent files and the file itself of a given square.
+
+constexpr Bitboard adjacent_files_bb(Square s) {
+  return file_bb(s) | shift<EAST>(file_bb(s)) | shift<WEST>(file_bb(s));
+}
+
+
+/// forward_ranks_bb() returns a bitboard representing the squares on the ranks
+/// in front of the given one, from the point of view of the given color. For instance,
+/// forward_ranks_bb(BLACK, SQ_D3) will return the 16 squares on ranks 1 and 2.
+
+constexpr Bitboard forward_ranks_bb(Color c, Square s) {
+  return c == WHITE ? ~Rank1BB << 8 * relative_rank(WHITE, s)
+                    : ~Rank8BB >> 8 * relative_rank(BLACK, s);
+}
+
+/// pawn_waytoPromotion() returns a bitboard representing all the squares that
+/// determine with presence of a enemy pawn it if is a passed pawn of not
+
+constexpr Bitboard pawn_waytoPromotion(Color c, Square s) {
+  return forward_ranks_bb(c, s) & adjacent_files_bb(s);
+}
+
 inline Bitboard Position::checkers() const { return st->checkersBB; }
 
 inline Bitboard Position::blockers_for_king(Color c) const { return st->blockersForKing[c]; }
