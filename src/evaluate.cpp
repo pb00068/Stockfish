@@ -88,9 +88,13 @@ Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, 
     {
         const Square ksq  = pop_lsb(b);
         Color c =  color_of(pos.piece_on(ksq));
-        if (relative_rank(c, ksq) > RANK_4 &&  ((pos.pieces(c, PAWN) & (ksq - pawn_push(c))) || (pos.pieces(c, PAWN) & (ksq - pawn_push(c) - pawn_push(c))))
+        if (relative_rank(c, ksq) > RANK_6 &&  ((pos.pieces(c, PAWN) & (ksq - pawn_push(c))) || (pos.pieces(c, PAWN) & (ksq - pawn_push(c) - pawn_push(c))))
                  && !(pawn_waytoPromotion(c, ksq - pawn_push(c)- pawn_push(c)) & pos.pieces(~c, PAWN)))
+        {
             v += relative_rank(c, ksq) * 95 * (pos.side_to_move() == c ? -1 : 1);
+            dbg_hit_on(true);
+            sync_cout << pos << sync_endl;
+        }
     }
 
 
