@@ -88,12 +88,21 @@ Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, 
     {
         const Square ksq  = pop_lsb(b);
         Color c =  color_of(pos.piece_on(ksq));
-        if (relative_rank(c, ksq) > RANK_6 &&  ((pos.pieces(c, PAWN) & (ksq - pawn_push(c))) || (pos.pieces(c, PAWN) & (ksq - pawn_push(c) - pawn_push(c))))
-                 && !(pawn_waytoPromotion(c, ksq - pawn_push(c)- pawn_push(c)) & pos.pieces(~c, PAWN)))
+        if (relative_rank(c, ksq) > RANK_5 &&  ((pos.pieces(c, PAWN) & (ksq - pawn_push(c))) || (pos.pieces(c, PAWN) & (ksq - pawn_push(c) - pawn_push(c))))
+                 && !(pawn_waytoPromotion(c, ksq - pawn_push(c)) & pos.pieces(~c, PAWN)))
         {
+          Bitboard bb = attacks_bb<KING>(ksq) & ~pos.pieces(c);
+          int kingMoves = popcount(bb);
+          if (kingMoves < 3)
+              while (bb)
+                if (pos.attackers_to(pop_lsb(bb), pos.pieces() ^ ksq) & pos.pieces(~c))
+                   kingMoves--;
+          if (kingMoves < 1)
+          {
             v += relative_rank(c, ksq) * 95 * (pos.side_to_move() == c ? -1 : 1);
-            dbg_hit_on(true);
-            sync_cout << pos << sync_endl;
+            //(true);
+            //sync_cout << pos << UCIEngine::move(Move(ksq, ksq - pawn_push(c)), false) << sync_endl;
+          }
         }
     }
 
