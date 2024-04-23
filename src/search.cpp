@@ -53,28 +53,6 @@ using namespace Search;
 
 namespace {
 
-static constexpr double EvalLevel[10] = {1.043, 1.017, 0.952, 1.009, 0.971,
-                                         1.002, 0.992, 0.947, 1.046, 1.001};
-
-// Futility margin
-Value futility_margin(Depth d, bool noTtCutNode, bool improving, bool oppWorsening) {
-    Value futilityMult       = 118 - 44 * noTtCutNode;
-    Value improvingDeduction = 52 * improving * futilityMult / 32;
-    Value worseningDeduction = (310 + 48 * improving) * oppWorsening * futilityMult / 1024;
-
-    return futilityMult * d - improvingDeduction - worseningDeduction;
-}
-
-constexpr int futility_move_count(bool improving, Depth depth) {
-    return improving ? (3 + depth * depth) : (3 + depth * depth) / 2;
-}
-
-// Add correctionHistory value to raw staticEval and guarantee evaluation does not hit the tablebase range
-Value to_corrected_static_eval(Value v, const Worker& w, const Position& pos) {
-    auto cv = w.correctionHistory[pos.side_to_move()][pawn_structure_index<Correction>(pos)];
-    v += cv * std::abs(cv) / 9260;
-    return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
-}
 
 
 const int pvline[] = { 2065, 1, 1761, 3559, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3608, 2950, 644, 388, 74, 1115, 1563, 2139, 659, 1749, 530, 267, 1244, 722, 16961, 1169, 1821, 1089, 1877, 101, 1366, 3241, 1422, 2398, 909, 2658, 852, 2202, 1291, 1941, 706, 1682, 129, 1393, 66, 3143};
@@ -107,6 +85,31 @@ void printPath(Stack * ss)
 
 
 const Bitboard pattern = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2 | SQ_B3 | SQ_B5 | SQ_B6;
+
+static constexpr double EvalLevel[10] = {1.043, 1.017, 0.952, 1.009, 0.971,
+                                         1.002, 0.992, 0.947, 1.046, 1.001};
+
+// Futility margin
+Value futility_margin(Depth d, bool noTtCutNode, bool improving, bool oppWorsening) {
+    Value futilityMult       = 118 - 44 * noTtCutNode;
+    Value improvingDeduction = 52 * improving * futilityMult / 32;
+    Value worseningDeduction = (310 + 48 * improving) * oppWorsening * futilityMult / 1024;
+
+    return futilityMult * d - improvingDeduction - worseningDeduction;
+}
+
+constexpr int futility_move_count(bool improving, Depth depth) {
+    return improving ? (3 + depth * depth) : (3 + depth * depth) / 2;
+}
+
+// Add correctionHistory value to raw staticEval and guarantee evaluation does not hit the tablebase range
+Value to_corrected_static_eval(Value v, const Worker& w, const Position& pos) {
+    auto cv = w.correctionHistory[pos.side_to_move()][pawn_structure_index<Correction>(pos)];
+    v += cv * std::abs(cv) / 9260;
+    return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+}
+
+
 
 // History and stats update bonus, based on depth
 int stat_bonus(Depth d) { return std::clamp(211 * d - 315, 0, 1291); }
@@ -813,6 +816,7 @@ Value Search::Worker::search(
         	    	    printPath(ss);
         	}
             return value;
+        }
     }
 
     // Step 8. Futility pruning: child node (~40 Elo)
@@ -1102,7 +1106,7 @@ moves_loop:  // When in check, search starts here
                         bestValue = (bestValue + futilityValue * 3) / 4;
                         if (isOnPvLine(ss, move))
                         {
-                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCIEngine::move(move) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCIEngine::move(move,false) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                        	  	printPath(ss);
                         }
 
@@ -1118,7 +1122,7 @@ moves_loop:  // When in check, search starts here
                 {
                 	  if (isOnPvLine(ss, move))
                 	  {
-                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCIEngine::move(move) << "  d: " << depth << " nmpMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCIEngine::move(move,false) << "  d: " << depth << " nmpMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                 	  	printPath(ss);
                 	  }
                 	  else if (ss->ply == 3 && isOnPvLine(ss))
