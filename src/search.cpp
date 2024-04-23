@@ -596,7 +596,7 @@ Value Search::Worker::search(
         main_manager()->check_time(*thisThread);
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
-    if (thisThread->selDepth < ss->ply + 1)
+    if (PvNode && thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
 
     if (!rootNode)
@@ -1018,11 +1018,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-//        if (rootNode && is_mainthread() && elapsed() > 3000)
-//        {
-//            main_manager()->updates.onIter(
-//              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
-//        }
+        if (rootNode && is_mainthread() && elapsed() > 3000)
+        {
+            main_manager()->updates.onIter(
+              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
+        }
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -1109,9 +1109,7 @@ moves_loop:  // When in check, search starts here
                        	  	sync_cout << " leaving path Futility pruning: parent node  " << UCIEngine::move(move,false) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                        	  	printPath(ss);
                         }
-
-                        if (!thisThread->nmpMinPly)
-                             continue;
+                        continue;
                     }
                 }
 
