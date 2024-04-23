@@ -1415,7 +1415,7 @@ moves_loop:  // When in check, search starts here
     	  	{
     	  		if (isOnPvLine(ss))
     	  	    	  	  sync_cout << "info fail low  move " << UCIEngine::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
-    	  		sync_cout << "info Kamikazes "  << ss->kamikazes << " d: " << depth <<  " excl move " << UCIEngine::move(excludedMove) << pos << sync_endl;
+    	  		//sync_cout << "info Kamikazes "  << ss->kamikazes << " d: " << depth <<  " excl move " << UCIEngine::move(excludedMove) << pos << sync_endl;
 
 
     	  	}
