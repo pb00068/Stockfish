@@ -28,6 +28,7 @@
 #include <initializer_list>
 #include <string>
 #include <utility>
+#include <sstream>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -74,6 +75,38 @@ Value to_corrected_static_eval(Value v, const Worker& w, const Position& pos) {
     v += cv * std::abs(cv) / 9260;
     return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
+
+
+const int pvline[] = { 2065, 1, 1761, 3559, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3608, 2950, 644, 388, 74, 1115, 1563, 2139, 659, 1749, 530, 267, 1244, 722, 16961, 1169, 1821, 1089, 1877, 101, 1366, 3241, 1422, 2398, 909, 2658, 852, 2202, 1291, 1941, 706, 1682, 129, 1393, 66, 3143};
+                     //lommer simplified 8/7p/1K6/N7/3NP3/8/npn5/k7 w - - 0 1
+
+
+bool isOnPvLine(Stack * ss) {
+//    if (m.raw() != pvline[ss->ply])
+//      return false;
+	  int currentPly = ss->ply;
+    int i=0;
+    for (i=0; i< ss->ply; i+=2) {
+       if ((ss-currentPly+i)->currentMove.raw() != pvline[i])
+         return false;
+    }
+    return true;
+}
+
+bool isOnPvLine(Stack * ss, Move m) {
+    return m.raw() == pvline[ss->ply] && isOnPvLine(ss);
+}
+
+void printPath(Stack * ss)
+{
+	  std::stringstream sss;
+    for (int p=0; p< ss->ply; p++)
+            sss << UCIEngine::move((ss-ss->ply+p)->currentMove) << " d:" << (ss-ss->ply+p)->dept << " nd:" << (ss-ss->ply+p)->newdepth <<  " ";
+    sync_cout << "info path: " << sss.str() << sync_endl;
+}
+
+
+const Bitboard pattern = Bitboard(0) | SQ_B1 | SQ_A2 | SQ_B2 | SQ_C2 | SQ_B3 | SQ_B5 | SQ_B6;
 
 // History and stats update bonus, based on depth
 int stat_bonus(Depth d) { return std::clamp(211 * d - 315, 0, 1291); }
@@ -528,6 +561,7 @@ Value Search::Worker::search(
     assert(!(PvNode && cutNode));
 
     Move      pv[MAX_PLY + 1], capturesSearched[32], quietsSearched[32];
+    int quietsSearchedDepth[32];
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
@@ -549,13 +583,17 @@ Value Search::Worker::search(
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
+    if (!ss->excludedMove)
+         ss->dept = depth;
+    //if (pos.checkers() && ss->ply==1)
+    //	sync_cout << "info checkers  on ply " << ss->ply  << " depth " << depth << sync_endl;
 
     // Check for the available remaining time
     if (is_mainthread())
         main_manager()->check_time(*thisThread);
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
-    if (PvNode && thisThread->selDepth < ss->ply + 1)
+    if (thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
 
     if (!rootNode)
@@ -627,9 +665,21 @@ Value Search::Worker::search(
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
+        {
+        	if (ttMove && ttValue >= beta && isOnPvLine(ss, ttMove))
+        	{
+        	    	    sync_cout << " leaving path tt early exit  ttValue >= beta  move " << UCIEngine::move(ttMove)  << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    printPath(ss);
+        	}
+        	else if (ttValue < beta && isOnPvLine(ss))
+        	{
+        	       sync_cout << " leaving path tt early exit  ttValue < beta  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	       printPath(ss);
+        	}
             return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
                    ? (ttValue * 3 + beta) / 4
                    : ttValue;
+        }
     }
 
     // Step 5. Tablebases probe
@@ -756,6 +806,12 @@ Value Search::Worker::search(
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
+        {
+        	if (isOnPvLine(ss))
+        	{
+        	    	    sync_cout << " leaving path Step 7. Razoring  d: " << 0 << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+        	    	    printPath(ss);
+        	}
             return value;
     }
 
@@ -766,7 +822,14 @@ Value Search::Worker::search(
                - (ss - 1)->statScore / 284
              >= beta
         && eval >= beta && eval < VALUE_TB_WIN_IN_MAX_PLY && (!ttMove || ttCapture))
+        {
+         	if (isOnPvLine(ss))
+    	{
+    	    sync_cout << " leaving path Futility pruning: child node    d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	    printPath(ss);
+    	}
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
+        }
 
     // Step 9. Null move search with verification search (~35 Elo)
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 18001
@@ -792,7 +855,14 @@ Value Search::Worker::search(
         if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
         {
             if (thisThread->nmpMinPly || depth < 16)
+            {
+            if (isOnPvLine(ss) && ss->ply >= 3)
+                {
+              	   sync_cout << " leaving path null Move fail high d:" << (depth - R) << " prevmove " << UCIEngine::move((ss - 1)->currentMove) << " mc: " << (ss-1)->moveCount << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+              	   printPath(ss);
+                }
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
 
@@ -805,9 +875,21 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+            	 if (isOnPvLine(ss) && ss->ply >= 3)
+            	 {
+            	    sync_cout << " leaving path null Move verification fail high searched depth: " << (depth - R)  << " ply " << ss->ply << pos << sync_endl;
+            	    printPath(ss);
+            	 }
                 return nullValue;
+            }
         }
     }
+    step10:
+		 if (isOnPvLine(ss) && ss->ply == 3) {
+			 sync_cout << "SEARCHING critical pos on ply 3 with depth " << depth << " ttpv " << ss->ttPv << " nmpMinPly " << nmpMinPly << sync_endl;
+			 printPath(ss);
+		 }
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -867,6 +949,11 @@ Value Search::Worker::search(
 
                 if (value >= probCutBeta)
                 {
+                	if (isOnPvLine(ss, move))
+                	{
+                                sync_cout << " leaving path probcut  " << UCIEngine::move(move) << "  d: " << depth << " nmMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                                printPath(ss);
+                	}
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, unadjustedStaticEval, tt.generation());
@@ -902,6 +989,7 @@ moves_loop:  // When in check, search starts here
 
     value            = bestValue;
     moveCountPruning = false;
+    ss->kamikazes = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -926,11 +1014,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread() && elapsed() > 3000)
-        {
-            main_manager()->updates.onIter(
-              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
-        }
+//        if (rootNode && is_mainthread() && elapsed() > 3000)
+//        {
+//            main_manager()->updates.onIter(
+//              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
+//        }
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -943,6 +1031,7 @@ moves_loop:  // When in check, search starts here
         newDepth = depth - 1;
 
         int delta = beta - alpha;
+        int usedDepth = newDepth;
 
         Depth r = reduction(improving, depth, moveCount, delta);
 
@@ -973,7 +1062,16 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks (~11 Elo)
                 if (!pos.see_ge(move, -199 * depth))
+                    {
+                	  if (isOnPvLine(ss, move))
+                	  {
+                	     sync_cout << " leaving path SEE based pruning for captures and checks   " << UCIEngine::move(move) << "  d: " << depth << " nmMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	     printPath(ss);
+                	  }
+                	  else if (ss->ply == 3 && isOnPvLine(ss))
+                	                  	  	sync_cout << "info see pruning move " << UCIEngine::move(move) << sync_endl;
                     continue;
+                }
             }
             else
             {
@@ -1000,14 +1098,33 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY
                         && futilityValue < VALUE_TB_WIN_IN_MAX_PLY)
                         bestValue = (bestValue + futilityValue * 3) / 4;
-                    continue;
+                   {
+                        bestValue = (bestValue + futilityValue * 3) / 4;
+                        if (isOnPvLine(ss, move))
+                        {
+                       	  	sync_cout << " leaving path Futility pruning: parent node  " << UCIEngine::move(move) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                       	  	printPath(ss);
+                        }
+
+                        if (!thisThread->nmpMinPly)
+                             continue;
+                    }
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE (~4 Elo)
                 if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
+                {
+                	  if (isOnPvLine(ss, move))
+                	  {
+                	  	sync_cout << " leaving path Prune moves with negative SEE " << UCIEngine::move(move) << "  d: " << depth << " nmpMinPly " << thisThread->nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+                	  	printPath(ss);
+                	  }
+                	  else if (ss->ply == 3 && isOnPvLine(ss))
+                	  	sync_cout << "info see pruning move " << UCIEngine::move(move) << sync_endl;
                     continue;
+                }
             }
         }
 
@@ -1034,6 +1151,7 @@ moves_loop:  // When in check, search starts here
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
+                ss->newdepth = singularDepth;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
@@ -1149,6 +1267,7 @@ moves_loop:  // When in check, search starts here
             // std::clamp has been replaced by a more robust implementation.
             Depth d = std::max(1, std::min(newDepth - r, newDepth + 1));
 
+            usedDepth = d;
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
 
             // Do a full-depth search when reduced LMR search fails high
@@ -1161,6 +1280,7 @@ moves_loop:  // When in check, search starts here
 
                 newDepth += doDeeperSearch - doShallowerSearch;
 
+                ss->newdepth = newDepth;
                 if (newDepth > d)
                     value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
 
@@ -1181,6 +1301,7 @@ moves_loop:  // When in check, search starts here
                 r += 2;
 
             // Note that if expected reduction is high, we reduce search depth by 1 here (~9 Elo)
+            usedDepth = newDepth - (r > 3);
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth - (r > 3), !cutNode);
         }
 
@@ -1190,7 +1311,8 @@ moves_loop:  // When in check, search starts here
         {
             (ss + 1)->pv    = pv;
             (ss + 1)->pv[0] = Move::none();
-
+            ss->newdepth =  newDepth;
+            usedDepth = newDepth;
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
@@ -1282,6 +1404,18 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
+        else  {
+
+    	  	ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
+    	  	if (value <= VALUE_MATED_IN_MAX_PLY)
+    	  	{
+    	  		if (isOnPvLine(ss))
+    	  	    	  	  sync_cout << "info fail low  move " << UCIEngine::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
+    	  		sync_cout << "info Kamikazes "  << ss->kamikazes << " d: " << depth <<  " excl move " << UCIEngine::move(excludedMove) << pos << sync_endl;
+
+
+    	  	}
+        }
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
@@ -1290,7 +1424,10 @@ moves_loop:  // When in check, search starts here
             if (capture)
                 capturesSearched[captureCount++] = move;
             else
+            {
+            	  quietsSearchedDepth[quietCount]= usedDepth;
                 quietsSearched[quietCount++] = move;
+            }
         }
     }
 
@@ -1324,6 +1461,15 @@ moves_loop:  // When in check, search starts here
                                       stat_bonus(depth) * bonus);
         thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()]
           << stat_bonus(depth) * bonus / 2;
+    }
+    if (!bestMove && isOnPvLine(ss) && ss->ply > 3)
+    {
+    	sync_cout << " leaving path no bestmove (fail low) mc: " << moveCount << " d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
+    	printPath(ss);
+    	std::stringstream sss;
+    	for (int i=0; i<quietCount; i++ )
+    		sss << UCIEngine::move(quietsSearched[i], false) << " d:" << quietsSearchedDepth[i] << " ";
+       	sync_cout << " tried quiets " << sss.str() << sync_endl;
     }
 
     if (PvNode)
