@@ -55,8 +55,11 @@ namespace {
 
 
 
-const int pvline[] = { 2065, 1, 1761, 3559, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3608, 2950, 644, 388, 74, 1115, 1563, 2139, 659, 1749, 530, 267, 1244, 722, 16961, 1169, 1821, 1089, 1877, 101, 1366, 3241, 1422, 2398, 909, 2658, 852, 2202, 1291, 1941, 706, 1682, 129, 1393, 66, 3143};
+const int pvline2[] = { 2065, 1, 1761, 3559, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3608, 2950, 644, 388, 74, 1115, 1563, 2139, 659, 1749, 530, 267, 1244, 722, 16961, 1169, 1821, 1089, 1877, 101, 1366, 3241, 1422, 2398, 909, 2658, 852, 2202, 1291, 1941, 706, 1682, 129, 1393, 66, 3143};
                      //lommer simplified 8/7p/1K6/N7/3NP3/8/npn5/k7 w - - 0 1
+
+const int pvline[] = {2065, 1, 1761, 3559, 35247, 3503, 796, 3047, 1828, 2527, 2348, 2007, 2868, 1487, 32060, 29639, 3886, 504, 2674, 3632, 2160, 537, 3105, 72, 1099, 16961, 3006, 521, 3985, 578, 705, 131, 80, 203, 1034};
+                     //lommer original: 8/6pp/1K6/N5P1/3N4/8/npn1P3/k7 w - - 0 1
 
 
 bool isOnPvLine(Stack * ss) {
@@ -1018,11 +1021,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread() && elapsed() > 3000)
-        {
-            main_manager()->updates.onIter(
-              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
-        }
+//        if (rootNode && is_mainthread() && elapsed() > 3000)
+//        {
+//            main_manager()->updates.onIter(
+//              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
+//        }
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -1101,16 +1104,15 @@ moves_loop:  // When in check, search starts here
                 {
                     if (bestValue <= futilityValue && std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY
                         && futilityValue < VALUE_TB_WIN_IN_MAX_PLY)
+                   
                         bestValue = (bestValue + futilityValue * 3) / 4;
-                   {
-                        bestValue = (bestValue + futilityValue * 3) / 4;
-                        if (isOnPvLine(ss, move))
-                        {
+                    if (isOnPvLine(ss, move))
+                    {
                        	  	sync_cout << " leaving path Futility pruning: parent node  " << UCIEngine::move(move,false) << "  d: " << depth << " nmpMinPly " << nmpMinPly << " ply " << ss->ply << pos << sync_endl;
                        	  	printPath(ss);
-                        }
-                        continue;
                     }
+                    continue;
+                    
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
@@ -2048,8 +2050,12 @@ void SearchManager::pv(const Search::Worker&     worker,
         v       = tb ? rootMoves[i].tbScore : v;
 
         std::string pv;
+        std::stringstream pvraw;
         for (Move m : rootMoves[i].pv)
             pv += UCIEngine::move(m, pos.is_chess960()) + " ";
+        for (Move m : rootMoves[i].pv)
+        	pvraw << m.raw() << ", ";
+        sync_cout << "info pvraw " << pvraw.str() << sync_endl;
 
         // remove last whitespace
         if (!pv.empty())
