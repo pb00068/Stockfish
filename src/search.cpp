@@ -544,6 +544,7 @@ Value Search::Worker::search(
     // Step 1. Initialize node
     Worker* thisThread = this;
     ss->inCheck        = pos.checkers();
+    ss->kamikazes = 0;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
@@ -804,7 +805,7 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta && ss->kamikazes - (ss-2)->kamikazes < 5)
                 return nullValue;
         }
     }
@@ -1282,6 +1283,7 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
+        ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY && alpha > -5000;
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
