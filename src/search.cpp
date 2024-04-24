@@ -883,11 +883,23 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-            	 if (isOnPvLine(ss) && ss->ply >= 3)
+            	 if ( ss->kamikazes - (ss-2)->kamikazes > 5)
             	 {
-            	    sync_cout << " leaving path null Move verification fail high searched depth: " << (depth - R)  << " ply " << ss->ply << pos << sync_endl;
+            		 if (isOnPvLine(ss) && ss->ply >= 3)
+
+            		 {
+            	    sync_cout << "info leaving path null Move verification fail high searched depth: " << (depth - R)  << " ply " << ss->ply << pos << sync_endl;
             	    printPath(ss);
+            		 }
+            	    //eval -= 200;
+            	    //unadjustedStaticEval -= 100;
+//            	    if (ss->kamikazes >=2)
+//            	    {
+//            	    	sync_cout << "info  abort verification  with value " <<  v << " getting mated " << ss->kamikazes << " ecluded " << UCIEngine::move(excludedMove, false) << sync_endl;
+//            	    	abort();
+//            	    }
             	 }
+            	 else
                 return nullValue;
             }
         }
@@ -1413,8 +1425,11 @@ moves_loop:  // When in check, search starts here
     	  	ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
     	  	if (value <= VALUE_MATED_IN_MAX_PLY)
     	  	{
-    	  		if (isOnPvLine(ss))
-    	  	    	  	  sync_cout << "info fail low  move " << UCIEngine::move(move) << " with value " <<  value << " getting mated " << (value <= VALUE_MATED_IN_MAX_PLY) << sync_endl;
+    	  		if (ss->kamikazes > 1 && ss->ply >= 3 &&  isOnPvLine(ss))
+    	  		{
+    	  	    	  	  sync_cout << "info  fail low  move " << UCIEngine::move(move) << " with value " <<  value << " getting mated " << ss->kamikazes << " ecluded " << UCIEngine::move(excludedMove, false) << sync_endl;
+    	  	    	  	 // abort();
+    	  		}
     	  		//sync_cout << "info Kamikazes "  << ss->kamikazes << " d: " << depth <<  " excl move " << UCIEngine::move(excludedMove) << pos << sync_endl;
 
 
