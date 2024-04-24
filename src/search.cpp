@@ -883,13 +883,18 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-            	 if ( ss->kamikazes - (ss-2)->kamikazes > 5)
+            	 if ( popcount(ss->kamikazes) >= 1)
             	 {
+            		 if ((ss - 1)->currentMove.is_ok())
+            		    thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()]  << stat_bonus(depth+1);
+
             		 if (isOnPvLine(ss) && ss->ply >= 3)
 
             		 {
             	    sync_cout << "info leaving path null Move verification fail high searched depth: " << (depth - R)  << " ply " << ss->ply << pos << sync_endl;
             	    printPath(ss);
+            	    sync_cout << Bitboards::pretty(ss->kamikazes) << sync_endl;
+            	    //abort();
             		 }
             	    //eval -= 200;
             	    //unadjustedStaticEval -= 100;
@@ -1422,10 +1427,11 @@ moves_loop:  // When in check, search starts here
         }
         else  {
 
-    	  	ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY;
+        	 if (value <= VALUE_MATED_IN_MAX_PLY && alpha > -5000)
+        	           ss->kamikazes |= move.from_sq();
     	  	if (value <= VALUE_MATED_IN_MAX_PLY)
     	  	{
-    	  		if (ss->kamikazes > 1 && ss->ply >= 3 &&  isOnPvLine(ss))
+    	  		if (popcount(ss->kamikazes) > 1 && ss->ply >= 3 &&  isOnPvLine(ss))
     	  		{
     	  	    	  	  sync_cout << "info  fail low  move " << UCIEngine::move(move) << " with value " <<  value << " getting mated " << ss->kamikazes << " ecluded " << UCIEngine::move(excludedMove, false) << sync_endl;
     	  	    	  	 // abort();

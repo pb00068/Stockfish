@@ -77,7 +77,7 @@ struct Stack {
     int             cutoffCnt;
     int             newdepth;
     int             dept;
-    int             kamikazes;
+    Bitboard             kamikazes;
 };
 
 
