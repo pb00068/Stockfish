@@ -780,7 +780,7 @@ Value Search::Worker::search(
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 18001
         && eval >= beta && ss->staticEval >= beta - 21 * depth + 312 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
-        && !(ss->ttPv && !(ss-1)->ttPv && !(ss-2)->ttPv)
+        && !(ss->ttPv && ss->ttHit && tte->bound() == BOUND_NONE && !(ss-1)->ttPv)
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -1350,7 +1350,7 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table
     // Static evaluation is saved as it was before correction history
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, ss->ttPv && ss->blunders >= 2 ? BOUND_NONE :
                   bestValue >= beta    ? BOUND_LOWER
                   : PvNode && bestMove ? BOUND_EXACT
                                        : BOUND_UPPER,
