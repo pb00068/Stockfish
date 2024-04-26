@@ -544,7 +544,7 @@ Value Search::Worker::search(
     // Step 1. Initialize node
     Worker* thisThread = this;
     ss->inCheck        = pos.checkers();
-    ss->kamikazes = 0;
+    ss->blunders = 0;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
@@ -773,6 +773,7 @@ Value Search::Worker::search(
     if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 18001
         && eval >= beta && ss->staticEval >= beta - 21 * depth + 315 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+        && !(ss->ttPv && !(ss-1)->ttPv && !(ss-2)->ttPv && (!(ss-3)->ttPv || ss->ply == 3))
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -805,10 +806,14 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta && ss->kamikazes - (ss-2)->kamikazes < 5)
+            if (popcount(ss->blunders) - popcount((ss-2)->blunders) >= 2)
+                ss->ttPv = true;
+
+            else if (v >= beta)
                 return nullValue;
         }
     }
+
 
     // Step 10. Internal iterative reductions (~9 Elo)
     // For PV nodes without a ttMove, we decrease depth by 3.
@@ -1283,7 +1288,8 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
-        ss->kamikazes += value <= VALUE_MATED_IN_MAX_PLY && alpha > -5000;
+        if (value <= VALUE_MATED_IN_MAX_PLY || value < alpha - 2000)
+             ss->blunders |= move.from_sq();
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.

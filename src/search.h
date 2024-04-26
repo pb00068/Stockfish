@@ -75,7 +75,7 @@ struct Stack {
     bool            ttHit;
     int             multipleExtensions;
     int             cutoffCnt;
-    int             kamikazes;
+    Bitboard        blunders;
 };
 
 
