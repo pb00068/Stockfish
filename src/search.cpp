@@ -790,8 +790,9 @@ Value Search::Worker::search(
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
-
+        uint64_t nm_nodes = thisThread->nodes;
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        nm_nodes = thisThread->nodes - nm_nodes;
 
         pos.undo_null_move();
 
@@ -802,13 +803,19 @@ Value Search::Worker::search(
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+            Depth nd = depth - R;
+            uint64_t ver_nodes = thisThread->nodes;
+            Value v = beta - 1;
+            while (thisThread->nodes - ver_nodes < nm_nodes / 4)
+            {
+              // Do verification search at high depths, with null move pruning disabled
+              // until ply exceeds nmpMinPly.
+               thisThread->nmpMinPly = ss->ply + 3 * nd / 4;
 
-            // Do verification search at high depths, with null move pruning disabled
-            // until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
-
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
-
+               v = search<NonPV>(pos, ss, beta - 1, beta, nd, false);
+               if (++nd >= depth - 1)
+              	 break;
+            }
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
