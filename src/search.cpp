@@ -612,7 +612,7 @@ Value Search::Worker::search(
     if (!excludedMove)
     {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
-        if (!PvNode && ss->ttPv && (ss-1)->ttHit && !(ss-1)->ttPv && (ss-2)->ttHit && !(ss-2)->ttPv)
+        if (ss->ttPv && (ss-1)->ttHit && !(ss-1)->ttPv && (ss-2)->ttHit && !(ss-2)->ttPv && (ss-3)->ttHit && !(ss-3)->ttPv)
            ss->ttPv = false;
     }
 
