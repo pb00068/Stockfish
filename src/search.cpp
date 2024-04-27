@@ -610,7 +610,11 @@ Value Search::Worker::search(
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
     if (!excludedMove)
+    {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+        if (!PvNode && ss->ttPv && (ss-1)->ttHit && !(ss-1)->ttPv && (ss-2)->ttHit && !(ss-2)->ttPv)
+           ss->ttPv = false;
+    }
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && tte->depth() > depth
