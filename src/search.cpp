@@ -613,7 +613,11 @@ Value Search::Worker::search(
     {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
         if (ss->ttPv && (ss-1)->ttHit && !(ss-1)->ttPv && (ss-1)->ttMove == (ss-1)->currentMove)
+        {
           (ss-1)->ttPv = true;
+          if ((ss-2)->ttHit && !(ss-2)->ttPv && (ss-2)->ttMove == (ss-2)->currentMove)
+            (ss-2)->ttPv = true;
+        }
     }
 
     // At non-PV nodes we check for an early TT cutoff
