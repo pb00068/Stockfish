@@ -612,11 +612,12 @@ Value Search::Worker::search(
     if (!excludedMove)
     {
         ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
-        if (ss->ttPv && (ss-1)->ttHit && !(ss-1)->ttPv && (ss-1)->ttMove == (ss-1)->currentMove)
+        if ((ss-1)->ttHit && (ss-3)->ttHit && ((ss-1)->ttMove == (ss-3)->currentMove || (ss-3)->ttMove == (ss-1)->currentMove))
         {
-          (ss-1)->ttPv = true;
-          if ((ss-2)->ttHit && !(ss-2)->ttPv && (ss-2)->ttMove == (ss-2)->currentMove)
-            (ss-2)->ttPv = true;
+           if (ss->ttPv)
+              (ss-1)->ttPv = true;
+           else if ((ss-1)->ttPv)
+               ss->ttPv = true;
         }
     }
 
