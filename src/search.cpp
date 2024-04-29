@@ -803,6 +803,8 @@ Value Search::Worker::search(
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+            if (ss->ttHit && tte->depth() > depth - R)
+               R--;
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
