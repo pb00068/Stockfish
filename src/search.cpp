@@ -786,7 +786,7 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 152, 6) - 4;
-        if (ss->ttHit && tte->depth() > nmDepth && tte->bound() == BOUND_LOWER && ttValue >= beta && ttValue < VALUE_TB_WIN_IN_MAX_PLY)
+        if (depth < 16 && ss->ttHit && tte->depth() > nmDepth && tte->bound() == BOUND_LOWER && ttValue >= beta && ttValue < VALUE_TB_WIN_IN_MAX_PLY)
            return ttValue;
 
         ss->currentMove         = Move::null();
