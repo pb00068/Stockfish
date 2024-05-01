@@ -803,12 +803,13 @@ Value Search::Worker::search(
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
-            if (ss->ttHit && tte->depth() > nmDepth && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
-                nmDepth+= tte->depth() > nmDepth + 1 ? 2 : 1;
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * nmDepth / 4;
+
+            if (ss->ttHit && tte->depth() > nmDepth && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
+                   nmDepth+= tte->depth() > nmDepth + 4 ? 3 : 1;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, nmDepth, false);
 
