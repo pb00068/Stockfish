@@ -785,6 +785,9 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth and eval
         Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 152, 6) - 4;
+        // if pos failed low on a recent (full) search, then probably we need a deeper nm-search as usual
+        if (ss->ttHit && tte->depth() > nmDepth + 1 && tte->bound() == BOUND_UPPER)
+             nmDepth += (tte->depth() - nmDepth) / 2;
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
@@ -806,9 +809,6 @@ Value Search::Worker::search(
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * nmDepth / 4;
-
-            if (ss->ttHit && tte->depth() > nmDepth && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
-                   nmDepth+= tte->depth() > nmDepth + 4 ? 3 : 1;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, nmDepth, false);
 
