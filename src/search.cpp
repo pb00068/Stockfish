@@ -786,14 +786,14 @@ Value Search::Worker::search(
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
-        Depth R = std::min(int(eval - beta) / 134, 6) + depth / 3 + 4;
+        Depth nmDepth = 2 * depth / 3 - std::min(int(eval - beta) / 134, 6) - 4;
 
         ss->currentMove         = Move::null();
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, nmDepth, !cutNode);
 
         pos.undo_null_move();
 
@@ -804,12 +804,14 @@ Value Search::Worker::search(
                 return nullValue;
 
             assert(!thisThread->nmpMinPly);  // Recursive verification is not allowed
+            if (ss->ttHit && tte->depth() > nmDepth && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
+                nmDepth+= (tte->depth() - nmDepth)/2;
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            thisThread->nmpMinPly = ss->ply + 3 * nmDepth / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, nmDepth, false);
 
             thisThread->nmpMinPly = 0;
 
