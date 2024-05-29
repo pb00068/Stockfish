@@ -1310,7 +1310,7 @@ moves_loop:  // When in check, search starts here
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
         // On PVNodes if value == alpha and nodeseffort very low (due early tt-cutoffs), we probably have transpositions (= more moves equally good)
-        if (move != bestMove && moveCount <= 32 && (!PvNode || value != alpha || (nodes - nodeCount) > 4))
+        if (move != bestMove && moveCount <= 32 && (!PvNode || value != alpha || (nodes - nodeCount) > 8))
         {
             if (capture)
                 capturesSearched[captureCount++] = move;
