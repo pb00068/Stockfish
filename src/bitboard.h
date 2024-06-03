@@ -63,6 +63,9 @@ extern Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 extern Bitboard PawnAttacks[COLOR_NB][SQUARE_NB];
 
+constexpr Bitboard UPPER_HALF = Rank5BB | Rank6BB | Rank7BB | Rank8BB;
+constexpr Bitboard LOWER_HALF = Rank1BB | Rank2BB | Rank3BB | Rank4BB;
+
 
 // Magic holds all magic bitboards relevant data for a single square
 struct Magic {

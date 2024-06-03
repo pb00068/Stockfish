@@ -25,6 +25,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "uci.h"
 
 namespace Stockfish {
 
@@ -148,7 +149,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces;
+      threatenedPieces, passedStoppers;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -162,6 +163,8 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+
+        passedStoppers = (pos.pieces(~us, PAWN) | shift<EAST>(pos.pieces(~us, PAWN)) | shift<WEST>(pos.pieces(~us, PAWN))) & (us == WHITE ? UPPER_HALF : LOWER_HALF);
     }
 
     for (auto& m : *this)
@@ -200,6 +203,9 @@ void MovePicker::score() {
             m.value -= (pt == QUEEN  ? bool(to & threatenedByRook) * 49000
                         : pt == ROOK ? bool(to & threatenedByMinor) * 24335
                                      : bool(to & threatenedByPawn) * 14900);
+
+            if (pt == PAWN && relative_rank(pos.side_to_move(), from) >= RANK_4 && !(file_bb(from) & passedStoppers))
+                m.value += 2000;
         }
 
         else  // Type == EVASIONS
