@@ -25,7 +25,6 @@
 
 #include "bitboard.h"
 #include "position.h"
-#include "uci.h"
 
 namespace Stockfish {
 
@@ -205,7 +204,7 @@ void MovePicker::score() {
                                      : bool(to & threatenedByPawn) * 14900);
 
             if (pt == PAWN && relative_rank(pos.side_to_move(), from) >= RANK_4 && !(file_bb(from) & passedStoppers))
-                m.value += 2000;
+                m.value += relative_rank(pos.side_to_move(), from) * 1000;
         }
 
         else  // Type == EVASIONS
