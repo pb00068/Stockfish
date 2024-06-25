@@ -1596,13 +1596,17 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
             }
 
             // Continuation history based pruning (~3 Elo)
-            if (!capture
-                && (*contHist[0])[pos.moved_piece(move)][move.to_sq()]
+            if (!capture)
+            {
+                if ((*contHist[0])[pos.moved_piece(move)][move.to_sq()] == -56 && (*contHist[1])[pos.moved_piece(move)][move.to_sq()] == -56)
+                     ; // analyze never tried moves
+                else if ((*contHist[0])[pos.moved_piece(move)][move.to_sq()]
                        + (*contHist[1])[pos.moved_piece(move)][move.to_sq()]
                        + thisThread->pawnHistory[pawn_structure_index(pos)][pos.moved_piece(move)]
                                                 [move.to_sq()]
                      <= 4452)
                 continue;
+            }
 
             // Do not search moves with bad enough SEE values (~5 Elo)
             if (!pos.see_ge(move, -74))
