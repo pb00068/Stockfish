@@ -148,6 +148,10 @@ class ThreadPool {
 
     std::atomic_bool stop, abortedSearch, increaseDepth;
 
+    std::atomic_int newfailHighBeta;
+
+    std::atomic_uint16_t bestFHMove;
+
     auto cbegin() const noexcept { return threads.cbegin(); }
     auto begin() noexcept { return threads.begin(); }
     auto end() noexcept { return threads.end(); }

@@ -318,6 +318,13 @@ void Search::Worker::iterative_deepening() {
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
 
+            int fhBeta = threads.newfailHighBeta.load(std::memory_order_relaxed);
+            if (fhBeta > beta)
+            {
+                alpha += fhBeta - beta;
+                beta = fhBeta;
+            }
+
             // Adjust optimism based on root move's averageScore (~4 Elo)
             optimism[us]  = 127 * avg / (std::abs(avg) + 86);
             optimism[~us] = -optimism[us];
@@ -326,6 +333,7 @@ void Search::Worker::iterative_deepening() {
             // high/low, re-search with a bigger window until we don't fail
             // high/low anymore.
             int failedHighCnt = 0;
+            Value nbeta = -VALUE_INFINITE;
             while (true)
             {
                 // Adjust the effective depth searched, but ensure at least one effective increment
@@ -370,6 +378,16 @@ void Search::Worker::iterative_deepening() {
                 {
                     beta = std::min(bestValue + delta, VALUE_INFINITE);
                     ++failedHighCnt;
+
+                    if (multiPV == 1 && threads.size() > 1)
+                    {
+                        int currentLimit = threads.newfailHighBeta.load(std::memory_order_relaxed);
+                        if (beta > currentLimit)
+                        {
+                            threads.newfailHighBeta = nbeta = beta;
+                            threads.bestFHMove = rootMoves[pvIdx].pv[0].raw();
+                        }
+                    }
                 }
                 else
                     break;
@@ -377,6 +395,11 @@ void Search::Worker::iterative_deepening() {
                 delta += delta / 3;
 
                 assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
+            }
+            if (nbeta == threads.newfailHighBeta.load(std::memory_order_relaxed))
+            {
+               threads.newfailHighBeta = -VALUE_INFINITE;
+               threads.bestFHMove = Move::none().raw();
             }
 
             // Sort the PV lines searched so far and update the GUI
@@ -615,7 +638,8 @@ Value Search::Worker::search(
     auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
-    ttData.move  = rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
+    ttData.move  = rootNode ? threads.bestFHMove.load(std::memory_order_relaxed) != 0 && threads.newfailHighBeta.load(std::memory_order_relaxed) > beta ? Move(threads.bestFHMove.load(std::memory_order_relaxed))
+                 : thisThread->rootMoves[thisThread->pvIdx].pv[0]
                  : ttHit    ? ttData.move
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;

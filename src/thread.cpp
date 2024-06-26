@@ -246,6 +246,8 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     main_manager()->ponder                                 = limits.ponderMode;
 
     increaseDepth = true;
+    newfailHighBeta = -VALUE_INFINITE;
+    bestFHMove = Move::none().raw();
 
     Search::RootMoves rootMoves;
     const auto        legalmoves = MoveList<LEGAL>(pos);
