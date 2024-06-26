@@ -638,7 +638,7 @@ Value Search::Worker::search(
     auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
-    ttData.move  = rootNode ? threads.bestFHMove.load(std::memory_order_relaxed) != 0 && threads.newfailHighBeta.load(std::memory_order_relaxed) > beta ? Move(threads.bestFHMove.load(std::memory_order_relaxed))
+    ttData.move  = rootNode ? threads.bestFHMove.load(std::memory_order_relaxed) != 0 && threads.newfailHighBeta.load(std::memory_order_relaxed) >= beta ? Move(threads.bestFHMove.load(std::memory_order_relaxed))
                  : thisThread->rootMoves[thisThread->pvIdx].pv[0]
                  : ttHit    ? ttData.move
                             : Move::none();
