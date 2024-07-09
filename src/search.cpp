@@ -712,9 +712,8 @@ Value Search::Worker::search(
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        // we can safely exceed VALUE_TB_WIN_IN_MAX_PLY here
-        // the longer the king-hunt endures, the more improbable we are improving at the end
-        ss->staticEval = eval = (ss-2)->staticEval + 10;
+        // the longer the king-hunt endures, the harder the position after escape gets improving = true
+        ss->staticEval = eval = (ss-2)->staticEval + 10; // staticEval can safely exceed VALUE_TB_WIN_IN_MAX_PLY here
         improving             = false;
         goto moves_loop;
     }
