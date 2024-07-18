@@ -753,7 +753,7 @@ Value Search::Worker::search(
     }
 
     // Use static evaluation difference to improve quiet move ordering (~9 Elo)
-    if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
+    if (((ss - 1)->currentMove).is_ok() && !priorCapture)
     {
         int bonus = std::clamp(-10 * int((ss - 1)->staticEval + ss->staticEval), -1664, 1471) + 752;
         thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()] << bonus;
@@ -1364,8 +1364,8 @@ moves_loop:  // When in check, search starts here
     {
         int bonus = (138 * (depth > 5) + 58 * (PvNode || cutNode) + 160 * ((ss - 1)->moveCount > 8)
                      + 84 * (!ss->inCheck && bestValue <= ss->staticEval - 108)
-                     + 153 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 76)
-                     + 32 * (!(ss - 1)->inCheck && bestValue > -(ss - 1)->staticEval + 76));
+                     + 153 * (bestValue <= -(ss - 1)->staticEval - 76)
+                     + 32 * (bestValue > -(ss - 1)->staticEval + 76));
 
         // Proportional to "how much damage we have to undo"
         bonus += std::clamp(-(ss - 1)->statScore / 100, -64, 300);
