@@ -1339,9 +1339,11 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth);
 
-    // Bonus for prior countermove that caused the fail low
-    else if (!priorCapture && prevSq != SQ_NONE)
+    else
     {
+        // Bonus for prior countermove that caused the fail low
+        if (!priorCapture && prevSq != SQ_NONE)
+        {
         int bonus = (122 * (depth > 5) + 39 * !allNode + 165 * ((ss - 1)->moveCount > 8)
                      + 107 * (!ss->inCheck && bestValue <= ss->staticEval - 98)
                      + 134 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 91));
@@ -1360,11 +1362,12 @@ moves_loop:  // When in check, search starts here
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             thisThread->pawnHistory[pawn_structure_index(pos)][pos.piece_on(prevSq)][prevSq]
               << stat_bonus(depth) * bonus / 25;
-    }
+        }
 
-    // Bonus when search fails low and there is a TT move
-    else if (moveCount > 1 && ttData.move && !allNode)
-        thisThread->mainHistory[us][ttData.move.from_to()] << stat_bonus(depth) / 4;
+        // Bonus when search fails low and there is a TT move
+        if (moveCount > 1 && ttData.move && !allNode)
+           thisThread->mainHistory[us][ttData.move.from_to()] << stat_bonus(depth) / 4;
+    }
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
