@@ -106,12 +106,15 @@ MovePicker::MovePicker(const Position&              p,
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph, const LowPlyHistory* lph, int pl) :
     pos(p),
+    lowPlyHistory(lph),
     captureHistory(cph),
     ttMove(ttm),
-    threshold(th) {
+    threshold(th), ply(pl)
+{
     assert(!pos.checkers());
+
 
     stage = PROBCUT_TT
           + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
@@ -144,10 +147,13 @@ void MovePicker::score() {
 
     for (auto& m : *this)
         if constexpr (Type == CAPTURES)
+        {
             m.value =
               7 * int(PieceValue[pos.piece_on(m.to_sq())])
               + (*captureHistory)[pos.moved_piece(m)][m.to_sq()][type_of(pos.piece_on(m.to_sq()))];
-
+            if (ply < 4)
+               m.value += 8 * (*lowPlyHistory)[1][ply][m.from_to()] / (1 + 2 * ply);
+        }
         else if constexpr (Type == QUIETS)
         {
             Piece     pc   = pos.moved_piece(m);
@@ -180,7 +186,7 @@ void MovePicker::score() {
                                                                      : 0);
 
             if (ply < 4)
-                m.value += 8 * (*lowPlyHistory)[pos.side_to_move()][ply][m.from_to()] / (1 + 2 * ply);
+                m.value += 8 * (*lowPlyHistory)[0][ply][m.from_to()] / (1 + 2 * ply);
         }
 
         else  // Type == EVASIONS

@@ -854,7 +854,7 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory, &thisThread->lowPlyHistory, ss->ply);
         Piece      captured;
 
         while ((move = mp.next_move()) != Move::none())
@@ -1787,6 +1787,8 @@ void update_all_stats(const Position&      pos,
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(bestMove.to_sq()));
         captureHistory[moved_piece][bestMove.to_sq()][captured] << quietMoveBonus;
+        if (ss->ply < 4)
+           workerThread.lowPlyHistory[1][ss->ply][bestMove.from_to()] << quietMoveBonus;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1800,6 +1802,8 @@ void update_all_stats(const Position&      pos,
         moved_piece = pos.moved_piece(move);
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -quietMoveMalus;
+        if (ss->ply < 4)
+           workerThread.lowPlyHistory[1][ss->ply][move.from_to()] << -quietMoveMalus;
     }
 }
 
@@ -1831,7 +1835,7 @@ void update_quiet_histories(const Position& pos,
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.from_to()] << bonus;
     if (ss->ply < 4)
-        workerThread.lowPlyHistory[us][ss->ply][move.from_to()] << bonus;
+        workerThread.lowPlyHistory[0][ss->ply][move.from_to()] << bonus;
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
 
