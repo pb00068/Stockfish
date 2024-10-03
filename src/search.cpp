@@ -623,6 +623,9 @@ Value Search::Worker::search(
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
+    if (!excludedMove && ss->ttPv && !(ss-1)->ttPv && ss->ply - 1 < 4 && !pos.captured_piece() && (ss-1)->currentMove.is_ok())
+         thisThread->lowPlyHistory[ss->ply - 1][(ss-1)->currentMove.from_to()] << stat_bonus(depth);
+
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
 
@@ -1831,7 +1834,7 @@ void update_quiet_histories(const Position& pos,
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.from_to()] << bonus;
     if (ss->ply < 4)
-        workerThread.lowPlyHistory[us][ss->ply][move.from_to()] << bonus;
+        workerThread.lowPlyHistory[ss->ply][move.from_to()] << bonus;
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus);
 
