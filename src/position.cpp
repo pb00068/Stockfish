@@ -326,6 +326,15 @@ void Position::set_check_info() const {
     st->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
+
+    // if blocker piece  is last one of its type, we can mark every square outside the king line as checking
+    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove); b;)
+    {
+        Square s = pop_lsb(b);
+        PieceType pt = type_of(piece_on(s));
+        if (!more_than_one(pieces(sideToMove, pt)))
+            st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq);
+    }
 }
 
 
@@ -639,7 +648,7 @@ bool Position::gives_check(Move m) const {
     Square from = m.from_sq();
     Square to   = m.to_sq();
 
-    // Is there a direct check?
+    // Is there a direct (or special discovered) check?
     if (check_squares(type_of(piece_on(from))) & to)
         return true;
 
