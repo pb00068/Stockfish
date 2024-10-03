@@ -332,7 +332,13 @@ void Position::set_check_info() const {
     {
         Square s = pop_lsb(b);
         PieceType pt = type_of(piece_on(s));
-        if (!more_than_one(pieces(sideToMove, pt)))
+        bool add = !more_than_one(pieces(sideToMove, pt));
+        if (!add && pt == BISHOP)
+        {
+           add |= ((whiteSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & whiteSquaresBB));
+           add |= ((blackSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & blackSquaresBB));
+        }
+        if (add)
             st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq);
     }
 }
