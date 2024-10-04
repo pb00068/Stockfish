@@ -327,26 +327,34 @@ void Position::set_check_info() const {
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
 
-    // if blocker piece  is last one of its type, we can mark every square outside the king line as checking
+    // blocker pieces can have more checking squares (discovering checks)
+    // following logic makes pos.gives_check a bit faster and
+    // has functional impact on scoring quiet moves (movepick.cpc)
     for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove); b;)
     {
         Square s = pop_lsb(b);
         PieceType pt = type_of(piece_on(s));
-        if (!more_than_one(pieces(sideToMove, pt))) // so now also the king can give check
-           st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq);
-        else if (pt == BISHOP)
+        if (!more_than_one(pieces(sideToMove, pt))) // handle unique pieces
+           st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq); // almost all to squares are checking
+        else if (pt == PAWN) // 93% the biggest part
         {
-           if ((whiteSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & whiteSquaresBB))
-              st->checkSquares[BISHOP] |= whiteSquaresBB;
-           else if ((blackSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & blackSquaresBB))
-              st->checkSquares[BISHOP] |= blackSquaresBB;
-        }
-        else if (pt == PAWN) // 93%
-        {
-           Square push = s + pawn_push(sideToMove);
-           if (!((pieces() | line_bb(s, ksq)) & push)) // not capture not aligned -> push discovers check
+            Square push = s + pawn_push(sideToMove);
+            if (!((pieces() | line_bb(s, ksq)) & push)) // not capture not aligned -> moving pawn there discovers check
+            {
               st->checkSquares[PAWN] |= push;
+              if (relative_rank(sideToMove, s) == RANK_2 && !(pieces() & (push + pawn_push(sideToMove))))
+                 st->checkSquares[PAWN] |= (push + pawn_push(sideToMove));
+            }
         }
+        else if (pt >= KNIGHT && pt <= ROOK && !more_than_one(pieces(sideToMove, pt) ^ s)) // minor and major pairs
+        {
+
+             Square other = lsb(pieces(sideToMove, pt) ^ s);
+             st->checkSquares[pt] |=  AllSquares & ~attacks_bb(pt, other, pieces());
+             //sync_cout << *this <<  pt << Bitboards::pretty(st->checkSquares[pt]) << sync_endl;
+        }
+
+
     }
 }
 
