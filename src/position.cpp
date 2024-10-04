@@ -332,7 +332,7 @@ void Position::set_check_info() const {
     {
         Square s = pop_lsb(b);
         PieceType pt = type_of(piece_on(s));
-        if (!more_than_one(pieces(sideToMove, pt)))
+        if (!more_than_one(pieces(sideToMove, pt))) // so now also the king can give check
            st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq);
         else if (pt == BISHOP)
         {
@@ -340,6 +340,12 @@ void Position::set_check_info() const {
               st->checkSquares[BISHOP] |= whiteSquaresBB;
            else if ((blackSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & blackSquaresBB))
               st->checkSquares[BISHOP] |= blackSquaresBB;
+        }
+        else if (pt == PAWN) // 93%
+        {
+           Square push = s + pawn_push(sideToMove);
+           if (!((pieces() | line_bb(s, ksq)) & push)) // not capture not aligned -> push discovers check
+              st->checkSquares[PAWN] |= push;
         }
     }
 }
