@@ -164,7 +164,7 @@ void MovePicker::score() {
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
 
-            // bonus for checks
+            // bonus for checks (direct checks and some special discovering check too)
             m.value += bool(pos.check_squares(pt) & to) * 16384;
 
             // bonus for escaping from capture
