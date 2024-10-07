@@ -327,11 +327,20 @@ void Position::set_check_info() const {
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
 
-    // As long we don't doubled bishops on same square color (underpromo), every possible move from blocking sq is checking
-    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove, BISHOP); b;)
+    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove, KNIGHT, BISHOP); b;)
     {
         Square s = pop_lsb(b);
-        st->checkSquares[BISHOP] |= (whiteSquaresBB & s) ? whiteSquaresBB : blackSquaresBB;
+        PieceType pt = type_of(piece_on(s));
+        if (pt == BISHOP) // As long we don't doubled bishops on same square color (underpromo), every possible move from blocking sq is checking
+            st->checkSquares[BISHOP] |= (whiteSquaresBB & s) ? whiteSquaresBB : blackSquaresBB;
+        else // KNIGHT
+        {
+            Bitboard otherknights = pieces(sideToMove, KNIGHT) ^ s;
+            if (!otherknights)
+                st->checkSquares[KNIGHT] |= AllSquares;
+            else if (!more_than_one(otherknights))
+                st->checkSquares[KNIGHT] |=  AllSquares & ~PseudoAttacks[KNIGHT][lsb(otherknights)];
+        }
     }
 }
 
