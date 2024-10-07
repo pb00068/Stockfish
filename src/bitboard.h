@@ -54,9 +54,6 @@ constexpr Bitboard Rank5BB = Rank1BB << (8 * 4);
 constexpr Bitboard Rank6BB = Rank1BB << (8 * 5);
 constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
-constexpr Bitboard AllSquares = ~Bitboard(0);
-constexpr Bitboard whiteSquaresBB = 0x55AA55AA55AA55AAULL;
-constexpr Bitboard blackSquaresBB = ~whiteSquaresBB;
 
 extern uint8_t PopCnt16[1 << 16];
 extern uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];

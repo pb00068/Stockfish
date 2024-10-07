@@ -327,19 +327,15 @@ void Position::set_check_info() const {
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
 
-    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove, KNIGHT, BISHOP); b;)
+    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove, PAWN) & ~file_bb(ksq); b;)
     {
         Square s = pop_lsb(b);
-        PieceType pt = type_of(piece_on(s));
-        if (pt == BISHOP) // As long we don't doubled bishops on same square color (underpromo), every possible move from blocking sq is checking
-            st->checkSquares[BISHOP] |= (whiteSquaresBB & s) ? whiteSquaresBB : blackSquaresBB;
-        else // KNIGHT
+        Square push = s + pawn_push(sideToMove);
+        if (!(pieces() & push)) // not capture not aligned -> moving pawn there discovers check
         {
-            Bitboard otherknights = pieces(sideToMove, KNIGHT) ^ s;
-            if (!otherknights)
-                st->checkSquares[KNIGHT] |= AllSquares;
-            else if (!more_than_one(otherknights))
-                st->checkSquares[KNIGHT] |=  AllSquares & ~PseudoAttacks[KNIGHT][lsb(otherknights)];
+            st->checkSquares[PAWN] |= push;
+            if (relative_rank(sideToMove, s) == RANK_2 && !(pieces() & (push + pawn_push(sideToMove))))
+                st->checkSquares[PAWN] |= (push + pawn_push(sideToMove));
         }
     }
 }
