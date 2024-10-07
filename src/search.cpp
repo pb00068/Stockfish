@@ -246,6 +246,17 @@ void Search::Worker::iterative_deepening() {
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
+    StateInfo* st = rootPos.state();
+    int i=0;
+    while (st->previous && ++i < 7)
+             st = st->previous;
+
+    if (i < 4)
+       lowPlyHistory.fill(0);
+    else {
+        std::copy(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, &lowPlyHistory[0][0]);
+        std::fill(&lowPlyHistory[2][0], &lowPlyHistory.back().back() + 1, 0);
+    }
     ss->pv = pv;
 
     if (mainThread)
@@ -268,7 +279,7 @@ void Search::Worker::iterative_deepening() {
 
     int searchAgainCounter = 0;
 
-    lowPlyHistory.fill(0);
+
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
