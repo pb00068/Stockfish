@@ -327,20 +327,11 @@ void Position::set_check_info() const {
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
 
-    // if blocker piece  is last one of its type, we can mark every square outside the king line as checking
-    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove); b;)
+    // As long we don't doubled bishops on same square color (underpromo), every possible move from blocking sq is checking
+    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove, BISHOP); b;)
     {
         Square s = pop_lsb(b);
-        PieceType pt = type_of(piece_on(s));
-        if (!more_than_one(pieces(sideToMove, pt)))
-           st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq);
-        else if (pt == BISHOP)
-        {
-           if ((whiteSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & whiteSquaresBB))
-              st->checkSquares[BISHOP] |= whiteSquaresBB;
-           else if ((blackSquaresBB & s) && !more_than_one(pieces(sideToMove, BISHOP) & blackSquaresBB))
-              st->checkSquares[BISHOP] |= blackSquaresBB;
-        }
+        st->checkSquares[BISHOP] |= (whiteSquaresBB & s) ? whiteSquaresBB : blackSquaresBB;
     }
 }
 
