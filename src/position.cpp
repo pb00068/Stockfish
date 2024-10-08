@@ -326,37 +326,6 @@ void Position::set_check_info() const {
     st->checkSquares[0][ROOK]   = attacks_bb<ROOK>(ksq, pieces());
     st->checkSquares[0][QUEEN]  = st->checkSquares[0][BISHOP] | st->checkSquares[0][ROOK];
     st->checkSquares[0][KING]   = 0;
-
-    st->checkSquares[1][PAWN]   = 0;
-    st->checkSquares[1][KNIGHT] = 0;
-    st->checkSquares[1][BISHOP] = 0;
-    st->checkSquares[1][ROOK]   = 0;
-    st->checkSquares[1][QUEEN]  = 0;
-    st->checkSquares[1][KING]   = 0;
-
-    for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove); b;)
-    {
-        Square s = pop_lsb(b);
-        PieceType pt = type_of(piece_on(s));
-        if (pt == PAWN && file_of(ksq) != file_of(s)) // the biggest part
-        {
-            Square push = s + pawn_push(sideToMove);
-            if (PseudoAttacks[KING][ksq] & push)
-               continue; // avoid kamikaze
-            st->checkSquares[1][PAWN] = Bitboard(0) | push;
-            if (relative_rank(sideToMove, s) == RANK_2)
-               st->checkSquares[1][PAWN] |= (push + pawn_push(sideToMove));
-        }
-        else if (pt != PAWN && !more_than_one(pieces(sideToMove, pt))) // handling unique piece
-             // blocking major/minor moving towards king would already check itself
-             st->checkSquares[1][pt] = AllSquares & ~PseudoAttacks[KING][ksq]; // avoid kamikaze
-        else if (pt != PAWN && !more_than_one(pieces(sideToMove, pt) ^ s)) // knight, bishop, rook pair
-        {
-             Square other = lsb(pieces(sideToMove, pt) ^ s);
-             st->checkSquares[1][pt] = AllSquares & ~attacks_bb(pt, other, pieces() & ~PseudoAttacks[KING][ksq]);
-             //sync_cout << *this <<  pt << Bitboards::pretty(st->checkSquares[pt]) << sync_endl;
-        }
-    }
 }
 
 
@@ -675,9 +644,6 @@ bool Position::gives_check(Move m) const {
         return true;
 
     // Is there a discovered check?
-    if (check_squares(type_of(piece_on(from)), DISCOV_CHECK) & to)
-         return true;
-    // some special disco check
     if (blockers_for_king(~sideToMove) & from)
         return !aligned(from, to, square<KING>(~sideToMove)) || m.type_of() == CASTLING;
 

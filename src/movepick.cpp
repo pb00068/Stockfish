@@ -126,7 +126,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces;
+      threatenedPieces, threatened;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -135,11 +135,42 @@ void MovePicker::score() {
         threatenedByMinor =
           pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
         threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+        threatened = threatenedByRook | pos.attacks_by<KING>(~us);
 
         // Pieces threatened by pieces of lesser material value
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+
+        pos.state()->checkSquares[1][PAWN]   = 0;
+        pos.state()->checkSquares[1][KNIGHT] = 0;
+        pos.state()->checkSquares[1][BISHOP] = 0;
+        pos.state()->checkSquares[1][ROOK]   = 0;
+        pos.state()->checkSquares[1][QUEEN]  = 0;
+        pos.state()->checkSquares[1][KING]   = 0;
+
+        for (Bitboard b = pos.blockers_for_king(~us) & pos.pieces(us); b;)
+        {
+            Square s = pop_lsb(b);
+            Square ksq = pos.square<KING>(~us);
+            PieceType pt = type_of(pos.piece_on(s));
+            if (pt == PAWN && file_of(ksq) != file_of(s)) // the biggest part
+            {
+                Square push = s + pawn_push(us);
+                pos.state()->checkSquares[1][PAWN] = Bitboard(0) | push;
+                if (relative_rank(us, s) == RANK_2)
+                  pos.state()->checkSquares[1][PAWN] |= (push + pawn_push(us));
+            }
+            else if (pt != PAWN && pt != KING && !more_than_one(pos.pieces(us, pt))) // handling unique piece
+                 // blocking major/minor moving towards king would already check itself, so each legal move checks
+                 pos.state()->checkSquares[1][pt] = AllSquares;
+            else if (pt != PAWN && !more_than_one(pos.pieces(us, pt) ^ s)) // knight, bishop, rook pair
+            {
+                 Square other = lsb(pos.pieces(us, pt) ^ s);
+                 pos.state()->checkSquares[1][pt] = AllSquares & ~attacks_bb(pt, other, pos.pieces());
+                 //sync_cout << pos <<  pt << Bitboards::pretty(pos.state()->checkSquares[1][pt]) << sync_endl;
+            }
+        }
     }
 
     for (auto& m : *this)
@@ -164,10 +195,12 @@ void MovePicker::score() {
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
 
+
             // bonus for checks (large bonus for double checks)
-            int checkBonus = bool(pos.check_squares(pt, DIRECT_CHECK) & to) ? 16384 : 1;
-            checkBonus *= bool(pos.check_squares(pt, DISCOV_CHECK) & to) * (pt == PAWN ? 16000 : 4000);
-            m.value += checkBonus;
+            int checkBonus = bool(pos.check_squares(pt, DIRECT_CHECK) & to) ? ((threatened & to) ? 96 : 128) : 0;
+            checkBonus += bool(pos.check_squares(pt, DISCOV_CHECK) & to) * (pt == PAWN ? 128 : 64);
+            m.value += checkBonus * checkBonus;
+
 
             // bonus for escaping from capture
             m.value += threatenedPieces & from ? (pt == QUEEN && !(to & threatenedByRook)   ? 51700
