@@ -127,6 +127,7 @@ void MovePicker::score() {
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
       threatenedPieces;
+    [[maybe_unused]] Bitboard covered[4];
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -140,6 +141,11 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+
+        covered[0] = pos.attacks_by<PAWN>(us);
+        covered[1] = pos.attacks_by<KNIGHT>(us);
+        covered[2] = pos.attacks_by<BISHOP>(us);
+        covered[3] = pos.attacks_by<ROOK>(us);
     }
 
     for (auto& m : *this)
@@ -165,7 +171,14 @@ void MovePicker::score() {
             m.value += (*continuationHistory[5])[pc][to];
 
             // bonus for checks
-            m.value += bool(pos.check_squares(pt) & to) * 16384;
+            Bitboard cover = 0;
+            if(pos.check_squares(pt) & to)
+            {
+                for (int i=0; i < 4; i++)
+                  if (i != pt - 1)
+                   cover |= covered[i];
+                m.value +=  (cover & to) ? 16384 : 3000;
+            }
 
             // bonus for escaping from capture
             m.value += threatenedPieces & from ? (pt == QUEEN && !(to & threatenedByRook)   ? 51700
