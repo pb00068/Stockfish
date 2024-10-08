@@ -320,41 +320,42 @@ void Position::set_check_info() const {
 
     Square ksq = square<KING>(~sideToMove);
 
-    st->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
-    st->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
-    st->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
-    st->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
-    st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
-    st->checkSquares[KING]   = 0;
+    st->checkSquares[0][PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
+    st->checkSquares[0][KNIGHT] = attacks_bb<KNIGHT>(ksq);
+    st->checkSquares[0][BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
+    st->checkSquares[0][ROOK]   = attacks_bb<ROOK>(ksq, pieces());
+    st->checkSquares[0][QUEEN]  = st->checkSquares[0][BISHOP] | st->checkSquares[0][ROOK];
+    st->checkSquares[0][KING]   = 0;
 
-    // blocker pieces can have more checking squares (discovering checks)
-    // following logic makes pos.gives_check a bit faster and
-    // has functional impact on scoring quiet moves (movepick.cpc)
+    st->checkSquares[1][PAWN]   = 0;
+    st->checkSquares[1][KNIGHT] = 0;
+    st->checkSquares[1][BISHOP] = 0;
+    st->checkSquares[1][ROOK]   = 0;
+    st->checkSquares[1][QUEEN]  = 0;
+    st->checkSquares[1][KING]   = 0;
+
     for (Bitboard b = st->blockersForKing[~sideToMove] & pieces(sideToMove); b;)
     {
         Square s = pop_lsb(b);
         PieceType pt = type_of(piece_on(s));
-        if (!more_than_one(pieces(sideToMove, pt))) // handle unique pieces
-           st->checkSquares[pt] |= AllSquares ^ line_bb(s, ksq); // almost all to squares are checking
-        else if (pt == PAWN) // 93% the biggest part
+        if (pt == PAWN && file_of(ksq) != file_of(s)) // the biggest part
         {
             Square push = s + pawn_push(sideToMove);
-            if (!((pieces() | line_bb(s, ksq)) & push)) // not capture not aligned -> moving pawn there discovers check
-            {
-              st->checkSquares[PAWN] |= push;
-              if (relative_rank(sideToMove, s) == RANK_2 && !(pieces() & (push + pawn_push(sideToMove))))
-                 st->checkSquares[PAWN] |= (push + pawn_push(sideToMove));
-            }
+            if (PseudoAttacks[KING][ksq] & push)
+               continue; // avoid kamikaze
+            st->checkSquares[1][PAWN] = Bitboard(0) | push;
+            if (relative_rank(sideToMove, s) == RANK_2)
+               st->checkSquares[1][PAWN] |= (push + pawn_push(sideToMove));
         }
-        else if (pt >= KNIGHT && pt <= ROOK && !more_than_one(pieces(sideToMove, pt) ^ s)) // minor and major pairs
+        else if (pt != PAWN && !more_than_one(pieces(sideToMove, pt))) // handling unique piece
+             // blocking major/minor moving towards king would already check itself
+             st->checkSquares[1][pt] = AllSquares & ~PseudoAttacks[KING][ksq]; // avoid kamikaze
+        else if (pt != PAWN && !more_than_one(pieces(sideToMove, pt) ^ s)) // knight, bishop, rook pair
         {
-
              Square other = lsb(pieces(sideToMove, pt) ^ s);
-             st->checkSquares[pt] |=  AllSquares & ~attacks_bb(pt, other, pieces());
+             st->checkSquares[1][pt] = AllSquares & ~attacks_bb(pt, other, pieces() & ~PseudoAttacks[KING][ksq]);
              //sync_cout << *this <<  pt << Bitboards::pretty(st->checkSquares[pt]) << sync_endl;
         }
-
-
     }
 }
 
@@ -669,11 +670,14 @@ bool Position::gives_check(Move m) const {
     Square from = m.from_sq();
     Square to   = m.to_sq();
 
-    // Is there a direct (or special discovered) check?
-    if (check_squares(type_of(piece_on(from))) & to)
+    // Is there a direct check?
+    if (check_squares(type_of(piece_on(from)), DIRECT_CHECK) & to)
         return true;
 
     // Is there a discovered check?
+    if (check_squares(type_of(piece_on(from)), DISCOV_CHECK) & to)
+         return true;
+    // some special disco check
     if (blockers_for_king(~sideToMove) & from)
         return !aligned(from, to, square<KING>(~sideToMove)) || m.type_of() == CASTLING;
 
@@ -701,7 +705,7 @@ bool Position::gives_check(Move m) const {
         // Castling is encoded as 'king captures the rook'
         Square rto = relative_square(sideToMove, to > from ? SQ_F1 : SQ_D1);
 
-        return check_squares(ROOK) & rto;
+        return check_squares(ROOK, DIRECT_CHECK) & rto;
     }
     }
 }
