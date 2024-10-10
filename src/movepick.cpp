@@ -24,6 +24,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "uci.h"
 
 namespace Stockfish {
 
@@ -127,7 +128,7 @@ void MovePicker::score() {
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
       threatenedPieces, threatened;
-    [[maybe_unused]] Bitboard covered[6];
+    [[maybe_unused]] Bitboard covered[7];
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -142,7 +143,13 @@ void MovePicker::score() {
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
-        threatened = 0; // init later
+        threatened = threatenedByRook | PseudoAttacks[KING][pos.square<KING>(~us)] | pos.attacks_by<QUEEN>(~us);
+        covered[PAWN]   = pos.attacks_by<PAWN>(us);
+        covered[KNIGHT] = pos.attacks_by<KNIGHT>(us);
+        covered[BISHOP] = pos.attacks_by<BISHOP>(us);
+        covered[ROOK]   = pos.attacks_by<ROOK>(us);
+        covered[QUEEN]  = pos.attacks_by<QUEEN>(us);
+        covered[KING]   = pos.attacks_by<KING>(us);
     }
 
     for (auto& m : *this)
@@ -157,9 +164,10 @@ void MovePicker::score() {
             PieceType pt   = type_of(pc);
             Square    from = m.from_sq();
             Square    to   = m.to_sq();
+            Color us = pos.side_to_move();
 
             // histories
-            m.value = (*mainHistory)[pos.side_to_move()][m.from_to()];
+            m.value = (*mainHistory)[us][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
             m.value += 2 * (*continuationHistory[0])[pc][to];
             m.value += (*continuationHistory[1])[pc][to];
@@ -167,46 +175,45 @@ void MovePicker::score() {
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
 
+            int coverType;
+            for (coverType = PAWN; coverType <= KING; coverType++)
+            {
+                if (coverType != pt || coverType == PAWN || coverType == KING)
+                {
+                    if (covered[coverType] & to)
+                        break;
+                }
+                else  // calc attacks from the same minor/major piece type as the moving one
+                {
+                    Bitboard attackers = pos.pieces(us, pt) ^ from;
+                    if (attackers && (attacks_bb(pt, lsb(attackers), pos.pieces() ^ from) & to))
+                        break;
+                }
+            }
+
             // bonus for checks
             if(pos.check_squares(pt) & to)
             {
-                Color us = pos.side_to_move();
-                if (threatened == 0)
-                {
-                    threatened = threatenedByRook | PseudoAttacks[KING][pos.square<KING>(~us)] | pos.attacks_by<QUEEN>(~us);
-                    covered[PAWN]   = pos.attacks_by<PAWN>(us);
-                    covered[KNIGHT] = pos.attacks_by<KNIGHT>(us);
-                    covered[BISHOP] = pos.attacks_by<BISHOP>(us);
-                    covered[ROOK]   = pos.attacks_by<ROOK>(us);
-                    covered[QUEEN]  = pos.attacks_by<QUEEN>(us);
-                }
                 if (threatened & to)
                 {
-                    int coverType = PAWN;
-                    for (; coverType <= QUEEN; coverType++)
-                    {
-                       if (coverType != pt || coverType == PAWN)
-                       {
-                           if (covered[coverType] && to)
-                               break;
-                       }
-                       else  // calc attacks from the same piece type as the moving one
-                       {
-                          Bitboard attackers = pos.pieces(us, pt) ^ from;
-                          if (attackers && (attacks_bb(pt, lsb(attackers), pos.pieces() ^ from ^ to) & to))
-                            break;
-                       }
-                    }
-                    if (coverType <= QUEEN) // threatened but covered checking square
-                        m.value +=  16384 - coverType * coverType * 100;
+                    if (coverType <= KING) // threatened but covered checking square
+                        m.value +=  16384 - coverType * coverType * 200;
+                    // else no bonus for sacrifice checks
                 }
                 else
                   m.value += 20000; // safe check
             }
-            else if (threatened && !(threatened & to) && (covered[PAWN] & to))
+            else
             {
-                m.value += 3000; // bonus for putting a piece on pawn defended square
+                if (threatened & to)
+                  m.value -= 1000 * pt;
+                if (coverType <= KING)
+                {
+                   coverType+=2;
+                   m.value += 2400 - coverType * coverType * 36; // bonus for putting a piece on a defended square
+                }
             }
+
 
             // bonus for escaping from capture
             m.value += threatenedPieces & from ? (pt == QUEEN && !(to & threatenedByRook)   ? 51700
