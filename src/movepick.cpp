@@ -126,8 +126,8 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces;
-    [[maybe_unused]] Bitboard covered[4];
+      threatenedPieces, threatened;
+    [[maybe_unused]] Bitboard covered[5];
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -142,10 +142,7 @@ void MovePicker::score() {
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
-        covered[0] = pos.attacks_by<PAWN>(us);
-        covered[1] = pos.attacks_by<KNIGHT>(us);
-        covered[2] = pos.attacks_by<BISHOP>(us);
-        covered[3] = pos.attacks_by<ROOK>(us);
+        threatened = 0; // init later
     }
 
     for (auto& m : *this)
@@ -171,13 +168,37 @@ void MovePicker::score() {
             m.value += (*continuationHistory[5])[pc][to];
 
             // bonus for checks
-            Bitboard cover = 0;
             if(pos.check_squares(pt) & to)
             {
-                for (int i=0; i < 4; i++)
-                  if (i != pt - 1)
-                   cover |= covered[i];
-                m.value +=  (cover & to) ? 16384 : 3000;
+                Color us = pos.side_to_move();
+                if (threatened == 0)
+                {
+                    threatened = threatenedByRook | PseudoAttacks[KING][pos.square<KING>(~us)] | pos.attacks_by<QUEEN>(~us);
+                    covered[0] = pos.attacks_by<PAWN>(us);
+                    covered[1] = pos.attacks_by<KNIGHT>(us);
+                    covered[2] = pos.attacks_by<BISHOP>(us);
+                    covered[3] = pos.attacks_by<ROOK>(us);
+                    covered[4] = pos.attacks_by<QUEEN>(us);
+                }
+                if (threatened & to)
+                {
+                    Bitboard cover = covered[0];
+                    for (int i=1; i < 4; i++)
+                    {
+                       if (i != pt)
+                          cover |= covered[i];
+                       else  // calc attacks from the same piece type as the moving one
+                       {
+                          Bitboard attackers = pos.pieces(us, pt) ^ from;
+                          while (attackers)
+                            cover |= attacks_bb(pt, pop_lsb(attackers), pos.pieces() ^ from ^ to);
+                       }
+                    }
+                    if (cover & to)
+                        m.value +=  16384;
+                }
+                else
+                  m.value += 20000; // safe check
             }
 
             // bonus for escaping from capture
