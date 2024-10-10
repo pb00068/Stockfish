@@ -127,7 +127,7 @@ void MovePicker::score() {
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
       threatenedPieces, threatened;
-    [[maybe_unused]] Bitboard covered[5];
+    [[maybe_unused]] Bitboard covered[6];
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -174,31 +174,38 @@ void MovePicker::score() {
                 if (threatened == 0)
                 {
                     threatened = threatenedByRook | PseudoAttacks[KING][pos.square<KING>(~us)] | pos.attacks_by<QUEEN>(~us);
-                    covered[0] = pos.attacks_by<PAWN>(us);
-                    covered[1] = pos.attacks_by<KNIGHT>(us);
-                    covered[2] = pos.attacks_by<BISHOP>(us);
-                    covered[3] = pos.attacks_by<ROOK>(us);
-                    covered[4] = pos.attacks_by<QUEEN>(us);
+                    covered[PAWN]   = pos.attacks_by<PAWN>(us);
+                    covered[KNIGHT] = pos.attacks_by<KNIGHT>(us);
+                    covered[BISHOP] = pos.attacks_by<BISHOP>(us);
+                    covered[ROOK]   = pos.attacks_by<ROOK>(us);
+                    covered[QUEEN]  = pos.attacks_by<QUEEN>(us);
                 }
                 if (threatened & to)
                 {
-                    Bitboard cover = covered[0];
-                    for (int i=1; i < 4; i++)
+                    int coverType = PAWN;
+                    for (; coverType <= QUEEN; coverType++)
                     {
-                       if (i != pt)
-                          cover |= covered[i];
+                       if (coverType != pt || coverType == PAWN)
+                       {
+                           if (covered[coverType] && to)
+                               break;
+                       }
                        else  // calc attacks from the same piece type as the moving one
                        {
                           Bitboard attackers = pos.pieces(us, pt) ^ from;
-                          while (attackers)
-                            cover |= attacks_bb(pt, pop_lsb(attackers), pos.pieces() ^ from ^ to);
+                          if (attackers && (attacks_bb(pt, lsb(attackers), pos.pieces() ^ from ^ to) & to))
+                            break;
                        }
                     }
-                    if (cover & to)
-                        m.value +=  16384;
+                    if (coverType <= QUEEN) // threatened but covered checking square
+                        m.value +=  16384 - coverType * coverType * 100;
                 }
                 else
                   m.value += 20000; // safe check
+            }
+            else if (threatened && !(threatened & to) && (covered[PAWN] & to))
+            {
+                m.value += 3000; // bonus for putting a piece on pawn defended square
             }
 
             // bonus for escaping from capture
