@@ -187,7 +187,7 @@ void MovePicker::score() {
                     {
                        if (coverType != pt || coverType == PAWN)
                        {
-                           if (covered[coverType] && to)
+                           if (covered[coverType] & to)
                                break;
                        }
                        else  // calc attacks from the same piece type as the moving one
