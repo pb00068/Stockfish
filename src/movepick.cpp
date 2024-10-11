@@ -127,7 +127,7 @@ void MovePicker::score() {
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
       threatenedPieces, threatened;
-    [[maybe_unused]] Bitboard covered[6];
+    [[maybe_unused]] Bitboard covered[7];
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -142,7 +142,7 @@ void MovePicker::score() {
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
 
-        threatened = 0; // init later
+        threatened = covered[PAWN] = covered[KNIGHT] = covered[BISHOP] = covered[ROOK] = covered[QUEEN] = covered[KING] = 0; // init later
     }
 
     for (auto& m : *this)
@@ -172,20 +172,26 @@ void MovePicker::score() {
             {
                 Color us = pos.side_to_move();
                 if (threatened == 0)
-                {
                     threatened = threatenedByRook | PseudoAttacks[KING][pos.square<KING>(~us)] | pos.attacks_by<QUEEN>(~us);
-                    covered[PAWN]   = pos.attacks_by<PAWN>(us);
-                    covered[KNIGHT] = pos.attacks_by<KNIGHT>(us);
-                    covered[BISHOP] = pos.attacks_by<BISHOP>(us);
-                    covered[ROOK]   = pos.attacks_by<ROOK>(us);
-                    covered[QUEEN]  = pos.attacks_by<QUEEN>(us);
-                }
                 if (threatened & to)
                 {
-                    int coverType = PAWN;
-                    for (; coverType <= QUEEN; coverType++)
+                    int coverType;
+                    for (coverType = PAWN; coverType <= KING; coverType++)
                     {
-                       if (coverType != pt || coverType == PAWN)
+                       if (!pos.pieces(us, (PieceType)coverType))
+                          continue;
+                       if (covered[coverType] == 0)
+                       {
+                          switch (coverType) {
+                             case PAWN   :    covered[PAWN]   = pos.attacks_by<PAWN>(us);   break;
+                             case KNIGHT :    covered[KNIGHT] = pos.attacks_by<KNIGHT>(us); break;
+                             case BISHOP :    covered[BISHOP] = pos.attacks_by<BISHOP>(us); break;
+                             case ROOK   :    covered[ROOK]   = pos.attacks_by<ROOK>(us);   break;
+                             case QUEEN  :    covered[QUEEN]  = pos.attacks_by<QUEEN>(us);  break;
+                             case KING   :    covered[KING]   = pos.attacks_by<KING>(us);   break;
+                          }
+                       }
+                       if (coverType != pt || coverType == PAWN || coverType == KING)
                        {
                            if (covered[coverType] & to)
                                break;
@@ -193,19 +199,21 @@ void MovePicker::score() {
                        else  // calc attacks from the same piece type as the moving one
                        {
                           Bitboard attackers = pos.pieces(us, pt) ^ from;
-                          if (attackers && (attacks_bb(pt, lsb(attackers), pos.pieces() ^ from ^ to) & to))
+                          if (attackers && (attacks_bb(pt, lsb(attackers), pos.pieces() ^ from) & to))
                             break;
                        }
                     }
-                    if (coverType <= QUEEN) // threatened but covered checking square
-                        m.value +=  16384 - coverType * coverType * 100;
+                    if (coverType <= KING) // threatened but covered checking square
+                        m.value +=  5000 - pt * pt * 200 - coverType * coverType * 100;
+                    else // negative bonus for spite checkings
+                        m.value -= pt * pt * 300;
                 }
                 else
                   m.value += 20000; // safe check
             }
             else if (threatened && !(threatened & to) && (covered[PAWN] & to))
             {
-                m.value += 3000; // bonus for putting a piece on pawn defended square
+                m.value += 1000; // bonus for putting a piece on pawn defended square
             }
 
             // bonus for escaping from capture
