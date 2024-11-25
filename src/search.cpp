@@ -714,6 +714,7 @@ Value Search::Worker::search(
 
     // Step 6. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
+    bool needsStrongerCorrection = false;
     if (ss->inCheck)
     {
         // Skip early pruning when in check
@@ -744,7 +745,10 @@ Value Search::Worker::search(
         // ttValue can be used as a better position evaluation (~7 Elo)
         if (ttData.value != VALUE_NONE
             && (ttData.bound & (ttData.value > eval ? BOUND_LOWER : BOUND_UPPER)))
+        {
             eval = ttData.value;
+            needsStrongerCorrection = abs(eval - ss->staticEval) > 20;
+        }
     }
     else
     {
@@ -1430,6 +1434,8 @@ moves_loop:  // When in check, search starts here
 
         auto bonus = std::clamp(int(bestValue - ss->staticEval) * depth / 8,
                                 -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+
+        again:
         thisThread->pawnCorrectionHistory[us][pawn_structure_index<Correction>(pos)]
           << bonus * 107 / 128;
         thisThread->majorPieceCorrectionHistory[us][major_piece_index(pos)] << bonus * 162 / 128;
@@ -1441,6 +1447,18 @@ moves_loop:  // When in check, search starts here
 
         if (m.is_ok())
             (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()] << bonus;
+
+
+        if (needsStrongerCorrection && abs(eval) < VALUE_TB_WIN_IN_MAX_PLY) {
+            Value newVal = to_corrected_static_eval(unadjustedStaticEval, *thisThread, pos, ss);
+            needsStrongerCorrection = abs(bonus) > 9 && (((eval - newVal) > 20 && bonus > 0)  ||  ((eval - newVal) < -20 && bonus < 0));
+            if (needsStrongerCorrection)
+            {
+               //sync_cout << "info staticEval: " << ss->staticEval << " unadj: " << unadjustedStaticEval << "  newVal: " << newVal << " eval: " << eval << "  bonus " << bonus << " tocorrect " << to_corrected_static_eval(0, *thisThread, pos, ss) << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << sync_endl;
+               needsStrongerCorrection = false;
+               goto again;
+            }
+        }
     }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
