@@ -865,7 +865,6 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
         Piece      captured;
-        movedPiece =  NO_PIECE;
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
@@ -898,8 +897,12 @@ Value Search::Worker::search(
 
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta)
+            {
+                if (!ss->ttHit || depth > 5)
+                   Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
                 value =
                   -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, depth - 4, !cutNode);
+            }
 
             pos.undo_move(move);
 
@@ -913,8 +916,6 @@ Value Search::Worker::search(
                 return is_decisive(value) ? value : value - (probCutBeta - beta);
             }
         }
-        if (movedPiece) // a capture that does not (prob)cut anymore might lead to many usages of this node's accumulator
-            Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
     }
 
 moves_loop:  // When in check, search starts here
