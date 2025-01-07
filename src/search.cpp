@@ -723,9 +723,6 @@ Value Search::Worker::search(
     }
     else if (excludedMove)
     {
-        // Providing the hint that this node's accumulator will be used often
-        // brings significant Elo gain (~13 Elo).
-        Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
         unadjustedStaticEval = eval = ss->staticEval;
     }
     else if (ss->ttHit)
@@ -865,7 +862,6 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
         Piece      captured;
-
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
@@ -893,14 +889,17 @@ Value Search::Worker::search(
 
             thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
             pos.do_move(move, st);
-
             // Perform a preliminary qsearch to verify that the move holds
             value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta)
+            {
+                if (!ss->ttHit || depth > 5)
+                   Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
                 value =
                   -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, depth - 4, !cutNode);
+            }
 
             pos.undo_move(move);
 
@@ -914,8 +913,6 @@ Value Search::Worker::search(
                 return is_decisive(value) ? value : value - (probCutBeta - beta);
             }
         }
-
-        Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
     }
 
 moves_loop:  // When in check, search starts here
@@ -1124,6 +1121,11 @@ moves_loop:  // When in check, search starts here
                           > 4321)
                 extension = 1;
         }
+
+        if (extension > 0)
+          // Providing the hint that this node's accumulator will be used often
+          // brings significant Elo gain (~13 Elo).
+          Eval::NNUE::hint_common_parent_position(pos, networks[numaAccessToken], refreshTable);
 
         // Add extension to new depth
         newDepth += extension;
