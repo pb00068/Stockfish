@@ -320,9 +320,24 @@ class FeatureTransformer {
     std::int32_t transform(const Position&                           pos,
                            AccumulatorCaches::Cache<HalfDimensions>* cache,
                            OutputType*                               output,
-                           int                                       bucket) const {
+                           int                                       bucket, bool lastOne) const {
+      if (lastOne)
+      {
+         StateInfo* oldest = try_find_computed_accumulator<WHITE>(pos);
+         if ((oldest->*accPtr).computed[WHITE] && oldest != pos.state())
+              update_accumulator_incremental<WHITE, true>(pos, oldest);
+         else
+              update_accumulator<WHITE>(pos, cache);
+         oldest = try_find_computed_accumulator<BLACK>(pos);
+         if ((oldest->*accPtr).computed[BLACK] && oldest != pos.state())
+              update_accumulator_incremental<BLACK, true>(pos, oldest);
+         else
+              update_accumulator<BLACK>(pos, cache);
+      }
+      else {
         update_accumulator<WHITE>(pos, cache);
         update_accumulator<BLACK>(pos, cache);
+      }
 
         const Color perspectives[2]  = {pos.side_to_move(), ~pos.side_to_move()};
         const auto& psqtAccumulation = (pos.state()->*accPtr).psqtAccumulation;

@@ -49,6 +49,7 @@ class MovePicker {
                int);
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move();
+    bool wasLast();
     void skip_quiet_moves();
 
    private:

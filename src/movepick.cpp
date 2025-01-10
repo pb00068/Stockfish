@@ -206,6 +206,11 @@ Move MovePicker::select(Pred filter) {
     return Move::none();
 }
 
+
+bool MovePicker::wasLast()
+{
+	   return cur == endMoves;
+}
 // This is the most important method of the MovePicker class. We emit one
 // new pseudo-legal move on every call until there are no more moves left,
 // picking the move with the highest score from a list of generated moves.
