@@ -456,19 +456,10 @@ class FeatureTransformer {
    private:
     template<Color Perspective>
     StateInfo* try_find_computed_accumulator(const Position& pos) const {
-        // Look for a usable accumulator of an earlier position. We keep track
-        // of the estimated gain in terms of features to be added/subtracted.
+        // Look for a usable accumulator of an earlier position.
         StateInfo* st   = pos.state();
-        int        gain = FeatureSet::refresh_cost(pos);
-        while (st->previous && !(st->*accPtr).computed[Perspective])
-        {
-            // This governs when a full feature refresh is needed and how many
-            // updates are better than just one full refresh.
-            if (FeatureSet::requires_refresh(st, Perspective)
-                || (gain -= FeatureSet::update_cost(st) + 1) < 0)
-                break;
+        while (st->previous && !(st->*accPtr).computed[Perspective] && type_of(st->dirtyPiece.piece[0]) != KING)
             st = st->previous;
-        }
         return st;
     }
 
