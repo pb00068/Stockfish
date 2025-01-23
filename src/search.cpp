@@ -1004,7 +1004,10 @@ moves_loop:  // When in check, search starts here
                 Piece capturedPiece = pos.piece_on(move.to_sq());
                 if (capturedPiece)
                     history = thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
-                else history/=4;
+                else {
+                    history += 2 * thisThread->mainHistory[us][move.from_to()];
+                    history/=6;
+                }
 
                 // Futility pruning for captures (~2 Elo)
                 if (!givesCheck && lmrDepth < 7 && !ss->inCheck)
