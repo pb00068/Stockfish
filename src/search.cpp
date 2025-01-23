@@ -994,39 +994,34 @@ moves_loop:  // When in check, search starts here
             // Reduced depth of the next LMR search
             int lmrDepth = newDepth - r / 1024;
 
+            int history = capture ? 0 :
+              (*contHist[0])[movedPiece][move.to_sq()]
+              + (*contHist[1])[movedPiece][move.to_sq()]
+              + thisThread->pawnHistory[pawn_structure_index(pos)][movedPiece][move.to_sq()];
+
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   hist =
-                  thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                if (capturedPiece)
+                    history = thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                else history/=4;
 
                 // Futility pruning for captures (~2 Elo)
                 if (!givesCheck && lmrDepth < 7 && !ss->inCheck)
                 {
                     Value futilityValue = ss->staticEval + 271 + 243 * lmrDepth
-                                        + PieceValue[capturedPiece] + hist / 7;
+                                        + PieceValue[capturedPiece] + history / 7;
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (!capturedPiece)
-                {
-                    hist =        ((*contHist[0])[movedPiece][move.to_sq()]
-                                  + (*contHist[1])[movedPiece][move.to_sq()]
-                                  + thisThread->pawnHistory[pawn_structure_index(pos)][movedPiece][move.to_sq()])/4;
-                }
 
                 // SEE based pruning for captures and checks (~11 Elo)
-                int seeHist = std::clamp(hist / 37, -152 * depth, 141 * depth);
+                int seeHist = std::clamp(history / 37, -152 * depth, 141 * depth);
                 if (!pos.see_ge(move, -156 * depth - seeHist))
                     continue;
             }
             else
             {
-                int history =
-                  (*contHist[0])[movedPiece][move.to_sq()]
-                  + (*contHist[1])[movedPiece][move.to_sq()]
-                  + thisThread->pawnHistory[pawn_structure_index(pos)][movedPiece][move.to_sq()];
-
                 // Continuation history based pruning (~2 Elo)
                 if (history < -3901 * depth)
                     continue;
