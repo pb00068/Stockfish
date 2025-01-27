@@ -1006,6 +1006,13 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
+                if (!capturedPiece)
+                {
+                   captHist +=  ((*contHist[0])[movedPiece][move.to_sq()]
+                               + (*contHist[1])[movedPiece][move.to_sq()]
+                               + thisThread->pawnHistory[pawn_structure_index(pos)][movedPiece][move.to_sq()])/4;
+                   captHist/=2;
+                }
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 37, -152 * depth, 141 * depth);
