@@ -1082,8 +1082,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
-    Bitboard occupied  = pieces() ^ from;
-    occupied |= to;
+    Bitboard occupied  = pieces() ^ from ^ to;
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
@@ -1170,6 +1169,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
 
     if (!bool(res) && optimist)
     {
+        occupied |= to;
         if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
            return true;
         // even when one of our non-queen pieces attacks opponent queen after exchanges
