@@ -1082,7 +1082,8 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
-    Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
+    Bitboard occupied  = pieces() ^ from;
+    occupied |= to;
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
@@ -1160,15 +1161,21 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
               // reverse the result.
         {
             if (attackers & ~pieces(stm))
-              res ^= 1;
-            else occupied ^= stmAttackers;
+               res ^= 1;
+            else
+               occupied ^= stmAttackers;
             break;
         }
     }
 
     if (!bool(res) && optimist)
+    {
         if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
            return true;
+        // even when one of our non-queen pieces attacks opponent queen after exchanges
+        if ((pieces(~sideToMove, QUEEN) & occupied) && (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN)))
+           return true;
+    }
 
     return bool(res);
 }
