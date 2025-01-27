@@ -1063,7 +1063,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, int threshold) const {
+bool Position::see_ge(Move m, bool pessimist, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1113,43 +1113,43 @@ bool Position::see_ge(Move m, int threshold) const {
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = PawnValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(KNIGHT)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = KnightValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
         }
 
         else if ((bb = stmAttackers & pieces(BISHOP)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = BishopValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(ROOK)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = RookValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = QueenValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                        | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
@@ -1158,8 +1158,17 @@ bool Position::see_ge(Move m, int threshold) const {
         else  // KING
               // If we "capture" with the king but the opponent still has attackers,
               // reverse the result.
-            return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+        {
+            if (attackers & ~pieces(stm))
+              res ^= 1;
+            else occupied ^= stmAttackers;
+            break;
+        }
     }
+
+    if (bool(res) && pessimist)
+        if (attackers_to(square<KING>(sideToMove), occupied) & pieces(~sideToMove))
+           return false;
 
     return bool(res);
 }

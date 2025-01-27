@@ -937,6 +937,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    bool special = thisThread->threadIdx % 3 == 2;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1009,7 +1010,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 37, -152 * depth, 141 * depth);
-                if (!pos.see_ge(move, -156 * depth - seeHist))
+                if (!pos.see_ge(move, special, -156 * depth - seeHist))
                     continue;
             }
             else
@@ -1041,7 +1042,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
-                if (!pos.see_ge(move, -25 * lmrDepth * lmrDepth))
+                if (!pos.see_ge(move, special, -25 * lmrDepth * lmrDepth))
                     continue;
             }
         }
@@ -1575,6 +1576,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                                         (ss - 2)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
+    bool special = thisThread->threadIdx % 3 == 2;
 
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
@@ -1618,7 +1620,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
+                if (!pos.see_ge(move, special, alpha - futilityBase))
                 {
                     bestValue = std::min(alpha, futilityBase);
                     continue;
@@ -1635,7 +1637,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -80))
+            if (!pos.see_ge(move, special, -80))
                 continue;
         }
 
