@@ -1063,7 +1063,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, bool pessimist, int threshold) const {
+bool Position::see_ge(Move m, bool optimist, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1166,9 +1166,9 @@ bool Position::see_ge(Move m, bool pessimist, int threshold) const {
         }
     }
 
-    if (bool(res) && pessimist)
-        if (attackers_to(square<KING>(sideToMove), occupied) & pieces(~sideToMove))
-           return false;
+    if (!bool(res) && optimist)
+        if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
+           return true;
 
     return bool(res);
 }
