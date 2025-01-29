@@ -937,7 +937,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool special = thisThread->threadIdx % 3 == 2;
+    bool special = !improving && allNode;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1576,7 +1576,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                                         (ss - 2)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
-    bool special = thisThread->threadIdx % 3 == 2;
 
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
@@ -1620,7 +1619,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, special, alpha - futilityBase))
+                if (!pos.see_ge(move, false, alpha - futilityBase))
                 {
                     bestValue = std::min(alpha, futilityBase);
                     continue;
@@ -1637,7 +1636,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, special, -80))
+            if (!pos.see_ge(move, moveCount < 4, -80))
                 continue;
         }
 
