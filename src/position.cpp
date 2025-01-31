@@ -1082,12 +1082,12 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
-    Bitboard occupied  = pieces() ^ from ^ to;
+    Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
-
+    int recaptures = 0;
     while (true)
     {
         stm = ~stm;
@@ -1114,6 +1114,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         if ((bb = stmAttackers & pieces(PAWN)))
         {
             occupied ^= least_significant_square_bb(bb);
+            recaptures++;
             if ((swap = PawnValue - swap) < res)
                 break;
 
@@ -1123,6 +1124,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(KNIGHT)))
         {
             occupied ^= least_significant_square_bb(bb);
+            recaptures++;
             if ((swap = KnightValue - swap) < res)
                 break;
         }
@@ -1130,6 +1132,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(BISHOP)))
         {
             occupied ^= least_significant_square_bb(bb);
+            recaptures++;
             if ((swap = BishopValue - swap) < res)
                 break;
 
@@ -1139,6 +1142,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(ROOK)))
         {
             occupied ^= least_significant_square_bb(bb);
+            recaptures++;
             if ((swap = RookValue - swap) < res)
                 break;
 
@@ -1148,8 +1152,12 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
             occupied ^= least_significant_square_bb(bb);
+            recaptures++;
             if ((swap = QueenValue - swap) < res)
+            {
+                dbg_hit_on(true,0);
                 break;
+            }
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                        | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
@@ -1158,23 +1166,26 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else  // KING
               // If we "capture" with the king but the opponent still has attackers,
               // reverse the result.
-        {
-            if (attackers & ~pieces(stm))
-               res ^= 1;
-            else
-               occupied ^= stmAttackers;
-            break;
-        }
+             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
     if (!bool(res) && optimist)
     {
-        occupied |= to;
+
         if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
            return true;
-        // even when one of our non-queen pieces attacks opponent queen after exchanges
+        if (swap / recaptures >= 244)
+        	return false;
+        occupied |= to;
+        // even when one of our non-queen pieces attacks opponent queen after recaptures
         if ((pieces(~sideToMove, QUEEN) & occupied) && (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN)))
-           return true;
+        {
+             //	if (occupied != (occupied & to))
+             		sync_cout << *this << UCIEngine::move(m,false) << "   swap:  " << swap << " swap + t: " << (swap + threshold) << " recaptures " << recaptures << Bitboards::pretty(attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN)) << sync_endl;
+             		if (this->fen().compare("1qb1rrk1/ppn1pnbp/2p3p1/3p1p2/1P1P1B2/2PQN1P1/P3PP1P/N3RRKB w - - 1 9") == 0)
+             			abort();
+                return true;
+             }
     }
 
     return bool(res);

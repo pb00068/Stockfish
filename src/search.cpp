@@ -937,7 +937,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool special = !improving && allNode;
+    bool tactical_sacrifices = !improving && allNode;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1010,7 +1010,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 37, -152 * depth, 141 * depth);
-                if (!pos.see_ge(move, special, -156 * depth - seeHist))
+                if (!pos.see_ge(move, tactical_sacrifices, -156 * depth - seeHist))
                     continue;
             }
             else
@@ -1042,7 +1042,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
-                if (!pos.see_ge(move, special, -25 * lmrDepth * lmrDepth))
+                if (!pos.see_ge(move, tactical_sacrifices, -25 * lmrDepth * lmrDepth))
                     continue;
             }
         }
