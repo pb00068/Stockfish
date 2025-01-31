@@ -1161,21 +1161,24 @@ bool Position::see_ge(Move m, bool tactical_sacrifices, int threshold) const {
              return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
-    if (!bool(res) && !redo_pinned)
+    if (!bool(res))
     {
-        if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
-        {
-              if (bb)
-              {
-                 redo_pinned = least_significant_square_bb(bb); // we assume that this (last?) attacker was discovering it's own king to check
-                 goto redo;
-              }
-              else return true; // discovered check on move m (=first capture) and king cannot recapture
-        }
+      occupied |= to;
+      Bitboard c = (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied);
+      if (c && !(attackers_to(lsb(c), occupied) & pieces(~sideToMove) & occupied)) // opponent cannot attack discovered attacker
+      {
+           if (bb)
+           {
+                redo_pinned |= least_significant_square_bb(bb); // we assume that this attacker was discovering it's own king to check
+                goto redo;
+           }
+           return !(attackers & square<KING>(~sideToMove)); // discovered check and king cannot recapture
+      }
 
-        // even when one of our non-queen pieces attacks opponent queen after recaptures
-        if (tactical_sacrifices && (pieces(~sideToMove, QUEEN) & (occupied |= to) & ~attackers) &&
-           (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN) & ~blockers_for_king(sideToMove)))
+      // return true even when one of our non-queen pieces attacks opponent queen after recaptures and its defended
+      if (tactical_sacrifices && (pieces(~sideToMove, QUEEN) & occupied & ~attackers) &&
+          (c = (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN) & ~blockers_for_king(sideToMove))) &&
+            (attackers_to(lsb(c), occupied) & pieces(sideToMove) & occupied))
                 return true;
     }
 
