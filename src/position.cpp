@@ -1087,12 +1087,13 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
-    Bitboard stmAttackers, bb = 0;
+    Bitboard stmAttackers, bb;
     int      res = 1;
     while (true)
     {
         stm = ~stm;
         attackers &= occupied;
+        bb=0;
 
         // If stm has no more attackers then give up: stm loses
         if (!(stmAttackers = attackers & pieces(stm)))
@@ -1161,16 +1162,20 @@ bool Position::see_ge(Move m, int threshold) const {
              return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
-    if (!bool(res) && !redo_pinned)
+    if (!bool(res))
     {
-        if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
+        Bitboard checkers = (attackers_to(square<KING>(~sideToMove), occupied | to) & pieces(sideToMove) & occupied);
+        if (checkers && !(attackers_to(lsb(checkers), occupied | to) & pieces(~sideToMove) & occupied))
         {
               if (bb)
               {
-                 redo_pinned = least_significant_square_bb(bb); // we assume that this (last?) attacker was discovering it's own king to check
+                 redo_pinned |= least_significant_square_bb(bb); // we assume that this attacker was discovering it's own king to check
+                 //sync_cout << *this << UCIEngine::move(m,false) << Bitboards::pretty(occupied) << sync_endl;
                  goto redo;
               }
-              return true; // discovered check on move m (=first capture) and king cannot recapture
+//              if (!(attackers & square<KING>(~sideToMove)))
+//                 sync_cout << *this << UCIEngine::move(m,false) << " DISCOOOOOOOOOOOOOOOOOOOOO" << square<KING>(~sideToMove)  << Bitboards::pretty(attackers) << Bitboards::pretty((attackers_to(square<KING>(~sideToMove), occupied | to) & pieces(sideToMove) & occupied)) << sync_endl;
+              return !(attackers & square<KING>(~sideToMove)); // discovered check and king cannot recapture
         }
     }
 
