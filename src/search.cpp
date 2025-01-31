@@ -937,8 +937,6 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool tactical_sacrifices = !improving && allNode;
-    bool queen_en_prise = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -963,9 +961,6 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-//        if (pos.fen().compare("5rk1/8/2pQ2p1/1pPp2P1/1P1qp3/PK2Br2/5P2/R7 w - - 0 94") == 0)
-//           sync_cout << "info testing move " << UCIEngine::move(move, false) << "  nr " << moveCount << " queen_en_prise: " << queen_en_prise << " shallow pruning " << (!is_loss(bestValue)) << sync_endl;
-
         if (rootNode && is_mainthread() && nodes > 10000000)
         {
             main_manager()->updates.onIter(
@@ -985,9 +980,6 @@ moves_loop:  // When in check, search starts here
         int delta = beta - alpha;
 
         Depth r = reduction(improving, depth, moveCount, delta);
-        Piece capturedPiece = pos.piece_on(move.to_sq());
-        if (type_of(capturedPiece) == QUEEN)
-            queen_en_prise = true;
 
         // Step 14. Pruning at shallow depth.
         // Depth conditions are important for mate finding.
@@ -1002,6 +994,7 @@ moves_loop:  // When in check, search starts here
 
             if (capture || givesCheck)
             {
+                Piece capturedPiece = pos.piece_on(move.to_sq());
                 int   captHist =
                   thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
 
@@ -1016,7 +1009,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 37, -152 * depth, 141 * depth);
-                if (!pos.see_ge(move, tactical_sacrifices && !queen_en_prise && !ss->inCheck, -156 * depth - seeHist))
+                if (!pos.see_ge(move, -156 * depth - seeHist))
                     continue;
             }
             else
@@ -1048,7 +1041,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
-                if (!pos.see_ge(move, tactical_sacrifices && !queen_en_prise && !ss->inCheck, -25 * lmrDepth * lmrDepth))
+                if (!pos.see_ge(move, -25 * lmrDepth * lmrDepth))
                     continue;
             }
         }
@@ -1582,7 +1575,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                                         (ss - 2)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
-    bool queen_en_prise = false;
+
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
@@ -1600,8 +1593,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
-        if (capture && type_of(pos.piece_on(move.to_sq())) == QUEEN)
-            queen_en_prise = true;
 
         moveCount++;
 
@@ -1627,7 +1618,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, false, alpha - futilityBase))
+                if (!pos.see_ge(move, alpha - futilityBase))
                 {
                     bestValue = std::min(alpha, futilityBase);
                     continue;
@@ -1644,7 +1635,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, moveCount < 4 && !queen_en_prise && !ss->inCheck, -80))
+            if (!pos.see_ge(move, -80))
                 continue;
         }
 

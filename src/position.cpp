@@ -1063,7 +1063,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, bool tactical_sacrifices, int threshold) const {
+bool Position::see_ge(Move m, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1170,13 +1170,8 @@ bool Position::see_ge(Move m, bool tactical_sacrifices, int threshold) const {
                  redo_pinned = least_significant_square_bb(bb); // we assume that this (last?) attacker was discovering it's own king to check
                  goto redo;
               }
-              else return true; // discovered check on move m (=first capture) and king cannot recapture
+              return true; // discovered check on move m (=first capture) and king cannot recapture
         }
-
-        // even when one of our non-queen pieces attacks opponent queen after recaptures
-        if (tactical_sacrifices && (pieces(~sideToMove, QUEEN) & (occupied |= to) & ~attackers) &&
-           (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN) & ~blockers_for_king(sideToMove)))
-                return true;
     }
 
     return bool(res);
