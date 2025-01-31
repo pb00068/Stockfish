@@ -1063,7 +1063,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, bool optimist, int threshold) const {
+bool Position::see_ge(Move m, bool tactical_sacrifices, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1073,6 +1073,8 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
 
     Square from = m.from_sq(), to = m.to_sq();
 
+    Bitboard redo_pinned = 0;
+    redo: // we have to redo if we discover something illegal
     int swap = PieceValue[piece_on(to)] - threshold;
     if (swap < 0)
         return false;
@@ -1085,9 +1087,8 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
-    Bitboard stmAttackers, bb;
+    Bitboard stmAttackers, bb = 0;
     int      res = 1;
-    int recaptures = 0;
     while (true)
     {
         stm = ~stm;
@@ -1099,9 +1100,9 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
 
         // Don't allow pinned pieces to attack as long as there are
         // pinners on their original square.
-        if (pinners(~stm) & occupied)
+        if ((pinners(~stm) & occupied) || redo_pinned)
         {
-            stmAttackers &= ~blockers_for_king(stm);
+            stmAttackers &= ~ (blockers_for_king(stm) | redo_pinned);
 
             if (!stmAttackers)
                 break;
@@ -1114,7 +1115,6 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         if ((bb = stmAttackers & pieces(PAWN)))
         {
             occupied ^= least_significant_square_bb(bb);
-            recaptures++;
             if ((swap = PawnValue - swap) < res)
                 break;
 
@@ -1124,7 +1124,6 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(KNIGHT)))
         {
             occupied ^= least_significant_square_bb(bb);
-            recaptures++;
             if ((swap = KnightValue - swap) < res)
                 break;
         }
@@ -1132,7 +1131,6 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(BISHOP)))
         {
             occupied ^= least_significant_square_bb(bb);
-            recaptures++;
             if ((swap = BishopValue - swap) < res)
                 break;
 
@@ -1142,7 +1140,6 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(ROOK)))
         {
             occupied ^= least_significant_square_bb(bb);
-            recaptures++;
             if ((swap = RookValue - swap) < res)
                 break;
 
@@ -1152,12 +1149,7 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
             occupied ^= least_significant_square_bb(bb);
-            recaptures++;
-            if ((swap = QueenValue - swap) < res)
-            {
-                dbg_hit_on(true,0);
-                break;
-            }
+            swap = QueenValue - swap;
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
                        | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
@@ -1169,23 +1161,22 @@ bool Position::see_ge(Move m, bool optimist, int threshold) const {
              return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
-    if (!bool(res) && optimist)
+    if (!bool(res) && !redo_pinned)
     {
-
         if (attackers_to(square<KING>(~sideToMove), occupied) & pieces(sideToMove) & occupied)
-           return true;
-        if (swap / recaptures >= 244)
-        	return false;
-        occupied |= to;
-        // even when one of our non-queen pieces attacks opponent queen after recaptures
-        if ((pieces(~sideToMove, QUEEN) & occupied) && (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN)))
         {
-             //	if (occupied != (occupied & to))
-             		sync_cout << *this << UCIEngine::move(m,false) << "   swap:  " << swap << " swap + t: " << (swap + threshold) << " recaptures " << recaptures << Bitboards::pretty(attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN)) << sync_endl;
-             		if (this->fen().compare("1qb1rrk1/ppn1pnbp/2p3p1/3p1p2/1P1P1B2/2PQN1P1/P3PP1P/N3RRKB w - - 1 9") == 0)
-             			abort();
+              if (bb)
+              {
+                 redo_pinned = least_significant_square_bb(bb); // we assume that this (last?) attacker was discovering it's own king to check
+                 goto redo;
+              }
+              else return true; // discovered check on move m (=first capture) and king cannot recapture
+        }
+
+        // even when one of our non-queen pieces attacks opponent queen after recaptures
+        if (tactical_sacrifices && (pieces(~sideToMove, QUEEN) & (occupied |= to) & ~attackers) &&
+           (attackers_to(lsb((pieces(~sideToMove, QUEEN) & occupied)), occupied) & pieces(sideToMove) & occupied & ~pieces(QUEEN) & ~blockers_for_king(sideToMove)))
                 return true;
-             }
     }
 
     return bool(res);
