@@ -1167,7 +1167,7 @@ bool Position::see_ge(Move m, int threshold) const {
              return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
-    if (!bool(res) && (st->snipers & occupied) && (st->kingcross & occupied) != (st->kingcross & pieces()))
+    if (!bool(res) && threshold <= 0 && (st->snipers & occupied) && (st->kingcross & occupied) != (st->kingcross & pieces()))
     {
         Bitboard checkers = (attackers_to(square<KING>(~sideToMove), occupied | to) & pieces(sideToMove) & occupied);
         if (checkers && !(attackers_to(lsb(checkers), occupied | to) & pieces(~sideToMove) & occupied))
