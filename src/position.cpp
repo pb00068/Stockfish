@@ -1061,6 +1061,8 @@ bool Position::see_ge(Move m, int threshold) const {
     if (m.type_of() != NORMAL)
         return VALUE_ZERO >= threshold;
 
+    int tempo = threshold < 0 ? 30 : 0;
+
     Square from = m.from_sq(), to = m.to_sq();
 
     int swap = PieceValue[piece_on(to)] - threshold;
@@ -1077,7 +1079,7 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
-
+    int  captures = 1;
     while (true)
     {
         stm = ~stm;
@@ -1098,7 +1100,8 @@ bool Position::see_ge(Move m, int threshold) const {
         }
 
         res ^= 1;
-
+        captures++;
+        swap -= tempo * captures;
         // Locate and remove the next least valuable attacker, and add to
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
