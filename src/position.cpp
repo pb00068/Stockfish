@@ -1061,7 +1061,7 @@ bool Position::see_ge(Move m, int threshold) const {
     if (m.type_of() != NORMAL)
         return VALUE_ZERO >= threshold;
 
-    int tempo = threshold < 0 ? 30 : 0;
+    int tempo = threshold < 0 ? 45 : 0;
 
     Square from = m.from_sq(), to = m.to_sq();
 
