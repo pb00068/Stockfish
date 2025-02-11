@@ -955,6 +955,8 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    Bitboard overloadCandidates[17] = {0};
+    int overloadIndex;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1017,7 +1019,7 @@ moves_loop:  // When in check, search starts here
 
             // Reduced depth of the next LMR search
             int lmrDepth = newDepth - r / 1024;
-
+            overloadIndex =  file_of(move.to_sq());
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
@@ -1033,9 +1035,20 @@ moves_loop:  // When in check, search starts here
                         continue;
                 }
 
+
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
-                if (!pos.see_ge(move, -157 * depth - seeHist))
+                Bitboard overloaded = 0;
+                for (int i=0;i<16;i++)
+                  if (i != overloadIndex)
+                  {
+                          overloaded |= overloadCandidates[i];
+                          if (overloadCandidates[i])
+                          sync_cout << "info bito : " << i << Bitboards::pretty(overloadCandidates[i]) << sync_endl;
+                         }
+
+                sync_cout << "info Cindx: " << overloadIndex << "   bitboad overloaded " << overloaded << "  th: " << -157 * depth - seeHist << sync_endl;
+                if (!pos.see_ge(move, overloadCandidates[overloadIndex], overloaded, -157 * depth - seeHist))
                     continue;
             }
             else
@@ -1066,8 +1079,18 @@ moves_loop:  // When in check, search starts here
 
                 lmrDepth = std::max(lmrDepth, 0);
 
+                Bitboard overloaded = 0;
+                for (int i=0;i<16;i++)
+                   if (i != overloadIndex)
+                   {
+                           overloaded |= overloadCandidates[i];
+                           if (overloadCandidates[i])
+                           sync_cout << "info bito : " << i << Bitboards::pretty(overloadCandidates[i]) << sync_endl;
+                          }
+
                 // Prune moves with negative SEE
-                if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
+                sync_cout << "info Dindx: " << overloadIndex << sync_endl;
+                if (!pos.see_ge(move, overloadCandidates[overloadIndex], overloaded, -26 * lmrDepth * lmrDepth))
                     continue;
             }
         }
@@ -1588,6 +1611,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                   &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
 
+    Bitboard overloadCandidates[17] = {0};
+    int overloadIndex;
+
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
     while ((move = mp.next_move()) != Move::none())
@@ -1601,6 +1627,15 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         capture    = pos.capture_stage(move);
 
         moveCount++;
+        overloadIndex = file_of(move.to_sq());
+        Bitboard overloaded = 0;
+           for (int i=0;i<16;i++)
+              if (i != overloadIndex)
+              {
+               overloaded |= overloadCandidates[i];
+               //if (overloadCandidates[i])
+               //sync_cout << "info bito : " << i << Bitboards::pretty(overloadCandidates[i]) << sync_endl;
+              }
 
         // Step 6. Pruning
         if (!is_loss(bestValue))
@@ -1624,7 +1659,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
+                sync_cout << "info Aindx: " << overloadIndex << sync_endl;
+                if (!pos.see_ge(move, overloadCandidates[overloadIndex], overloaded, alpha - futilityBase))
                 {
                     bestValue = std::min(alpha, futilityBase);
                     continue;
@@ -1641,7 +1677,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -75))
+            sync_cout << "info Bindx: " << overloadIndex << sync_endl;
+            if (!pos.see_ge(move, overloadCandidates[overloadIndex], overloaded, -75))
                 continue;
         }
 
