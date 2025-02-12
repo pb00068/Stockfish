@@ -1114,10 +1114,12 @@ bool Position::see_ge(Move m, Bitboard& overloaded, int threshold) const {
         {
             if (major && stm != sideToMove && !more_than_one(stmAttackers))
             {
-                overloaded |= bb | from;
                 Square pawn = lsb(bb);
-                overloaded |= pawn_attacks_bb(stm, pawn) ^ to;
-               // sync_cout << "info new candidate  : " << *this << Bitboards::pretty(overloaded) << " move is " << UCIEngine::move(m,false) << Bitboards::pretty(pawn_attacks_bb(stm, pawn)) << sync_endl;
+                if ((pawn_attacks_bb(stm, pawn) ^ to) & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT))
+                {
+                   overloaded |= bb | from | (pawn_attacks_bb(stm, pawn) ^ to);
+                   swap -= KnightValue;
+                }
 
             }
             if ((swap = PawnValue - swap) < res)
