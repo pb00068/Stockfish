@@ -1053,7 +1053,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, Bitboard& overloadCandidates, Bitboard overloaded, int threshold) const {
+bool Position::see_ge(Move m, Bitboard& overloaded, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1064,13 +1064,14 @@ bool Position::see_ge(Move m, Bitboard& overloadCandidates, Bitboard overloaded,
     Square from = m.from_sq(), to = m.to_sq();
 
     int swap = PieceValue[piece_on(to)] - threshold;
-    bool major = PieceValue[piece_on(to)] >= KnightValue;
     if (swap < 0)
         return false;
 
     swap = PieceValue[piece_on(from)] - swap;
     if (swap <= 0)
         return true;
+
+    bool major = PieceValue[piece_on(to)] >= KnightValue && PieceValue[piece_on(from)] >= KnightValue;
 
     assert(color_of(piece_on(from)) == sideToMove);
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
@@ -1098,16 +1099,11 @@ bool Position::see_ge(Move m, Bitboard& overloadCandidates, Bitboard overloaded,
                 break;
         }
 
-        //if (!(overloaded & from))
-        if (major)
-          stmAttackers &= ~overloaded;
-
-        if (!stmAttackers)
+        if (overloaded && stm != sideToMove && !(overloaded & from) && (overloaded & pieces(QUEEN, ROOK, BISHOP, KNIGHT) & to))
         {
-           dbg_hit_on(true,0);
-           sync_cout << *this << UCIEngine::move(m, false) << Bitboards::pretty(overloaded) << "  threshold " <<  threshold << sync_endl;
-
-           break;
+            stmAttackers &= ~overloaded;
+            if (!stmAttackers)
+              break;
         }
 
         res ^= 1;
@@ -1116,10 +1112,12 @@ bool Position::see_ge(Move m, Bitboard& overloadCandidates, Bitboard overloaded,
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
-            if (major && !more_than_one(bb))
+            if (major && stm != sideToMove && !more_than_one(stmAttackers))
             {
-                overloadCandidates |= bb;
-                sync_cout << "info new candidate  : " << Bitboards::pretty(bb) << " move is " << UCIEngine::move(m,false) << sync_endl;
+                overloaded |= bb | from;
+                Square pawn = lsb(bb);
+                overloaded |= pawn_attacks_bb(stm, pawn) ^ to;
+               // sync_cout << "info new candidate  : " << *this << Bitboards::pretty(overloaded) << " move is " << UCIEngine::move(m,false) << Bitboards::pretty(pawn_attacks_bb(stm, pawn)) << sync_endl;
 
             }
             if ((swap = PawnValue - swap) < res)

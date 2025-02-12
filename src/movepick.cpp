@@ -114,7 +114,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
     dummy =0;
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, dummy, dummy, threshold));
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, dummy, threshold));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -237,10 +237,10 @@ top:
         goto top;
 
     case GOOD_CAPTURE :
+        dummy = 0;
         if (select([&]() {
                 // Move losing capture to endBadCaptures to be tried later
-                dummy = 0;
-                return pos.see_ge(*cur, dummy, dummy, -cur->value / 18) ? true
+                return pos.see_ge(*cur, dummy, -cur->value / 18) ? true
                                                           : (*endBadCaptures++ = *cur, false);
             }))
             return *(cur - 1);
@@ -309,7 +309,7 @@ top:
         return select([]() { return true; });
 
     case PROBCUT :
-        return select([&]() {dummy =0; return pos.see_ge(*cur, dummy, dummy, threshold); });
+        return select([&]() { return pos.see_ge(*cur, dummy, threshold); });
     }
 
     assert(false);
