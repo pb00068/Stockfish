@@ -1103,6 +1103,13 @@ bool Position::see_ge(Move m, int threshold) const {
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
+            if (!more_than_one(bb))
+            {
+                 // if the pawn has to guard another piece, then estimate its value higher
+                 if ((pawn_attacks_bb(stm, lsb(bb)) ^ to) & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT) & occupied)
+                    swap -= PawnValue;
+            }
+
             if ((swap = PawnValue - swap) < res)
                 break;
             occupied ^= least_significant_square_bb(bb);
