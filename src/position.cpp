@@ -1107,7 +1107,7 @@ bool Position::see_ge(Move m, int threshold) const {
             {
                  // if the pawn has to guard another piece, then estimate its value higher
                  if ((pawn_attacks_bb(stm, lsb(bb)) ^ to) & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT) & occupied)
-                    swap -= PawnValue;
+                    swap += PawnValue;
             }
 
             if ((swap = PawnValue - swap) < res)
