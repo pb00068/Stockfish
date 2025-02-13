@@ -502,6 +502,15 @@ bool Position::attackers_to_exist(Square s, Bitboard occupied, Color c) const {
             & pieces(c));
 }
 
+bool Position::slider_attackers_to_exist(Square s, Bitboard occupied, Color c) const {
+
+    return ((attacks_bb<ROOK>(s) & pieces(c, ROOK, QUEEN))
+            && (attacks_bb<ROOK>(s, occupied) & pieces(c, ROOK, QUEEN) & occupied))
+        || ((attacks_bb<BISHOP>(s) & pieces(c, BISHOP, QUEEN))
+            && (attacks_bb<BISHOP>(s, occupied) & pieces(c, BISHOP, QUEEN) & occupied))
+        || (((attacks_bb<KNIGHT>(s) & pieces(KNIGHT))) & pieces(c) & occupied);
+}
+
 // Tests whether a pseudo-legal move is legal
 bool Position::legal(Move m) const {
 
@@ -1077,8 +1086,8 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
-
-    while (true)
+    int z=0;
+    while (++z)
     {
         stm = ~stm;
         attackers &= occupied;
@@ -1103,14 +1112,18 @@ bool Position::see_ge(Move m, int threshold) const {
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
-            if (!more_than_one(bb))
+            int factor = 1;
+            if (z == 1 && !more_than_one(bb))
             {
                  // if the pawn has to guard another piece, then estimate its value higher
-                 if ((pawn_attacks_bb(stm, lsb(bb)) ^ to) & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT) & occupied)
-                    swap += PawnValue;
+                 Bitboard pa = pawn_attacks_bb(stm, lsb(bb)) ^ to;
+                 if ((pa & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT) & occupied)
+                      && !more_than_one(pawn_attacks_bb(~stm, lsb(pa)) & pieces(stm, PAWN)) // uniqe pawn to defend th other piece
+                      && slider_attackers_to_exist(lsb(pa), (occupied | to) ^ from, ~stm))
+                    factor = 2;//sync_cout << *this << UCIEngine::move(m,false) << " swap " << swap << sync_endl;
             }
 
-            if ((swap = PawnValue - swap) < res)
+            if ((swap = PawnValue * factor - swap) < res)
                 break;
             occupied ^= least_significant_square_bb(bb);
 
