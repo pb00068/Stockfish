@@ -1135,11 +1135,9 @@ bool Position::see_ge(Move m, int threshold) const {
             occupied ^= least_significant_square_bb(bb);
 
             if (z != 40)
-            {
                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
-            }
             else
-               attackers_to(to, occupied);
+               attackers = attackers_to(to, occupied);
         }
 
         else if ((bb = stmAttackers & pieces(KNIGHT)))
