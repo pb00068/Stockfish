@@ -1089,9 +1089,10 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
-    int z=0;
-    while (++z)
+    int z = PieceValue[piece_on(from)] == QueenValue || !piece_on(to);
+    while (true)
     {
+        z++;
         stm = ~stm;
         attackers &= occupied;
 
@@ -1115,22 +1116,30 @@ bool Position::see_ge(Move m, int threshold) const {
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
-            int factor = 1;
-            if (z == 1 && !more_than_one(bb))
+            if (z == 1 && !more_than_one(stmAttackers))
             {
                  // if the pawn has to guard another piece, then estimate its value higher
                  Bitboard pa = pawn_attacks_bb(stm, lsb(bb)) ^ to;
                  if ((pa & pieces(stm, QUEEN, ROOK, BISHOP, KNIGHT) & occupied)
-                      && !more_than_one(pawn_attacks_bb(~stm, lsb(pa)) & pieces(stm, PAWN)) // uniqe pawn to defend th other piece
-                      && slider_attackers_to_exist(lsb(pa), (occupied | to) ^ from, ~stm))
-                    factor = 2;//sync_cout << *this << UCIEngine::move(m,false) << " swap " << swap << sync_endl;
+                      && !more_than_one(pawn_attacks_bb(~stm, lsb(pa)) & pieces(stm, PAWN)) // unique pawn to defend the other piece
+                      && slider_attackers_to_exist(lsb(pa), (occupied | to) ^ from, ~stm)) // and other piece is threathened by sliders
+                 {
+                    swap -= PieceValue[lsb(pa)];
+                    z=40;
+                    to = lsb(pa);
+                 }
             }
 
-            if ((swap = PawnValue * factor - swap) < res)
+            if ((swap = PawnValue - swap) < res)
                 break;
             occupied ^= least_significant_square_bb(bb);
 
-            attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+            if (z != 40)
+            {
+               attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+            }
+            else
+               attackers_to(to, occupied);
         }
 
         else if ((bb = stmAttackers & pieces(KNIGHT)))
