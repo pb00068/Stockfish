@@ -1078,9 +1078,10 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
+    Bitboard rookc,diagc;
     Bitboard stmAttackers, bb;
     int      res = 1;
-
+    int z=0;
     while (true)
     {
         stm = ~stm;
@@ -1101,6 +1102,12 @@ bool Position::see_ge(Move m, int threshold) const {
         }
 
         res ^= 1;
+        if (!z && more_than_one(stmAttackers)) {
+           z=1;
+           rookc = attacks_bb<ROOK>(to, pieces(PAWN, BISHOP, KNIGHT, KING) ^ from);
+           diagc = attacks_bb<BISHOP>(to, (pieces(ROOK,KNIGHT, KING) | (pieces(PAWN) & ~PseudoAttacks[KING][to])) ^ from);
+           //sync_cout << *this << UCIEngine::move(m,false) << Bitboards::pretty(rookc) << sync_endl;
+        }
 
         // Locate and remove the next least valuable attacker, and add to
         // the bitboard 'attackers' any X-ray attackers behind it.
@@ -1110,6 +1117,7 @@ bool Position::see_ge(Move m, int threshold) const {
                 break;
             occupied ^= least_significant_square_bb(bb);
 
+            if (!z || (diagc & occupied & pieces(BISHOP, QUEEN)))
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
@@ -1126,6 +1134,7 @@ bool Position::see_ge(Move m, int threshold) const {
                 break;
             occupied ^= least_significant_square_bb(bb);
 
+            if (!z || (diagc & occupied & pieces(BISHOP, QUEEN)))
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
@@ -1135,6 +1144,7 @@ bool Position::see_ge(Move m, int threshold) const {
                 break;
             occupied ^= least_significant_square_bb(bb);
 
+            if (!z || (rookc & occupied & pieces(ROOK, QUEEN)))
             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
@@ -1145,8 +1155,10 @@ bool Position::see_ge(Move m, int threshold) const {
             assert(swap >= res);
             occupied ^= least_significant_square_bb(bb);
 
-            attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
-                       | (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
+            if (!z || (diagc & occupied & pieces(BISHOP, QUEEN)))
+                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
+            if (!z || (rookc & occupied & pieces(ROOK, QUEEN)))
+                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
         else  // KING
