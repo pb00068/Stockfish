@@ -1080,9 +1080,7 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
-    int      slidersOnColor[2];
-    slidersOnColor[0] = slidersOnSquares(0);
-    slidersOnColor[1] = slidersOnSquares(1);
+    int      slidersOnColor[] = {slidersOnSquares(0),slidersOnSquares(1)};
 
     while (true)
     {
@@ -1129,9 +1127,8 @@ bool Position::see_ge(Move m, int threshold) const {
             if ((swap = BishopValue - swap) < res)
                 break;
             occupied ^= least_significant_square_bb(bb);
-            slidersOnColor[bool(whiteSquaresBB & least_significant_square_bb(bb))]--;
 
-            if (slidersOnColor[bool(whiteSquaresBB & to)])
+            if (--slidersOnColor[bool(whiteSquaresBB & to)])
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
 
         }
@@ -1141,10 +1138,8 @@ bool Position::see_ge(Move m, int threshold) const {
             if ((swap = RookValue - swap) < res)
                 break;
             occupied ^= least_significant_square_bb(bb);
-            slidersOnColor[bool(whiteSquaresBB & least_significant_square_bb(bb))]--;
 
-            if (slidersOnColor[0] + slidersOnColor[1] && (PseudoAttacks[ROOK][to] & pieces(ROOK, QUEEN) & occupied))
-               attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
+            attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(QUEEN)))
@@ -1153,14 +1148,11 @@ bool Position::see_ge(Move m, int threshold) const {
             //  implies that the previous recapture was done by a higher rated piece than a Queen (King is excluded)
             assert(swap >= res);
             occupied ^= least_significant_square_bb(bb);
-            slidersOnColor[bool(whiteSquaresBB & least_significant_square_bb(bb))]--;
 
-            if (slidersOnColor[bool(whiteSquaresBB & to)])
+            if (--slidersOnColor[bool(whiteSquaresBB & to)])
                attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN));
 
-            if (slidersOnColor[0] + slidersOnColor[1] && (PseudoAttacks[ROOK][to] & pieces(ROOK, QUEEN) & occupied))
-               attackers |=  (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
-
+            attackers |=  (attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN));
         }
 
         else  // KING

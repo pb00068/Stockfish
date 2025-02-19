@@ -344,8 +344,8 @@ inline void Position::put_piece(Piece pc, Square s) {
     byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
     byColorBB[color_of(pc)] |= s;
     pieceCount[pc]++;
-    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
-          slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]++;
+    if (type_of(pc) == BISHOP || type_of(pc) == QUEEN)
+        slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]++;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
 }
 
@@ -357,8 +357,8 @@ inline void Position::remove_piece(Square s) {
     byColorBB[color_of(pc)] ^= s;
     board[s] = NO_PIECE;
     pieceCount[pc]--;
-    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
-              slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]--;
+    if (type_of(pc) == BISHOP || type_of(pc) == QUEEN)
+        slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]--;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
 }
 
@@ -371,7 +371,7 @@ inline void Position::move_piece(Square from, Square to) {
     byColorBB[color_of(pc)] ^= fromTo;
     board[from] = NO_PIECE;
     board[to]   = pc;
-    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
+    if (type_of(pc) == BISHOP || type_of(pc) == QUEEN)
     {
          slidersOnWhiteDarkSquares[bool(whiteSquaresBB & from)]--;
          slidersOnWhiteDarkSquares[bool(whiteSquaresBB & to)]++;
