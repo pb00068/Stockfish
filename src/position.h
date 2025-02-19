@@ -109,6 +109,7 @@ class Position {
     int count() const;
     template<PieceType Pt>
     Square square(Color c) const;
+    int slidersOnSquares(int color) const;
 
     // Castling
     CastlingRights castling_rights(Color c) const;
@@ -196,6 +197,7 @@ class Position {
     Bitboard   byTypeBB[PIECE_TYPE_NB];
     Bitboard   byColorBB[COLOR_NB];
     int        pieceCount[PIECE_NB];
+    int        slidersOnWhiteDarkSquares[2];
     int        castlingRightsMask[SQUARE_NB];
     Square     castlingRookSquare[CASTLING_RIGHT_NB];
     Bitboard   castlingPath[CASTLING_RIGHT_NB];
@@ -219,6 +221,8 @@ inline bool Position::empty(Square s) const { return piece_on(s) == NO_PIECE; }
 inline Piece Position::moved_piece(Move m) const { return piece_on(m.from_sq()); }
 
 inline Bitboard Position::pieces(PieceType pt) const { return byTypeBB[pt]; }
+
+inline int Position::slidersOnSquares(int color) const { return slidersOnWhiteDarkSquares[color];}
 
 template<typename... PieceTypes>
 inline Bitboard Position::pieces(PieceType pt, PieceTypes... pts) const {
@@ -340,6 +344,8 @@ inline void Position::put_piece(Piece pc, Square s) {
     byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
     byColorBB[color_of(pc)] |= s;
     pieceCount[pc]++;
+    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
+          slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]++;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
 }
 
@@ -351,6 +357,8 @@ inline void Position::remove_piece(Square s) {
     byColorBB[color_of(pc)] ^= s;
     board[s] = NO_PIECE;
     pieceCount[pc]--;
+    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
+              slidersOnWhiteDarkSquares[bool(whiteSquaresBB & s)]--;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
 }
 
@@ -363,6 +371,11 @@ inline void Position::move_piece(Square from, Square to) {
     byColorBB[color_of(pc)] ^= fromTo;
     board[from] = NO_PIECE;
     board[to]   = pc;
+    if (type_of(pc) >= BISHOP && type_of(pc) <= QUEEN)
+    {
+         slidersOnWhiteDarkSquares[bool(whiteSquaresBB & from)]--;
+         slidersOnWhiteDarkSquares[bool(whiteSquaresBB & to)]++;
+    }
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt, const TranspositionTable* tt = nullptr) {
