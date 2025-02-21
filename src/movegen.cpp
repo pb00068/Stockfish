@@ -174,6 +174,8 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
 
     const Square ksq = pos.square<KING>(Us);
     Bitboard     target;
+    ExtMove* p;
+    int pawnAndKingMoves = 1;
 
     // Skip generating non-king moves when in double check
     if (Type != EVASIONS || !more_than_one(pos.checkers()))
@@ -183,7 +185,10 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
                : Type == CAPTURES     ? pos.pieces(~Us)
                                       : ~pos.pieces();  // QUIETS
 
+        p = moveList;
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
+        if (Type == QUIETS)
+           pawnAndKingMoves = (moveList - p);
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
         moveList = generate_moves<Us, ROOK>(pos, moveList, target);
@@ -191,15 +196,33 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-
+    if (Type == QUIETS && !pawnAndKingMoves && popcount(b) <=3)
+    {    // pre-eliminate illegal moves
+      Bitboard bb = b;
+      while (bb)
+      {
+          Square s = pop_lsb(bb);
+          if (pos.attackers_to(s) & pos.pieces(~Us))
+             b ^= s;
+    	}
+    }
     while (b)
+    {
         *moveList++ = Move(ksq, pop_lsb(b));
+        pawnAndKingMoves++;
+
+    }
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
             if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
-
+    if (Type == QUIETS && !pawnAndKingMoves) {
+          Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_WEST>(pos.pieces(Us, PAWN)) |
+                         shift<Us == WHITE ? NORTH_WEST : SOUTH_EAST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
+          if (!b1)
+             *moveList++ = Move::staleMateHint();
+    }
     return moveList;
 }
 
