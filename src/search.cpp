@@ -1157,8 +1157,6 @@ moves_loop:  // When in check, search starts here
                 else if (cutNode)
                     extension = -2;
             }
-            else if (extendDesperateChecks && givesCheck && bestValue < -500 && !pos.see_ge(move))
-               extension = 1;
         }
 
         // Step 16. Make the move
