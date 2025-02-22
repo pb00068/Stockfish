@@ -175,7 +175,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     const Square ksq = pos.square<KING>(Us);
     Bitboard     target;
     ExtMove* p;
-    int pawnAndKingMoves = 1;
+    int pawnAndKingMoves;
 
     // Skip generating non-king moves when in double check
     if (Type != EVASIONS || !more_than_one(pos.checkers()))
@@ -204,13 +204,14 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
           Square s = pop_lsb(bb);
           if (pos.attackers_to(s) & pos.pieces(~Us))
              b ^= s;
+          else
+             break;
     	}
     }
     while (b)
     {
         *moveList++ = Move(ksq, pop_lsb(b));
         pawnAndKingMoves++;
-
     }
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
