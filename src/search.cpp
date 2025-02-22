@@ -573,6 +573,13 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
+//    if (pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P2bP1P/8/3R4/R4K2 b - - 0 4") == 0)
+//    {
+//    	sync_cout << "HERE" << sync_endl;
+//       	sync_cout << pos <<  Bitboards::pretty(pos.state()->pieceTargets) << sync_endl;
+//       	sync_cout << pos <<  Bitboards::pretty(pos.state()->previous->pieceTargets) << sync_endl;
+//       	abort();
+//    }
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
@@ -649,11 +656,6 @@ Value Search::Worker::search(
         if (alpha >= beta)
             return alpha;
     }
-//    else {
-//         if (!pos.state()->previous)
-//        	 abort();
-//    }
-
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -967,8 +969,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    ss->extendDesperateChecks = false;//(ss-2)->extendDesperateChecks && pos.captured_piece() && (ss-1)->inCheck;
-    //dbg_hit_on(ss->extendDesperateChecks, 1);
+    bool extendDesperateChecks = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -981,7 +982,7 @@ moves_loop:  // When in check, search starts here
 
         if (move == Move::staleMateHint())
         {
-           //ss->extendDesperateChecks = true;
+           extendDesperateChecks = true;
            continue;
         }
 
@@ -1052,7 +1053,7 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (!ss->extendDesperateChecks || bestValue > -500 || capture)
+                if (!extendDesperateChecks || bestValue > -500 || capture)
                 {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);

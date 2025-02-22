@@ -157,11 +157,10 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
     while (bb)
     {
         Square   from = pop_lsb(bb);
-        target   &= attacks_bb<Pt>(from, pos.pieces());
-        pos.state()->previous->pieceTargets |= target;
-
-        while (target)
-            *moveList++ = Move(from, pop_lsb(target));
+        Bitboard b    = attacks_bb<Pt>(from, pos.pieces()) & target;
+        pos.state()->pieceTargets |= b;
+        while (b)
+            *moveList++ = Move(from, pop_lsb(b));
     }
 
     return moveList;
@@ -201,17 +200,24 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
 
-    if (Type == QUIETS && !pawnAndKingMoves && !more_than_one(b & ~pos.state()->previous->pieceTargets))
+    if (Type == QUIETS && !pawnAndKingMoves)
     {    // pre-eliminate illegal moves
-    	dbg_hit_on(Type == QUIETS && !pawnAndKingMoves , 3);
-      Bitboard bb = b;
-      while (bb)
-      {
-          Square s = pop_lsb(bb);
-          if (pos.attackers_to(s) & pos.pieces(~Us))
-             b ^= s;
+       bool doit ;
+       if (pos.state()->previous->pieceTargets)
+          doit = popcount(b & ~pos.state()->previous->pieceTargets) <= 1;
+       else
+          doit = popcount(b) <= 2;
 
-    	}
+      if (doit)
+      {
+         Bitboard bb = b;
+         while (bb)
+         {
+            Square s = pop_lsb(bb);
+            if (pos.attackers_to(s) & pos.pieces(~Us))
+               b ^= s;
+         }
+      }
     }
     while (b)
     {
@@ -227,10 +233,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
           Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_WEST>(pos.pieces(Us, PAWN)) |
                          shift<Us == WHITE ? NORTH_WEST : SOUTH_EAST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
           if (!b1)
-          {
              *moveList++ = Move::staleMateHint();
-             dbg_hit_on(true, 2);
-          }
     }
     return moveList;
 }

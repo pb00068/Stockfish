@@ -329,6 +329,8 @@ void Position::set_check_info() const {
     st->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
+
+    st->pieceTargets = 0;
 }
 
 
@@ -702,6 +704,7 @@ void Position::do_move(Move                      m,
     newSt.previous = st;
     st->next       = &newSt;
     st             = &newSt;
+    //st->pieceTargets =0;
 
     // Increment ply counters. In particular, rule50 will be reset to zero later on
     // in case of a capture or a pawn move.
