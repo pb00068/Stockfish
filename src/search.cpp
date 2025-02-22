@@ -649,6 +649,11 @@ Value Search::Worker::search(
         if (alpha >= beta)
             return alpha;
     }
+//    else {
+//         if (!pos.state()->previous)
+//        	 abort();
+//    }
+
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -962,7 +967,8 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool extendDesperateChecks = false;
+    ss->extendDesperateChecks = false;//(ss-2)->extendDesperateChecks && pos.captured_piece() && (ss-1)->inCheck;
+    //dbg_hit_on(ss->extendDesperateChecks, 1);
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -975,7 +981,7 @@ moves_loop:  // When in check, search starts here
 
         if (move == Move::staleMateHint())
         {
-           extendDesperateChecks = true;
+           //ss->extendDesperateChecks = true;
            continue;
         }
 
@@ -1046,7 +1052,7 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (!extendDesperateChecks || bestValue > -500 || capture)
+                if (!ss->extendDesperateChecks || bestValue > -500 || capture)
                 {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);

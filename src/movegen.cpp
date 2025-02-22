@@ -157,10 +157,11 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
     while (bb)
     {
         Square   from = pop_lsb(bb);
-        Bitboard b    = attacks_bb<Pt>(from, pos.pieces()) & target;
+        target   &= attacks_bb<Pt>(from, pos.pieces());
+        pos.state()->previous->pieceTargets |= target;
 
-        while (b)
-            *moveList++ = Move(from, pop_lsb(b));
+        while (target)
+            *moveList++ = Move(from, pop_lsb(target));
     }
 
     return moveList;
@@ -188,7 +189,10 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         p = moveList;
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
         if (Type == QUIETS)
+        {
            pawnAndKingMoves = (moveList - p);
+           //pos.state()->previous->quietTargets=0;
+        }
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
         moveList = generate_moves<Us, ROOK>(pos, moveList, target);
@@ -196,16 +200,17 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-    if (Type == QUIETS && !pawnAndKingMoves && popcount(b) <=3)
+
+    if (Type == QUIETS && !pawnAndKingMoves && !more_than_one(b & ~pos.state()->previous->pieceTargets))
     {    // pre-eliminate illegal moves
+    	dbg_hit_on(Type == QUIETS && !pawnAndKingMoves , 3);
       Bitboard bb = b;
       while (bb)
       {
           Square s = pop_lsb(bb);
           if (pos.attackers_to(s) & pos.pieces(~Us))
              b ^= s;
-          else
-             break;
+
     	}
     }
     while (b)
@@ -222,7 +227,10 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
           Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_WEST>(pos.pieces(Us, PAWN)) |
                          shift<Us == WHITE ? NORTH_WEST : SOUTH_EAST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
           if (!b1)
+          {
              *moveList++ = Move::staleMateHint();
+             dbg_hit_on(true, 2);
+          }
     }
     return moveList;
 }

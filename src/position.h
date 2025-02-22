@@ -59,6 +59,7 @@ struct StateInfo {
     Bitboard   blockersForKing[COLOR_NB];
     Bitboard   pinners[COLOR_NB];
     Bitboard   checkSquares[PIECE_TYPE_NB];
+    Bitboard   pieceTargets;
     Piece      capturedPiece;
     int        repetition;
 
