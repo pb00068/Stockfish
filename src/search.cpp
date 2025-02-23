@@ -534,6 +534,8 @@ void Search::Worker::iterative_deepening() {
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     mainHistory.fill(65);
+    mainHistory[WHITE][Move::staleMateHint().from_to()] = 7182;
+    mainHistory[BLACK][Move::staleMateHint().from_to()] = 7182;
     lowPlyHistory.fill(107);
     captureHistory.fill(-655);
     pawnHistory.fill(-1215);
@@ -550,7 +552,10 @@ void Search::Worker::clear() {
         for (StatsType c : {NoCaptures, Captures})
             for (auto& to : continuationHistory[inCheck][c])
                 for (auto& h : to)
+                {
                     h.fill(-493);
+                    h[NO_PIECE][Move::staleMateHint().to_sq()] = 30000;
+                }
 
     for (size_t i = 1; i < reductions.size(); ++i)
         reductions[i] = int(2937 / 128.0 * std::log(i));
@@ -957,6 +962,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    bool extendDesperateChecks = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -966,6 +972,12 @@ moves_loop:  // When in check, search starts here
 
         if (move == excludedMove)
             continue;
+
+        if (move == Move::staleMateHint())
+        {
+           extendDesperateChecks = true;
+           continue;
+        }
 
         // Check for legality
         if (!pos.legal(move))
@@ -1034,11 +1046,13 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-
+                if (!extendDesperateChecks || bestValue > -500 || capture)
+                {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
                 if (!pos.see_ge(move, -157 * depth - seeHist))
                     continue;
+                }
             }
             else
             {
@@ -1143,6 +1157,8 @@ moves_loop:  // When in check, search starts here
                 else if (cutNode)
                     extension = -2;
             }
+            else if (givesCheck && extendDesperateChecks && bestValue < -500 && !pos.see_ge(move))
+            	extension = 1;
         }
 
         // Step 16. Make the move
