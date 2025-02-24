@@ -23,7 +23,6 @@
 
 #include "bitboard.h"
 #include "position.h"
-#include "uci.h"
 
 namespace Stockfish {
 
@@ -176,7 +175,6 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, bool first) {
     const Square ksq = pos.square<KING>(Us);
     Bitboard     target;
     ExtMove* p;
-    int pawnAndKingMoves = 1;
 
     // Skip generating non-king moves when in double check
     if (Type != EVASIONS || !more_than_one(pos.checkers()))
@@ -188,11 +186,8 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, bool first) {
 
         p = moveList;
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
-        if (Type == QUIETS)
-           pawnAndKingMoves = (moveList - p);
-
         if (first && p != moveList)
-        	return moveList;
+              return moveList;
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         if (first && p != moveList)
               return moveList;
@@ -208,32 +203,17 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, bool first) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-    if (Type == QUIETS && !pawnAndKingMoves)
-    {    // pre-eliminate illegal king moves (=moving near Queen/King of square attacked by pawn)
-      Bitboard bb = pos.pieces(~Us, QUEEN, KING);
-      Square s = Us == WHITE ? lsb(bb) : msb(bb);
-      b&= ~(PseudoAttacks[KING][s] | (shift<Us == BLACK ? NORTH_EAST : SOUTH_EAST>(pos.pieces(~Us, PAWN))) | (shift<Us == BLACK ? NORTH_WEST : SOUTH_WEST>(pos.pieces(~Us, PAWN))));
-      if (b && !more_than_one(b) && (pos.attackers_to(lsb(b)) & pos.pieces(~Us)))
-           b=0;
-    }
     while (b)
     {
         *moveList++ = Move(ksq, pop_lsb(b));
         if (first)
              return moveList;
-        pawnAndKingMoves++;
     }
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
             if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
-    if (Type == QUIETS && !pawnAndKingMoves) {
-          Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_EAST>(pos.pieces(Us, PAWN)) |
-                         shift<Us == WHITE ? NORTH_WEST : SOUTH_WEST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
-          if (!b1)
-             *moveList++ = Move::staleMateHint();
-    }
     return moveList;
 }
 

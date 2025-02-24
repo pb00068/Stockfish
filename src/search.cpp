@@ -534,8 +534,6 @@ void Search::Worker::iterative_deepening() {
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     mainHistory.fill(65);
-    mainHistory[WHITE][Move::staleMateHint().from_to()] = 7182;
-    mainHistory[BLACK][Move::staleMateHint().from_to()] = 7182;
     lowPlyHistory.fill(107);
     captureHistory.fill(-655);
     pawnHistory.fill(-1215);
@@ -554,7 +552,6 @@ void Search::Worker::clear() {
                 for (auto& h : to)
                 {
                     h.fill(-493);
-                    h[NO_PIECE][Move::staleMateHint().to_sq()] = 30000;
                 }
 
     for (size_t i = 1; i < reductions.size(); ++i)
@@ -836,7 +833,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
         && ss->staticEval >= beta - 21 * depth + 455 - 60 * improving && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta) && !(ss-2)->lookForstaleMate)
+        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
         assert(eval - beta >= 0);
 
@@ -965,7 +962,6 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    ss->lookForstaleMate = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -975,12 +971,6 @@ moves_loop:  // When in check, search starts here
 
         if (move == excludedMove)
             continue;
-
-        if (move == Move::staleMateHint())
-        {
-           ss->lookForstaleMate = true;
-           continue;
-        }
 
         // Check for legality
         if (!pos.legal(move))
@@ -1050,13 +1040,10 @@ moves_loop:  // When in check, search starts here
                         continue;
                 }
 
-                if (!ss->lookForstaleMate || bestValue > -500 || !givesCheck)
-                {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
                 if (!pos.see_ge(move, -157 * depth - seeHist))
                     continue;
-                }
             }
             else
             {
@@ -1714,7 +1701,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
-    else if (!ss->inCheck && moveCount == 0 && (!ttData.move || !pos.legal(ttData.move)))
+    else if (!ss->inCheck && moveCount == 0 && (!ttData.move || !pos.legal(ttData.move)) && pos.non_pawn_material(pos.side_to_move()) < 2 * QueenValue)
     {
        if (!MoveList<LEGAL>(pos, true).size()) // stale mate
             return VALUE_DRAW;

@@ -413,7 +413,6 @@ class Move {
 
     static constexpr Move null() { return Move(65); }
     static constexpr Move none() { return Move(0); }
-    static constexpr Move staleMateHint() { return Move(SQ_A3, SQ_G8); }
 
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
