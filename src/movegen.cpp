@@ -197,27 +197,24 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-    if (Type == QUIETS && !pawnAndKingMoves && pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P2bP1P/8/3R4/R4K2 b - - 0 4") == 0)
-    {    // pre-eliminate illegal moves
-    	Bitboard bb = pos.pieces(~Us, QUEEN, KING);
-    	Square s = Us == WHITE ? lsb(bb) : msb(bb);
-      b&= ~PseudoAttacks[KING][s];
-    	if (!more_than_one(b))
-    	{ // eliminate moves into check
-      bb = b;
-      while (bb)
-      {
-          s = pop_lsb(bb);
-          if (pos.attackers_to(s) & pos.pieces(~Us))
-             b ^= s;
-    	}
-    	}
+    if (Type == QUIETS && !pawnAndKingMoves)
+    {    // pre-eliminate illegal king moves
+      Bitboard bb = pos.pieces(~Us, QUEEN, KING);
+      Square s = Us == WHITE ? lsb(bb) : msb(bb);
+      b&= ~(PseudoAttacks[KING][s] | (shift<Us == BLACK ? NORTH_EAST : SOUTH_EAST>(pos.pieces(~Us, PAWN))) | (shift<Us == BLACK ? NORTH_WEST : SOUTH_WEST>(pos.pieces(~Us, PAWN))));
+      if (b && !more_than_one(b) && (pos.attackers_to(lsb(b)) & pos.pieces(~Us)))
+           b=0;
+//      if (!b)
+//      {
+//      	sync_cout << pos << Bitboards::pretty(attacks_bb<KING>(ksq) & target) << sync_endl;
+//      	if (pos.fen().compare("b2r4/P4p1k/6p1/4BpPp/1r3P1q/8/4NR2/3RKQ2 w - - 1 12") == 0)
+//      		abort();
+//      }
     }
     while (b)
     {
         *moveList++ = Move(ksq, pop_lsb(b));
         pawnAndKingMoves++;
-
     }
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
@@ -225,12 +222,10 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
             if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
     if (Type == QUIETS && !pawnAndKingMoves) {
-          Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_WEST>(pos.pieces(Us, PAWN)) |
-                         shift<Us == WHITE ? NORTH_WEST : SOUTH_EAST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
+          Bitboard b1 = (shift<Us == WHITE ? NORTH_EAST : SOUTH_EAST>(pos.pieces(Us, PAWN)) |
+                         shift<Us == WHITE ? NORTH_WEST : SOUTH_WEST>(pos.pieces(Us, PAWN))) & pos.pieces(~Us);
           if (!b1) {
              *moveList++ = Move::staleMateHint();
-             sync_cout << pos << pawnAndKingMoves << sync_endl;
-
           }
     }
     return moveList;

@@ -834,7 +834,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
         && ss->staticEval >= beta - 21 * depth + 455 - 60 * improving && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta) && !(ss-2)->lookForstaleMate)
     {
         assert(eval - beta >= 0);
 
@@ -962,7 +962,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool extendDesperateChecks = false;
+    ss->lookForstaleMate = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -975,7 +975,7 @@ moves_loop:  // When in check, search starts here
 
         if (move == Move::staleMateHint())
         {
-           extendDesperateChecks = true;
+           ss->lookForstaleMate = true;
            continue;
         }
 
@@ -1046,7 +1046,18 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (!extendDesperateChecks || bestValue > -500 || capture)
+                if (pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
+                		 pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0)
+                {
+                	sync_cout << pos << " detect: " << ss->lookForstaleMate << "  mc " << moveCount << " move " << UCIEngine::move(move,false) << (givesCheck ? "+":"" )<< sync_endl;
+                	Square ksq = pos.square<KING>(us);
+                	 Bitboard b = attacks_bb<KING>(ksq) &   ~pos.pieces();
+                	      Bitboard bb = pos.pieces(~us, QUEEN, KING);
+                	      Square s = us == WHITE ? lsb(bb) : msb(bb);
+                	      b&= ~PseudoAttacks[KING][s];
+                	    	sync_cout << Bitboards::pretty(b) << sync_endl;
+                }
+                if (!ss->lookForstaleMate || bestValue > -500 || !givesCheck)
                 {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
@@ -1157,8 +1168,8 @@ moves_loop:  // When in check, search starts here
                 else if (cutNode)
                     extension = -2;
             }
-            else if (givesCheck && extendDesperateChecks && bestValue < -500 && !pos.see_ge(move))
-            	extension = 1;
+            else if (givesCheck && ss->lookForstaleMate && bestValue < -500 && depth < 4 && !pos.see_ge(move))
+            	extension = 2;
         }
 
         // Step 16. Make the move
