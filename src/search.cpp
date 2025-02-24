@@ -590,8 +590,12 @@ Value Search::Worker::search(
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
-        constexpr auto nt = PvNode ? PV : NonPV;
-        return qsearch<nt>(pos, ss, alpha, beta);
+       if (!(ss-1)->inCheck || !pos.captured_piece() || pos.non_pawn_material(pos.side_to_move()) >= 2 * QueenValue)
+       {
+          constexpr auto nt = PvNode ? PV : NonPV;
+          return qsearch<nt>(pos, ss, alpha, beta);
+       }
+       depth = 1;
     }
 
     // Limit the depth if extensions made it too large
@@ -832,7 +836,7 @@ Value Search::Worker::search(
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
-    if (!PvNode && eval < alpha - 446 - 303 * depth * depth)
+    if (!PvNode && eval < alpha - 446 - 303 * depth * depth && (!(ss-1)->inCheck || !pos.captured_piece() || pos.non_pawn_material(us) >= 2 * QueenValue))
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
@@ -847,7 +851,7 @@ Value Search::Worker::search(
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
         && ss->staticEval >= beta - 21 * depth + 455 - 60 * improving && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta) )//&& !(ss-1)->inCheck)
     {
         assert(eval - beta >= 0);
 
@@ -1053,10 +1057,13 @@ moves_loop:  // When in check, search starts here
                         continue;
                 }
 
+                if (!givesCheck || !(ss-1)->inCheck)
+                {
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
                 if (!pos.see_ge(move, -157 * depth - seeHist))
                     continue;
+                }
             }
             else
             {
