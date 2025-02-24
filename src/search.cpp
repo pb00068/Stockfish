@@ -622,6 +622,9 @@ Value Search::Worker::search(
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
+      	sync_cout << "Must be stale!!!!" << sync_endl;
+
     // Check for the available remaining time
     if (is_mainthread())
         main_manager()->check_time(*thisThread);
@@ -820,7 +823,11 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 446 - 303 * depth * depth)
+    {
+    	if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
+    	    	      	sync_cout << "RAZORED!!!!" << sync_endl;
         return qsearch<NonPV>(pos, ss, alpha, beta);
+    }
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -829,7 +836,11 @@ Value Search::Worker::search(
                - (ss - 1)->statScore / 326 + 37 - std::abs(correctionValue) / 132821
              >= beta
         && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval))
+    {
+    	if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
+    	      	sync_cout << "fut pruned!!!!" << sync_endl;
         return beta + (eval - beta) / 3;
+    }
 
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
@@ -945,6 +956,11 @@ Value Search::Worker::search(
 
 moves_loop:  // When in check, search starts here
 
+if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
+  	sync_cout << "Now im here!!" << sync_endl;
+
+
+
     // Step 12. A small Probcut idea
     probCutBeta = beta + 413;
     if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
@@ -1046,16 +1062,16 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
+                if (//pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
                 		 pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0)
                 {
-                	sync_cout << pos << " detect: " << ss->lookForstaleMate << "  mc " << moveCount << " move " << UCIEngine::move(move,false) << (givesCheck ? "+":"" )<< sync_endl;
-                	Square ksq = pos.square<KING>(us);
-                	 Bitboard b = attacks_bb<KING>(ksq) &   ~pos.pieces();
-                	      Bitboard bb = pos.pieces(~us, QUEEN, KING);
-                	      Square s = us == WHITE ? lsb(bb) : msb(bb);
-                	      b&= ~PseudoAttacks[KING][s];
-                	    	sync_cout << Bitboards::pretty(b) << sync_endl;
+                	sync_cout << pos << " detect: " << ss->lookForstaleMate << "  mc " << moveCount << " move " << UCIEngine::move(move,false) << (givesCheck ? "+":"" )<< " depth " << depth << "  alpha " << alpha << " beta " << beta << sync_endl;
+//                	Square ksq = pos.square<KING>(us);
+//                	 Bitboard b = attacks_bb<KING>(ksq) &   ~pos.pieces();
+//                	      Bitboard bb = pos.pieces(~us, QUEEN, KING);
+//                	      Square s = us == WHITE ? lsb(bb) : msb(bb);
+//                	      b&= ~PseudoAttacks[KING][s];
+//                	    	sync_cout << Bitboards::pretty(b) << sync_endl;
                 }
                 if (!ss->lookForstaleMate || bestValue > -500 || !givesCheck)
                 {
@@ -1172,6 +1188,9 @@ moves_loop:  // When in check, search starts here
             	extension = 2;
         }
 
+
+        if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
+        	sync_cout << "analyzing move " << UCIEngine::move(move, false) << sync_endl;
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck, &tt);
         thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
@@ -1246,6 +1265,13 @@ moves_loop:  // When in check, search starts here
             value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
             ss->reduction = 0;
 
+            if (//pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
+                           		 pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && ss->lookForstaleMate && givesCheck)
+            {
+            	sync_cout << "move " << UCIEngine::move(move,false) << " value " << value << " searched with depth " << d << " alpha " << alpha << " beta " << beta << sync_endl;
+            	abort();
+            }
+
 
             // Do a full-depth search when reduced LMR search fails high
             if (value > alpha && d < newDepth)
@@ -1294,6 +1320,9 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         pos.undo_move(move);
+
+        if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
+                	sync_cout << "analyzed move " << UCIEngine::move(move, false) << " value is " << value << " newdepth " << newDepth << sync_endl;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1377,6 +1406,8 @@ moves_loop:  // When in check, search starts here
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
                     ss->cutoffCnt += (extension < 2) || PvNode;
                     assert(value >= beta);  // Fail high
+                    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
+                                    	sync_cout << "fail high " << UCIEngine::move(bestMove, false) << " ret is " << bestValue << sync_endl;
                     break;
                 }
                 else
@@ -1414,6 +1445,8 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") ==0)
+    	sync_cout << "stale movecount " << moveCount << " excludedMove is " << bool(excludedMove) << " incheck " << ss->inCheck << sync_endl;
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
