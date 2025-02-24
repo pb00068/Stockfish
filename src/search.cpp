@@ -622,9 +622,6 @@ Value Search::Worker::search(
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
-    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-      	sync_cout << "Must be stale!!!!" << sync_endl;
-
     // Check for the available remaining time
     if (is_mainthread())
         main_manager()->check_time(*thisThread);
@@ -823,11 +820,7 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 446 - 303 * depth * depth)
-    {
-    	if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-    	    	      	sync_cout << "RAZORED!!!!" << sync_endl;
         return qsearch<NonPV>(pos, ss, alpha, beta);
-    }
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -1056,17 +1049,7 @@ moves_loop:  // When in check, search starts here
                     if (futilityValue <= alpha)
                         continue;
                 }
-                if (//pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
-                		 pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0)
-                {
-                	sync_cout << pos << " detect: " << ss->lookForstaleMate << "  mc " << moveCount << " move " << UCIEngine::move(move,false) << (givesCheck ? "+":"" )<< " depth " << depth << "  alpha " << alpha << " beta " << beta << sync_endl;
-//                	Square ksq = pos.square<KING>(us);
-//                	 Bitboard b = attacks_bb<KING>(ksq) &   ~pos.pieces();
-//                	      Bitboard bb = pos.pieces(~us, QUEEN, KING);
-//                	      Square s = us == WHITE ? lsb(bb) : msb(bb);
-//                	      b&= ~PseudoAttacks[KING][s];
-//                	    	sync_cout << Bitboards::pretty(b) << sync_endl;
-                }
+
                 if (!ss->lookForstaleMate || bestValue > -500 || !givesCheck)
                 {
                 // SEE based pruning for captures and checks
@@ -1178,13 +1161,9 @@ moves_loop:  // When in check, search starts here
                 else if (cutNode)
                     extension = -2;
             }
-            else if (givesCheck && ss->lookForstaleMate && bestValue < -500 && depth < 4 && !pos.see_ge(move))
-            	extension = 2;
         }
 
 
-        if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
-        	sync_cout << "analyzing move " << UCIEngine::move(move, false) << sync_endl;
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck, &tt);
         thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
@@ -1259,13 +1238,6 @@ moves_loop:  // When in check, search starts here
             value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
             ss->reduction = 0;
 
-            if (//pos.fen().compare("3r4/5QBk/Pqr3p1/1N3pPp/1P3P1P/8/6R1/R4K2 b - - 0 5") == 0 || pos.fen().compare("3r4/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/2R2K2 b - - 0 6") == 0 ||
-                           		 pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && ss->lookForstaleMate && givesCheck)
-            {
-            	sync_cout << "move " << UCIEngine::move(move,false) << " value " << value << " searched with depth " << d << " alpha " << alpha << " beta " << beta << sync_endl;
-            	abort();
-            }
-
 
             // Do a full-depth search when reduced LMR search fails high
             if (value > alpha && d < newDepth)
@@ -1314,9 +1286,6 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         pos.undo_move(move);
-
-        if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
-                	sync_cout << "analyzed move " << UCIEngine::move(move, false) << " value is " << value << " newdepth " << newDepth << sync_endl;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1400,8 +1369,6 @@ moves_loop:  // When in check, search starts here
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
                     ss->cutoffCnt += (extension < 2) || PvNode;
                     assert(value >= beta);  // Fail high
-                    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0 && (ss-1)->lookForstaleMate)
-                                    	sync_cout << "fail high " << UCIEngine::move(bestMove, false) << " ret is " << bestValue << sync_endl;
                     break;
                 }
                 else
@@ -1432,15 +1399,13 @@ moves_loop:  // When in check, search starts here
     // must be a mate or a stalemate. If we are in a singular extension search then
     // return a fail low score.
 
-    assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
+    assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos, true).size());
 
     // Adjust best value for fail high cases at non-pv nodes
     if (!PvNode && bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
-    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") ==0)
-    	sync_cout << "stale movecount " << moveCount << " excludedMove is " << bool(excludedMove) << " incheck " << ss->inCheck << sync_endl;
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
@@ -1536,11 +1501,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
         alpha = value_draw(this->nodes);
         if (alpha >= beta)
-        {
-        	  if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-        		    sync_cout << "Erwuschen " << sync_endl;
             return alpha;
-        }
     }
 
     Move      pv[MAX_PLY + 1];
@@ -1573,9 +1534,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
         return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
 
-    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-           sync_cout << "Now im here sqsearch " << sync_endl;
-
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     // Step 3. Transposition table lookup
@@ -1591,11 +1549,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!PvNode && ttData.depth >= DEPTH_QS
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
-    {
-    	if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-    	           sync_cout << "Early TT cutoff " << sync_endl;
         return ttData.value;
-    }
 
     // Step 4. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
@@ -1636,8 +1590,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                                DEPTH_UNSEARCHED, Move::none(), unadjustedStaticEval,
                                tt.generation());
-            if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-                	           sync_cout << "Stand pat" << sync_endl;
             return bestValue;
         }
 
@@ -1753,17 +1705,21 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         }
     }
 
-    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0)
-        	           sync_cout << "We are here , no moves and bestValue == -VALUE_INFINITE " << (bestValue == -VALUE_INFINITE) << " bestval is " << bestValue <<  sync_endl;
-
-    // Step 9. Check for mate
-    // All legal moves have been searched. A special case: no legal moves
-    // if we are in check it is checkmate else stale mate
-    if (moveCount == 0 && !MoveList<LEGAL>(pos).size())
+     // Step 9. Check for mate
+    // All legal moves have been searched. A special case: if we are
+    // in check and no legal moves were found, it is checkmate.
+    if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
-        assert(!MoveList<LEGAL>(pos).size());
-        return ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;  // Plies to mate from the root
+        assert(!MoveList<LEGAL>(pos, true).size());
+        return mated_in(ss->ply);  // Plies to mate from the root
     }
+
+    else if (!ss->inCheck && moveCount == 0 && (!ttData.move || !pos.legal(ttData.move)))
+    {
+       if (!MoveList<LEGAL>(pos, true).size()) // stale mate
+            return VALUE_DRAW;
+    }
+
 
     if (!is_decisive(bestValue) && bestValue >= beta)
         bestValue = (3 * bestValue + beta) / 4;
@@ -2046,7 +2002,7 @@ void syzygy_extend_pv(const OptionsMap&         options,
         Move& pvMove = rootMove.pv[ply];
 
         RootMoves legalMoves;
-        for (const auto& m : MoveList<LEGAL>(pos))
+        for (const auto& m : MoveList<LEGAL>(pos, false))
             legalMoves.emplace_back(m);
 
         Tablebases::Config config = Tablebases::rank_root_moves(options, pos, legalMoves);
@@ -2086,14 +2042,14 @@ void syzygy_extend_pv(const OptionsMap&         options,
             break;
 
         RootMoves legalMoves;
-        for (const auto& m : MoveList<LEGAL>(pos))
+        for (const auto& m : MoveList<LEGAL>(pos, false))
         {
             auto&     rm = legalMoves.emplace_back(m);
             StateInfo tmpSI;
             pos.do_move(m, tmpSI);
             // Give a score of each move to break DTZ ties restricting opponent mobility,
             // but not giving the opponent a capture.
-            for (const auto& mOpp : MoveList<LEGAL>(pos))
+            for (const auto& mOpp : MoveList<LEGAL>(pos, false))
                 rm.tbRank -= pos.capture(mOpp) ? 100 : 1;
             pos.undo_move(m);
         }
@@ -2236,7 +2192,7 @@ bool RootMove::extract_ponder_from_tt(const TranspositionTable& tt, Position& po
     auto [ttHit, ttData, ttWriter] = tt.probe(pos.key());
     if (ttHit)
     {
-        if (MoveList<LEGAL>(pos).contains(ttData.move))
+        if (MoveList<LEGAL>(pos, false).contains(ttData.move))
             pv.push_back(ttData.move);
     }
 

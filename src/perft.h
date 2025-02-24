@@ -39,14 +39,14 @@ uint64_t perft(Position& pos, Depth depth) {
     uint64_t   cnt, nodes = 0;
     const bool leaf = (depth == 2);
 
-    for (const auto& m : MoveList<LEGAL>(pos))
+    for (const auto& m : MoveList<LEGAL>(pos, false))
     {
         if (Root && depth <= 1)
             cnt = 1, nodes++;
         else
         {
             pos.do_move(m, st);
-            cnt = leaf ? MoveList<LEGAL>(pos).size() : perft<false>(pos, depth - 1);
+            cnt = leaf ? MoveList<LEGAL>(pos, false).size() : perft<false>(pos, depth - 1);
             nodes += cnt;
             pos.undo_move(m);
         }

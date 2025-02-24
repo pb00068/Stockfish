@@ -577,8 +577,8 @@ bool Position::pseudo_legal(const Move m) const {
     // Use a slower but simpler function for uncommon cases
     // yet we skip the legality check of MoveList<LEGAL>().
     if (m.type_of() != NORMAL)
-        return checkers() ? MoveList<EVASIONS>(*this).contains(m)
-                          : MoveList<NON_EVASIONS>(*this).contains(m);
+        return checkers() ? MoveList<EVASIONS>(*this, false).contains(m)
+                          : MoveList<NON_EVASIONS>(*this, false).contains(m);
 
     // Is not a promotion, so the promotion piece must be empty
     assert(m.promotion_type() - KNIGHT == NO_PIECE_TYPE);
@@ -1162,7 +1162,7 @@ bool Position::see_ge(Move m, int threshold) const {
 // or by repetition. It does not detect stalemates.
 bool Position::is_draw(int ply) const {
 
-    if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
+    if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this, true).size()))
         return true;
 
     return is_repetition(ply);

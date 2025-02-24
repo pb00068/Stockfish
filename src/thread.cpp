@@ -250,7 +250,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     increaseDepth = true;
 
     Search::RootMoves rootMoves;
-    const auto        legalmoves = MoveList<LEGAL>(pos);
+    const auto        legalmoves = MoveList<LEGAL>(pos, false);
 
     for (const auto& uciMove : limits.searchmoves)
     {
