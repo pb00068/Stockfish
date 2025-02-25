@@ -256,24 +256,17 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList, bool first) {
     ExtMove* cur    = moveList;
     ExtMove* start    = moveList;
 
-    redo_all:
-
     moveList =
       pos.checkers() ? generate<EVASIONS>(pos, moveList, first) : generate<NON_EVASIONS>(pos, moveList, first);
     while (cur != moveList)
         if (((pinned & cur->from_sq()) || cur->from_sq() == ksq || cur->type_of() == EN_PASSANT)
             && !pos.legal(*cur))
-        {
-        	 if (first) {
-        		 first = false;
-        		 moveList = start;
-        		 goto redo_all;
-        	 }
             *cur = *(--moveList);
-        }
         else
             ++cur;
 
+    if (first && cur == start) // first ones where not legal
+         return generate<LEGAL>(pos, moveList, false);
     return moveList;
 }
 
