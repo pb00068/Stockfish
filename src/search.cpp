@@ -1711,7 +1711,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         }
     }
 
-     // Step 9. Check for mate
+    // Step 9. Check for mate
     // All legal moves have been searched. A special case: if we are
     // in check and no legal moves were found, it is checkmate.
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
