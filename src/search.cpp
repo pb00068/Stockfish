@@ -635,7 +635,6 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
-    ss->consecutiveChecks = ss->inCheck ? (ss-2)->consecutiveChecks++ : 0;
     ss->diversity = true;
 
     // Check for the available remaining time
@@ -1061,8 +1060,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
-                // consecutiveChecks > 4 could be stalemate (or draw by repetition)
-                if ((ss-1)->consecutiveChecks < 1 && !pos.see_ge(move, -157 * depth - seeHist))
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -1) && !pos.see_ge(move, -157 * depth - seeHist))
                     continue;
             }
             else
@@ -1739,9 +1737,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
-    else if (!ss->inCheck && moveCount == 0 && pos.non_pawn_material(pos.side_to_move()) < 2 * QueenValue && !(ss-2)->diversity)
+    else if (!ss->inCheck && moveCount == 0 && pos.non_pawn_material(pos.side_to_move()) < 2 * QueenValue)
     {
-       if (!MoveList<LEGAL>(pos, true).size()) // stale mate
+       //dbg_hit_on((ss-2)->diversity, 0); ~83%
+       if ( !(ss-2)->diversity && !MoveList<LEGAL>(pos, true).size()) // stale mate
          return VALUE_DRAW;
     }
 
