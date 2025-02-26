@@ -70,12 +70,14 @@ struct Stack {
     Value                       staticEval;
     int                         statScore;
     int                         moveCount;
+    int                         consequentChecks;
     bool                        inCheck;
     bool                        ttPv;
     bool                        ttHit;
     int                         cutoffCnt;
     int                         reduction;
     bool                        isTTMove;
+    bool                        diversity;
 };
 
 

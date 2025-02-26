@@ -587,6 +587,18 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0) {
+    	sync_cout << "info search stalemate pos ss-2 diversisty is " << (ss-2)->diversity << "   mcount ss-2 " << (ss-2)->moveCount << " depth " << depth << sync_endl;
+    }
+
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0) {
+   	    	sync_cout << "info search pre-stalemate pos alpha " << alpha << " depth " << depth << sync_endl;
+   	   }
+
+   	   if (pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0) {
+   	    	sync_cout << "info search pre-pre-stalemate pos  alpha " << alpha << " depth " << depth << sync_endl;
+   	   }
+
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
@@ -635,6 +647,8 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->consequentChecks = ss->inCheck ? (ss-2)->consequentChecks++ : 0;
+    ss->diversity = true;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -829,10 +843,14 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 200)
         depth--;
 
+
+    if (!PvNode && alpha < -120 && ss->ttPv && !(ss-1)->ttPv)
+       ss->diversity=0;
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
-    if (!PvNode && eval < alpha - 446 - 303 * depth * depth)
+    if (!PvNode && eval < alpha - 446 - 303 * depth * depth && (ss-2)->diversity)
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
@@ -843,6 +861,15 @@ Value Search::Worker::search(
              >= beta
         && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval))
         return beta + (eval - beta) / 3;
+
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0) {
+   	    	sync_cout << "info prenull  pre-stalemate pos alpha " << alpha << sync_endl;
+   	   }
+
+   	   if (pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0) {
+   	    	sync_cout << "info prenull pre-pre-stalemate pos  alpha " << alpha << sync_endl;
+   	   }
+
 
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
@@ -956,6 +983,15 @@ Value Search::Worker::search(
         }
     }
 
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0) {
+   	    	sync_cout << "info move loop entry pre-stalemate pos alpha " << alpha << sync_endl;
+   	   }
+
+   	   if (pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0) {
+   	    	sync_cout << "info move loop entry  pre-pre-stalemate pos  alpha " << alpha << sync_endl;
+   	   }
+
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
@@ -1055,7 +1091,8 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
-                if (!pos.see_ge(move, -157 * depth - seeHist))
+                // consequentChecks > 4 could be stalemate (or draw by repetition)
+                if ((ss-1)->consequentChecks < 4 && !pos.see_ge(move, -157 * depth - seeHist))
                     continue;
             }
             else
@@ -1400,6 +1437,19 @@ moves_loop:  // When in check, search starts here
         }
     }
 
+    ss->diversity = ss->inCheck ? true : mp.diversity();
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0) {
+	    	sync_cout << "info after moves pre-stalemate ss-1 pos diversity is " << (ss-1)->diversity << " mc " << moveCount << " bestval " << bestValue << " alpha " << alpha << sync_endl;
+	   }
+
+	   if (pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0) {
+	    	sync_cout << "info after moves pre-pre-stalemate pos diversity is " << mp.diversity() << " mc " << moveCount << " bestval " << bestValue << " alpha " << alpha <<
+	    			" condition " << (!ss->diversity && alpha < -120 && !(ss-1)->ttPv) << sync_endl;
+	   }
+
+
+    if (!ss->diversity && alpha < -120 && !(ss-1)->ttPv)
+    	ss->ttPv=true;
     // Step 21. Check for mate and stalemate
     // All legal moves have been searched and if there are no legal moves, it
     // must be a mate or a stalemate. If we are in a singular extension search then
@@ -1414,6 +1464,9 @@ moves_loop:  // When in check, search starts here
 
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
+
+    if (bestValue == VALUE_DRAW && !moveCount  && !excludedMove)
+                 sync_cout << "stalemated detect in search at depth " << depth << sync_endl;
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1501,6 +1554,18 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     assert(alpha >= -VALUE_INFINITE && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
+
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5R2/3R1K2 b - - 0 8") == 0) {
+    	sync_cout << "info qsearch stalemate pos ss-2 diversisty is " << (ss-2)->diversity << "   mcount ss-2 " << (ss-2)->moveCount  << " alpha is " << alpha << " isdraw " << (alpha < VALUE_DRAW && pos.upcoming_repetition(ss->ply)) << sync_endl;
+    }
+
+    if (pos.fen().compare("8/5QBk/P5p1/1N3pPp/1P3P1P/8/5qR1/3R1K2 w - - 1 8") == 0) {
+   	    	sync_cout << "info qsearch pre-stalemate pos alpha " << alpha <<  sync_endl;
+   	   }
+
+   	   if (pos.fen().compare("8/5QBk/Pq4p1/1N3pPp/1P3P1P/8/6R1/3R1K2 b - - 0 7") == 0) {
+   	    	sync_cout << "info qsearch pre-pre-stalemate pos  alpha " << alpha <<  sync_endl;
+   	   }
 
     // Check if we have an upcoming move that draws by repetition
     if (alpha < VALUE_DRAW && pos.upcoming_repetition(ss->ply))
@@ -1723,7 +1788,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     else if (!ss->inCheck && moveCount == 0 && (!ttData.move || !pos.legal(ttData.move)) && pos.non_pawn_material(pos.side_to_move()) < 2 * QueenValue)
     {
        if (!MoveList<LEGAL>(pos, true).size()) // stale mate
+       {
+      	 sync_cout << "stalemate detected in qsearch" << sync_endl;
             return VALUE_DRAW;
+       }
     }
 
 

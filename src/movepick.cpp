@@ -143,6 +143,13 @@ void MovePicker::score() {
     }
 
     for (auto& m : *this)
+    {
+        Square  from = m.from_sq();
+        if (from == from1 || from1 == SQ_NONE)
+            from1 = from;
+        else if (from == from2 || from2 == SQ_NONE)
+            from2 = from;
+        else from3 = from;
         if constexpr (Type == CAPTURES)
             m.value =
               7 * int(PieceValue[pos.piece_on(m.to_sq())])
@@ -152,7 +159,6 @@ void MovePicker::score() {
         {
             Piece     pc   = pos.moved_piece(m);
             PieceType pt   = type_of(pc);
-            Square    from = m.from_sq();
             Square    to   = m.to_sq();
 
             // histories
@@ -193,6 +199,7 @@ void MovePicker::score() {
                         + (*continuationHistory[0])[pos.moved_piece(m)][m.to_sq()]
                         + (*pawnHistory)[pawn_structure_index(pos)][pos.moved_piece(m)][m.to_sq()];
         }
+    }
 }
 
 // Returns the next move satisfying a predicate function.
@@ -230,6 +237,8 @@ top:
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
         endMoves             = generate<CAPTURES>(pos, cur, false);
+        from1 = ttMove ? ttMove.from_sq() : SQ_NONE;
+        from2 = from3 = SQ_NONE;
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
@@ -316,5 +325,7 @@ top:
 }
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
+
+bool MovePicker::diversity() { return from3 != SQ_NONE; }
 
 }  // namespace Stockfish

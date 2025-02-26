@@ -265,7 +265,7 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList, bool first) {
         else
             ++cur;
 
-    if (first && cur == start) // first ones where not legal
+    if (first && cur == start) // first ones were not legal
          return generate<LEGAL>(pos, moveList, false);
     return moveList;
 }
