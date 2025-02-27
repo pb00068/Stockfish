@@ -1055,7 +1055,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 36, -153 * depth, 134 * depth);
-                if (!pos.see_ge(move, -157 * depth - seeHist))
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -1) && !pos.see_ge(move, -157 * depth - seeHist))
                     continue;
             }
             else
@@ -1718,6 +1718,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
+    }
+    else if (!ss->inCheck && moveCount == 0)
+    {
+       if (!MoveList<ANYLEGALQUIET>(pos).size()) // stalemate
+         return VALUE_DRAW;
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)

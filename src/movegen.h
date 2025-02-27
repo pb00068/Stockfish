@@ -33,7 +33,9 @@ enum GenType {
     QUIETS,
     EVASIONS,
     NON_EVASIONS,
-    LEGAL
+    LEGAL,
+		ANYQUIET,
+    ANYLEGALQUIET
 };
 
 struct ExtMove: public Move {

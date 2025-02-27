@@ -36,7 +36,7 @@ ExtMove* make_promotions(ExtMove* moveList, [[maybe_unused]] Square to) {
     if constexpr (Type == CAPTURES || all)
         *moveList++ = Move::make<PROMOTION>(to - D, to, QUEEN);
 
-    if constexpr ((Type == CAPTURES && Enemy) || (Type == QUIETS && !Enemy) || all)
+    if constexpr ((Type == CAPTURES && Enemy) || ((Type == QUIETS || Type == ANYQUIET) && !Enemy) || all)
     {
         *moveList++ = Move::make<PROMOTION>(to - D, to, ROOK);
         *moveList++ = Move::make<PROMOTION>(to - D, to, BISHOP);
@@ -181,13 +181,25 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces(Us)
                : Type == CAPTURES     ? pos.pieces(~Us)
-                                      : ~pos.pieces();  // QUIETS
+                                      : ~pos.pieces();  // QUIETS, ANYQUIET
+
+        ExtMove* p = moveList;
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
+        if (Type == ANYQUIET && p != moveList)
+              return moveList;
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
+        if (Type == ANYQUIET && p != moveList)
+              return moveList;
         moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
+        if (Type == ANYQUIET && p != moveList)
+              return moveList;
         moveList = generate_moves<Us, ROOK>(pos, moveList, target);
+        if (Type == ANYQUIET && p != moveList)
+               return moveList;
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
+        if (Type == ANYQUIET && p != moveList)
+               return moveList;
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
@@ -195,7 +207,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     while (b)
         *moveList++ = Move(ksq, pop_lsb(b));
 
-    if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
+    if ((Type == QUIETS || Type == ANYQUIET || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
             if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
@@ -208,6 +220,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
 
 // <CAPTURES>     Generates all pseudo-legal captures plus queen promotions
 // <QUIETS>       Generates all pseudo-legal non-captures and underpromotions
+// <ANYQUIET>     Generates first pseudo-legal non-captures and underpromotions
 // <EVASIONS>     Generates all pseudo-legal check evasions
 // <NON_EVASIONS> Generates all pseudo-legal captures and non-captures
 //
@@ -227,6 +240,7 @@ ExtMove* generate(const Position& pos, ExtMove* moveList) {
 // Explicit template instantiations
 template ExtMove* generate<CAPTURES>(const Position&, ExtMove*);
 template ExtMove* generate<QUIETS>(const Position&, ExtMove*);
+template ExtMove* generate<ANYQUIET>(const Position&, ExtMove*);
 template ExtMove* generate<EVASIONS>(const Position&, ExtMove*);
 template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
 
@@ -249,6 +263,33 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
             *cur = *(--moveList);
         else
             ++cur;
+
+    return moveList;
+}
+
+// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position that does not check
+// we already know that there no exists any legal capture in this position
+
+template<>
+ExtMove* generate<ANYLEGALQUIET>(const Position& pos, ExtMove* moveList) {
+
+    Color    us     = pos.side_to_move();
+    Bitboard pinned = pos.blockers_for_king(us) & pos.pieces(us);
+    Square   ksq    = pos.square<KING>(us);
+    ExtMove* cur    = moveList;
+    ExtMove* start    = moveList;
+
+
+    moveList = generate<ANYQUIET>(pos, moveList);
+    while (cur != moveList)
+        if (((pinned & cur->from_sq()) || cur->from_sq() == ksq || cur->type_of() == EN_PASSANT)
+            && !pos.legal(*cur))
+            *cur = *(--moveList);
+        else
+            ++cur;
+
+    if (cur == start) // first ones were not legal, fall back to entire generation
+         return generate<LEGAL>(pos, moveList);
 
     return moveList;
 }
