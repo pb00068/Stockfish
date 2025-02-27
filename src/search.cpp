@@ -837,7 +837,7 @@ Value Search::Worker::search(
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
-    if (!ss->ttPv && depth < 14
+    if (!ss->ttPv  && ttData.move && depth < 14
         && eval - futility_margin(depth, cutNode && !ss->ttHit, improving, opponentWorsening)
                - (ss - 1)->statScore / 326 + 37 - std::abs(correctionValue) / 132821
              >= beta
@@ -975,6 +975,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int kingMoves = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1011,6 +1012,7 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
+        kingMoves += type_of(movedPiece) == KING;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1086,14 +1088,14 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && !is_decisive(bestValue)
                         && !is_win(futilityValue))
                         bestValue = futilityValue;
-                    continue;
+                          continue;
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
-                    continue;
+                   continue;
             }
         }
 
@@ -1116,7 +1118,7 @@ moves_loop:  // When in check, search starts here
                 && is_valid(ttData.value) && !is_decisive(ttData.value)
                 && (ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 3)
             {
-                Value singularBeta  = ttData.value - (55 + 81 * (ss->ttPv && !PvNode)) * depth / 58;
+                Value singularBeta  = ttData.value - (55 + 81 * (ss->ttPv  && ttData.move && !PvNode)) * depth / 58;
                 Depth singularDepth = newDepth / 2;
 
                 ss->excludedMove = move;
@@ -1130,7 +1132,7 @@ moves_loop:  // When in check, search starts here
                     int corrValAdj2  = std::abs(correctionValue) / 253680;
                     int doubleMargin = 267 * PvNode - 181 * !ttCapture - corrValAdj1;
                     int tripleMargin =
-                      96 + 282 * PvNode - 250 * !ttCapture + 103 * ss->ttPv - corrValAdj2;
+                      96 + 282 * PvNode - 250 * !ttCapture + 103 * (ss->ttPv  && ttData.move) - corrValAdj2;
 
                     extension = 1 + (value < singularBeta - doubleMargin)
                               + (value < singularBeta - tripleMargin);
@@ -1411,6 +1413,10 @@ moves_loop:  // When in check, search starts here
     if (!PvNode && bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
+
+
+    if (depth >=4 && !ss->inCheck && !excludedMove && !bestMove && !kingMoves && !mp.movesleft())
+          ss->ttPv = true;
 
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
@@ -1719,13 +1725,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
     }
-    else if (!ss->inCheck && moveCount == 0)
+    else if (!ss->inCheck && moveCount == 0 && (((ss-2)->ttPv && !(ss-2)->isTTMove) || ((ss-4)->ttPv && !(ss-4)->isTTMove) ) && !MoveList<ANYLEGALQUIET>(pos).size())
     {
-       if (!MoveList<ANYLEGALQUIET>(pos).size()) // stalemate
-         return VALUE_DRAW;
+         bestValue = VALUE_DRAW;
     }
-
-    if (!is_decisive(bestValue) && bestValue > beta)
+    else if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
 
     // Save gathered info in transposition table. The static evaluation

@@ -317,4 +317,6 @@ top:
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
+bool MovePicker::movesleft() { return cur < endMoves && skipQuiets==false; }
+
 }  // namespace Stockfish
