@@ -76,7 +76,6 @@ struct Stack {
     int                         cutoffCnt;
     int                         reduction;
     bool                        isTTMove;
-    Move                        ttMove;
 };
 
 
