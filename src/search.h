@@ -71,7 +71,7 @@ struct Stack {
     int                         statScore;
     int                         moveCount;
     bool                        inCheck;
-    bool                        ttPv;
+    bool                        ttPv; // if true && ttMove != 0 -> pos is/was in PV      if true && ttMove == Mone:none() -> pos with very weak mobility
     bool                        ttHit;
     int                         cutoffCnt;
     int                         reduction;

@@ -64,7 +64,7 @@ ExtMove* generate_pawn_moves(const Position& pos, ExtMove* moveList, Bitboard ta
     Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & ~TRank7BB;
 
     // Single and double pawn pushes, no promotions
-    if constexpr (Type != CAPTURES)
+    if constexpr (Type != CAPTURES && Type != ANYQUIET)
     {
         Bitboard b1 = shift<Up>(pawnsNotOn7) & emptySquares;
         Bitboard b2 = shift<Up>(b1 & TRank3BB) & emptySquares;
@@ -267,8 +267,9 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
     return moveList;
 }
 
-// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position that does not check
-// we already know that there no exists any legal capture in this position
+// generate<ANYLEGALQUIET> generates in first place a bunch of legal quiet moves (except pawn pushes) in the given position
+// (we already know that there no exists any legal capture in this position)
+// In case that first bunch of quiet moves are all illegal, fall back to generation of all legal moves
 
 template<>
 ExtMove* generate<ANYLEGALQUIET>(const Position& pos, ExtMove* moveList) {
@@ -278,7 +279,7 @@ ExtMove* generate<ANYLEGALQUIET>(const Position& pos, ExtMove* moveList) {
     Square   ksq    = pos.square<KING>(us);
     ExtMove* cur    = moveList;
     ExtMove* start    = moveList;
-
+    assert(!pos.checkers());
 
     moveList = generate<ANYQUIET>(pos, moveList);
     while (cur != moveList)

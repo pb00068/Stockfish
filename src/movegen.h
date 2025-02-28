@@ -34,7 +34,7 @@ enum GenType {
     EVASIONS,
     NON_EVASIONS,
     LEGAL,
-		ANYQUIET,
+    ANYQUIET, // any quiet move except pawn pushes
     ANYLEGALQUIET
 };
 
