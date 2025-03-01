@@ -152,7 +152,6 @@ void MovePicker::score() {
               + (*captureHistory)[pos.moved_piece(m)][m.to_sq()][type_of(pos.piece_on(m.to_sq()))];
 
         else if constexpr (Type == QUIETS)
-        {
             Piece     pc   = pos.moved_piece(m);
             PieceType pt   = type_of(pc);
             Square    from = m.from_sq();
@@ -319,15 +318,5 @@ top:
 }
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
-
-int MovePicker::remainingQuiets() {
-   if (!skipQuiets)
-       return 0;
-   if (stage == GOOD_QUIET)
-       return (endMoves - cur) + (endBadQuiets - beginBadQuiets);
-   else if (stage == BAD_QUIET)
-       return endMoves - cur;
-   return 0;
-}
 
 }  // namespace Stockfish
