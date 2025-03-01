@@ -907,7 +907,7 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory, ss->generatedMoves);
         Depth      probCutDepth = std::max(depth - 4, 0);
 
         while ((move = mp.next_move()) != Move::none())
@@ -968,9 +968,10 @@ moves_loop:  // When in check, search starts here
       (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
       (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
 
+    ss->generatedMoves = 0;
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, ss->generatedMoves);
 
     value = bestValue;
 
@@ -987,7 +988,10 @@ moves_loop:  // When in check, search starts here
 
         // Check for legality
         if (!pos.legal(move))
+        {
+            ss->generatedMoves--;
             continue;
+        }
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
@@ -1055,8 +1059,10 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -1) &&
-                    !pos.see_ge(move, -154 * depth - seeHist))
+                // in a checking serie against defeat we might aim for a stalemate by throwing all at our opp. king
+                // in this case we must disable this pruning because due to its recursive nature we will never reach enough depth
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -250 && givesCheck)
+                    && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
             else
@@ -1614,8 +1620,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
+    ss->generatedMoves = 0;
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, ss->generatedMoves);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1624,7 +1631,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         assert(move.is_ok());
 
         if (!pos.legal(move))
-            continue;
+        {
+           ss->generatedMoves--;
+           continue;
+        }
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
@@ -1720,10 +1730,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
     }
-    else if (!ss->inCheck && moveCount == 0)
+    else if (!ss->inCheck && moveCount == 0 && (ss-2)->generatedMoves < 20) // with high mobility in previous position it's almost impossible to reach stalemate within 2 halfmoves
     {
-       if (!MoveList<ANYLEGALQUIET>(pos).size()) // stalemate
-         return VALUE_DRAW;
+       if (!((pos.side_to_move() == WHITE ? pos.pieces(WHITE, PAWN) << 8 : pos.pieces(BLACK, PAWN) >> 8) & ~pos.pieces()) // inline check for pawn push mobility
+           && !MoveList<ANYLEGALQUIET>(pos).size())
+         return VALUE_DRAW; // stalemate !
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)

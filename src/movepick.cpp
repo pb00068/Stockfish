@@ -86,7 +86,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl, int &generatedMoves) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -97,6 +97,7 @@ MovePicker::MovePicker(const Position&              p,
     depth(d),
     ply(pl) {
 
+    gen = &generatedMoves;
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
@@ -106,12 +107,13 @@ MovePicker::MovePicker(const Position&              p,
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph, int &generatedMoves) :
     pos(p),
     captureHistory(cph),
     ttMove(ttm),
     threshold(th) {
     assert(!pos.checkers());
+    gen = &generatedMoves;
 
     stage = PROBCUT_TT
           + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
@@ -142,6 +144,7 @@ void MovePicker::score() {
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
     }
 
+    *gen += end() - begin();
     for (auto& m : *this)
         if constexpr (Type == CAPTURES)
             m.value =
@@ -316,5 +319,15 @@ top:
 }
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
+
+int MovePicker::remainingQuiets() {
+   if (!skipQuiets)
+       return 0;
+   if (stage == GOOD_QUIET)
+       return (endMoves - cur) + (endBadQuiets - beginBadQuiets);
+   else if (stage == BAD_QUIET)
+       return endMoves - cur;
+   return 0;
+}
 
 }  // namespace Stockfish

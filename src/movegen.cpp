@@ -184,10 +184,9 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
                                       : ~pos.pieces();  // QUIETS, ANYQUIET
 
         ExtMove* p = moveList;
+        if (Type != ANYQUIET)
+             moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
 
-        moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
-        if (Type == ANYQUIET && p != moveList)
-              return moveList;
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         if (Type == ANYQUIET && p != moveList)
               return moveList;
@@ -267,8 +266,8 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
     return moveList;
 }
 
-// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position
-// N.B.: we already know that there no exists any legal capture in this position
+// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position except pawn pushes
+// N.B.: we already know/assume that there no exists any legal capture in this position
 
 template<>
 ExtMove* generate<ANYLEGALQUIET>(const Position& pos, ExtMove* moveList) {
