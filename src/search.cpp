@@ -1420,7 +1420,18 @@ moves_loop:  // When in check, search starts here
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
     if (!moveCount)
-        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
+    {
+       if (excludedMove)
+          bestValue = alpha;
+       else if (ss->inCheck )
+           bestValue = mated_in(ss->ply);
+       else // stalemate
+       {
+           bestValue = VALUE_DRAW;
+           ttWriter.write(posKey, VALUE_DRAW,  ss->ttPv, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
+       }
+    }
+
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1734,7 +1745,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
        if (!((pos.side_to_move() == WHITE ? pos.pieces(WHITE, PAWN) << 8 : pos.pieces(BLACK, PAWN) >> 8) & ~pos.pieces()) // inline check for pawn push mobility
            && !MoveList<ANYLEGALQUIET>(pos).size())
+       {
+         ttWriter.write(posKey, VALUE_DRAW, pvHit, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
          return VALUE_DRAW; // stalemate !
+       }
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)
