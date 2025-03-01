@@ -1055,7 +1055,10 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!pos.see_ge(move, -154 * depth - seeHist))
+                // in a checking serie against defeat we might aim for a stalemate by throwing all at our opp. king
+                // in this case we must disable this pruning because due to its recursive nature we will never reach enough depth
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -1)
+                 && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
             else
@@ -1413,7 +1416,18 @@ moves_loop:  // When in check, search starts here
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
     if (!moveCount)
-        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
+        {
+           if (excludedMove)
+              bestValue = alpha;
+           else if (ss->inCheck )
+               bestValue = mated_in(ss->ply);
+           else // stalemate
+           {
+               bestValue = VALUE_DRAW;
+               ttWriter.write(posKey, VALUE_DRAW,  true, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
+               return VALUE_DRAW;
+           }
+        }
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1550,6 +1564,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.move  = ttHit ? ttData.move : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
+
+
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && ttData.depth >= DEPTH_QS
@@ -1718,6 +1734,12 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
+    }
+
+    if (thisThread->nodes % 12 == 0 && !moveCount && MoveList<LEGAL>(pos).size() == 0 )
+    {
+    	ttWriter.write(posKey, VALUE_DRAW,  true, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
+    	return VALUE_DRAW;
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)
