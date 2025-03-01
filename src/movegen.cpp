@@ -267,30 +267,34 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
     return moveList;
 }
 
-// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position that does not check
-// we already know that there no exists any legal capture in this position
+// generate<ANYLEGALQUIET> generates any  legal quiet moves in the given position
+// N.B.: we already know that there no exists any legal capture in this position
 
 template<>
 ExtMove* generate<ANYLEGALQUIET>(const Position& pos, ExtMove* moveList) {
+    assert(!pos.checkers());
+    ExtMove* cur    = moveList;
+    moveList = generate<ANYQUIET>(pos, moveList);
+
+    if (cur == moveList)
+       return moveList; // no legal moves
 
     Color    us     = pos.side_to_move();
     Bitboard pinned = pos.blockers_for_king(us) & pos.pieces(us);
     Square   ksq    = pos.square<KING>(us);
-    ExtMove* cur    = moveList;
-    ExtMove* start    = moveList;
-
-
-    moveList = generate<ANYQUIET>(pos, moveList);
+    int found = moveList - cur;
     while (cur != moveList)
         if (((pinned & cur->from_sq()) || cur->from_sq() == ksq || cur->type_of() == EN_PASSANT)
             && !pos.legal(*cur))
+        {
             *cur = *(--moveList);
+            found--;
+        }
         else
             ++cur;
 
-    if (cur == start) // first ones were not legal, fall back to entire generation
+    if (!found) // first ones were not legal, fall back to entire generation
          return generate<LEGAL>(pos, moveList);
-
     return moveList;
 }
 
