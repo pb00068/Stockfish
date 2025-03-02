@@ -1057,7 +1057,7 @@ moves_loop:  // When in check, search starts here
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate by throwing all at our opp. king
                 // in this case we must disable this pruning because due to its recursive nature we will never reach enough depth
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -1)
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -500)
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1415,6 +1415,7 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
+    int depthInc = 0;
     if (!moveCount)
         {
            if (excludedMove)
@@ -1424,8 +1425,8 @@ moves_loop:  // When in check, search starts here
            else // stalemate
            {
                bestValue = VALUE_DRAW;
-               ttWriter.write(posKey, VALUE_DRAW,  true, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
-               return VALUE_DRAW;
+               bestMove = Move::stale();
+               depthInc = MAX_PLY - depth;
            }
         }
 
@@ -1483,7 +1484,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                       depth + depthInc, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1566,6 +1567,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     pvHit        = ttHit && ttData.is_pv;
 
 
+    if (ttHit && ttData.value == VALUE_DRAW && ttData.move == Move::stale())
+    	return VALUE_DRAW;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && ttData.depth >= DEPTH_QS
@@ -1734,12 +1737,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
-    }
-
-    if (thisThread->nodes % 12 == 0 && !moveCount && MoveList<LEGAL>(pos).size() == 0 )
-    {
-    	ttWriter.write(posKey, VALUE_DRAW,  true, BOUND_EXACT, MAX_PLY - 1, bestMove, VALUE_DRAW, tt.generation());
-    	return VALUE_DRAW;
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)
