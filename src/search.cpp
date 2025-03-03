@@ -1056,7 +1056,8 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!((ss-0)->staleRisk || (ss-2)->staleRisk || (ss-4)->staleRisk) && !pos.see_ge(move, -154 * depth - seeHist))
+                if (!((ss-2)->staleRisk && beta < 0 && pos.non_pawn_material(us) <= QueenValue && givesCheck) // sacrifice and aim for stalemate
+                   && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
             else
@@ -1731,7 +1732,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     }
 
     // Step 10. Check for stale-mate if no capture found and there were other stalemate positions near in the tree
-    if (!ss->inCheck && !moveCount && ((ss-0)->staleRisk || (ss-2)->staleRisk || (ss-4)->staleRisk))
+    if (!ss->inCheck && !moveCount && (ss-4)->staleRisk && (ss-2)->staleRisk && !pos.non_pawn_material(pos.side_to_move()))
     {
       if (!MoveList<LEGAL>(pos).size())
           return VALUE_DRAW;
