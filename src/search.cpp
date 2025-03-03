@@ -284,10 +284,10 @@ void Search::Worker::iterative_deepening() {
     double timeReduction = 1, totBestMoveChanges = 0;
     int    delta, iterIdx                        = 0;
 
-    // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
+    // Allocate stack with extra size to allow access from (ss - 7) to (ss + 6):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
-    // (ss + 2) is needed for initialization of cutOffCnt.
-    Stack  stack[MAX_PLY + 10] = {};
+    // (ss + 6) is needed for initialization of cutOffCnt.
+    Stack  stack[MAX_PLY + 14] = {};
     Stack* ss                  = stack + 7;
 
     for (int i = 7; i > 0; --i)
@@ -636,6 +636,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    (ss+6)->staleRisk=false;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1055,7 +1056,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!pos.see_ge(move, -154 * depth - seeHist))
+                if (!((ss-0)->staleRisk || (ss-2)->staleRisk || (ss-4)->staleRisk) && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
             else
@@ -1413,8 +1414,17 @@ moves_loop:  // When in check, search starts here
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
     if (!moveCount)
-        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
-
+    {
+        if (excludedMove)
+            bestValue = alpha;
+        else if (ss->inCheck)
+            bestValue = mated_in(ss->ply);
+        else
+        {
+            bestValue = VALUE_DRAW;
+            (ss-2)->staleRisk = (ss-4)->staleRisk = true;
+        }
+    }
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
     else if (bestMove)
@@ -1719,6 +1729,14 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
     }
+
+    // Step 10. Check for stale-mate if no capture found and there were other stalemate positions near in the tree
+    if (!ss->inCheck && !moveCount && ((ss-0)->staleRisk || (ss-2)->staleRisk || (ss-4)->staleRisk))
+    {
+      if (!MoveList<LEGAL>(pos).size())
+          return VALUE_DRAW;
+    }
+
 
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
