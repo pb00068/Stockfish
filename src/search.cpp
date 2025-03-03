@@ -1056,7 +1056,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!((ss-2)->staleRisk && beta < 0 && pos.non_pawn_material(us) <= QueenValue && givesCheck) // sacrifice and aim for stalemate
+                if (!((ss-2)->staleRisk && beta < -50 && pos.non_pawn_material(us) <= QueenValue) // sacrifice and aim for stalemate
                    && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
