@@ -631,6 +631,8 @@ Value Search::Worker::search(
     // Step 1. Initialize node
     Worker* thisThread = this;
     ss->inCheck        = pos.checkers();
+    ss->conseqChecks   = ss->inCheck ? (ss-2)->conseqChecks + 1 : 0;
+    (ss+2)->staleRisk = false;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     ss->moveCount      = 0;
@@ -975,6 +977,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    bool kingOrPawnMoves = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -988,6 +991,7 @@ moves_loop:  // When in check, search starts here
         // Check for legality
         if (!pos.legal(move))
             continue;
+
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
@@ -1011,6 +1015,8 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
+        if (type_of(movedPiece) == KING || type_of(movedPiece) <= KNIGHT)
+          kingOrPawnMoves = true;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1055,9 +1061,9 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                // in a checking serie against defeat we might aim for a stalemate by throwing all at our opp. king
-                // in this case we must disable this pruning because due to its recursive nature we will never reach enough depth
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -500)
+                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last piece at the opponent king
+                // in this case we must disable see pruning otherwise we will never reach enough depth
+                if (!((ss-1)->conseqChecks >= 3 && alpha < 0 && !kingOrPawnMoves && pos.non_pawn_material(us) <= PieceValue[movedPiece])
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1415,20 +1421,19 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
-    int depthInc = 0;
     if (!moveCount)
+    {
+        if (excludedMove)
+            bestValue = alpha;
+        else if (ss->inCheck )
+            bestValue = mated_in(ss->ply);
+        else // stalemate
         {
-           if (excludedMove)
-              bestValue = alpha;
-           else if (ss->inCheck )
-               bestValue = mated_in(ss->ply);
-           else // stalemate
-           {
-               bestValue = VALUE_DRAW;
-               bestMove = Move::stale();
-               depthInc = MAX_PLY - depth;
-           }
+            bestValue = VALUE_DRAW;
+            bestMove = Move::stale();
+            ss->staleRisk = (ss-2)->staleRisk = true;
         }
+    }
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1484,7 +1489,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth + depthInc, bestMove, unadjustedStaticEval, tt.generation());
+                       depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1563,12 +1568,12 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
     ttData.move  = ttHit ? ttData.move : Move::none();
+
+    if (ttData.move == Move::stale() && ttData.value == VALUE_DRAW)
+        return VALUE_DRAW;
+
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
-
-
-    if (ttHit && ttData.value == VALUE_DRAW && ttData.move == Move::stale())
-    	return VALUE_DRAW;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && ttData.depth >= DEPTH_QS
@@ -1730,13 +1735,23 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         }
     }
 
-    // Step 9. Check for mate
+    // Step 9. Check for mate (& stalemate if other stalemates has been detected in sibling nodes)
     // All legal moves have been searched. A special case: if we are
     // in check and no legal moves were found, it is checkmate.
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
+    }
+    else if (!ss->inCheck && !moveCount && ((ss-2)->staleRisk || ss->staleRisk))
+    {
+       // calling MoveList is expensive
+       if (!MoveList<LEGAL>(pos).size())
+       {
+            bestValue = VALUE_DRAW;
+            bestMove = Move::stale();
+            (ss-2)->staleRisk = ss->staleRisk = true;
+       }
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)
