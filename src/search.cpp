@@ -992,7 +992,6 @@ moves_loop:  // When in check, search starts here
         if (!pos.legal(move))
             continue;
 
-
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
         // searched and those of lower "TB rank" if we are in a TB root position.
@@ -1755,7 +1754,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     }
 
     if (!is_decisive(bestValue) && bestValue > beta)
-        bestValue = (bestValue + beta) / 2;
+        bestValue = (bestValue + beta) / 2; // doing this even for stale-mate positions helps!
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.

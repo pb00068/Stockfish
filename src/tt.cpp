@@ -26,6 +26,7 @@
 
 #include "memory.h"
 #include "misc.h"
+#include "uci.h"
 #include "syzygy/tbprobe.h"
 #include "thread.h"
 
@@ -99,7 +100,7 @@ void TTEntry::save(
 
     if (m == Move::stale()) // save stalemate pos with high perseverance
     {
-       assert(v == VALUE_DRAW);
+       v = VALUE_DRAW; // sometimws v != VALUE_DRAW because of avg between bestValue and beta
        d = MAX_PLY;
        b = BOUND_EXACT;
     }
