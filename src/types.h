@@ -209,14 +209,14 @@ enum : int {
     // quiescence search, however, the transposition table entries only store
     // the current quiescence move generation stage (which should thus compare
     // lower than any regular search depth).
-    DEPTH_QS = 0,
+    DEPTH_QS = -2,
     // For transposition table entries where no searching at all was done
     // (whether regular or qsearch) we use DEPTH_UNSEARCHED, which should thus
     // compare lower than any quiescence or regular depth. DEPTH_ENTRY_OFFSET
     // is used only for the transposition table entry occupancy check (see tt.cpp),
     // and should thus be lower than DEPTH_UNSEARCHED.
-    DEPTH_UNSEARCHED   = -2,
-    DEPTH_ENTRY_OFFSET = -3
+    DEPTH_UNSEARCHED   = -4,
+    DEPTH_ENTRY_OFFSET = -5
 };
 
 // clang-format off
