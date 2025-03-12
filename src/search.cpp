@@ -671,6 +671,7 @@ Value Search::Worker::search(
     (ss + 2)->cutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
+    ss->majorExtension = (ss-1)->majorExtension;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -1132,9 +1133,8 @@ moves_loop:  // When in check, search starts here
                     int tripleMargin =
                       88 + 265 * PvNode - 256 * !ttCapture + 93 * ss->ttPv - corrValAdj2;
 
-                    extension = 1 + (value < singularBeta - doubleMargin)
-                              + (value < singularBeta - tripleMargin);
-
+                    extension = 1 + (value < singularBeta - doubleMargin && ss->majorExtension < 8)
+                              + (value < singularBeta - tripleMargin && ss->majorExtension < 3);
                     depth++;
                 }
 
@@ -1171,6 +1171,7 @@ moves_loop:  // When in check, search starts here
 
         // Add extension to new depth
         newDepth += extension;
+        ss->majorExtension = (ss-1)->majorExtension + (extension >= 2);
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
