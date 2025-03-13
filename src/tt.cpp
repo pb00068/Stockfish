@@ -98,9 +98,8 @@ void TTEntry::save(
     if (m || uint16_t(k) != key16)
         move16 = m;
 
-    if (m == Move::stale()) // save stalemate pos with high perseverance
+    if (m == Move::terminalNode() && v == VALUE_DRAW) // save stalemate pos with high perseverance
     {
-       v = VALUE_DRAW; // sometimws v != VALUE_DRAW because of avg between bestValue and beta
        d = MAX_PLY;
        b = BOUND_EXACT;
     }

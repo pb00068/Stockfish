@@ -632,7 +632,7 @@ Value Search::Worker::search(
     Worker* thisThread = this;
     ss->inCheck        = pos.checkers();
     ss->conseqChecks   = ss->inCheck ? (ss-2)->conseqChecks + 1 : 0;
-    (ss+2)->staleRisk = false;
+    (ss+2)->staleRisk = 0;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     ss->moveCount      = 0;
@@ -977,7 +977,6 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    bool kingOrPawnMoves = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1014,8 +1013,6 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
-        if (type_of(movedPiece) == KING || type_of(movedPiece) <= KNIGHT)
-          kingOrPawnMoves = true;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1062,7 +1059,7 @@ moves_loop:  // When in check, search starts here
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last piece at the opponent king
                 // in this case we must disable see pruning otherwise we will never reach enough depth
-                if (!((ss-1)->conseqChecks >= 3 && alpha < 0 && !kingOrPawnMoves && pos.non_pawn_material(us) <= PieceValue[movedPiece])
+                if (!((ss-1)->conseqChecks >= 3 && alpha < -400 && pos.non_pawn_material(us) <= PieceValue[movedPiece])
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1415,8 +1412,8 @@ moves_loop:  // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
-    // Adjust best value for fail high cases at non-pv nodes
-    if (!PvNode && bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
+    // Adjust best value for fail high cases
+    if ( bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
@@ -1425,12 +1422,15 @@ moves_loop:  // When in check, search starts here
         if (excludedMove)
             bestValue = alpha;
         else if (ss->inCheck )
+        {
             bestValue = mated_in(ss->ply);
+            bestMove = Move::terminalNode();
+        }
         else // stalemate
         {
             bestValue = VALUE_DRAW;
-            bestMove = Move::stale();
-            ss->staleRisk = (ss-2)->staleRisk = true;
+            bestMove = Move::terminalNode();
+            ss->staleRisk = (ss-2)->staleRisk =  1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
         }
     }
 
@@ -1566,12 +1566,16 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
-    ttData.move  = ttHit ? ttData.move : Move::none();
-
-    if (ttData.move == Move::stale() && ttData.value == VALUE_DRAW)
-        return VALUE_DRAW;
-
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
+
+    if (ttData.move == Move::terminalNode())
+    {
+        if (ttData.value == VALUE_DRAW)
+          (ss-2)->staleRisk = ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
+        return ttData.value;
+    }
+
+    ttData.move  = ttHit ? ttData.move : Move::none();
     pvHit        = ttHit && ttData.is_pv;
 
     // At non-PV nodes we check for an early TT cutoff
@@ -1740,21 +1744,28 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
         assert(!MoveList<LEGAL>(pos).size());
-        return mated_in(ss->ply);  // Plies to mate from the root
+        bestValue = mated_in(ss->ply);  // Plies to mate from the root
+        bestMove = Move::terminalNode();
     }
-    else if (!ss->inCheck && !moveCount && ((ss-2)->staleRisk || ss->staleRisk))
+    else if (!is_decisive(bestValue) && bestValue > beta)
+        bestValue = (bestValue + beta) / 2;
+
+    if (!moveCount && !ss->inCheck && (ss-2)->staleRisk)
     {
+      bool doVerify = bool((ss-2)->staleRisk & 4) && (ss-1)->inCheck;
+      doVerify |= bool((ss-2)->staleRisk & 2) &&  bool(pos.captured_piece());
+      doVerify |= thisThread->nodes % 20 == 0;
+
        // calling MoveList is expensive
-       if (!MoveList<LEGAL>(pos).size())
-       {
+       if (doVerify)
+          if (!MoveList<LEGAL>(pos).size())
+          {
             bestValue = VALUE_DRAW;
-            bestMove = Move::stale();
-            (ss-2)->staleRisk = ss->staleRisk = true;
-       }
+            bestMove = Move::terminalNode();
+            (ss-2)->staleRisk = ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
+          }
     }
 
-    if (!is_decisive(bestValue) && bestValue > beta)
-        bestValue = (bestValue + beta) / 2; // doing this even for stale-mate positions helps!
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.

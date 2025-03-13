@@ -77,7 +77,7 @@ struct Stack {
     int                         reduction;
     int                         conseqChecks;
     bool                        isTTMove;
-    bool                        staleRisk;
+    int                         staleRisk;
 };
 
 
