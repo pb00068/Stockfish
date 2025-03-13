@@ -1469,7 +1469,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                         depth < 5 && bestValue < VALUE_INFINITE && abs(bestValue) > 31986 ? 5 : depth, bestMove, unadjustedStaticEval, tt.generation());
+                         depth < 3 && bestValue < VALUE_INFINITE && abs(bestValue) > 31996 ? 3 : depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1726,7 +1726,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, bestValue < VALUE_INFINITE &&  abs(bestValue) > 31986 ? 5 : DEPTH_QS, bestMove,
+                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, bestValue < VALUE_INFINITE &&  abs(bestValue) > 31996 ? 3 : DEPTH_QS, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
