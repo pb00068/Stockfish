@@ -98,8 +98,9 @@ void TTEntry::save(
     if (m || uint16_t(k) != key16)
         move16 = m;
 
-    if (m == Move::terminalNode() && v == VALUE_DRAW) // save stalemate pos with high perseverance
+    if (m == Move::terminalNode()) // save stalemate/checkmate pos with high perseverance
     {
+       assert (v == VALUE_DRAW || is_decisive(v)); // checkmate or stalemate
        d = MAX_PLY;
        b = BOUND_EXACT;
     }
