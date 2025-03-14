@@ -1419,8 +1419,8 @@ moves_loop:  // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
-    // Adjust best value for fail high cases
-    if ( bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
+    // Adjust best value for fail high cases at non-pv nodes
+    if (!PvNode && bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta)
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
@@ -1573,6 +1573,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
+    ttData.move  = ttHit ? ttData.move : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
 
     if (ttData.move == Move::terminalNode())
@@ -1582,7 +1583,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         return ttData.value;
     }
 
-    ttData.move  = ttHit ? ttData.move : Move::none();
     pvHit        = ttHit && ttData.is_pv;
 
     // At non-PV nodes we check for an early TT cutoff

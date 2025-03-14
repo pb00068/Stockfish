@@ -26,7 +26,6 @@
 
 #include "memory.h"
 #include "misc.h"
-#include "uci.h"
 #include "syzygy/tbprobe.h"
 #include "thread.h"
 
