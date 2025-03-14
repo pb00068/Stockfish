@@ -413,7 +413,7 @@ class Move {
 
     static constexpr Move null() { return Move(65); }
     static constexpr Move none() { return Move(0); }
-    static constexpr Move terminalNode() { return Move(SQ_A4, SQ_H8); } // checkmate or stalemate
+    static constexpr Move staleMate() { return Move(SQ_A4, SQ_H8); } // checkmate or stalemate
 
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }

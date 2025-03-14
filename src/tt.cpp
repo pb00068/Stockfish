@@ -97,13 +97,6 @@ void TTEntry::save(
     if (m || uint16_t(k) != key16)
         move16 = m;
 
-    if (m == Move::terminalNode()) // save stalemate/checkmate pos with high perseverance
-    {
-       assert (v == VALUE_DRAW || is_decisive(v)); // checkmate or stalemate
-       d = MAX_PLY;
-       b = BOUND_EXACT;
-    }
-
     // Overwrite less valuable entries (cheapest checks first)
     if (b == BOUND_EXACT || uint16_t(k) != key16 || d - DEPTH_ENTRY_OFFSET + 2 * pv > depth8 - 4
         || relative_age(generation8))

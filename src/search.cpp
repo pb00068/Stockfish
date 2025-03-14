@@ -631,7 +631,6 @@ Value Search::Worker::search(
     // Step 1. Initialize node
     Worker* thisThread = this;
     ss->inCheck        = pos.checkers();
-    ss->conseqChecks   = ss->inCheck ? (ss-2)->conseqChecks + 1 : 0;
     (ss+2)->staleRisk = 0;
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
@@ -689,13 +688,10 @@ Value Search::Worker::search(
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
-
-    // Early cut-off for terminal nodes
-    if (ttData.move == Move::terminalNode())
+    if (ttData.move == Move::staleMate())
     {
-        if (ttData.value == VALUE_DRAW) // stalemate
-          (ss-2)->staleRisk = ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
-        return ttData.value; // checkmate or stalemate pos
+        ss->staleRisk = pos.non_pawn_material(us) + 1 + (ss-1)->inCheck;
+        return VALUE_DRAW;
     }
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
@@ -854,7 +850,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && !(ss->staleRisk)
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && ss->staleRisk != pos.non_pawn_material(us) + 1 + (ss-1)->inCheck
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -1066,7 +1062,7 @@ moves_loop:  // When in check, search starts here
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last piece at the opponent king
                 // in this case we must disable see pruning otherwise we will never reach enough depth
-                if (!((ss-1)->conseqChecks >= 3 && alpha < -400 && pos.non_pawn_material(us) <= PieceValue[movedPiece])
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -500 && pos.non_pawn_material(us) <= PieceValue[movedPiece])
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1429,15 +1425,12 @@ moves_loop:  // When in check, search starts here
         if (excludedMove)
             bestValue = alpha;
         else if (ss->inCheck )
-        {
             bestValue = mated_in(ss->ply);
-            bestMove = Move::terminalNode();
-        }
         else // stalemate
         {
             bestValue = VALUE_DRAW;
-            bestMove = Move::terminalNode();
-            ss->staleRisk = (ss-2)->staleRisk =  1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
+            bestMove = Move::staleMate();
+            ss->staleRisk = pos.non_pawn_material(us) + 1 + (ss-1)->inCheck;
         }
     }
 
@@ -1576,10 +1569,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.move  = ttHit ? ttData.move : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
 
-    if (ttData.move == Move::terminalNode())
+    if (ttData.move == Move::staleMate())
     {
-        if (ttData.value == VALUE_DRAW)
-          (ss-2)->staleRisk = ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
+        ss->staleRisk = pos.non_pawn_material(pos.side_to_move()) + 1 + (ss-1)->inCheck;
         return ttData.value;
     }
 
@@ -1751,28 +1743,19 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
         assert(!MoveList<LEGAL>(pos).size());
-        bestValue = mated_in(ss->ply);  // Plies to mate from the root
-        bestMove = Move::terminalNode();
+        return mated_in(ss->ply);  // Plies to mate from the root
     }
-    else if (!is_decisive(bestValue) && bestValue > beta)
+    
+    if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
 
-    if (!moveCount && !ss->inCheck && (ss-2)->staleRisk)
+    if (!moveCount && !ss->inCheck && ss->staleRisk == pos.non_pawn_material(pos.side_to_move()) + 1 + (ss-1)->inCheck)
     {
-        bool doVerify = true;
-        if ( bool((ss-2)->staleRisk & 2) && !bool(pos.captured_piece()))
-            doVerify = false;
-        if (bool((ss-2)->staleRisk & 4) && !(ss-1)->inCheck)
-            doVerify = false;
-
-        // calling MoveList is expensive
-        if (doVerify || thisThread->nodes % 32 == 0)
+          // calling MoveList is expensive
           if (!MoveList<LEGAL>(pos).size())
           {
             bestValue = VALUE_DRAW;
-            bestMove = Move::terminalNode();
-            ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
-            (ss-2)->staleRisk = (ss-2)->staleRisk | ss->staleRisk;
+            bestMove = Move::staleMate();
           }
     }
 
