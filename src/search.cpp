@@ -695,7 +695,7 @@ Value Search::Worker::search(
     {
         if (ttData.value == VALUE_DRAW) // stalemate
           (ss-2)->staleRisk = ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
-        return ttData.value; // checkmate of stalemate pos
+        return ttData.value; // checkmate or stalemate pos
     }
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
@@ -854,7 +854,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta  && ss->ply < thisThread->nmpMinPly2
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && !(ss->staleRisk)
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -1438,9 +1438,6 @@ moves_loop:  // When in check, search starts here
             bestValue = VALUE_DRAW;
             bestMove = Move::terminalNode();
             ss->staleRisk = (ss-2)->staleRisk =  1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
-            sync_cout << "info stale risk at ply " << ss->ply << " nmp2:  " <<  thisThread->nmpMinPly2 << sync_endl;
-
-                 thisThread->nmpMinPly2 = std::min(ss->ply - 4, thisThread->nmpMinPly2);
         }
     }
 
@@ -1775,7 +1772,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             bestValue = VALUE_DRAW;
             bestMove = Move::terminalNode();
             ss->staleRisk = 1 + 2 * bool(pos.captured_piece()) + 4 * (ss-1)->inCheck;
-            sync_cout << "info stale risk at q ply " << ss->ply << sync_endl;
             (ss-2)->staleRisk = (ss-2)->staleRisk | ss->staleRisk;
           }
     }
