@@ -850,7 +850,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && ss->staleRisk != pos.non_pawn_material(us) + 1 + (ss-1)->inCheck
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -1420,6 +1420,7 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
+    int depthInc = 0;
     if (!moveCount)
     {
         if (excludedMove)
@@ -1430,6 +1431,7 @@ moves_loop:  // When in check, search starts here
         {
             bestValue = VALUE_DRAW;
             bestMove = Move::staleMate();
+            depthInc = MAX_PLY - depth;
             ss->staleRisk = pos.non_pawn_material(us) + 1 + (ss-1)->inCheck;
         }
     }
@@ -1488,7 +1490,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                       depth + depthInc, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1763,7 +1765,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
+                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, bestMove != Move::staleMate() ? DEPTH_QS : MAX_PLY, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
