@@ -1412,11 +1412,8 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
-    if (!moveCount && ss->inCheck && !excludedMove)
-    	return mated_in(ss->ply);
-
     if (!moveCount)
-        bestValue = excludedMove ? alpha : VALUE_DRAW;
+        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1720,6 +1717,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
         assert(!MoveList<LEGAL>(pos).size());
+        ttWriter.write(posKey, -VALUE_MATE, pvHit, BOUND_EXACT, MAX_PLY, Move::none(), unadjustedStaticEval, tt.generation());
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
