@@ -1055,7 +1055,10 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                if (!pos.see_ge(move, -154 * depth - seeHist))
+                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last mobile piece at our opp. king
+                // in this case we must disable this pruning because otherwise we will never reach enough depth
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && alpha < -400 && pos.non_pawn_material(us) <= PieceValue[movedPiece])
+                 && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
             else
@@ -1469,7 +1472,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                       moveCount != 0 ? depth : MAX_PLY, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
