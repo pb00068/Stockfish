@@ -636,6 +636,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->mobility = 0;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -833,7 +834,10 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 461 - 315 * depth * depth)
-        return qsearch<NonPV>(pos, ss, alpha, beta);
+        // don't razor if risk of stalemate
+        if (!pos.captured_piece() || pos.non_pawn_material(us)  || more_than_one((ss-2)->mobility) || ttHit || depth > 2)
+           return qsearch<NonPV>(pos, ss, alpha, beta);
+
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -998,6 +1002,7 @@ moves_loop:  // When in check, search starts here
             continue;
 
         ss->moveCount = ++moveCount;
+        ss->mobility |= move.from_sq();
 
         if (rootNode && is_mainthread() && nodes > 10000000)
         {
@@ -1057,7 +1062,7 @@ moves_loop:  // When in check, search starts here
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last mobile piece at our opp. king
                 // in this case we must disable this pruning because otherwise we will never reach enough depth
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && alpha < -400 && pos.non_pawn_material(us) <= PieceValue[movedPiece])
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -500)
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1274,9 +1279,11 @@ moves_loop:  // When in check, search starts here
             if (!ttData.move)
                 r += 1156;
 
+            Depth dd = newDepth - (r > 3495) - (r > 5510 && newDepth > 2);
+            if (dd <= 0 && !givesCheck && pos.captured_piece() && !pos.non_pawn_material(us) && !more_than_one((ss-1)->mobility))
+                dd = 1;
             // Note that if expected reduction is high, we reduce search depth here
-            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 3495) - (r > 5510 && newDepth > 2), !cutNode);
+            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, dd, !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
@@ -1472,7 +1479,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       moveCount != 0 ? depth : MAX_PLY, bestMove, unadjustedStaticEval, tt.generation());
+                       moveCount == 0 ? MAX_PLY : depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1725,6 +1732,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
+
+    //if (!ss->inCheck && !moveCount && !MoveList<LEGAL>(pos).size())
+    //	bestValue = VALUE_DRAW;
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.

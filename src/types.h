@@ -414,6 +414,7 @@ class Move {
     static constexpr Move null() { return Move(65); }
     static constexpr Move none() { return Move(0); }
 
+
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
 
