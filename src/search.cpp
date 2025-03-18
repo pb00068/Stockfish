@@ -838,7 +838,6 @@ Value Search::Worker::search(
         if (!pos.captured_piece() || pos.non_pawn_material(us)  || more_than_one((ss-2)->mobility) || ttHit || depth > 2)
            return qsearch<NonPV>(pos, ss, alpha, beta);
 
-
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
     if (!ss->ttPv && depth < 14
@@ -1732,9 +1731,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
-
-    //if (!ss->inCheck && !moveCount && !MoveList<LEGAL>(pos).size())
-    //	bestValue = VALUE_DRAW;
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
