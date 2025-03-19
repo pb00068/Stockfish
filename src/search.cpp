@@ -834,6 +834,8 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 461 - 315 * depth * depth)
+        // don't razor if risk of stalemate
+        if (!pos.captured_piece() || pos.non_pawn_material(us)  || more_than_one((ss-2)->mobility) || ttHit || depth > 2)
            return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
@@ -924,7 +926,6 @@ Value Search::Worker::search(
             assert(pos.capture_stage(move));
 
             movedPiece = pos.moved_piece(move);
-            ss->mobility |= move.from_sq();
 
             pos.do_move(move, st, &tt);
             thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
@@ -1277,8 +1278,11 @@ moves_loop:  // When in check, search starts here
             if (!ttData.move)
                 r += 1156;
 
+            Depth dd = newDepth - (r > 3495) - (r > 5510 && newDepth > 2);
+            if (dd <= 0 && !givesCheck && pos.captured_piece() && !pos.non_pawn_material(us) && !more_than_one((ss-1)->mobility))
+                dd = 1;
             // Note that if expected reduction is high, we reduce search depth here
-            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth - (r > 3495) - (r > 5510 && newDepth > 2), !cutNode);
+            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, dd, !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
@@ -1724,11 +1728,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
     }
-
-    if (!ss->inCheck && !moveCount && bestValue < -3000 && !pos.non_pawn_material(pos.side_to_move()) && pos.captured_piece() && !more_than_one((ss-2)->mobility))
-      if (!((pos.side_to_move() == WHITE ? pos.pieces(WHITE, PAWN) << 8 : pos.pieces(BLACK, PAWN) >> 8) & ~pos.pieces())) // inline check for pawn push mobility
-      	if (popcount(PseudoAttacks[KING][pos.square<KING>(pos.side_to_move())] & ~pos.pieces()) < 5)
-                bestValue = VALUE_DRAW; // assume stalemate, if wrong then deeper searches will correct the eval
 
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
