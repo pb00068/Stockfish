@@ -183,9 +183,6 @@ void MovePicker::score() {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + 2 * ply);
-
-            if (pos.key() ==  17511610369037121134uL)
-            	sync_cout << UCIEngine::move(m,false) << " has value " << m.value << sync_endl;
         }
 
         else  // Type == EVASIONS
