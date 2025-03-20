@@ -24,7 +24,6 @@
 #include "bitboard.h"
 #include "misc.h"
 #include "position.h"
-#include "uci.h"
 
 namespace Stockfish {
 

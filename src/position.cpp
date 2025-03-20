@@ -74,7 +74,8 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
     }
 
     os << "   a   b   c   d   e   f   g   h\n"
-       << "\nFen: " << pos.fen() << "\nKey: " << pos.key() << "\nCheckers: ";
+       << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase << std::setfill('0')
+       << std::setw(16) << pos.key() << std::setfill(' ') << std::dec << "\nCheckers: ";
 
     for (Bitboard b = pos.checkers(); b;)
         os << UCIEngine::square(pop_lsb(b)) << " ";
