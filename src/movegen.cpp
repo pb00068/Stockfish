@@ -168,7 +168,7 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
 
 
 template<Color Us, GenType Type>
-ExtMove* generate_all(const Position& pos, ExtMove* moveList, Bitboard threatened) {
+ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
 
     static_assert(Type != LEGAL, "Unsupported type in generate_all()");
 
@@ -190,14 +190,14 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, Bitboard threatene
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
     }
 
-    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target) & ~threatened;
+    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
 
     while (b)
         *moveList++ = Move(ksq, pop_lsb(b));
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
-            if (!pos.castling_impeded(cr, pos.pieces() | threatened) && pos.can_castle(cr))
+            if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
 
     return moveList;
@@ -213,28 +213,28 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, Bitboard threatene
 //
 // Returns a pointer to the end of the move list.
 template<GenType Type>
-ExtMove* generate(const Position& pos, ExtMove* moveList, Bitboard threatened) {
+ExtMove* generate(const Position& pos, ExtMove* moveList) {
 
     static_assert(Type != LEGAL, "Unsupported type in generate()");
     assert((Type == EVASIONS) == bool(pos.checkers()));
 
     Color us = pos.side_to_move();
 
-    return us == WHITE ? generate_all<WHITE, Type>(pos, moveList, threatened)
-                       : generate_all<BLACK, Type>(pos, moveList, threatened);
+    return us == WHITE ? generate_all<WHITE, Type>(pos, moveList)
+                       : generate_all<BLACK, Type>(pos, moveList);
 }
 
 // Explicit template instantiations
-template ExtMove* generate<CAPTURES>(const Position&, ExtMove*,Bitboard );
-template ExtMove* generate<QUIETS>(const Position&, ExtMove*,Bitboard );
-template ExtMove* generate<EVASIONS>(const Position&, ExtMove*,Bitboard );
-template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*,Bitboard );
+template ExtMove* generate<CAPTURES>(const Position&, ExtMove*);
+template ExtMove* generate<QUIETS>(const Position&, ExtMove*);
+template ExtMove* generate<EVASIONS>(const Position&, ExtMove*);
+template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
 
 
 // generate<LEGAL> generates all the legal moves in the given position
 
 template<>
-ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList, Bitboard threatened) {
+ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
 
     Color    us     = pos.side_to_move();
     Bitboard pinned = pos.blockers_for_king(us) & pos.pieces(us);
@@ -242,7 +242,7 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList, Bitboard threat
     ExtMove* cur    = moveList;
 
     moveList =
-      pos.checkers() ? generate<EVASIONS>(pos, moveList, 0) : generate<NON_EVASIONS>(pos, moveList, 0);
+      pos.checkers() ? generate<EVASIONS>(pos, moveList) : generate<NON_EVASIONS>(pos, moveList);
     while (cur != moveList)
         if (((pinned & cur->from_sq()) || cur->from_sq() == ksq || cur->type_of() == EN_PASSANT)
             && !pos.legal(*cur))
