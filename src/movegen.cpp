@@ -23,6 +23,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "uci.h"
 
 namespace Stockfish {
 
@@ -180,7 +181,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     {
         target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces(Us)
-               : Type == CAPTURES     ? pos.pieces(~Us)
+               : Type == CAPTURES     ? pos.state()->forbiddenForKing=0,pos.pieces(~Us)
                                       : ~pos.pieces();  // QUIETS
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
@@ -190,10 +191,16 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
     }
 
-    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-
+    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? pos.state()->forbiddenForKing=0, ~pos.pieces(Us) : target);
     while (b)
-        *moveList++ = Move(ksq, pop_lsb(b));
+    {
+        Square s = pop_lsb(b);
+        if ((Type == CAPTURES || Type == EVASIONS) && type_of(pos.piece_on(s)) > KNIGHT)
+            pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s] & PseudoAttacks[KING][s];
+
+        if (Type == NON_EVASIONS || !(pos.state()->forbiddenForKing & s))
+             *moveList++ = Move(ksq, s);
+    }
 
     if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
