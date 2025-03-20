@@ -55,7 +55,7 @@ class MovePicker {
     template<typename Pred>
     Move select(Pred);
     template<GenType>
-    void     score();
+    void     score(Bitboard, Bitboard, Bitboard);
     ExtMove* begin() { return cur; }
     ExtMove* end() { return endMoves; }
 

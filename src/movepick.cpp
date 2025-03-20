@@ -121,21 +121,14 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
 // Captures are ordered by Most Valuable Victim (MVV), preferring captures
 // with a good history. Quiets moves are ordered using the history tables.
 template<GenType Type>
-void MovePicker::score() {
+void MovePicker::score(Bitboard threatenedByPawn, Bitboard threatenedByMinor, Bitboard threatenedByRook) {
 
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces;
+    [[maybe_unused]] Bitboard threatenedPieces;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
-
-        threatenedByPawn = pos.attacks_by<PAWN>(~us);
-        threatenedByMinor =
-          pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
-        threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
-
         // Pieces threatened by pieces of lesser material value
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
@@ -229,9 +222,9 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endMoves             = generate<CAPTURES>(pos, cur);
+        endMoves             = generate<CAPTURES>(pos, cur, 0);
 
-        score<CAPTURES>();
+        score<CAPTURES>(0,0,0);
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
         ++stage;
         goto top;
@@ -251,9 +244,15 @@ top:
         if (!skipQuiets)
         {
             cur      = endBadCaptures;
-            endMoves = beginBadQuiets = endBadQuiets = generate<QUIETS>(pos, cur);
 
-            score<QUIETS>();
+            Color us = pos.side_to_move();
+            Bitboard threatenedByPawn = pos.attacks_by<PAWN>(~us);
+            Bitboard threatenedByMinor =
+              pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
+            Bitboard threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+            endMoves = beginBadQuiets = endBadQuiets = generate<QUIETS>(pos, cur, threatenedByRook);
+
+            score<QUIETS>(threatenedByPawn, threatenedByMinor, threatenedByRook);
             partial_insertion_sort(cur, endMoves, quiet_threshold(depth));
         }
 
@@ -296,9 +295,9 @@ top:
 
     case EVASION_INIT :
         cur      = moves;
-        endMoves = generate<EVASIONS>(pos, cur);
+        endMoves = generate<EVASIONS>(pos, cur, 0);
 
-        score<EVASIONS>();
+        score<EVASIONS>(0,0,0);
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
         ++stage;
         [[fallthrough]];
