@@ -23,6 +23,7 @@
 
 #include "bitboard.h"
 #include "misc.h"
+#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -155,6 +156,12 @@ void MovePicker::score() {
             Square    from = m.from_sq();
             Square    to   = m.to_sq();
 
+            if (pt == KING && (threatenedByRook & to) && m.type_of() != CASTLING)
+            {
+               m.value = -517000; // put illegal king-moves to the end (and hope that skip-quiets kicks in before they are reached)
+               assert(!pos.legal(m));
+               continue;
+            }
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
