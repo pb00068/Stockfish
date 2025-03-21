@@ -985,7 +985,7 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if (!ss->inCheck && type_of(pos.moved_piece(move)) == KING && move.type_of() != CASTLING)
+        if (!ss->inCheck && type_of(pos.moved_piece(move)) == KING && move.type_of() != CASTLING && move != ttData.move)
         {
           assert(pos.legal(move)); // this is expensive, so avoid useless calls
         }
