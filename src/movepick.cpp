@@ -125,7 +125,7 @@ void MovePicker::score() {
 
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,  threatenedSquares,
+    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
       threatenedPieces;
     if constexpr (Type == QUIETS)
     {
@@ -135,7 +135,6 @@ void MovePicker::score() {
         threatenedByMinor =
           pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
         threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
-        threatenedSquares = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us) | threatenedByRook;
 
         // Pieces threatened by pieces of lesser material value
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
@@ -153,15 +152,9 @@ void MovePicker::score() {
         {
             Piece     pc   = pos.moved_piece(m);
             PieceType pt   = type_of(pc);
+            Square    from = m.from_sq();
             Square    to   = m.to_sq();
 
-            if (pt == KING && (threatenedSquares & to) && m.type_of() != CASTLING)
-            {
-               m.value = -KingValue; // will be discarded
-               assert(!pos.legal(m));
-               continue;
-            }
-            Square    from = m.from_sq();
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
@@ -271,7 +264,7 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([&]() { return cur->value != -KingValue; })) // discard king moving to attacked square
+        if (!skipQuiets && select([]() { return true; }))
         {
             if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
                 return *(cur - 1);
@@ -300,7 +293,7 @@ top:
 
     case BAD_QUIET :
         if (!skipQuiets)
-            return select([&]() { return cur->value != -KingValue; }); // discard king moving to attacked square
+            return select([]() { return true; });
 
         return Move::none();
 

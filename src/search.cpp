@@ -937,9 +937,7 @@ Value Search::Worker::search(
             if (move == excludedMove)
                 continue;
 
-            if (type_of(pos.moved_piece(move)) == KING && move != ttData.move) // assured to be legal
-                  assert(pos.legal(move)); // this is expensive, so avoid useless calls
-            else if (!pos.legal(move))
+            if (!pos.legal(move))
                 continue;
 
             assert(pos.capture_stage(move));
@@ -1007,12 +1005,8 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if (!ss->inCheck && type_of(pos.moved_piece(move)) == KING && move.type_of() != CASTLING && move != ttData.move)
-        {
-          assert(pos.legal(move)); // this is expensive, so avoid useless calls
-        }
         // Check for legality
-        else if (!pos.legal(move))
+        if (!pos.legal(move))
             continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
