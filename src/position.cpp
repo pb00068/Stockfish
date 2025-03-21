@@ -1078,8 +1078,6 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
-
-
     Bitboard stmAttackers, bb;
     int      res = 1;
 
@@ -1087,7 +1085,6 @@ bool Position::see_ge(Move m, int threshold) const {
     {
         stm = ~stm;
         attackers &= occupied;
-        stmAttackers = attackers & pieces(stm);
 
         // If stm has no more attackers then give up: stm loses
         if (!(stmAttackers = attackers & pieces(stm)))

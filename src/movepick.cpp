@@ -23,7 +23,6 @@
 
 #include "bitboard.h"
 #include "misc.h"
-#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -158,7 +157,7 @@ void MovePicker::score() {
 
             if (pt == KING && (threatenedSquares & to) && m.type_of() != CASTLING)
             {
-               m.value = -517123; // will be discarded
+               m.value = -KingValue; // will be discarded
                assert(!pos.legal(m));
                continue;
             }
@@ -272,7 +271,7 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([&]() { return cur->value != -517123; })) // discard king moving to attacked square
+        if (!skipQuiets && select([&]() { return cur->value != -KingValue; })) // discard king moving to attacked square
         {
             if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
                 return *(cur - 1);
@@ -301,7 +300,7 @@ top:
 
     case BAD_QUIET :
         if (!skipQuiets)
-            return select([&]() { return cur->value != -517123; }); // discard king moving to attacked square
+            return select([&]() { return cur->value != -KingValue; }); // discard king moving to attacked square
 
         return Move::none();
 
