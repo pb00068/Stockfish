@@ -50,6 +50,7 @@ class MovePicker {
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move();
     void skip_quiet_moves();
+    int                          stage;
 
    private:
     template<typename Pred>
@@ -67,7 +68,7 @@ class MovePicker {
     const PawnHistory*           pawnHistory;
     Move                         ttMove;
     ExtMove *                    cur, *endMoves, *endBadCaptures, *beginBadQuiets, *endBadQuiets;
-    int                          stage;
+
     int                          threshold;
     Depth                        depth;
     int                          ply;

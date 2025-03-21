@@ -126,7 +126,7 @@ void MovePicker::score() {
 
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
-    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
+    [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,  threatenedSquares,
       threatenedPieces;
     if constexpr (Type == QUIETS)
     {
@@ -136,6 +136,7 @@ void MovePicker::score() {
         threatenedByMinor =
           pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
         threatenedByRook = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
+        threatenedSquares = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us) | threatenedByRook;
 
         // Pieces threatened by pieces of lesser material value
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
@@ -153,15 +154,15 @@ void MovePicker::score() {
         {
             Piece     pc   = pos.moved_piece(m);
             PieceType pt   = type_of(pc);
-            Square    from = m.from_sq();
             Square    to   = m.to_sq();
 
-            if (pt == KING && (threatenedByRook & to) && m.type_of() != CASTLING)
+            if (pt == KING && (threatenedSquares & to) && m.type_of() != CASTLING)
             {
-               m.value = -517000; // put illegal king-moves to the end (and hope that skip-quiets kicks in before they are reached)
+               m.value = -517123; // will be discarded
                assert(!pos.legal(m));
                continue;
             }
+            Square    from = m.from_sq();
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
@@ -246,8 +247,11 @@ top:
     case GOOD_CAPTURE :
         if (select([&]() {
                 // Move losing capture to endBadCaptures to be tried later
-                return pos.see_ge(*cur, -cur->value / 18) ? true
-                                                          : (*endBadCaptures++ = *cur, false);
+                if (pos.see_ge(*cur, -cur->value / 18))
+                   return true;
+                if (type_of(pos.moved_piece(*cur)) != KING) // bad King moves are illegal, discard them
+                     *endBadCaptures++ = *cur;
+                return false;
             }))
             return *(cur - 1);
 
@@ -268,7 +272,7 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([]() { return true; }))
+        if (!skipQuiets && select([&]() { return cur->value != -517123; })) // discard king moving to attacked square
         {
             if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
                 return *(cur - 1);
@@ -297,7 +301,7 @@ top:
 
     case BAD_QUIET :
         if (!skipQuiets)
-            return select([]() { return true; });
+            return select([&]() { return cur->value != -517123; }); // discard king moving to attacked square
 
         return Move::none();
 

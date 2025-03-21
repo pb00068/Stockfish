@@ -1078,6 +1078,8 @@ bool Position::see_ge(Move m, int threshold) const {
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
+
+
     Bitboard stmAttackers, bb;
     int      res = 1;
 
@@ -1085,6 +1087,7 @@ bool Position::see_ge(Move m, int threshold) const {
     {
         stm = ~stm;
         attackers &= occupied;
+        stmAttackers = attackers & pieces(stm);
 
         // If stm has no more attackers then give up: stm loses
         if (!(stmAttackers = attackers & pieces(stm)))
@@ -1094,10 +1097,13 @@ bool Position::see_ge(Move m, int threshold) const {
         // pinners on their original square.
         if (pinners(~stm) & occupied)
         {
+        	if (stm == sideToMove || PieceValue[piece_on(from)] != KingValue)
+        	{
             stmAttackers &= ~blockers_for_king(stm);
 
             if (!stmAttackers)
                 break;
+        	}
         }
 
         res ^= 1;
@@ -1140,9 +1146,8 @@ bool Position::see_ge(Move m, int threshold) const {
 
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
-            swap = QueenValue - swap;
-            //  implies that the previous recapture was done by a higher rated piece than a Queen (King is excluded)
-            assert(swap >= res);
+            if ((swap = QueenValue - swap) < res)
+               break;
             occupied ^= least_significant_square_bb(bb);
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
@@ -1152,7 +1157,7 @@ bool Position::see_ge(Move m, int threshold) const {
         else  // KING
               // If we "capture" with the king but the opponent still has attackers,
               // reverse the result.
-            return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+            return PieceValue[piece_on(from)] != KingValue && (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
     return bool(res);

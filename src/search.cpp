@@ -985,8 +985,12 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
+        if (!ss->inCheck && type_of(pos.moved_piece(move)) == KING && move.type_of() != CASTLING)
+        {
+          assert(pos.legal(move)); // this is expensive, so avoid useless calls
+        }
         // Check for legality
-        if (!pos.legal(move))
+        else if (!pos.legal(move))
             continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
