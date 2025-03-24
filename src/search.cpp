@@ -937,7 +937,9 @@ Value Search::Worker::search(
             if (move == excludedMove)
                 continue;
 
-            if (!pos.legal(move))
+            if (move != ttData.move && pos.capture_stage(move) && !more_than_one(pos.pinners(~us)) && move.type_of() <= PROMOTION)
+                        assert(pos.legal(move));
+            else if (!pos.legal(move))
                 continue;
 
             assert(pos.capture_stage(move));
@@ -1005,8 +1007,10 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
+        if (move != ttData.move && !ss->inCheck && pos.capture_stage(move) && !more_than_one(pos.pinners(~us)) && move.type_of() <= PROMOTION)
+             assert(pos.legal(move));
         // Check for legality
-        if (!pos.legal(move))
+        else if (!pos.legal(move))
             continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root

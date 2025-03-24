@@ -1053,23 +1053,30 @@ bool Position::see_ge(Move m, int threshold) const {
 
     assert(m.is_ok());
 
-    // Only deal with normal moves, assume others pass a simple SEE
-    if (m.type_of() != NORMAL)
+    if (m.type_of() == CASTLING)
         return VALUE_ZERO >= threshold;
 
     Square from = m.from_sq(), to = m.to_sq();
+    Color    stm       = sideToMove;
 
+
+//        if (fen().compare("8/8/p7/8/8/4K3/4Rpk1/8 b - - 1 14") == 0) {
+//        	sync_cout <<  " move " << UCIEngine::move(m,false) << " see blockers :" << Bitboards::pretty(blockers_for_king(stm)) << " pinners " << Bitboards::pretty(pinners(~stm)) << " to verify " << (piece_on(to) || m.type_of() == PROMOTION)<< sync_endl;
+//          //sync_cout <<  " occupied :" << Bitboards::pretty(occupied) << " conditino for illegal " << bool(piece_on(to)) << " " << bool(blockers_for_king(stm) & from) << " " <<  bool(pinners(~stm) & occupied) << sync_endl;
+//        }
     int swap = PieceValue[piece_on(to)] - threshold;
-    if (swap < 0)
+    if (swap < 0 || ((piece_on(to) || m.type_of() == PROMOTION) && (blockers_for_king(stm) & from) && !(pinners(~stm) & to)))
         return false;
 
-    swap = PieceValue[piece_on(from)] - swap;
+    swap = (m.type_of() == PROMOTION ? KnightValue : PieceValue[piece_on(from)]) - swap;
     if (swap <= 0)
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
-    Color    stm       = sideToMove;
+
+
+
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;

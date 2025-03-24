@@ -241,7 +241,9 @@ top:
                 // Move losing capture to endBadCaptures to be tried later
                 if (pos.see_ge(*cur, -cur->value / 18))
                    return true;
-                if (type_of(pos.moved_piece(*cur)) != KING) // bad King moves are illegal, discard them
+                Color us = pos.side_to_move();
+                bool illegal = type_of(pos.moved_piece(*cur)) == KING || (((pos.piece_on(cur->to_sq()) || cur->type_of() == PROMOTION) && (pos.blockers_for_king(us) & cur->from_sq()) && !(pos.pinners(~us) & cur->to_sq())));
+                if (!illegal)
                      *endBadCaptures++ = *cur;
                 return false;
             }))
