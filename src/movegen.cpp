@@ -181,7 +181,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     {
         target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces(Us)
-               : Type == CAPTURES     ? pos.state()->forbiddenForKing=0,pos.pieces(~Us)
+               : Type == CAPTURES     ? pos.pieces(~Us)
                                       : ~pos.pieces();  // QUIETS
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
@@ -191,7 +191,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
     }
 
-    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? pos.state()->forbiddenForKing=0, ~pos.pieces(Us) : target);
+    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
     while (b)
     {
         Square s = pop_lsb(b);
@@ -202,8 +202,9 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
               pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s] & PseudoAttacks[KING][s];
           else if (pt == KNIGHT)
               pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s];
+        }
 
-        if (Type == NON_EVASIONS || !(pos.state()->forbiddenForKing & s))
+        if (!(pos.state()->forbiddenForKing & s))
              *moveList++ = Move(ksq, s);
     }
 

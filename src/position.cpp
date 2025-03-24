@@ -329,6 +329,10 @@ void Position::set_check_info() const {
     st->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
+
+    st->attackedByPawns  = sideToMove == BLACK ? shift<NORTH_EAST>(pieces(WHITE, PAWN)) : shift<SOUTH_EAST>(pieces(BLACK, PAWN));
+    st->attackedByPawns |= sideToMove == BLACK ? shift<NORTH_WEST>(pieces(WHITE, PAWN)) : shift<SOUTH_WEST>(pieces(BLACK, PAWN));
+    st->forbiddenForKing = st->attackedByPawns;
 }
 
 
@@ -495,7 +499,6 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 }
 
 bool Position::attackers_to_exist(Square s, Bitboard occupied, Color c) const {
-
     return ((attacks_bb<ROOK>(s) & pieces(c, ROOK, QUEEN))
             && (attacks_bb<ROOK>(s, occupied) & pieces(c, ROOK, QUEEN)))
         || ((attacks_bb<BISHOP>(s) & pieces(c, BISHOP, QUEEN))
@@ -1064,6 +1067,7 @@ bool Position::see_ge(Move m, int threshold) const {
     if (m.type_of() != NORMAL)
         return VALUE_ZERO >= threshold;
 
+    Color    stm       = sideToMove;
     Square from = m.from_sq(), to = m.to_sq();
 
     int swap = PieceValue[piece_on(to)] - threshold;
@@ -1074,9 +1078,12 @@ bool Position::see_ge(Move m, int threshold) const {
     if (swap <= 0)
         return true;
 
+    // early return if we know the to-square is attacked by a enemy pawn
+    if ((state()->attackedByPawns & to) && PawnValue - swap < 0 && !(blockers_for_king(~stm) & pieces(~stm, PAWN)))
+       return false;
+
     assert(color_of(piece_on(from)) == sideToMove);
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
-    Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
     int      res = 1;
