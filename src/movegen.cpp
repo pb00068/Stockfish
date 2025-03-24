@@ -195,8 +195,13 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     while (b)
     {
         Square s = pop_lsb(b);
-        if ((Type == CAPTURES || Type == EVASIONS) && type_of(pos.piece_on(s)) > KNIGHT)
-            pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s] & PseudoAttacks[KING][s];
+        if ((Type == CAPTURES || Type == EVASIONS))
+        {
+          PieceType pt = type_of(pos.piece_on(s));
+          if ( pt > KNIGHT)
+              pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s] & PseudoAttacks[KING][s];
+          else if (pt == KNIGHT)
+              pos.state()->forbiddenForKing |= PseudoAttacks[type_of(pos.piece_on(s))][s];
 
         if (Type == NON_EVASIONS || !(pos.state()->forbiddenForKing & s))
              *moveList++ = Move(ksq, s);
