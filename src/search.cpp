@@ -656,6 +656,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    (ss+2)->staleRisk = 0;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1075,9 +1076,8 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                // in a checking serie against defeat we might aim for a stalemate by throwing all at our opp. king
-                // in this case we must disable this pruning because due to its recursive nature we will never reach enough depth
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -500)
+                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing all at our opp. king
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -600 && givesCheck)
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1436,7 +1436,7 @@ moves_loop:  // When in check, search starts here
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
     if (!moveCount)
-        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
+        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : (ss->staleRisk = 1 + pos.captured_piece(), VALUE_DRAW);
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1751,10 +1751,20 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
 
+    Depth depthInc = DEPTH_QS;
+    if(!ss->inCheck && !moveCount && (ss->staleRisk == 1 + pos.captured_piece() || (ss-2)->staleRisk == 1 + pos.captured_piece() ) && !pos.non_pawn_material(pos.side_to_move()))
+    {
+        if (!MoveList<LEGAL>(pos).size())
+        {
+            bestValue = VALUE_DRAW;
+            depthInc = MAX_PLY;
+        }
+    }
+
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
+                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, depthInc, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
