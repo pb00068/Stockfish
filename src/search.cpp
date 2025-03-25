@@ -1435,20 +1435,8 @@ moves_loop:  // When in check, search starts here
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
-    int depthInc = 0;
     if (!moveCount)
-        {
-           if (excludedMove)
-              bestValue = alpha;
-           else if (ss->inCheck )
-               bestValue = mated_in(ss->ply);
-           else // stalemate
-           {
-               bestValue = VALUE_DRAW;
-               bestMove = Move::stale();
-               depthInc = MAX_PLY - depth;
-           }
-        }
+        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1500,11 +1488,11 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, !moveCount ? BOUND_EXACT :
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth + depthInc, bestMove, unadjustedStaticEval, tt.generation());
+                        !moveCount ? MAX_PLY : depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1585,15 +1573,18 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
 
+   // if (ttHit && ttData.move == Move::stale())
+   // 	return VALUE_DRAW;
 
-    if (ttHit && ttData.value == VALUE_DRAW && ttData.move == Move::stale())
-    	return VALUE_DRAW;
 
     // At non-PV nodes we check for an early TT cutoff
-    if (!PvNode && ttData.depth >= DEPTH_QS
+    if (ttData.depth >= DEPTH_QS
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
-        return ttData.value;
+    {
+    	  if (!PvNode || (ttData.value == VALUE_DRAW && ttData.bound == BOUND_EXACT))
+           return ttData.value;
+    }
 
     // Step 4. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
