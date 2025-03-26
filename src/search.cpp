@@ -1573,10 +1573,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
 
-   // if (ttHit && ttData.move == Move::stale())
-   // 	return VALUE_DRAW;
-
-
     // At non-PV nodes we check for an early TT cutoff
     if (ttData.depth >= DEPTH_QS
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
@@ -1752,12 +1748,19 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         bestValue = (bestValue + beta) / 2;
 
     Depth depthInc = DEPTH_QS;
-    if(!ss->inCheck && !moveCount && (ss->staleRisk == 1 + pos.captured_piece() || (ss-2)->staleRisk == 1 + pos.captured_piece() ) && !pos.non_pawn_material(pos.side_to_move()))
+    Color us = pos.side_to_move();
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) &&
+       (ss->staleRisk == 1 + pos.captured_piece() || (ss-2)->staleRisk == 1 + pos.captured_piece()))
     {
-        if (!MoveList<LEGAL>(pos).size())
+        if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
-            bestValue = VALUE_DRAW;
-            depthInc = MAX_PLY;
+            pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
+            if (!MoveList<LEGAL>(pos).size()) // stalemate
+            {
+               bestValue = VALUE_DRAW;
+               depthInc = MAX_PLY;
+            }
+            pos.state()->checkersBB = 0;
         }
     }
 
