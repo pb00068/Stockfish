@@ -191,6 +191,14 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
+    if (Type == CAPTURES)
+    {
+        pos.state()->attackedByPawns  = Us == BLACK ? shift<NORTH_EAST>(pos.pieces(WHITE, PAWN)) : shift<SOUTH_EAST>(pos.pieces(BLACK, PAWN));
+        pos.state()->attackedByPawns |= Us == BLACK ? shift<NORTH_WEST>(pos.pieces(WHITE, PAWN)) : shift<SOUTH_WEST>(pos.pieces(BLACK, PAWN));
+        pos.state()->forbiddenForKing = pos.state()->attackedByPawns;
+        if (pos.pieces(~Us, QUEEN))
+            pos.state()->forbiddenForKing |= attacks_bb<QUEEN>(lsb(pos.pieces(~Us, QUEEN)), pos.pieces());
+    }
     while (b)
     {
         Square s = pop_lsb(b);

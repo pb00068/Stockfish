@@ -328,9 +328,7 @@ void Position::set_check_info() const {
     st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
     st->checkSquares[KING]   = 0;
 
-    st->attackedByPawns  = sideToMove == BLACK ? shift<NORTH_EAST>(pieces(WHITE, PAWN)) : shift<SOUTH_EAST>(pieces(BLACK, PAWN));
-    st->attackedByPawns |= sideToMove == BLACK ? shift<NORTH_WEST>(pieces(WHITE, PAWN)) : shift<SOUTH_WEST>(pieces(BLACK, PAWN));
-    st->forbiddenForKing = st->attackedByPawns;
+    st->attackedByPawns  = st->forbiddenForKing = 0;
 }
 
 

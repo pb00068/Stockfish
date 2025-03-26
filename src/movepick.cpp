@@ -20,9 +20,11 @@
 
 #include <cassert>
 #include <limits>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
+#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -154,6 +156,12 @@ void MovePicker::score() {
             PieceType pt   = type_of(pc);
             Square    from = m.from_sq();
             Square    to   = m.to_sq();
+
+            if (pt == KING && (threatenedByRook & to) && m.type_of() != CASTLING)
+            {
+                 m.value = -80000;
+                 continue;
+            }
 
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
