@@ -656,7 +656,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
-    (ss+2)->staleRisk = 0;
+    (ss+2)->staleRisk = false;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1077,7 +1077,7 @@ moves_loop:  // When in check, search starts here
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing all at our opp. king
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && alpha < -600 && givesCheck)
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && givesCheck && alpha < -300 && type_of(movedPiece) >= QUEEN)
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1436,7 +1436,7 @@ moves_loop:  // When in check, search starts here
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
     if (!moveCount)
-        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : (ss->staleRisk = 1 + pos.captured_piece(), VALUE_DRAW);
+        bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : (ss->staleRisk = true, VALUE_DRAW);
 
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
@@ -1492,7 +1492,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                        !moveCount ? MAX_PLY : depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1745,8 +1745,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         bestValue = (bestValue + beta) / 2;
 
     Color us = pos.side_to_move();
-    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) &&
-       (ss->staleRisk == 1 + pos.captured_piece() || (ss-2)->staleRisk == 1 + pos.captured_piece()))
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && (ss->staleRisk  || (ss-2)->staleRisk))
     {
         if ((ss-2)->currentMove.to_sq() != pos.square<KING>(us) && // king did't just move
             !((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available

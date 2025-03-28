@@ -76,7 +76,7 @@ struct Stack {
     int                         cutoffCnt;
     int                         reduction;
     bool                        isTTMove;
-    int                         staleRisk;
+    bool                        staleRisk;
 };
 
 
