@@ -1501,7 +1501,7 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, exact ? BOUND_EXACT :
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, exact && abs(bestValue) == 1 ? BOUND_EXACT :
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
