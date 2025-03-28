@@ -881,8 +881,6 @@ Value Search::Worker::search(
         do_null_move(pos, st);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
-        if (nullValue == -VALUE_DRAWBYREPETITION)
-           nullValue = value_draw(this->nodes);
 
         undo_null_move(pos);
 
