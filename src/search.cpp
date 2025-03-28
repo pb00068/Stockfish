@@ -1077,7 +1077,7 @@ moves_loop:  // When in check, search starts here
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing all at our opp. king
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -600 && givesCheck)
+                if (!((ss-1)->inCheck && (ss-3)->inCheck && alpha < -600 && givesCheck)
                  && !pos.see_ge(move, -154 * depth - seeHist))
                     continue;
             }
@@ -1488,7 +1488,7 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, !moveCount ? BOUND_EXACT :
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,// !moveCount ? BOUND_EXACT :
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
@@ -1574,13 +1574,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     pvHit        = ttHit && ttData.is_pv;
 
     // At non-PV nodes we check for an early TT cutoff
-    if (ttData.depth >= DEPTH_QS
+    if (!PvNode && ttData.depth >= DEPTH_QS
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
-    {
-    	  if (!PvNode || (ttData.value == VALUE_DRAW && ttData.bound == BOUND_EXACT))
-           return ttData.value;
-    }
+        return ttData.value;
 
     // Step 4. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
@@ -1735,7 +1732,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         }
     }
 
-    // Step 9. Check for mate
+    // Step 9. Check for mate and stalemate
     // All legal moves have been searched. A special case: if we are
     // in check and no legal moves were found, it is checkmate.
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
@@ -1747,19 +1744,16 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
 
-    Depth depthInc = DEPTH_QS;
     Color us = pos.side_to_move();
     if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) &&
        (ss->staleRisk == 1 + pos.captured_piece() || (ss-2)->staleRisk == 1 + pos.captured_piece()))
     {
-        if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
+        if ((ss-2)->currentMove.to_sq() != pos.square<KING>(us) && // king did't just move
+            !((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
             pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size()) // stalemate
-            {
                bestValue = VALUE_DRAW;
-               depthInc = MAX_PLY;
-            }
             pos.state()->checkersBB = 0;
         }
     }
@@ -1767,7 +1761,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, depthInc, bestMove,
+                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
