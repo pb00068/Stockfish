@@ -144,6 +144,7 @@ using Value = int;
 
 constexpr Value VALUE_ZERO     = 0;
 constexpr Value VALUE_DRAW     = 0;
+constexpr Value VALUE_DRAWBYREPETITION = 32003;
 constexpr Value VALUE_NONE     = 32002;
 constexpr Value VALUE_INFINITE = 32001;
 

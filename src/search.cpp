@@ -624,7 +624,7 @@ Value Search::Worker::search(
     {
         alpha = value_draw(this->nodes);
         if (alpha >= beta)
-            return alpha;
+            return VALUE_DRAWBYREPETITION;
     }
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
@@ -881,6 +881,8 @@ Value Search::Worker::search(
         do_null_move(pos, st);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
+        if (nullValue == -VALUE_DRAWBYREPETITION)
+           nullValue = value_draw(this->nodes);
 
         undo_null_move(pos);
 
@@ -897,6 +899,8 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            if (v == -VALUE_DRAWBYREPETITION)
+                       v = value_draw(this->nodes);
 
             thisThread->nmpMinPly = 0;
 
@@ -995,6 +999,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    bool exact = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1141,6 +1146,8 @@ moves_loop:  // When in check, search starts here
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = Move::none();
+                if (value == VALUE_DRAWBYREPETITION)
+                    value = value_draw(this->nodes);
 
                 if (value < singularBeta)
                 {
@@ -1262,6 +1269,8 @@ moves_loop:  // When in check, search starts here
 
             value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
             ss->reduction = 0;
+            if (value == -VALUE_DRAWBYREPETITION)
+                exact = true, value = value_draw(this->nodes);
 
 
             // Do a full-depth search when reduced LMR search fails high
@@ -1276,6 +1285,9 @@ moves_loop:  // When in check, search starts here
 
                 if (newDepth > d)
                     value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+
+                if (value == -VALUE_DRAWBYREPETITION)
+                    exact = true,value = value_draw(this->nodes);
 
                 // Post LMR continuation history updates
                 int bonus = 1600;
@@ -1295,6 +1307,8 @@ moves_loop:  // When in check, search starts here
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
                                    newDepth - (r > 3495) - (r > 5510 && newDepth > 2), !cutNode);
+            if (value == -VALUE_DRAWBYREPETITION)
+                exact = true,value = value_draw(this->nodes);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
@@ -1309,6 +1323,8 @@ moves_loop:  // When in check, search starts here
                 newDepth = std::max(newDepth, 1);
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
+            if (value == -VALUE_DRAWBYREPETITION)
+                 exact = true,value = value_draw(this->nodes);
         }
 
         // Step 19. Undo move
@@ -1485,7 +1501,7 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, exact ? BOUND_EXACT :
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
@@ -1527,7 +1543,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     {
         alpha = value_draw(this->nodes);
         if (alpha >= beta)
-            return alpha;
+            return VALUE_DRAWBYREPETITION;
     }
 
     Move      pv[MAX_PLY + 1];
