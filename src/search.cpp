@@ -899,8 +899,8 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
-            if (v == -VALUE_DRAWBYREPETITION)
-                       v = value_draw(this->nodes);
+            if (v == VALUE_DRAWBYREPETITION)
+                v = value_draw(this->nodes);
 
             thisThread->nmpMinPly = 0;
 
