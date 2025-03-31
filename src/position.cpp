@@ -807,9 +807,15 @@ DirtyPiece Position::do_move(Move                      m,
         move_piece(from, to);
     }
 
+    if (type_of(pc) == KING)
+        st->pliesFromLastKPMove[us]=0;
+    else
+        st->pliesFromLastKPMove[us]++;
+
     // If the moving piece is a pawn do some special extra work
     if (type_of(pc) == PAWN)
     {
+        st->pliesFromLastKPMove[us]=0;
         // Set en passant square if the moved pawn can be captured
         if ((int(to) ^ int(from)) == 16
             && (pawn_attacks_bb(us, to - pawn_push(us)) & pieces(them, PAWN)))
