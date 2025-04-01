@@ -47,7 +47,6 @@ struct StateInfo {
     int    castlingRights;
     int    rule50;
     int    pliesFromNull;
-    int    pliesFromLastKPMove[COLOR_NB];
     Square epSquare;
 
     // Not copied when making a move (will be recomputed anyhow)

@@ -1079,12 +1079,11 @@ moves_loop:  // When in check, search starts here
                 //if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece])  &&
                  if(   !pos.see_ge(move, -154 * depth - seeHist))
                  {
-                	 bool skip = true;
-                	  if((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && givesCheck && alpha < 0 && moveCount < 20 && pos.non_pawn_material(us) == PieceValue[movedPiece]) {
-                	  	sync_cout << pos << "skipping " +UCIEngine::move(move,false) << " pieceval " << PieceValue[movedPiece] << " depth " << depth << " threshold " << (-154 * depth - seeHist) << " givscheck " <<givesCheck <<  " mc " << moveCount << sync_endl;
-                	  	skip = true;
-                	  }
-                	  if (skip)
+                	   ss->staleRisk = (ss-1)->inCheck && givesCheck && alpha < 0 &&  pos.non_pawn_material(us) == PieceValue[movedPiece] && !mp.otherPieceTypesMobile(type_of(movedPiece));
+                	  	//sync_cout << pos << "skipping " +UCIEngine::move(move,false) << " pieceval " << PieceValue[movedPiece] << " depth " << depth << " threshold " << (-154 * depth - seeHist) << " givscheck " <<givesCheck <<  " mc " << moveCount << " othermoves " << mp.otherPieceTypesMobile(type_of(movedPiece)) << sync_endl;
+//                    dbg_hit_on(ss->staleRisk);
+//                    dbg_hit_on((ss-1)->inCheck && givesCheck && alpha < 0 &&  pos.non_pawn_material(us) == PieceValue[movedPiece], 2);
+                	  if (!ss->staleRisk)
                     continue;
                  }
             }
@@ -1323,6 +1322,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
+        ss->staleRisk = false;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1753,16 +1753,14 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
-    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && pos.captured_piece() && pos.state()->pliesFromLastKPMove[us] >= 5) // no king/pawn moves in last 6 moves
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && pos.captured_piece() && (ss-2)->staleRisk)
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
 
             pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size()) // stalemate
-            {
                bestValue = VALUE_DRAW;
-            }
             pos.state()->checkersBB = 0;
         }
     }
