@@ -126,7 +126,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces;
+      threatenedPieces, supported;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -140,6 +140,7 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+        supported = 0;
     }
 
     for (auto& m : *this)
@@ -154,9 +155,9 @@ void MovePicker::score() {
             PieceType pt   = type_of(pc);
             Square    from = m.from_sq();
             Square    to   = m.to_sq();
-
+            Color us = pos.side_to_move();
             // histories
-            m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
+            m.value = 2 * (*mainHistory)[us][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
             m.value += (*continuationHistory[0])[pc][to];
             m.value += (*continuationHistory[1])[pc][to];
@@ -176,12 +177,14 @@ void MovePicker::score() {
                                                : 0;
 
             // malus for putting piece en prise
-            m.value -= (pt == QUEEN ? bool(to & threatenedByRook) * 49000
+            m.value -= (pt == QUEEN ? bool(to & (threatenedByRook | ((supported & to) ? 0 :  pos.attacks_by<QUEEN>(~us) | pos.attacks_by<ROOK>(~us)) )) * 49000
                         : pt == ROOK && bool(to & threatenedByMinor) ? 24335
                                                                      : 0);
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + 2 * ply);
+
+            supported |= to;
         }
 
         else  // Type == EVASIONS
