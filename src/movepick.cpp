@@ -126,7 +126,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces, supported;
+      threatenedPieces, supported, threatedByQueenAndKing;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -140,6 +140,7 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
+        threatedByQueenAndKing = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
         supported = 0;
     }
 
@@ -177,7 +178,7 @@ void MovePicker::score() {
                                                : 0;
 
             // malus for putting piece en prise
-            m.value -= (pt == QUEEN ? bool(to & (threatenedByRook | ((supported & to) ? 0 :  pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us)) )) * 49000
+            m.value -= (pt == QUEEN ? bool(to & (threatenedByRook | ((supported & to) ? 0 : threatedByQueenAndKing) )) * 49000
                         : pt == ROOK && bool(to & threatenedByMinor) ? 24335
                                                                      : 0);
 

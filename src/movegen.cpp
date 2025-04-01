@@ -187,11 +187,10 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
         moveList = generate_moves<Us, ROOK>(pos, moveList, target);
-        moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
+
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-
     while (b)
         *moveList++ = Move(ksq, pop_lsb(b));
 
@@ -199,6 +198,9 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
         for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
             if (!pos.castling_impeded(cr) && pos.can_castle(cr))
                 *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
+
+    if (Type != EVASIONS || !more_than_one(pos.checkers()))
+       moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
 
     return moveList;
 }
