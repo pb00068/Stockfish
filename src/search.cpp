@@ -1075,9 +1075,18 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing all at our opp. king
-                if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && alpha < -600 && givesCheck) && !pos.see_ge(move, -154 * depth - seeHist))
+                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last (mobile) piece at our opp. king
+                //if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece])  &&
+                 if(   !pos.see_ge(move, -154 * depth - seeHist))
+                 {
+                	 bool skip = true;
+                	  if((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && givesCheck && alpha < 0 && moveCount < 20 && pos.non_pawn_material(us) == PieceValue[movedPiece]) {
+                	  	sync_cout << pos << "skipping " +UCIEngine::move(move,false) << " pieceval " << PieceValue[movedPiece] << " depth " << depth << " threshold " << (-154 * depth - seeHist) << " givscheck " <<givesCheck <<  " mc " << moveCount << sync_endl;
+                	  	skip = true;
+                	  }
+                	  if (skip)
                     continue;
+                 }
             }
             else
             {
@@ -1744,15 +1753,16 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
-    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && pos.state()->pliesFromLastKPMove[us] >= 6) // no king/pawn moves in last 6 moves
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && pos.captured_piece() && pos.state()->pliesFromLastKPMove[us] >= 5) // no king/pawn moves in last 6 moves
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
 
             pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size()) // stalemate
+            {
                bestValue = VALUE_DRAW;
-            dbg_hit_on(bestValue == VALUE_DRAW);
+            }
             pos.state()->checkersBB = 0;
         }
     }
