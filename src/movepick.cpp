@@ -321,11 +321,15 @@ bool MovePicker::otherPieceTypesMobile(PieceType pt) {
     if (stage != GOOD_QUIET  && stage != BAD_QUIET)
 	     return true;
 
-    ExtMove *c = endBadCaptures;
+    ExtMove *c = moves;
     for (; c < endBadQuiets; ++c)
        if (type_of(pos.moved_piece(*c)) != pt)
-      	 if (type_of(pos.moved_piece(*c)) != KING || pos.legal(*c))
-      		 return true;
+       {
+      	 if (type_of(pos.moved_piece(*c)) != KING)
+           return true;
+      	 if (pos.legal(*c))
+           return true;
+       }
 
     return false;
 }

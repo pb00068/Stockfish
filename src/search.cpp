@@ -1075,17 +1075,14 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
-                // in a checking serie against defeat we might aim for a stalemate (or draw by repetition) by throwing our last (mobile) piece at our opp. king
-                //if (!((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece])  &&
-                 if(   !pos.see_ge(move, -154 * depth - seeHist))
-                 {
-                	   ss->staleRisk = (ss-1)->inCheck && givesCheck && alpha < 0 &&  pos.non_pawn_material(us) == PieceValue[movedPiece] && !mp.otherPieceTypesMobile(type_of(movedPiece));
-                	  	//sync_cout << pos << "skipping " +UCIEngine::move(move,false) << " pieceval " << PieceValue[movedPiece] << " depth " << depth << " threshold " << (-154 * depth - seeHist) << " givscheck " <<givesCheck <<  " mc " << moveCount << " othermoves " << mp.otherPieceTypesMobile(type_of(movedPiece)) << sync_endl;
-//                    dbg_hit_on(ss->staleRisk);
-//                    dbg_hit_on((ss-1)->inCheck && givesCheck && alpha < 0 &&  pos.non_pawn_material(us) == PieceValue[movedPiece], 2);
-                	  if (!ss->staleRisk)
-                    continue;
-                 }
+                if(!pos.see_ge(move, -154 * depth - seeHist))
+                {
+                    bool skip = true;
+                    if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= RookValue)
+                          skip = mp.otherPieceTypesMobile(type_of(movedPiece)); // if the opponent takes its stalemate
+                     if (skip)
+                       continue;
+                }
             }
             else
             {
@@ -1322,7 +1319,6 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
-        ss->staleRisk = false;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1499,7 +1495,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                       moveCount != 0 ? depth : std::min(MAX_PLY - 1, depth + 6), bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
@@ -1753,11 +1749,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
-    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && pos.captured_piece() && (ss-2)->staleRisk)
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && type_of(pos.captured_piece()) >= ROOK)
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
-
             pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size()) // stalemate
                bestValue = VALUE_DRAW;
