@@ -228,8 +228,8 @@ top:
     case CAPTURE_INIT :
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
-        cur = endBadCaptures = moves;
-        endMoves             = generate<CAPTURES>(pos, cur);
+        cur = moves;
+        endMoves             = endCaptures = generate<CAPTURES>(pos, cur);
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
@@ -238,9 +238,9 @@ top:
 
     case GOOD_CAPTURE :
         if (select([&]() {
-                // Move losing capture to endBadCaptures to be tried later
+                // Score losing capture with 88888 to be tried later
                 return pos.see_ge(*cur, -cur->value / 18) ? true
-                                                          : (*endBadCaptures++ = *cur, false);
+                                                          : (cur->value = 88888, false);
             }))
             return *(cur - 1);
 
@@ -250,7 +250,6 @@ top:
     case QUIET_INIT :
         if (!skipQuiets)
         {
-            cur      = endBadCaptures;
             endMoves = beginBadQuiets = endBadQuiets = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
@@ -272,13 +271,13 @@ top:
 
         // Prepare the pointers to loop over the bad captures
         cur      = moves;
-        endMoves = endBadCaptures;
+        endMoves = endCaptures;
 
         ++stage;
         [[fallthrough]];
 
     case BAD_CAPTURE :
-        if (select([]() { return true; }))
+        if (select([&]() { return cur->value == 88888; }))
             return *(cur - 1);
 
         // Prepare the pointers to loop over the bad quiets
