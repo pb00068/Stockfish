@@ -1002,7 +1002,11 @@ moves_loop:  // When in check, search starts here
 
         // Check for legality
         if (!pos.legal(move))
+        {
+            if (move != ttData.move)
+               mp.markCurrent_Illegal();
             continue;
+        }
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
@@ -1075,10 +1079,12 @@ moves_loop:  // When in check, search starts here
                     bool skip = true;
                     if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= RookValue
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
-                          skip = mp.otherPieceTypesMobile(type_of(movedPiece), capturesSearched); // if the opponent takes it's probably stalemate
+                          skip = mp.otherPieceTypesMobile(type_of(movedPiece)); // if the opponent takes it's probably stalemate
 
                      if (skip)
                        continue;
+
+                     //dbg_hit_on((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & move.from_sq()); Hit #0: Total 3032 Hits 545 Hit Rate (%) 17.9749
                 }
             }
             else

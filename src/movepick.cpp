@@ -56,6 +56,9 @@ enum Stages {
     QCAPTURE
 };
 
+constexpr int BADCAPTURE = 8888888;
+constexpr int ILLEGAL    = 9999999;
+
 // Sort moves in descending order up to and including a given limit.
 // The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
@@ -241,7 +244,7 @@ top:
         if (select([&]() {
                 // Score losing capture with 88888 to be tried later
                 return pos.see_ge(*cur, -cur->value / 18) ? true
-                                                          : (cur->value = 88888, false);
+                                                          : (cur->value = BADCAPTURE, false);
             }))
             return *(cur - 1);
 
@@ -278,7 +281,7 @@ top:
         [[fallthrough]];
 
     case BAD_CAPTURE :
-        if (select([&]() { return cur->value == 88888; }))
+        if (select([&]() { return cur->value == BADCAPTURE; }))
             return *(cur - 1);
 
         // Prepare the pointers to loop over the bad quiets
@@ -317,22 +320,18 @@ top:
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
-bool MovePicker::otherPieceTypesMobile(PieceType pt, ValueList<Move, 32>& capturesSearched) {
+void MovePicker::markCurrent_Illegal() {
+   (cur-1)->value = ILLEGAL;
+}
+bool MovePicker::otherPieceTypesMobile(PieceType pt) {
     if (stage != GOOD_QUIET  && stage != BAD_QUIET)
        return true;
 
-    // verify good captures
-    for (std::size_t i=0; i< capturesSearched.size();i++)
-       if (type_of(pos.moved_piece(capturesSearched[i])) != pt)
-       {
-              if (type_of(pos.moved_piece(capturesSearched[i])) != KING)
-                return true;
-              if (pos.legal(capturesSearched[i]))
-                return true;
-       }
-
-    // now verify bad captures and quiets
+    // verify all generated captures and quiets
     for (ExtMove *c = moves; c < endBadQuiets; ++c)
+    {
+       if (c->value == ILLEGAL)
+          continue;
        if (type_of(pos.moved_piece(*c)) != pt)
        {
          if (type_of(pos.moved_piece(*c)) != KING)
@@ -340,11 +339,8 @@ bool MovePicker::otherPieceTypesMobile(PieceType pt, ValueList<Move, 32>& captur
          if (pos.legal(*c))
            return true;
        }
-
-//    c = moves;
-//        for (; c < endBadQuiets; ++c)
-//          	 if (type_of(pos.moved_piece(*c)) == KING)
-//                sync_cout << pos << " is legal "  << UCIEngine::move(*c, false) << " " << pos.legal(*c) << sync_endl;
+    }
     return false;
 }
+
 }  // namespace Stockfish
