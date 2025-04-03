@@ -1073,8 +1073,10 @@ moves_loop:  // When in check, search starts here
                 if(!pos.see_ge(move, -154 * depth - seeHist))
                 {
                     bool skip = true;
-                    if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= RookValue)
-                          skip = mp.otherPieceTypesMobile(type_of(movedPiece)); // if the opponent takes its stalemate
+                    if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= RookValue
+                        && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
+                          skip = mp.otherPieceTypesMobile(type_of(movedPiece), capturesSearched); // if the opponent takes it's probably stalemate
+
                      if (skip)
                        continue;
                 }

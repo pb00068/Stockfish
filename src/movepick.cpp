@@ -23,6 +23,7 @@
 
 #include "bitboard.h"
 #include "misc.h"
+#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -317,20 +318,34 @@ top:
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
-bool MovePicker::otherPieceTypesMobile(PieceType pt) {
+bool MovePicker::otherPieceTypesMobile(PieceType pt, ValueList<Move, 32>& capturesSearched) {
     if (stage != GOOD_QUIET  && stage != BAD_QUIET)
-	     return true;
+       return true;
 
-    ExtMove *c = moves;
-    for (; c < endBadQuiets; ++c)
+    // verify good captures
+    for (std::size_t i=0; i< capturesSearched.size();i++)
+       if (type_of(pos.moved_piece(capturesSearched[i])) != pt)
+       {
+              if (type_of(pos.moved_piece(capturesSearched[i])) != KING)
+                return true;
+              if (pos.legal(capturesSearched[i]))
+                return true;
+       }
+
+    // now verify bad captures and quiets
+    for (ExtMove *c = moves; c < endBadQuiets; ++c)
        if (type_of(pos.moved_piece(*c)) != pt)
        {
-      	 if (type_of(pos.moved_piece(*c)) != KING)
+         if (type_of(pos.moved_piece(*c)) != KING)
            return true;
-      	 if (pos.legal(*c))
+         if (pos.legal(*c))
            return true;
        }
 
+//    c = moves;
+//        for (; c < endBadQuiets; ++c)
+//          	 if (type_of(pos.moved_piece(*c)) == KING)
+//                sync_cout << pos << " is legal "  << UCIEngine::move(*c, false) << " " << pos.legal(*c) << sync_endl;
     return false;
 }
 }  // namespace Stockfish
