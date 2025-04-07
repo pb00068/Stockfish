@@ -178,7 +178,11 @@ void MovePicker::score() {
                                                : 0;
 
             // malus for putting piece en prise
+<<<<<<< HEAD
             m.value -= (pt == QUEEN ? bool(to & (threatenedByRook | ((supported & to) ? 0 : threatedByQueenAndKing) )) * 49000
+=======
+            m.value -= (pt == QUEEN && bool(to & threatenedByRook)   ? 49000
+>>>>>>> refs/heads/master
                         : pt == ROOK && bool(to & threatenedByMinor) ? 24335
                                                                      : 0);
 
