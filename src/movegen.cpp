@@ -173,7 +173,7 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     static_assert(Type != LEGAL, "Unsupported type in generate_all()");
 
     const Square ksq = pos.square<KING>(Us);
-    Bitboard     target;
+    Bitboard     target = 0;
 
     // Skip generating non-king moves when in double check
     if (Type != EVASIONS || !more_than_one(pos.checkers()))

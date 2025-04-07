@@ -126,7 +126,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces, supported, threatedByQueenAndKing;
+      threatenedPieces, supported, threatedByQueenOrKing;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -140,8 +140,8 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-        threatedByQueenAndKing = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
-        supported = 0;
+        threatedByQueenOrKing = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
+        supported = (us == WHITE ? shift<NORTH_WEST>(pos.pieces(us,PAWN)) | shift<NORTH_EAST>(pos.pieces(us,PAWN)) : shift<SOUTH_WEST>(pos.pieces(us,PAWN)) | shift<SOUTH_EAST>(pos.pieces(us,PAWN)));
     }
 
     for (auto& m : *this)
@@ -178,18 +178,28 @@ void MovePicker::score() {
                                                : 0;
 
             // malus for putting piece en prise
-<<<<<<< HEAD
-            m.value -= (pt == QUEEN ? bool(to & (threatenedByRook | ((supported & to) ? 0 : threatedByQueenAndKing) )) * 49000
-=======
-            m.value -= (pt == QUEEN && bool(to & threatenedByRook)   ? 49000
->>>>>>> refs/heads/master
-                        : pt == ROOK && bool(to & threatenedByMinor) ? 24335
-                                                                     : 0);
+            if (pt == QUEEN)
+            {
+               if (to & threatenedByRook)
+              	 m.value -= 49000;
+               else if (to & threatedByQueenOrKing) {
+
+              	  if (to & supported)
+              	  	m.value += 3000;
+              	  // neutral when backed up by own bishop/rook
+              	  else if (!(attacks_bb<ROOK>  (to,pos.pieces() ^ from) & pos.pieces(pos.side_to_move(), ROOK)) &&
+              	           !(attacks_bb<BISHOP>(to,pos.pieces() ^ from) & pos.pieces(pos.side_to_move(), BISHOP)))
+              	      m.value -= 49000; // to-square treathened by king/queen & not supported, malus
+               }
+            }
+            else
+              m.value -= pt == ROOK && bool(to & threatenedByMinor) ? 24335 : 0;
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + 2 * ply);
 
-            supported |= to;
+            if (pt != PAWN)
+              supported |= to;
         }
 
         else  // Type == EVASIONS
