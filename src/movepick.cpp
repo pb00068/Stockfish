@@ -246,7 +246,6 @@ top:
                return true;
             }
             *endBadCaptures++ = *cur;
-            see_ge0 = -100000;
             return false;
             }))
             return *(cur - 1);
