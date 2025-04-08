@@ -50,6 +50,7 @@ class MovePicker {
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move();
     void skip_quiet_moves();
+    int see_ge0 = -100000;
 
    private:
     template<typename Pred>

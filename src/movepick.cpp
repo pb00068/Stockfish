@@ -239,12 +239,20 @@ top:
     case GOOD_CAPTURE :
         if (select([&]() {
                 // Move losing capture to endBadCaptures to be tried later
-                return pos.see_ge(*cur, -cur->value / 18) ? true
-                                                          : (*endBadCaptures++ = *cur, false);
+            bool good = pos.see_ge(*cur, -cur->value / 18);
+            if (good)
+            {
+               see_ge0 = -cur->value / 18;
+               return true;
+            }
+            *endBadCaptures++ = *cur;
+            see_ge0 = -100000;
+            return false;
             }))
             return *(cur - 1);
 
         ++stage;
+        see_ge0 = -100000;
         [[fallthrough]];
 
     case QUIET_INIT :
