@@ -126,7 +126,7 @@ void MovePicker::score() {
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
-      threatenedPieces, supported, threatedByQueenOrKing;
+      threatenedPieces, supported, threatedByQueen;
     if constexpr (Type == QUIETS)
     {
         Color us = pos.side_to_move();
@@ -140,8 +140,11 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatenedByRook)
                          | (pos.pieces(us, ROOK) & threatenedByMinor)
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-        threatedByQueenOrKing = pos.attacks_by<QUEEN>(~us) | pos.attacks_by<KING>(~us);
-        supported = (us == WHITE ? shift<NORTH_WEST>(pos.pieces(us,PAWN)) | shift<NORTH_EAST>(pos.pieces(us,PAWN)) : shift<SOUTH_WEST>(pos.pieces(us,PAWN)) | shift<SOUTH_EAST>(pos.pieces(us,PAWN)));
+        if (pos.pieces(us, QUEEN))
+        {
+           threatedByQueen= pos.attacks_by<QUEEN>(~us);
+           supported = pos.attacks_by<PAWN>(us);
+        }
     }
 
     for (auto& m : *this)
@@ -182,14 +185,14 @@ void MovePicker::score() {
             {
                if (to & threatenedByRook)
               	 m.value -= 49000;
-               else if (to & threatedByQueenOrKing) {
+               else if (to & threatedByQueen) {
 
               	  if (to & supported)
-              	  	m.value += 3000;
+              	  	m.value += 300;
               	  // neutral when backed up by own bishop/rook
               	  else if (!(attacks_bb<ROOK>  (to,pos.pieces() ^ from) & pos.pieces(pos.side_to_move(), ROOK)) &&
               	           !(attacks_bb<BISHOP>(to,pos.pieces() ^ from) & pos.pieces(pos.side_to_move(), BISHOP)))
-              	      m.value -= 49000; // to-square treathened by king/queen & not supported, malus
+              	      m.value -= 49000; // to-square treathened queen & not supported, malus
                }
             }
             else
