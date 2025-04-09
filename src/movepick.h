@@ -76,6 +76,8 @@ class MovePicker {
     ExtMove                      moves[MAX_MOVES];
 };
 
+namespace Stockfish { template <typename T, std::size_t MaxSize> class ValueList; }
+
 }  // namespace Stockfish
 
 #endif  // #ifndef MOVEPICK_H_INCLUDED
