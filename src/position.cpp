@@ -903,6 +903,25 @@ DirtyPiece Position::do_move(Move                      m,
     return dp;
 }
 
+void Position::do_quiteNonPawnMove(Move  m,  StateInfo& newSt) {
+  Key k = st->key ^ Zobrist::side;
+  std::memcpy(&newSt, st, offsetof(StateInfo, key));
+  newSt.previous = st;
+  st->next       = &newSt;
+  st             = &newSt;
+  ++gamePly;
+  ++st->rule50;
+  ++st->pliesFromNull;
+  Square from     = m.from_sq();
+  Square to       = m.to_sq();
+  Piece  pc       = piece_on(from);
+  k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
+  move_piece(from, to);
+  st->key = k;
+  st->capturedPiece = NO_PIECE;
+  sideToMove = ~sideToMove;
+}
+
 
 // Unmakes a move. When it returns, the position should
 // be restored to exactly the same state as before the move was made.

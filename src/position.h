@@ -135,6 +135,7 @@ class Position {
     // Doing and undoing moves
     void       do_move(Move m, StateInfo& newSt, const TranspositionTable* tt);
     DirtyPiece do_move(Move m, StateInfo& newSt, bool givesCheck, const TranspositionTable* tt);
+    void do_quiteNonPawnMove(Move m, StateInfo& newSt);
     void       undo_move(Move m);
     void       do_null_move(StateInfo& newSt, const TranspositionTable& tt);
     void       undo_null_move();

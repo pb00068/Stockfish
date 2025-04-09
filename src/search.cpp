@@ -1071,7 +1071,18 @@ moves_loop:  // When in check, search starts here
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 32, -138 * depth, 135 * depth);
                 if (!pos.see_ge(move, -154 * depth - seeHist))
-                    continue;
+                {
+                    bool skip = true;
+                	  if ((ss-1)->inCheck && alpha < 0 && type_of(movedPiece) != PAWN && !capture && move.type_of() == NORMAL)
+                	  {
+                       StateInfo st2;
+                	  	 pos.do_quiteNonPawnMove(move, st2);
+                	  	 skip = !pos.upcoming_repetition(ss->ply + 1);
+                	  	 pos.undo_move(move);
+                	  }
+                	  if (skip)
+                       continue;
+                }
             }
             else
             {
