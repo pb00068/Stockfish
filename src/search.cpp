@@ -1073,14 +1073,13 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -154 * depth - seeHist))
                 {
                     bool skip = true;
-                	  if ((ss-1)->inCheck && alpha < 0 && type_of(movedPiece) != PAWN && !capture && move.type_of() == NORMAL)
-                	  {
-                       StateInfo st2;
-                	  	 pos.do_quiteNonPawnMove(move, st2);
-                	  	 skip = !pos.upcoming_repetition(ss->ply + 1);
-                	  	 pos.undo_move(move);
-                	  }
-                	  if (skip)
+                    if ((ss-1)->inCheck && alpha < 0 && type_of(movedPiece) != PAWN && !capture && move.type_of() == NORMAL)
+                    {
+                       pos.do_quiteNonPawnMove(move, st);
+                       skip = !pos.upcoming_repetition(ss->ply + 1);
+                       pos.undo_move(move);
+                   }
+                   if (skip)
                        continue;
                 }
             }
