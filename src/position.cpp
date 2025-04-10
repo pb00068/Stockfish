@@ -1151,10 +1151,10 @@ bool Position::see_ge(Move m, int threshold) const {
 }
 
 // Tests whether the position is drawn by 50-move rule
-// or by repetition. It does not detect stalemates.
+// or by repetition.
 bool Position::is_draw(int ply) const {
 
-    if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
+    if (st->rule50 > 99 && !checkers())
         return true;
 
     return is_repetition(ply);
