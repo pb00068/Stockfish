@@ -1078,7 +1078,16 @@ moves_loop:  // When in check, search starts here
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
                           skip = mp.otherPieceTypesMobile(type_of(movedPiece), capturesSearched); // if the opponent captures last mobile piece it might be stalemate
 
-                     if (skip)
+//                    if (!skip && !ss->inCheck) {
+//                        do_move(pos, move, st);
+//                        thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
+//                        ss->currentMove = move;
+//                        Value v = qsearch<NonPV>(pos, ss + 1, -1, 0);
+//                        undo_move(pos, move);
+//                        skip = (v <= -1);
+//                    }
+
+                    if (skip)
                        continue;
                 }
             }
@@ -1500,7 +1509,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       depth, bestMove, unadjustedStaticEval, tt.generation());
+                       (moveCount || ss->inCheck) ? depth : depth + 4, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
