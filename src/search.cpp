@@ -1074,15 +1074,16 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -154 * depth - seeHist))
                 {
                     bool skip = true;
-                    if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= RookValue
+                    if (depth > 2 && !capture && givesCheck && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece] && PieceValue[movedPiece] >= BishopValue
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
                           skip = mp.otherPieceTypesMobile(type_of(movedPiece), capturesSearched); // if the opponent captures last mobile piece it might be stalemate
 
                     if (!skip && !ss->inCheck) {
                         do_move(pos, move, st);
                         ss->currentMove = move;
-                        skip = -qsearch<NonPV>(pos, ss + 1, 0, 1) >= 1; // skip == true: opponent has still more than a draw, not stalemate
+                        Value v = qsearch<NonPV>(pos, ss + 1, 0, 1); // v <= 0 -> suddenly not more than draw -> stalemate or draw by repetition
                         undo_move(pos, move);
+                        skip = v > 0;
                     }
 
                     if (skip)
@@ -1762,7 +1763,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
-    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && type_of(pos.captured_piece()) >= ROOK)
+    if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && type_of(pos.captured_piece()) >= BISHOP)
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
