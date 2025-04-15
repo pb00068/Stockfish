@@ -558,7 +558,6 @@ void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st) {
 
 void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, const bool givesCheck) {
     DirtyPiece dp = pos.do_move(move, st, givesCheck, &tt);
-    nodes.fetch_add(1, std::memory_order_relaxed);
     accumulatorStack.push(dp);
 }
 
@@ -942,7 +941,7 @@ Value Search::Worker::search(
             movedPiece = pos.moved_piece(move);
 
             do_move(pos, move, st);
-
+            thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
 
             ss->currentMove = move;
             ss->isTTMove    = (move == ttData.move);
@@ -1079,14 +1078,12 @@ moves_loop:  // When in check, search starts here
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
                           skip = mp.otherPieceTypesMobile(type_of(movedPiece), capturesSearched); // if the opponent captures last mobile piece it might be stalemate
 
-//                    if (!skip && !ss->inCheck) {
-//                        do_move(pos, move, st);
-//                        thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
-//                        ss->currentMove = move;
-//                        Value v = qsearch<NonPV>(pos, ss + 1, -1, 0);
-//                        undo_move(pos, move);
-//                        skip = (v <= -1);
-//                    }
+                    if (!skip && !ss->inCheck) {
+                        do_move(pos, move, st);
+                        ss->currentMove = move;
+                        skip = -qsearch<NonPV>(pos, ss + 1, 0, 1) >= 1; // skip == true: opponent has still more than a draw, not stalemate
+                        undo_move(pos, move);
+                    }
 
                     if (skip)
                        continue;
@@ -1510,7 +1507,7 @@ moves_loop:  // When in check, search starts here
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
-                       (moveCount || ss->inCheck) ? depth : depth + 4, bestMove, unadjustedStaticEval, tt.generation());
+                         moveCount != 0 ? depth : depth + 6, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
