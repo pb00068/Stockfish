@@ -727,6 +727,8 @@ Value Search::Worker::search(
                 update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -2200);
         }
 
+        if ((ttData.value == VALUE_DRAW || is_loss(ttData.value)) && ttData.is_pv && ttData.bound == BOUND_EXACT)
+           (ss-7)->matesApproaching = (ss-3)->matesApproaching = true;
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
@@ -864,7 +866,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && !((ss+0)->matesApproaching ||  (ss+1)->matesApproaching || (ss+2)->matesApproaching || (ss+3)->matesApproaching)
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -1439,6 +1441,10 @@ moves_loop:  // When in check, search starts here
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
+    if (!moveCount && !excludedMove)
+       (ss-7)->matesApproaching = (ss-3)->matesApproaching = true, ss->ttPv = true;
+
+
     // If there is a move that produces search value greater than alpha,
     // we update the stats of searched moves.
     else if (bestMove)
@@ -1496,7 +1502,7 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, !moveCount && !excludedMove && !ss->inCheck ? BOUND_EXACT :
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
@@ -1585,7 +1591,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!PvNode && ttData.depth >= DEPTH_QS
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
+    {
+    	  if ((ttData.value == VALUE_DRAW || is_loss(ttData.value)) && ttData.is_pv && ttData.bound == BOUND_EXACT)
+           (ss-7)->matesApproaching = (ss-3)->matesApproaching = true;
         return ttData.value;
+    }
 
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
@@ -1747,6 +1757,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (ss->inCheck && bestValue == -VALUE_INFINITE)
     {
         assert(!MoveList<LEGAL>(pos).size());
+        (ss-7)->matesApproaching = true;
+        (ss-3)->matesApproaching = true;
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
@@ -1755,13 +1767,20 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
+    Bound bound = bestValue >= beta ? BOUND_LOWER : BOUND_UPPER;
     if(!ss->inCheck && !moveCount && !pos.non_pawn_material(us) && type_of(pos.captured_piece()) >= ROOK)
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN)) : shift<SOUTH>(pos.pieces(us, PAWN))) & ~pos.pieces())) // no pawn pushes available
         {
             pos.state()->checkersBB = Rank1BB; // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size()) // stalemate
+            {
                 bestValue = VALUE_DRAW;
+                (ss-7)->matesApproaching = true;
+                (ss-3)->matesApproaching = true;
+                pvHit = true;
+                bound = BOUND_EXACT;
+            }
             pos.state()->checkersBB = 0;
         }
     }
@@ -1769,7 +1788,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
+                   bound, DEPTH_QS, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
