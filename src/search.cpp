@@ -993,8 +993,10 @@ moves_loop:  // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    Move nextmove;
+    while ((nextmove = mp.next_move()) != Move::none())
     {
+        move = nextmove;
         assert(move.is_ok());
 
         if (move == excludedMove)
@@ -1483,6 +1485,9 @@ moves_loop:  // When in check, search starts here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
+
+    if (!excludedMove && !bestMove && moveCount == 1)
+        bestMove = move; // save unique legal move into TT to avoid useless move-generations
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
