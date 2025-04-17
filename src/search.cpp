@@ -690,6 +690,7 @@ Value Search::Worker::search(
     (ss + 2)->cutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
+    bool uniqueMove = false;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -702,6 +703,12 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
+
+    if (ttData.move && ttData.move.type_of() == PROMOTION && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
+    {
+       uniqueMove = true;
+       ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+    }
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -863,7 +870,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && !uniqueMove
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -1114,7 +1121,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 15. Extensions
         // We take care to not overdo to avoid search getting stuck.
-        if (ss->ply < thisThread->rootDepth * 2)
+        if (ss->ply < thisThread->rootDepth * 2 && !uniqueMove)
         {
             // Singular extension search. If all moves but one
             // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1416,6 +1423,9 @@ moves_loop:  // When in check, search starts here
             else
                 quietsSearched.push_back(move);
         }
+
+        if (uniqueMove)
+           break;
     }
 
     // Step 21. Check for mate and stalemate
@@ -1487,7 +1497,10 @@ moves_loop:  // When in check, search starts here
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
 
     if (!excludedMove && !bestMove && moveCount == 1)
+    {
+        move.setSpecial();
         bestMove = move; // save unique legal move into TT to avoid useless move-generations
+    }
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
@@ -1582,6 +1595,12 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
         return ttData.value;
+    bool uniqueMove = false;
+    if (ttData.move && ttData.move.type_of() == PROMOTION && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
+    {
+         uniqueMove = true;
+         ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+    }
 
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
@@ -1735,6 +1754,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                     break;  // Fail high
             }
         }
+
+
+        if (uniqueMove)
+        	break;
     }
 
     // Step 9. Check for mate

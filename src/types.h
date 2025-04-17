@@ -394,6 +394,10 @@ class Move {
         return Move(T + ((pt - KNIGHT) << 12) + (from << 6) + to);
     }
 
+    void setSpecial() {
+       data += (1 << 14); // sign as promotion, but is not a real promotion (used for mark unique legal move in position into TT)
+    }
+
     constexpr Square from_sq() const {
         assert(is_ok());
         return Square((data >> 6) & 0x3F);
