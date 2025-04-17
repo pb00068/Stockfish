@@ -787,12 +787,17 @@ Value Search::Worker::search(
     }
 
     if (ttData.move && ttData.move.type_of() == PROMOTION
-       && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7)
-       &&  pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
-    {
-       uniqueMove = true;
-       ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-    }
+          && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
+       {
+
+          ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+          {
+            uniqueMove = true;
+          }
+          else ttData.move = Move::none();
+       }
+
 
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
@@ -832,6 +837,7 @@ Value Search::Worker::search(
         ttWriter.write(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_UNSEARCHED, Move::none(),
                        unadjustedStaticEval, tt.generation());
     }
+
 
     // Use static evaluation difference to improve quiet move ordering
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
@@ -1012,7 +1018,7 @@ moves_loop:  // When in check, search starts here
             continue;
 
         // Check for legality
-        if (!uniqueMove && !pos.legal(move))
+        if (!pos.legal(move))
             continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
