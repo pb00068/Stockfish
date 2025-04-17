@@ -703,12 +703,6 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
-
-    if (ttData.move && ttData.move.type_of() == PROMOTION && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
-    {
-       uniqueMove = true;
-       ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-    }
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -790,6 +784,14 @@ Value Search::Worker::search(
                 }
             }
         }
+    }
+
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+       && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7)
+       &&  pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+    {
+       uniqueMove = true;
+       ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
     }
 
     // Step 6. Static evaluation of the position
@@ -922,7 +924,7 @@ Value Search::Worker::search(
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
     probCutBeta = beta + 185 - 58 * improving;
-    if (depth >= 3
+    if (depth >= 3 && !uniqueMove
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
         // probCut there and in further interactions with transposition table cutoff
@@ -1010,7 +1012,7 @@ moves_loop:  // When in check, search starts here
             continue;
 
         // Check for legality
-        if (!pos.legal(move))
+        if (!uniqueMove && !pos.legal(move))
             continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
@@ -1121,7 +1123,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 15. Extensions
         // We take care to not overdo to avoid search getting stuck.
-        if (ss->ply < thisThread->rootDepth * 2 && !uniqueMove)
+        if (ss->ply < thisThread->rootDepth * 2)
         {
             // Singular extension search. If all moves but one
             // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1496,10 +1498,10 @@ moves_loop:  // When in check, search starts here
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
 
-    if (!excludedMove && !bestMove && moveCount == 1)
+    if (!excludedMove && !bestMove && moveCount == 1 && move.type_of() == NORMAL && !pos.capture(move))
     {
         move.setSpecial();
-        bestMove = move; // save unique legal move into TT to avoid useless move-generations
+        bestMove = move; // save unique legal quiet move into TT to avoid useless move-generations
     }
 
     // Write gathered information in transposition table. Note that the
@@ -1595,12 +1597,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
         return ttData.value;
-    bool uniqueMove = false;
-    if (ttData.move && ttData.move.type_of() == PROMOTION && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
-    {
-         uniqueMove = true;
-         ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-    }
 
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
@@ -1754,10 +1750,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                     break;  // Fail high
             }
         }
-
-
-        if (uniqueMove)
-        	break;
     }
 
     // Step 9. Check for mate
