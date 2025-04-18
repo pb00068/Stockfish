@@ -707,7 +707,7 @@ Value Search::Worker::search(
               && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
     {
           ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+          if (pos.pseudo_legal(ttData.move) && !pos.capture(ttData.move) && pos.legal(ttData.move))
                 uniqueMove = true;
           else ttData.move = Move::none();
     }
@@ -1428,7 +1428,7 @@ moves_loop:  // When in check, search starts here
                 quietsSearched.push_back(move);
         }
 
-        if (uniqueMove && !excludedMove && (ss-2)->moveCount == 1 && ss->inCheck == (ss-2)->inCheck)
+        if (uniqueMove && (ss-2)->moveCount == 1 && ss->inCheck == (ss-2)->inCheck)
           break;  // trust that this was and is the unique legal move
     }
 
