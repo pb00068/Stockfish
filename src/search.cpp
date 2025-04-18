@@ -703,6 +703,14 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+              && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
+    {
+          ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+                uniqueMove = true;
+          else ttData.move = Move::none();
+    }
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -786,17 +794,6 @@ Value Search::Worker::search(
         }
     }
 
-    if (ttData.move && ttData.move.type_of() == PROMOTION
-          && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
-       {
-
-          ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
-          {
-            uniqueMove = true;
-          }
-          else ttData.move = Move::none();
-       }
 
 
     // Step 6. Static evaluation of the position
@@ -837,7 +834,6 @@ Value Search::Worker::search(
         ttWriter.write(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_UNSEARCHED, Move::none(),
                        unadjustedStaticEval, tt.generation());
     }
-
 
     // Use static evaluation difference to improve quiet move ordering
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
@@ -1039,7 +1035,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = 0;
+        extension  = uniqueMove ? 1 : 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
@@ -1129,7 +1125,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 15. Extensions
         // We take care to not overdo to avoid search getting stuck.
-        if (ss->ply < thisThread->rootDepth * 2)
+        if (ss->ply < thisThread->rootDepth * 2 && !uniqueMove)
         {
             // Singular extension search. If all moves but one
             // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1432,8 +1428,7 @@ moves_loop:  // When in check, search starts here
                 quietsSearched.push_back(move);
         }
 
-        if (uniqueMove)
-           break;
+        //if (uniqueMove)  break;   to risky, in case of hash collision this would be fatal
     }
 
     // Step 21. Check for mate and stalemate
@@ -1507,7 +1502,7 @@ moves_loop:  // When in check, search starts here
     if (!excludedMove && !bestMove && moveCount == 1 && move.type_of() == NORMAL && !pos.capture(move))
     {
         move.setSpecial();
-        bestMove = move; // save unique legal quiet move into TT to avoid useless move-generations
+        bestMove = move; // save unique legal quiet move into TT
     }
 
     // Write gathered information in transposition table. Note that the
