@@ -1428,7 +1428,8 @@ moves_loop:  // When in check, search starts here
                 quietsSearched.push_back(move);
         }
 
-        //if (uniqueMove)  break;   to risky, in case of hash collision this would be fatal
+        if (uniqueMove && !excludedMove && (ss-2)->moveCount == 1 && ss->inCheck == (ss-2)->inCheck)
+          break;  // trust that this was and is the unique legal move
     }
 
     // Step 21. Check for mate and stalemate
