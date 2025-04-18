@@ -37,6 +37,7 @@
 //               | only in 64-bit mode and requires hardware with pext support.
 
     #include <cassert>
+    #include <cstddef>
     #include <cstdint>
     #include <type_traits>
 
@@ -394,7 +395,7 @@ class Move {
         return Move(T + ((pt - KNIGHT) << 12) + (from << 6) + to);
     }
 
-    void setSpecial() {
+    void setUnique() {
        data += (1 << 14); // sign as promotion, but is not a real promotion (used for mark unique legal move in position into TT)
     }
 
