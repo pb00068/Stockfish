@@ -794,8 +794,6 @@ Value Search::Worker::search(
         }
     }
 
-
-
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*thisThread, pos, ss);
@@ -1035,7 +1033,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = uniqueMove ? 1 : 0;
+        extension  = uniqueMove ? 2 - ss->inCheck : 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
@@ -1438,9 +1436,6 @@ moves_loop:  // When in check, search starts here
             else
                 quietsSearched.push_back(move);
         }
-
-        if (uniqueMove && (ss-2)->moveCount == 1 && depth <= 2)
-          break;  // trust that this was and is the unique legal move
     }
 
     // Step 21. Check for mate and stalemate
@@ -1511,7 +1506,7 @@ moves_loop:  // When in check, search starts here
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
 
-    if (depth > 2 && !excludedMove && (!bestMove || value < beta) && moveCount == 1 && move.type_of() == NORMAL)
+    if (!excludedMove && (!bestMove || value < beta) && moveCount == 1 && move.type_of() == NORMAL)
     {
         assert(MoveList<LEGAL>(pos).size() == 1);
         move.setUnique();
@@ -1607,9 +1602,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
 
-    if (ttData.move && ttData.move.type_of() == PROMOTION
-              && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
-         ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && ttData.depth >= DEPTH_QS
@@ -1670,6 +1663,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                                         (ss - 2)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
+    
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+              && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
+         ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
 
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
