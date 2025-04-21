@@ -103,7 +103,7 @@ MovePicker::MovePicker(const Position&              p,
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -116,7 +116,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.legal(ttm) && pos.see_ge(ttm, threshold));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -203,7 +203,12 @@ Move MovePicker::select(Pred filter) {
 
     for (; cur < endMoves; ++cur)
         if (*cur != ttMove && filter())
-            return *cur++;
+        {
+           if (pos.legal(*cur))
+              return *cur++;
+           else
+              cur->value = ILLEGALMOVE;
+        }
 
     return Move::none();
 }
@@ -319,8 +324,7 @@ top:
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 bool MovePicker::otherPieceTypesMobile(PieceType pt) {
-    if (stage != GOOD_QUIET  && stage != BAD_QUIET)
-        return true;
+    assert (stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
 
     // verify all generated captures and quiets
     for (ExtMove *m = moves; m < endBadQuiets; ++m)
@@ -336,10 +340,6 @@ bool MovePicker::otherPieceTypesMobile(PieceType pt) {
         }
     }
     return false;
-}
-
-void MovePicker::markCurrent_Illegal() {
-   (cur-1)->value = ILLEGALMOVE;
 }
 
 }  // namespace Stockfish
