@@ -324,7 +324,7 @@ bool MovePicker::other_tiece_types_mobile(PieceType pt) {
     assert (stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
 
     // verify all generated captures and quiets
-    for (ExtMove *m = moves; m < endBadQuiets; ++m)
+    for (ExtMove *m = moves; m < endMoves; ++m)
     {
         if (!m->raw()) // marked illegal
             continue;
