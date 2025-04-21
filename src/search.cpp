@@ -1003,7 +1003,7 @@ moves_loop:  // When in check, search starts here
         // Check for legality
         if (!pos.legal(move))
         {
-           mp.markCurrent_Illegal();
+           mp.mark_current_illegal();
            continue;
         }
         // At root obey the "searchmoves" option and skip moves not listed in Root
@@ -1079,7 +1079,7 @@ moves_loop:  // When in check, search starts here
                         && pos.non_pawn_material(us) == PieceValue[movedPiece]
                         && PieceValue[movedPiece] >= RookValue
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
-                        skip = mp.otherPieceTypesMobile(type_of(movedPiece));  // if the opponent captures last mobile piece it might be stalemate
+                        skip = mp.other_tiece_types_mobile(type_of(movedPiece));  // if the opponent captures last mobile piece it might be stalemate
 
                     if (skip)
                         continue;
