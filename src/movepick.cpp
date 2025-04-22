@@ -238,7 +238,6 @@ top:
 
     case GOOD_CAPTURE :
         if (select([&]() {
-                // Score losing capture with BADCAPTURE to be tried later
                 if (!pos.see_ge(*cur, -cur->value / 18))
                 {
                     Move g = *endBadCaptures; *endBadCaptures = *cur; *cur = g; endBadCaptures++;
@@ -320,8 +319,8 @@ top:
 
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
-bool MovePicker::other_tiece_types_mobile(PieceType pt) {
-    assert (stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
+bool MovePicker::other_piece_types_mobile(PieceType pt) {
+    assert (stage == GOOD_QUIET || stage == BAD_QUIET);
 
     // verify all generated captures and quiets
     for (ExtMove *m = moves; m < endMoves; ++m)

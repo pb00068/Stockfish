@@ -51,7 +51,7 @@ class MovePicker {
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move();
     void skip_quiet_moves();
-    bool other_tiece_types_mobile(PieceType pt);
+    bool other_piece_types_mobile(PieceType pt);
     void mark_current_illegal();
 
    private:

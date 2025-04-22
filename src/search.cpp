@@ -1075,14 +1075,16 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -154 * depth - seeHist))
                 {
                     bool skip = true;
-                    if (depth > 2 && !capture && givesCheck && alpha < 0
+                    if (depth > 2 && !capture && givesCheck && alpha < 0 && !ss->inCheck
                         && pos.non_pawn_material(us) == PieceValue[movedPiece]
                         && PieceValue[movedPiece] >= RookValue
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
-                        skip = mp.other_tiece_types_mobile(type_of(movedPiece));  // if the opponent captures last mobile piece it might be stalemate
+                        skip = mp.other_piece_types_mobile(type_of(movedPiece));  // if the opponent captures last mobile piece it might be stalemate
 
                     if (skip)
                         continue;
+                    else
+                    	sync_cout<< pos << UCIEngine::move(move, false) << sync_endl;
                 }
             }
             else
