@@ -1081,10 +1081,18 @@ moves_loop:  // When in check, search starts here
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
                         skip = mp.other_piece_types_mobile(type_of(movedPiece));  // if the opponent captures last mobile piece it might be stalemate
 
+                    if (!skip) {
+                        do_move(pos, move, st);
+                        ss->currentMove = move;
+                        Bitboard checkers =  pos.state()->checkersBB;
+                        pos.state()->checkersBB=~Bitboard(0); // search for recaptures only when in check
+                        Value v = qsearch<NonPV>(pos, ss + 1, 0, 1); // v <= 0 -> suddenly not more than draw -> stalemate or draw by repetition
+                        pos.state()->checkersBB = checkers;
+                        undo_move(pos, move);
+                        skip = v > 0;
+                    }
                     if (skip)
                         continue;
-                    else
-                    	sync_cout<< pos << UCIEngine::move(move, false) << sync_endl;
                 }
             }
             else
@@ -1553,7 +1561,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Move  move, bestMove;
     Value bestValue, value, futilityBase;
     bool  pvHit, givesCheck, capture;
-    int   moveCount;
+   // int   moveCount;
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1565,7 +1573,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Worker* thisThread = this;
     bestMove           = Move::none();
     ss->inCheck        = pos.checkers();
-    moveCount          = 0;
+    ss->moveCount          = 0;
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -1595,7 +1603,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
     if (ss->inCheck)
+    {
         bestValue = futilityBase = -VALUE_INFINITE;
+        if (pos.state()->checkersBB == ~Bitboard(0)) // we are in check but want to generate only recaptures
+            pos.state()->checkersBB = 0;
+    }
     else
     {
         const auto correctionValue = correction_value(*thisThread, pos, ss);
@@ -1660,11 +1672,13 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         if (!pos.legal(move))
             continue;
+        if (ss->inCheck && !pos.state()->checkersBB && prevSq != move.to_sq()) // search for recaptures only
+           continue;
 
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
 
-        moveCount++;
+        ss->moveCount++;
 
         // Step 6. Pruning
         if (!is_loss(bestValue))
@@ -1673,7 +1687,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
                 && move.type_of() != PROMOTION)
             {
-                if (moveCount > 2)
+                if (ss->moveCount > 2)
                     continue;
 
                 Value futilityValue = futilityBase + PieceValue[pos.piece_on(move.to_sq())];
@@ -1759,7 +1773,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
 
     Color us = pos.side_to_move();
-    if (!ss->inCheck && !moveCount && !pos.non_pawn_material(us)
+    if (!ss->inCheck && !ss->moveCount && !pos.non_pawn_material(us)
         && type_of(pos.captured_piece()) >= ROOK)
     {
         if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN))
