@@ -380,6 +380,8 @@ void Search::Worker::iterative_deepening() {
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
                 rootDelta = beta - alpha;
+                aspBeta = beta;
+                beforeFirstFH=true;
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
                 // Bring the best move to the front. It is critical that sorting
@@ -416,7 +418,10 @@ void Search::Worker::iterative_deepening() {
                 }
                 else if (bestValue >= beta)
                 {
-                    beta = std::min(bestValue + delta, VALUE_INFINITE);
+                   if (aspBeta != beta && aspBeta > bestValue)
+                       beta = std::min((bestValue + aspBeta)/2 + delta, VALUE_INFINITE);
+                    else
+                       beta = std::min(bestValue + delta, VALUE_INFINITE);
                     ++failedHighCnt;
                 }
                 else
@@ -1402,6 +1407,9 @@ moves_loop:  // When in check, search starts here
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
                     ss->cutoffCnt += (extension < 2) || PvNode;
                     assert(value >= beta);  // Fail high
+                    if (ss->ply > 8 && PvNode && beforeFirstFH && beta == aspBeta)
+                        aspBeta = value;
+                    beforeFirstFH = false;
                     break;
                 }
                 else
