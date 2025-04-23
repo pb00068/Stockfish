@@ -1083,13 +1083,11 @@ moves_loop:  // When in check, search starts here
 
                     if (!skip) {
                         do_move(pos, move, st);
+                        assert(pos.checkers() && !more_than_one(pos.checkers)); // no other sliders left
                         ss->currentMove = move;
-                        Bitboard checkers =  pos.state()->checkersBB;
-                        pos.state()->checkersBB=~Bitboard(0); // search for recaptures only when in check
-                        Value v = qsearch<NonPV>(pos, ss + 1, 0, 1); // v <= 0 -> suddenly not more than draw -> stalemate or draw by repetition
-                        pos.state()->checkersBB = checkers;
+                        pos.state()->checkersBB=~Bitboard(0); // search for captures only
+                        skip = qsearch<NonPV>(pos, ss + 1, 0, 1) > 0; // if <= 0 -> stalemate when capturing checker
                         undo_move(pos, move);
-                        skip = v > 0;
                     }
                     if (skip)
                         continue;
@@ -1672,7 +1670,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         if (!pos.legal(move))
             continue;
-        if (ss->inCheck && !pos.state()->checkersBB && prevSq != move.to_sq()) // search for recaptures only
+        if (ss->inCheck && !pos.state()->checkersBB && prevSq != move.to_sq()) // stalemate verify
            continue;
 
         givesCheck = pos.gives_check(move);
