@@ -378,6 +378,8 @@ void Position::set_state() const {
     for (Piece pc : Pieces)
         for (int cnt = 0; cnt < pieceCount[pc]; ++cnt)
             st->materialKey ^= Zobrist::psq[pc][8 + cnt];
+
+    st->mobilenonPawnMaterial = st->nonPawnMaterial[sideToMove];
 }
 
 
@@ -878,6 +880,25 @@ DirtyPiece Position::do_move(Move                      m,
 
     // Update king attacks used for fast check detection
     set_check_info();
+
+    st->mobilenonPawnMaterial = st->nonPawnMaterial[sideToMove];
+    if (st->mobilenonPawnMaterial <= PieceValue[QUEEN] && st->mobilenonPawnMaterial > 2 * PieceValue[KNIGHT])
+    {
+    Bitboard b = pieces(sideToMove, ROOK, BISHOP);
+    while (b)
+    {
+       Square sq = pop_lsb(b);
+       PieceType pt = type_of(piece_on(sq));
+       Bitboard bb = PseudoAttacks[KING][sq] & PseudoAttacks[pt][sq];
+       Bitboard immobile = 0;
+       if ((bb & (pieces(sideToMove, PAWN, KING) | immobile)) == bb)
+       {
+          st->mobilenonPawnMaterial -= PieceValue[pt];
+          immobile |= sq;
+          //sync_cout << *this << " square" << UCIEngine::move(Move(sq,sq), false) << " mobile material " <<st->mobilenonPawnMaterial << " non material " <<st->nonPawnMaterial[sideToMove] << sync_endl;
+       }
+    }
+    }
 
     // Calculate the repetition info. It is the ply distance from the previous
     // occurrence of the same position, negative in the 3-fold case, or zero

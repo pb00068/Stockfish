@@ -44,6 +44,7 @@ struct StateInfo {
     Key    minorPieceKey;
     Key    nonPawnKey[COLOR_NB];
     Value  nonPawnMaterial[COLOR_NB];
+    Value  mobilenonPawnMaterial;
     int    castlingRights;
     int    rule50;
     int    pliesFromNull;
@@ -159,6 +160,7 @@ class Position {
     bool  has_repeated() const;
     int   rule50_count() const;
     Value non_pawn_material(Color c) const;
+    Value mobile_non_pawn_material() const;
     Value non_pawn_material() const;
 
     // Position consistency check, for debugging
@@ -306,6 +308,8 @@ inline Key Position::minor_piece_key() const { return st->minorPieceKey; }
 inline Key Position::non_pawn_key(Color c) const { return st->nonPawnKey[c]; }
 
 inline Value Position::non_pawn_material(Color c) const { return st->nonPawnMaterial[c]; }
+
+inline Value Position::mobile_non_pawn_material() const { return st->mobilenonPawnMaterial; }
 
 inline Value Position::non_pawn_material() const {
     return non_pawn_material(WHITE) + non_pawn_material(BLACK);

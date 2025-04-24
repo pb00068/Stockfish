@@ -1074,8 +1074,8 @@ moves_loop:  // When in check, search starts here
                 {
                     bool skip = true;
                     if (depth > 2 && !capture && givesCheck && alpha < 0
-                        && pos.non_pawn_material(us) == PieceValue[movedPiece]
-                        && PieceValue[movedPiece] >= RookValue
+                        && pos.mobile_non_pawn_material() == PieceValue[movedPiece]
+                        && PieceValue[movedPiece] >= BishopValue
                         && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
                         skip = mp.otherPieceTypesMobile(
                           type_of(movedPiece),
