@@ -690,6 +690,7 @@ Value Search::Worker::search(
     (ss + 2)->cutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
+    bool uniqueMove = false;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -702,6 +703,14 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+              && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
+    {
+          ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+                uniqueMove = true;
+          else ttData.move = Move::none();
+    }
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -785,6 +794,8 @@ Value Search::Worker::search(
         }
     }
 
+
+
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*thisThread, pos, ss);
@@ -864,7 +875,7 @@ Value Search::Worker::search(
         return beta + (eval - beta) / 3;
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && !uniqueMove
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -916,7 +927,7 @@ Value Search::Worker::search(
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
     probCutBeta = beta + 185 - 58 * improving;
-    if (depth >= 3
+    if (depth >= 3 && !uniqueMove
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
         // probCut there and in further interactions with transposition table cutoff
@@ -993,8 +1004,10 @@ moves_loop:  // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    Move nextmove;
+    while ((nextmove = mp.next_move()) != Move::none())
     {
+        move = nextmove;
         assert(move.is_ok());
 
         if (move == excludedMove)
@@ -1022,7 +1035,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = 0;
+        extension  = uniqueMove ? 2 : 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
@@ -1124,7 +1137,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 15. Extensions
         // We take care to not overdo to avoid search getting stuck.
-        if (ss->ply < thisThread->rootDepth * 2)
+        if (ss->ply < thisThread->rootDepth * 2 && !uniqueMove)
         {
             // Singular extension search. If all moves but one
             // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1425,6 +1438,8 @@ moves_loop:  // When in check, search starts here
             else
                 quietsSearched.push_back(move);
         }
+
+        //if (uniqueMove)  break;   to risky, in case of hash collision this would be fatal
     }
 
     // Step 21. Check for mate and stalemate
@@ -1494,6 +1509,12 @@ moves_loop:  // When in check, search starts here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
+
+    if (!excludedMove && !bestMove && moveCount == 1 && move.type_of() == NORMAL && !pos.capture(move))
+    {
+        move.setSpecial();
+        bestMove = move; // save unique legal quiet move into TT
+    }
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
