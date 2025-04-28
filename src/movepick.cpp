@@ -99,10 +99,10 @@ MovePicker::MovePicker(const Position&              p,
     ply(pl) {
 
     if (pos.checkers())
-        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
+        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.legal(ttm) && pos.see_ge(ttm, threshold));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -202,7 +202,14 @@ Move MovePicker::select(Pred filter) {
 
     for (; cur < endMoves; ++cur)
         if (*cur != ttMove && filter())
+        {
+            if (!pos.legal(*cur))
+            {
+                *cur++ = Move::none();
+                continue;
+            }
             return *cur++;
+        }
 
     return Move::none();
 }
@@ -223,7 +230,6 @@ top:
     case QSEARCH_TT :
     case PROBCUT_TT :
         ++stage;
-        cur = moves + 1;
         return ttMove;
 
     case CAPTURE_INIT :
@@ -337,10 +343,6 @@ bool MovePicker::other_piece_types_mobile(PieceType pt) {
         }
     }
     return false;
-}
-
-void MovePicker::mark_current_illegal() {
-   *(cur-1) = Move::none();
 }
 
 }  // namespace Stockfish
