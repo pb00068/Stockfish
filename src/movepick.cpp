@@ -204,11 +204,9 @@ Move MovePicker::select(Pred filter) {
         if (*cur != ttMove && filter())
         {
             if (!pos.legal(*cur))
-            {
-                *cur++ = Move::none();
-                continue;
-            }
-            return *cur++;
+                *cur = Move::none();
+            else
+                return *cur++;
         }
 
     return Move::none();
