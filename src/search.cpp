@@ -908,7 +908,7 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
         if (uniqueMove)
-           undo_move(pos,move);
+           undo_move(pos,ttData.move);
         else
            undo_null_move(pos);
 
