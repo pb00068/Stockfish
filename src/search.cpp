@@ -645,7 +645,7 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
-    bool  capture, ttCapture;
+    bool  capture, ttCapture, uniqueMove = false;
     int   priorReduction;
     Piece movedPiece;
 
@@ -710,6 +710,14 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+                  && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(us, ttData.move.from_sq()) != RANK_7))
+    {
+          ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
+          if (pos.pseudo_legal(ttData.move) && pos.legal(ttData.move))
+                uniqueMove = true;
+          else ttData.move = Move::none();
+    }
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -882,15 +890,27 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 213, 6) + depth / 3 + 5;
 
-        ss->currentMove                   = Move::null();
+
         ss->continuationHistory           = &thisThread->continuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &thisThread->continuationCorrectionHistory[NO_PIECE][0];
 
-        do_null_move(pos, st);
+        if (uniqueMove)
+        {
+            ss->currentMove = ttData.move;
+            do_move(ttData.move, st);
+        }
+        else
+        {
+            ss->currentMove = Move::null();
+            do_null_move(pos, st);
+        }
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
-        undo_null_move(pos);
+        if (uniqueMove)
+           undo_move(pos,move);
+        else
+           undo_null_move(pos);
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
@@ -1002,8 +1022,10 @@ moves_loop:  // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    Move nextmove;
+    while ((nextmove = mp.next_move()) != Move::none())
     {
+        move = nextmove;
         assert(move.is_ok());
 
         if (move == excludedMove)
@@ -1506,6 +1528,12 @@ moves_loop:  // When in check, search starts here
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
 
+    if (uniqueMove || (!excludedMove && moveCount == 1 && move.type_of() == NORMAL && move != ttData.move && !mp.next_move()))
+    {
+        move.setUnique();
+        bestMove = move; // save unique legal quiet move into TT
+    }
+
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
@@ -1654,6 +1682,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         futilityBase = ss->staticEval + 376;
     }
+
+    if (ttData.move && ttData.move.type_of() == PROMOTION
+         && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
+              ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
