@@ -99,10 +99,10 @@ MovePicker::MovePicker(const Position&              p,
     ply(pl) {
 
     if (pos.checkers())
-        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
+        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.legal(ttm) && pos.see_ge(ttm, threshold));
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -204,7 +204,7 @@ Move MovePicker::select(Pred filter) {
         if (*cur != ttMove && filter())
         {
             if (!pos.legal(*cur))
-                *cur = Move::none();
+                *cur = Move::null();
             else
                 return *cur++;
         }
@@ -228,7 +228,9 @@ top:
     case QSEARCH_TT :
     case PROBCUT_TT :
         ++stage;
-        return ttMove;
+        if (pos.legal(ttMove))
+            return ttMove;
+        [[fallthrough]];
 
     case CAPTURE_INIT :
     case PROBCUT_INIT :
@@ -327,10 +329,9 @@ void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 bool MovePicker::other_piece_types_mobile(PieceType pt) {
     assert (stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
 
-    // verify all generated captures and quiets
     for (ExtMove *m = moves; m < endMoves; ++m)
     {
-        if (!m->raw()) // marked illegal
+        if (*m == Move::null()) // marked illegal
             continue;
         if (type_of(pos.moved_piece(*m)) != pt)
         {
