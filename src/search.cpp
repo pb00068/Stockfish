@@ -897,7 +897,7 @@ Value Search::Worker::search(
         if (uniqueMove)
         {
             ss->currentMove = ttData.move;
-            do_move(ttData.move, st);
+            do_move(pos, ttData.move, st);
         }
         else
         {
