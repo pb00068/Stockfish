@@ -203,10 +203,10 @@ Move MovePicker::select(Pred filter) {
     for (; cur < endMoves; ++cur)
         if (*cur != ttMove && filter())
         {
-            if (!pos.legal(*cur))
-                *cur = Move::null();
-            else
+            if (pos.legal(*cur))
                 return *cur++;
+            else
+               *cur = Move::none(); // mark as illegal
         }
 
     return Move::none();
@@ -270,14 +270,13 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([]() { return true; }))
-        {
-            if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
-                return *(cur - 1);
-
-            // Remaining quiets are bad
-            beginBadQuiets = cur - 1;
-        }
+        if (!skipQuiets && select([&]() {
+            bool good = cur->value > -7998 && cur->value >= quiet_threshold(depth);
+            if (!good)
+              beginBadQuiets = endMoves = cur;
+            return good;
+        }))
+            return *(cur - 1);
 
         // Prepare the pointers to loop over the bad captures
         cur      = moves;
@@ -331,9 +330,7 @@ bool MovePicker::other_piece_types_mobile(PieceType pt) {
 
     for (ExtMove *m = moves; m < endMoves; ++m)
     {
-        if (*m == Move::null()) // marked illegal
-            continue;
-        if (type_of(pos.moved_piece(*m)) != pt)
+        if (*m && type_of(pos.moved_piece(*m)) != pt)
         {
             if (type_of(pos.moved_piece(*m)) != KING)
                return true;
