@@ -191,7 +191,14 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
-
+    b &= ~attacks_bb<KING>(pos.square<KING>(~Us));
+    Bitboard bb = pos.pieces(~Us, QUEEN, ROOK, BISHOP);
+    while (bb)
+    {
+        Square s = pop_lsb(bb);
+        PieceType pt = type_of(pos.piece_on(s));
+        b &= ~attacks_bb(pt, s, pos.pieces());
+    }
     while (b)
         *moveList++ = Move(ksq, pop_lsb(b));
 
