@@ -36,9 +36,8 @@ enum Stages {
     CAPTURE_INIT,
     GOOD_CAPTURE,
     QUIET_INIT,
-    GOOD_QUIET,
+    QUIET,
     BAD_CAPTURE,
-    BAD_QUIET,
 
     // generate evasion moves
     EVASION_TT,
@@ -260,15 +259,9 @@ top:
         ++stage;
         [[fallthrough]];
 
-    case GOOD_QUIET :
+    case QUIET :
         if (!skipQuiets && select([]() { return true; }))
-        {
-            if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
-                return *(cur - 1);
-
-            // Remaining quiets are bad
-            beginBadQuiets = cur - 1;
-        }
+            return *(cur - 1);
 
         // Prepare the pointers to loop over the bad captures
         cur      = moves;
@@ -280,17 +273,6 @@ top:
     case BAD_CAPTURE :
         if (select([]() { return true; }))
             return *(cur - 1);
-
-        // Prepare the pointers to loop over the bad quiets
-        cur      = beginBadQuiets;
-        endMoves = endBadQuiets;
-
-        ++stage;
-        [[fallthrough]];
-
-    case BAD_QUIET :
-        if (!skipQuiets)
-            return select([]() { return true; });
 
         return Move::none();
 
@@ -318,7 +300,7 @@ top:
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 bool MovePicker::otherPieceTypesMobile(PieceType pt, ValueList<Move, 32>& capturesSearched) {
-    if (stage != GOOD_QUIET && stage != BAD_QUIET)
+    if (stage != QUIET)
         return true;
 
     // verify good captures
