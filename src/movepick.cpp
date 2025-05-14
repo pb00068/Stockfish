@@ -197,13 +197,8 @@ template<typename Pred>
 Move MovePicker::select(Pred filter) {
 
     for (; cur < endMoves; ++cur)
-        if (*cur != ttMove && filter())
-        {
-          if (pos.legal(*cur))
+        if (*cur != ttMove && filter() && pos.legal(*cur))
             return *cur++;
-          else
-            *cur = Move::none(); // for method other_piece_types_mobile
-        }
 
     return Move::none();
 }
@@ -327,16 +322,11 @@ void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 bool MovePicker::other_piece_types_mobile(PieceType pt) {
     assert(stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
 
-    // verify all generated captures and quiets
+    // verify all generated moves
     for (ExtMove* m = moves; m < endMoves; ++m)
     {
-        if (*m && type_of(pos.moved_piece(*m)) != pt)
-        {
-            if (type_of(pos.moved_piece(*m)) != KING)
-                return true;
-            if (pos.legal(*m))
-                return true;
-        }
+        if (type_of(pos.moved_piece(*m)) != pt && pos.legal(*m))
+           return true;
     }
     return false;
 }
