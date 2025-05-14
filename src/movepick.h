@@ -51,7 +51,6 @@ class MovePicker {
     Move next_move();
     void skip_quiet_moves();
     bool other_piece_types_mobile(PieceType pt);
-    void mark_current_illegal();
 
    private:
     template<typename Pred>

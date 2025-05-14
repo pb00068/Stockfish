@@ -99,10 +99,10 @@ MovePicker::MovePicker(const Position&              p,
     ply(pl) {
 
     if (pos.checkers())
-        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
+        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold) && pos.legal(ttm));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -198,7 +198,12 @@ Move MovePicker::select(Pred filter) {
 
     for (; cur < endMoves; ++cur)
         if (*cur != ttMove && filter())
+        {
+          if (pos.legal(*cur))
             return *cur++;
+          else
+            *cur = Move::none(); // for method other_piece_types_mobile
+        }
 
     return Move::none();
 }
@@ -260,20 +265,23 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([]() { return true; }))
+        if (!skipQuiets)
         {
-            if ((cur - 1)->value > -7998 || (cur - 1)->value <= quiet_threshold(depth))
-                return *(cur - 1);
-
-            // Remaining quiets are bad
-            beginBadQuiets = cur - 1;
+            if (select([&]() {
+                if (stage == GOOD_QUIET && cur->value <= -7998 && cur->value > quiet_threshold(depth))
+                {
+                    stage = BAD_CAPTURE;
+                    beginBadQuiets = cur;
+                }
+                return stage == GOOD_QUIET;
+            }))
+              return *(cur - 1);
         }
 
         // Prepare the pointers to loop over the bad captures
         cur      = moves;
         endMoves = endBadCaptures;
-
-        ++stage;
+        stage = BAD_CAPTURE;
         [[fallthrough]];
 
     case BAD_CAPTURE :
@@ -333,6 +341,5 @@ bool MovePicker::other_piece_types_mobile(PieceType pt) {
     return false;
 }
 
-void MovePicker::mark_current_illegal() { *(cur - 1) = Move::none(); }
 
 }  // namespace Stockfish
