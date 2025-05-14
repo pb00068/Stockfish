@@ -1124,6 +1124,12 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
+                // measure against search explosions: don't multiple extend bouncing & triangulation moves
+                if (ss->ply > 6 && (move == (ss-2)->currentMove.reverse() ||
+                   (move.to_sq() == (ss-4)->currentMove.from_sq() &&  move.from_sq() == (ss-2)->currentMove.to_sq() && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq())))
+                    extension = 1;
+                else
+                {
                 int corrValAdj1  = std::abs(correctionValue) / 248400;
                 int corrValAdj2  = std::abs(correctionValue) / 249757;
                 int doubleMargin = -4 + 244 * PvNode - 206 * !ttCapture - corrValAdj1
@@ -1134,6 +1140,7 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                }
 
                 depth++;
             }

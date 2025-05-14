@@ -401,6 +401,8 @@ class Move {
         return Square(data & 0x3F);
     }
 
+    constexpr Move reverse() const { return Move(to_sq(), from_sq()); }
+
     constexpr int from_to() const { return data & 0xFFF; }
 
     constexpr MoveType type_of() const { return MoveType(data & (3 << 14)); }
