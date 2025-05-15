@@ -654,7 +654,7 @@ void UCIEngine::on_iter(const Engine::InfoIter& info) {
        << " currmove " << info.currmove               //
        << " currmovenumber " << info.currmovenumber;  //
 
-    sync_cout << ss.str() << sync_endl;
+   // sync_cout << ss.str() << sync_endl;
 }
 
 void UCIEngine::on_bestmove(std::string_view bestmove, std::string_view ponder) {

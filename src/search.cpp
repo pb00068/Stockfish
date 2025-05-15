@@ -855,6 +855,7 @@ Value Search::Worker::search(
         ss->continuationHistory           = &thisThread->continuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &thisThread->continuationCorrectionHistory[NO_PIECE][0];
 
+        bool isour = !pos.fen().compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6 b - - 3 2");
         do_null_move(pos, st);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
@@ -864,6 +865,8 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
         {
+            if (isour)
+               sync_cout << "info last move nmp refuted " << UCIEngine::move((ss-1)->currentMove,false) << " nullValue " << nullValue << " beta " << beta << " depth " << (depth - R) << sync_endl;
             if (thisThread->nmpMinPly || depth < 16)
                 return nullValue;
 
@@ -1043,7 +1046,11 @@ moves_loop:  // When in check, search starts here
                     Value futilityValue = ss->staticEval + 232 + 224 * lmrDepth
                                         + PieceValue[capturedPiece] + 131 * captHist / 1024;
                     if (futilityValue <= alpha)
+                    {
+                    	if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+                    	  sync_cout << "info move  " << UCIEngine::move(move,false) << " Futility pruning for captures , depth " << depth << sync_endl;
                         continue;
+                    }
                 }
 
                 // SEE based pruning for captures and checks
@@ -1059,7 +1066,11 @@ moves_loop:  // When in check, search starts here
                         skip = mp.other_piece_types_mobile(type_of(movedPiece));
 
                     if (skip)
+                    {
+                    	if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+                       sync_cout << "info move  " << UCIEngine::move(move,false) << " SEE pruned , depth " << depth << sync_endl;
                         continue;
+                    }
                 }
             }
             else
@@ -1071,14 +1082,18 @@ moves_loop:  // When in check, search starts here
 
                 // Continuation history based pruning
                 if (history < -4229 * depth)
+                {
+                	if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+                   sync_cout << "info move  " << UCIEngine::move(move,false) << " cont hist pruned , depth " << depth << sync_endl;
                     continue;
+                }
 
                 history += 68 * thisThread->mainHistory[us][move.from_to()] / 32;
 
                 lmrDepth += history / 3388;
 
                 Value futilityValue = ss->staticEval + (bestMove ? 46 : 138) + 117 * lmrDepth
-                                    + 102 * (ss->staticEval > alpha);
+                                    + 102 * (ss->staticEval > alpha) + 2500 * (type_of(movedPiece) == PAWN && (ss-1)->currentMove == Move::null() && distance(move.from_sq(), move.to_sq()) == 2);
 
                 // Futility pruning: parent node
                 // (*Scaler): Generally, more frequent futility pruning
@@ -1088,6 +1103,8 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && !is_decisive(bestValue)
                         && !is_win(futilityValue))
                         bestValue = futilityValue;
+                     if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+                           sync_cout << "info move  " << UCIEngine::move(move,false) << " Futility pruning: parent node pruned futility " <<  futilityValue << " alpha " << alpha << "  depth " << depth << sync_endl;
                     continue;
                 }
 
@@ -1095,7 +1112,11 @@ moves_loop:  // When in check, search starts here
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
+                {
+                	 if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+                		 sync_cout << "info move  " << UCIEngine::move(move,false) << " negative See pruned , depth " << depth << sync_endl;
                     continue;
+                }
             }
         }
 
@@ -1170,6 +1191,9 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+
+        if ((type_of(movedPiece) == PAWN && (ss-1)->currentMove == Move::null() && distance(move.from_sq(), move.to_sq()) == 2))
+        	extension = 4;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
@@ -1367,6 +1391,8 @@ moves_loop:  // When in check, search starts here
         int inc = (value == bestValue && ss->ply + 2 >= thisThread->rootDepth
                    && (int(nodes) & 15) == 0 && !is_win(std::abs(value) + 1));
 
+        if (!pos.fen().substr(0,32).compare("8/6pp/1K6/1N4P1/8/1N6/npn1P3/1k6"))
+        	sync_cout << "info move  " << UCIEngine::move(move,false) << " value " << value << " beta " << beta << " depth " << depth << sync_endl;
         if (value + inc > bestValue)
         {
             bestValue = value;
