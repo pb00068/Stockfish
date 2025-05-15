@@ -46,8 +46,8 @@ class MovePicker {
                const CapturePieceToHistory*,
                const PieceToHistory**,
                const PawnHistory*,
-               int);
-    MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
+               int, bool);
+    MovePicker(const Position&, Move, int, const CapturePieceToHistory*, bool);
     Move next_move();
     void skip_quiet_moves();
     bool other_piece_types_mobile(PieceType pt);

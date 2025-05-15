@@ -87,7 +87,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl, bool toExclude) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -99,15 +99,15 @@ MovePicker::MovePicker(const Position&              p,
     ply(pl) {
 
     if (pos.checkers())
-        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
+        stage = EVASION_TT + !(!toExclude && ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(!toExclude && ttm && pos.pseudo_legal(ttm) && pos.legal(ttm));
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph, bool toExclude) :
     pos(p),
     captureHistory(cph),
     ttMove(ttm),
@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold) && pos.legal(ttm));
+          + !(!toExclude && ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold) && pos.legal(ttm));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -320,14 +320,12 @@ top:
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 bool MovePicker::other_piece_types_mobile(PieceType pt) {
-    assert(stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
+    assert(stage == GOOD_QUIET || stage == BAD_QUIET);
 
     // verify all generated moves
     for (ExtMove* m = moves; m < endMoves; ++m)
-    {
         if (type_of(pos.moved_piece(*m)) != pt && pos.legal(*m))
            return true;
-    }
     return false;
 }
 

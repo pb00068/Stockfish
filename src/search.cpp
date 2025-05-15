@@ -904,15 +904,12 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory, bool(excludedMove));
         Depth      probCutDepth = std::max(depth - 4, 0);
 
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
-
-            if (move == excludedMove)
-                continue;
 
             assert(pos.capture_stage(move));
 
@@ -963,7 +960,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, bool(excludedMove));
 
     value = bestValue;
 
@@ -974,9 +971,6 @@ moves_loop:  // When in check, search starts here
     while ((move = mp.next_move()) != Move::none())
     {
         assert(move.is_ok());
-
-        if (move == excludedMove)
-            continue;
 
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
@@ -1045,10 +1039,10 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -158 * depth - seeHist))
                 {
                     bool skip = true;
-                    if (depth > 2 && !capture && givesCheck && alpha < 0
+                    if (depth > 2 && !capture && givesCheck && alpha < 0 && !ss->inCheck
                         && pos.non_pawn_material(us) == PieceValue[movedPiece]
                         && PieceValue[movedPiece] >= RookValue
-                        && !(PseudoAttacks[KING][pos.square<KING>(us)] & move.from_sq()))
+                        && !(attacks_bb<KING>(pos.square<KING>(us)) & move.from_sq()))
                         // if the opponent captures last mobile piece it might be stalemate
                         skip = mp.other_piece_types_mobile(type_of(movedPiece));
 
@@ -1618,7 +1612,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, false);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
