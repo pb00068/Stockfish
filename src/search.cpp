@@ -843,7 +843,7 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
-        && ss->staticEval >= beta - 19 * depth + 389 && !excludedMove && pos.non_pawn_material(us)
+        && ss->staticEval >= beta - 19 * depth + 389 && !excludedMove && pos.non_pawn_material(us) && !(!ttData.move && ttHit && ttData.is_pv)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
         assert(eval - beta >= 0);
@@ -968,11 +968,14 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int seePrundedCount = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    Move next;
+    while ((next = mp.next_move()) != Move::none())
     {
+        move = next;
         assert(move.is_ok());
 
         if (move == excludedMove)
@@ -1025,7 +1028,7 @@ moves_loop:  // When in check, search starts here
         if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-            if (moveCount >= futility_move_count(improving, depth))
+            if (moveCount != seePrundedCount && moveCount >= futility_move_count(improving, depth))
                 mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
@@ -1043,7 +1046,11 @@ moves_loop:  // When in check, search starts here
                     Value futilityValue = ss->staticEval + 232 + 224 * lmrDepth
                                         + PieceValue[capturedPiece] + 131 * captHist / 1024;
                     if (futilityValue <= alpha)
-                        continue;
+                    {
+                    	if (!pos.see_ge(move))
+                    	    seePrundedCount++;
+                    	continue;
+                    }
                 }
 
                 // SEE based pruning for captures and checks
@@ -1059,7 +1066,10 @@ moves_loop:  // When in check, search starts here
                         skip = mp.other_piece_types_mobile(type_of(movedPiece));
 
                     if (skip)
+                    {
+                        seePrundedCount++;
                         continue;
+                    }
                 }
             }
             else
@@ -1071,7 +1081,11 @@ moves_loop:  // When in check, search starts here
 
                 // Continuation history based pruning
                 if (history < -4229 * depth)
+                {
+                    if(!pos.see_ge(move))
+                         seePrundedCount++;
                     continue;
+                }
 
                 history += 68 * thisThread->mainHistory[us][move.from_to()] / 32;
 
@@ -1088,14 +1102,21 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && !is_decisive(bestValue)
                         && !is_win(futilityValue))
                         bestValue = futilityValue;
-                    continue;
+                    {
+                    	   if(!pos.see_ge(move))
+                    		   seePrundedCount++;
+                         continue;
+                    }
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
+                {
+                    seePrundedCount++;
                     continue;
+                }
             }
         }
 
@@ -1293,7 +1314,6 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
-
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
         // Step 20. Check for a new best move
@@ -1401,6 +1421,12 @@ moves_loop:  // When in check, search starts here
         }
     }
 
+
+    if  (!bestMove && moveCount && moveCount == seePrundedCount && !ss->ttPv && !ttData.move)
+    {
+         ss->ttPv = true; // mark as do not null move pruning
+         unadjustedStaticEval -= 500;
+    }
     // Step 21. Check for mate and stalemate
     // All legal moves have been searched and if there are no legal moves, it
     // must be a mate or a stalemate. If we are in a singular extension search then
