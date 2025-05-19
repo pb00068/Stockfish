@@ -1154,7 +1154,7 @@ bool Position::see_ge(Move m, int threshold) const {
         for (Bitboard h = pieces(sideToMove, ROOK, QUEEN, KING) & occupied; h;)
         {
          Square heavy = pop_lsb(h);
-         if (type_of(piece_on(heavy)) != KING && threshold >= -RookValue)
+         if (type_of(piece_on(heavy)) != KING && threshold < -RookValue)
              continue;
          if (attacks_bb<KNIGHT>(heavy) & attacks_bb<KNIGHT>(to))
          {
@@ -1163,10 +1163,7 @@ bool Position::see_ge(Move m, int threshold) const {
              Square knight = pop_lsb(b);
              Bitboard bbb = (attacks_bb<KNIGHT>(knight) & attacks_bb<KNIGHT>(heavy) & attacks_bb<KNIGHT>(to) & ~(pieces(~sideToMove) & occupied));
              if (bbb &&  !(attackers_to(lsb(bbb), occupied) & pieces(sideToMove) & occupied))
-             {
-               sync_cout << *this << " is this move " << UCIEngine::move(m, false) << " good? swap " << swap << " th " << threshold << Bitboards::pretty(bbb)  << sync_endl;
                return false;
-             }
           }
          }
         }
