@@ -52,6 +52,7 @@ class MovePicker {
     void skip_quiet_moves();
     bool other_piece_types_mobile(PieceType pt);
     void mark_current_illegal();
+    bool                         skipQuiets = false;
 
    private:
     template<typename Pred>
@@ -73,7 +74,6 @@ class MovePicker {
     int                          threshold;
     Depth                        depth;
     int                          ply;
-    bool                         skipQuiets = false;
     ExtMove                      moves[MAX_MOVES];
 };
 

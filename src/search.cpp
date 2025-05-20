@@ -1495,7 +1495,7 @@ moves_loop:  // When in check, search starts here
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
     {
-        if (!bestMove && !ttData.move && capturesSearched.size() + quietsSearched.size() == 1)
+        if (!bestMove && !mp.skipQuiets && !ttData.move && capturesSearched.size() + quietsSearched.size() == 1)
              bestMove = capturesSearched.size() ? capturesSearched[0] : quietsSearched[0];
         ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                        bestValue >= beta    ? BOUND_LOWER
