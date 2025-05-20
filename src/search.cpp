@@ -990,8 +990,6 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-    int searchedCount = 0;
-    bool skipQuiets = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1052,7 +1050,7 @@ moves_loop:  // When in check, search starts here
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
             if (moveCount >= futility_move_count(improving, depth))
-                skipQuiets = true, mp.skip_quiet_moves();
+                mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
             int lmrDepth = newDepth - r / 1024;
@@ -1315,7 +1313,6 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
-        searchedCount++;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1435,9 +1432,6 @@ moves_loop:  // When in check, search starts here
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
 
-    if (moveCount && !bestMove && !skipQuiets && searchedCount == 0)
-    	dbg_hit_on(true);
-
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
 
@@ -1500,12 +1494,16 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
+    {
+        if (!bestMove && !ttData.move && capturesSearched.size() + quietsSearched.size() == 1)
+             bestMove = capturesSearched.size() ? capturesSearched[0] : quietsSearched[0];
         ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
                        moveCount != 0 ? depth : std::min(MAX_PLY - 1, depth + 6), bestMove,
                        unadjustedStaticEval, tt.generation());
+    }
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
