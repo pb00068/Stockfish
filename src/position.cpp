@@ -1066,7 +1066,7 @@ bool Position::see_ge(Move m, int threshold) const {
     if (swap <= 0)
         return true;
 
-    Value heavyMoved = PieceValue[piece_on(from)] >= RookValue ? PieceValue[piece_on(from)] : 0;
+    Value heavyMoved = PieceValue[piece_on(from)] >= BishopValue ? PieceValue[piece_on(from)] : 0;
 
     assert(color_of(piece_on(from)) == sideToMove);
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
@@ -1159,10 +1159,7 @@ bool Position::see_ge(Move m, int threshold) const {
              Square knight = pop_lsb(b);
              Bitboard bbb = (attacks_bb<KNIGHT>(knight) & attacks_bb<KNIGHT>(ksq) & attacks_bb<KNIGHT>(to) & ~(pieces(~sideToMove) & occupied));
              if (bbb &&  !(attackers_to(lsb(bbb), occupied) & pieces(sideToMove) & occupied))
-             {
-               //sync_cout << *this << " is this move " << UCIEngine::move(m, false) << " good? swap " << swap << " th " << threshold << Bitboards::pretty(bbb)  << sync_endl;
                return false;
-             }
           }
         }
 
