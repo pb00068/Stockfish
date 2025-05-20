@@ -990,6 +990,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int seePrunedCount = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1049,7 +1050,7 @@ moves_loop:  // When in check, search starts here
         if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-            if (moveCount >= futility_move_count(improving, depth))
+            if (moveCount - (seePrunedCount / 2 ) >= futility_move_count(improving, depth))
                 mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
@@ -1083,7 +1084,11 @@ moves_loop:  // When in check, search starts here
                         skip = mp.other_piece_types_mobile(type_of(movedPiece));
 
                     if (skip)
-                        continue;
+                    {
+                    	seePrunedCount++;
+                    	continue;
+                    }
+
                 }
             }
             else
@@ -1119,7 +1124,10 @@ moves_loop:  // When in check, search starts here
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
-                    continue;
+                {
+                       seePrunedCount++;
+                       continue;
+                }
             }
         }
 
