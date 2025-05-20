@@ -990,6 +990,8 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int searchedCount = 0;
+    bool skipQuiets = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1050,7 +1052,7 @@ moves_loop:  // When in check, search starts here
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
             if (moveCount >= futility_move_count(improving, depth))
-                mp.skip_quiet_moves();
+                skipQuiets = true, mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
             int lmrDepth = newDepth - r / 1024;
@@ -1316,6 +1318,7 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
+        searchedCount++;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
@@ -1434,6 +1437,9 @@ moves_loop:  // When in check, search starts here
     // Adjust best value for fail high cases
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
+
+    if (moveCount && !bestMove && !skipQuiets && searchedCount == 0)
+    	dbg_hit_on(true);
 
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;
