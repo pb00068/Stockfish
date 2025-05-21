@@ -1074,7 +1074,6 @@ moves_loop:  // When in check, search starts here
                 {
                     bool mayStalemateTrap =
                       depth > 2 && alpha < 0
-                      && mp.stage >= 4 //  assure mp has generated all moves (captures & quiets)
                       && pos.non_pawn_material(us) == PieceValue[movedPiece]
                       && PieceValue[movedPiece] >= RookValue
                       // it can't be stalemate if we moved a piece adjacent to the king
