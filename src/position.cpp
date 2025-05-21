@@ -1066,7 +1066,7 @@ bool Position::see_ge(Move m, int threshold) const {
     if (swap <= 0)
         return true;
 
-    Value queenMoved = PieceValue[piece_on(from)] == QueenValue ? QueenValue : 0;
+    Value heavyMoved = PieceValue[piece_on(from)] >= RookValue ? PieceValue[piece_on(from)] : 0;
 
     assert(color_of(piece_on(from)) == sideToMove);
     Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
@@ -1149,7 +1149,7 @@ bool Position::see_ge(Move m, int threshold) const {
             return (attackers & ~pieces(stm)) ? res ^ 1 : res;
     }
 
-    if (queenMoved && bool(res) && threshold >= -queenMoved && (pieces(~sideToMove, KNIGHT) & occupied) && !(check_squares(type_of(piece_on(from))) & to)) {
+    if (heavyMoved && bool(res) && threshold >= -heavyMoved && (pieces(~sideToMove, KNIGHT) & occupied) && !(check_squares(type_of(piece_on(from))) & to)) {
         // verify against knight forks
         Square   ksq    = square<KING>(sideToMove);
         if (attacks_bb<KNIGHT>(ksq) & attacks_bb<KNIGHT>(to))

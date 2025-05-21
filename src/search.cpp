@@ -865,7 +865,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
+    if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta && (!ttHit || ttData.move != Move::null())
         && ss->staticEval >= beta - 19 * depth + 389 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
@@ -990,12 +990,17 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int queenMovesPrunded = 0;
+    int pawnPushes = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move()) != Move::none())
     {
         assert(move.is_ok());
+
+      //  if (!pos.fen().compare("8/p7/q1p2p2/1k6/2NP1K2/PP6/5P2/8 b - - 3 6"))
+      //   sync_cout << "move " << UCIEngine::move(move, false) << " mc: " << moveCount << sync_endl;
 
         if (move == excludedMove)
             continue;
@@ -1065,7 +1070,10 @@ moves_loop:  // When in check, search starts here
                     Value futilityValue = ss->staticEval + 232 + 224 * lmrDepth
                                         + PieceValue[capturedPiece] + 131 * captHist / 1024;
                     if (futilityValue <= alpha)
+                    {
+                        queenMovesPrunded += type_of(movedPiece) == QUEEN;
                         continue;
+                    }
                 }
 
                 // SEE based pruning for captures and checks
@@ -1083,7 +1091,10 @@ moves_loop:  // When in check, search starts here
 
                     // avoid pruning sacrifices of our last piece for stalemate
                     if (!mayStalemateTrap)
+                    {
+                        queenMovesPrunded += type_of(movedPiece) == QUEEN;
                         continue;
+                    }
                 }
             }
             else
@@ -1095,7 +1106,10 @@ moves_loop:  // When in check, search starts here
 
                 // Continuation history based pruning
                 if (history < -4229 * depth)
+                {
+                    queenMovesPrunded += type_of(movedPiece) == QUEEN;
                     continue;
+                }
 
                 history += 68 * thisThread->mainHistory[us][move.from_to()] / 32;
 
@@ -1112,14 +1126,20 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && !is_decisive(bestValue)
                         && !is_win(futilityValue))
                         bestValue = futilityValue;
-                    continue;
+                    {
+                        queenMovesPrunded += type_of(movedPiece) == QUEEN;
+                        continue;
+                    }
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
+                {
+                    queenMovesPrunded += type_of(movedPiece) == QUEEN;
                     continue;
+                }
             }
         }
 
@@ -1187,6 +1207,8 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+
+        pawnPushes += type_of(movedPiece) == PAWN && !capture;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
@@ -1421,6 +1443,8 @@ moves_loop:  // When in check, search starts here
         }
     }
 
+
+
     // Step 21. Check for mate and stalemate
     // All legal moves have been searched and if there are no legal moves, it
     // must be a mate or a stalemate. If we are in a singular extension search then
@@ -1494,12 +1518,21 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && thisThread->pvIdx))
+    {
+        if (!ss->inCheck && bestValue < beta && queenMovesPrunded > 4 && queenMovesPrunded + pawnPushes == moveCount)
+        {
+        	 //if (!pos.pieces(WHITE, BISHOP))
+       	   // sync_cout << pos << "better not nmp this position , depth " << depth << sync_endl;
+       	   bestMove = Move::null();
+       	   //dbg_hit_on(ttHit && ttData.move);
+        }
         ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                        bestValue >= beta    ? BOUND_LOWER
                        : PvNode && bestMove ? BOUND_EXACT
                                             : BOUND_UPPER,
                        moveCount != 0 ? depth : std::min(MAX_PLY - 1, depth + 6), bestMove,
                        unadjustedStaticEval, tt.generation());
+    }
 
     // Adjust correction history
     if (!ss->inCheck && !(bestMove && pos.capture(bestMove))
