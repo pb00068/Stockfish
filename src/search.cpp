@@ -671,6 +671,9 @@ Value Search::Worker::search(
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
+    if (!PvNode && ttHit && ttData.is_pv && ss->ply && depth > 12 && ss->ply <= LOW_PLY_HISTORY_SIZE && !pos.captured_piece() && (ss-1)->currentMove.is_ok())
+        thisThread->lowPlyHistory[ss->ply - 1][(ss-1)->currentMove.from_to()] << 125 * depth;
+
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
 
