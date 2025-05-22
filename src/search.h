@@ -71,7 +71,7 @@ struct Stack {
     int                         statScore;
     int                         moveCount;
     bool                        inCheck;
-    bool                        ttPv;
+    bool                        ttPv; // use for nodes which where either on the PV or for which is forbidden to do null-move pruning
     bool                        ttHit;
     int                         cutoffCnt;
     int                         reduction;

@@ -846,12 +846,8 @@ Value Search::Worker::search(
     if (!PvNode && eval < alpha - 486 - 325 * depth * depth)
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
-//    if (thisThread->nmpMinPly && !pos.fen().compare("8/p7/q1p2p2/1k6/2NP1K2/PP6/5P2/8 b - - 3 6"))
-//           	sync_cout << "verify critical pos razoring survived! nmpPly " << thisThread->nmpMinPly << "  ply " << ss->ply  << sync_endl;
-
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
-   // if (!thisThread->nmpMinPly)
     {
         auto futility_margin = [&](Depth d) {
             Value futilityMult = 93 - 20 * (cutNode && !ss->ttHit);
@@ -902,7 +898,7 @@ Value Search::Worker::search(
               {
                  ss->ttPv = true;
                  if ((ss - 1)->currentMove.is_ok() && !priorCapture)
-                     thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()]<< 4000;
+                     thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()] << 4000;
                  depth++;
                  goto afternull;
               }
@@ -930,7 +926,7 @@ Value Search::Worker::search(
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            thisThread->nmpMinPly = ss->ply + std::max(3 * (depth - R) / 4, 1);
+            thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 

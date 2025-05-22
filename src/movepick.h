@@ -51,7 +51,6 @@ class MovePicker {
     Move next_move();
     void skip_quiet_moves();
     bool can_move_king_or_pawn();
-    bool                         skipQuiets = false;
 
    private:
     template<typename Pred>
@@ -73,7 +72,7 @@ class MovePicker {
     int                          threshold;
     Depth                        depth;
     int                          ply;
-
+    bool                         skipQuiets = false;
     ExtMove                      moves[MAX_MOVES];
 };
 
