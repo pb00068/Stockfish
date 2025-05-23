@@ -341,6 +341,7 @@ void Position::set_state() const {
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+    st->illegalForKing = 0;
 
     set_check_info();
 
@@ -554,7 +555,12 @@ bool Position::legal(Move m) const {
     // If the moving piece is a king, check whether the destination square is
     // attacked by the opponent.
     if (type_of(piece_on(from)) == KING)
-        return !(attackers_to_exist(to, pieces() ^ from, ~us));
+    {
+        bool attackers = attackers_to_exist(to, pieces() ^ from, ~us);
+        if (attackers)
+            state()->illegalForKing |= to;
+        return !attackers;
+    }
 
     // A non-king move is legal if and only if it is not pinned or it
     // is moving along the ray towards or away from the king.
@@ -703,6 +709,7 @@ DirtyPiece Position::do_move(Move                      m,
     std::memcpy(&newSt, st, offsetof(StateInfo, key));
     newSt.previous = st;
     st             = &newSt;
+    st->illegalForKing = 0;
 
     // Increment ply counters. In particular, rule50 will be reset to zero later on
     // in case of a capture or a pawn move.
@@ -1013,6 +1020,7 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
 
     newSt.previous = st;
     st             = &newSt;
+    st->illegalForKing = 0;
 
     if (st->epSquare != SQ_NONE)
     {

@@ -227,7 +227,7 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endMoves             = generate<CAPTURES>(pos, cur);
+        endMoves             = generate<CAPTURES>(pos, cur, depth);
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
@@ -250,7 +250,7 @@ top:
         if (!skipQuiets)
         {
             cur = endBadQuiets = endBadCaptures;
-            endMoves           = generate<QUIETS>(pos, cur);
+            endMoves           = generate<QUIETS>(pos, cur, depth);
 
             score<QUIETS>();
             partial_insertion_sort(cur, endMoves, -3560 * depth);
@@ -291,7 +291,7 @@ top:
 
     case EVASION_INIT :
         cur      = moves;
-        endMoves = generate<EVASIONS>(pos, cur);
+        endMoves = generate<EVASIONS>(pos, cur, depth);
 
         score<EVASIONS>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
