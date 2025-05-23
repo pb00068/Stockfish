@@ -724,6 +724,8 @@ DirtyPiece Position::do_move(Move                      m,
     Piece  pc       = piece_on(from);
     Piece  captured = m.type_of() == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
 
+    st->previous->illegalForKing |= to; // squares we can reach are probably forbidden for opp king
+
     DirtyPiece dp;
     dp.pc     = pc;
     dp.from   = from;

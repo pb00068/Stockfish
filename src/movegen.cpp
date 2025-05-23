@@ -23,7 +23,6 @@
 
 #include "bitboard.h"
 #include "position.h"
-#include "misc.h"
 
 namespace Stockfish {
 
@@ -192,11 +191,8 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList, int depth) {
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
     }
 
-    if (Type != EVASIONS && Type != CAPTURES)
-    dbg_mean_of(moveList - start );
-
     // avoid generating probably illegal king moves if we have lot of other quiets
-    if (Type != EVASIONS && Type != CAPTURES && moveList - start >=20 && depth <= 4 && pos.state()->previous && pos.state()->previous->previous)
+    if (Type != EVASIONS && Type != CAPTURES && moveList - start >=20 && depth <= 2 && pos.state()->previous && pos.state()->previous->previous)
        target &=  ~pos.state()->previous->previous->illegalForKing;
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
 
