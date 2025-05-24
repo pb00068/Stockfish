@@ -1188,7 +1188,7 @@ moves_loop:  // When in check, search starts here
                 extension = -2;
         }
 
-        if (!extension && ss->ply == 1 && !PvNode && ss->ttPv)
+        if (!extension && ss->ply < 5 && !PvNode && ss->ttPv && newDepth < thisThread->rootDepth - ss->ply)
         	extension = 1;
 
         // Step 16. Make the move
