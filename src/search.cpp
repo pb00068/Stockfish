@@ -1188,6 +1188,9 @@ moves_loop:  // When in check, search starts here
                 extension = -2;
         }
 
+        if (!extension && ss->ply == 1 && !PvNode && ss->ttPv)
+        	extension = 1;
+
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
 
