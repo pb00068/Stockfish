@@ -173,7 +173,7 @@ void MovePicker::score() {
             if (KNIGHT <= pt && pt <= QUEEN)
             {
                 static constexpr int bonus[QUEEN + 1] = {0, 0, 144, 144, 256, 517};
-                int v = (threatByLesser[pt] & to ? -95 : 100 * bool(threatByLesser[pt] & from));
+                int v = threatByLesser[pt] & to ? -95 : 100 * bool(threatByLesser[pt] & from);
                 m.value += bonus[pt] * v;
             }
 
@@ -200,7 +200,7 @@ void MovePicker::score() {
 template<typename Pred>
 Move MovePicker::select(Pred filter) {
 
-    for (; cur < endMoves; ++cur)
+    for (; cur < endCur; ++cur)
         if (*cur != ttMove && filter())
             return *cur++;
 
@@ -227,10 +227,10 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endCaptures = endMoves             = generate<CAPTURES>(pos, cur);
+        endCaptures = endCur             = generate<CAPTURES>(pos, cur);
 
         score<CAPTURES>();
-        partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
+        partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
         noBadCaptures=true;
         ++stage;
         goto top;
@@ -252,10 +252,10 @@ top:
         if (!skipQuiets)
         {
             cur  = endBadCaptures;
-            endQuiets = endMoves           = generate<QUIETS>(pos, cur);
+            endQuiets = endCur           = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
-            partial_insertion_sort(cur, endMoves, -3560 * depth);
+            partial_insertion_sort(cur, endCur, -3560 * depth);
         }
 
         ++stage;
@@ -268,8 +268,8 @@ top:
             return *(cur - 1);
 
         // Prepare the pointers to loop over the bad captures
-        cur      = moves;
-        endMoves = endBadCaptures;
+        cur    = moves;
+        endCur = endBadCaptures;
 
         ++stage;
         [[fallthrough]];
@@ -280,7 +280,7 @@ top:
 
         // Prepare the pointers to loop over the bad quiets
         cur      = endCaptures;
-        endMoves = endQuiets;
+        endCur = endQuiets;
 
         ++stage;
         [[fallthrough]];
@@ -292,11 +292,11 @@ top:
         return Move::none();
 
     case EVASION_INIT :
-        cur      = moves;
-        endMoves = generate<EVASIONS>(pos, cur);
+        cur    = moves;
+        endCur = generate<EVASIONS>(pos, cur);
 
         score<EVASIONS>();
-        partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
+        partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
         ++stage;
         [[fallthrough]];
 
@@ -316,9 +316,10 @@ void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 // this function must be called after all quiet moves and captures have been generated
 bool MovePicker::can_move_king_or_pawn() {
-    assert(stage == GOOD_QUIET || stage == BAD_QUIET || stage == EVASION);
+    // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
+    assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
 
-    for (ExtMove* m = moves; m < endMoves; ++m)
+    for (ExtMove* m = moves; m < endCur; ++m)
     {
         PieceType movedPieceType = type_of(pos.moved_piece(*m));
         if ((movedPieceType == PAWN || movedPieceType == KING) && pos.legal(*m))
