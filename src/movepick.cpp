@@ -19,6 +19,7 @@
 #include "movepick.h"
 
 #include <cassert>
+#include <cstddef>
 #include <limits>
 #include <utility>
 
@@ -239,7 +240,7 @@ top:
         if (select([&]() {
                 if (pos.see_ge(*cur, -cur->value / 18))
                     return true;
-                std::swap(*endBadCaptures++, *cur);
+                *endBadCaptures++ = *cur;
                 noBadCaptures=false;
                 return false;
             }))
@@ -315,9 +316,18 @@ top:
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 // this function must be called after all quiet moves and captures have been generated
-bool MovePicker::can_move_king_or_pawn() {
+bool MovePicker::can_move_king_or_pawn(const ValueList<Move, 32>& capturesSearched) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
     assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
+    
+    // verify good captures (here in mp they are overriden by quiets)
+    for (std::size_t i=0; i< capturesSearched.size();i++)
+    {
+        PieceType movedPieceType = type_of(pos.moved_piece(capturesSearched[i]));
+        // it's assured they are legal;
+        if (movedPieceType == PAWN || movedPieceType == KING)
+            return true;
+    }
 
     for (ExtMove* m = moves; m < endCur; ++m)
     {
