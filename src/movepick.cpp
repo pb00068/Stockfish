@@ -251,6 +251,7 @@ top:
     case QUIET_INIT :
         if (!skipQuiets)
         {
+            cur  = endBadCaptures;
             endQuiets = endCur           = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
@@ -262,7 +263,7 @@ top:
 
     case GOOD_QUIET :
         if (!skipQuiets && select([&]() {
-                return cur->value > -14000 || noBadCaptures;
+                return cur->value > -14000 || noBadCaptures ? true : false;
             }))
             return *(cur - 1);
 
