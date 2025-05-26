@@ -227,10 +227,11 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endMoves             = generate<CAPTURES>(pos, cur);
+        endCaptures = endMoves             = generate<CAPTURES>(pos, cur);
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
+        noBadCaptures=true;
         ++stage;
         goto top;
 
@@ -239,6 +240,7 @@ top:
                 if (pos.see_ge(*cur, -cur->value / 18))
                     return true;
                 std::swap(*endBadCaptures++, *cur);
+                noBadCaptures=false;
                 return false;
             }))
             return *(cur - 1);
@@ -249,8 +251,8 @@ top:
     case QUIET_INIT :
         if (!skipQuiets)
         {
-            cur = endBadQuiets = endBadCaptures;
-            endMoves           = generate<QUIETS>(pos, cur);
+            cur  = endBadCaptures;
+            endQuiets = endMoves           = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
             partial_insertion_sort(cur, endMoves, -3560 * depth);
@@ -261,7 +263,7 @@ top:
 
     case GOOD_QUIET :
         if (!skipQuiets && select([&]() {
-                return cur->value > -14000 ? true : (*endBadQuiets++ = *cur, false);
+                return cur->value > -14000 || noBadCaptures ? true : false;
             }))
             return *(cur - 1);
 
@@ -277,15 +279,15 @@ top:
             return *(cur - 1);
 
         // Prepare the pointers to loop over the bad quiets
-        cur      = endBadCaptures;
-        endMoves = endBadQuiets;
+        cur      = endCaptures;
+        endMoves = endQuiets;
 
         ++stage;
         [[fallthrough]];
 
     case BAD_QUIET :
-        if (!skipQuiets)
-            return select([]() { return true; });
+        if (!skipQuiets && !noBadCaptures)
+            return select([&]() { return cur->value <= -14000;  });
 
         return Move::none();
 
