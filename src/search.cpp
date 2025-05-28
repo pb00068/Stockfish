@@ -1069,11 +1069,9 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -158 * depth - seeHist))
                 {
                     bool mayStalemateTrap =
-                      depth > 2 && alpha < 0 && pos.non_pawn_material(us) <= PieceValue[movedPiece] + BishopValue
+                      depth > 2 && alpha < 0 && pos.non_pawn_material(us) <= PieceValue[movedPiece] + 2 * BishopValue
                       && PieceValue[movedPiece] >= RookValue
-                      // it can't be stalemate if we moved a piece adjacent to the king
-                      && !(attacks_bb<KING>(pos.square<KING>(us)) & move.from_sq())
-                      && !mp.other_types_mobile(type_of(movedPiece)); // there might be another Knight or Bishop
+                      && !mp.other_types_mobile(type_of(movedPiece)); // there might be Pawn/Knight or Bishop which can still move
 
                     // avoid pruning sacrifices of our last piece for stalemate
                     if (!mayStalemateTrap)
