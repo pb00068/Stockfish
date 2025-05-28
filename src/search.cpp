@@ -612,7 +612,7 @@ Value Search::Worker::search(
 
     Key   posKey;
     Move  move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
@@ -1031,7 +1031,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = 0;
+        ss->extension  = 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
@@ -1145,6 +1145,7 @@ moves_loop:  // When in check, search starts here
         if (!rootNode && move == ttData.move && !excludedMove
             && depth >= 6 - (thisThread->completedDepth > 27) + ss->ttPv && is_valid(ttData.value)
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
+            //&& ss->ply < thisThread->rootDepth * 2
             && ttData.depth >= depth - 3)
         {
             Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57;
@@ -1157,8 +1158,18 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 // measure against search explosions: don't double/triple extend bouncing & triangulation moves
-                if (ss->ply > 6 && isReverseOrTriangulaton(move, ss))
-                    extension = 1;
+                if (ss->ply > 10 && isReverseOrTriangulaton(move, ss))
+                {
+                    if ((ss-1)->extension > 2)
+                        ss->extension = -1; // no recursive extension
+                    else if ((ss-1)->extension)
+                        ss->extension = 0;
+                    else
+                    {
+                      ss->extension = 1;
+                      depth++;
+                    }
+                }
                 else
                 {
                     int corrValAdj1  = std::abs(correctionValue) / 248400;
@@ -1169,11 +1180,12 @@ moves_loop:  // When in check, search starts here
                     int tripleMargin = 84 + 269 * PvNode - 253 * !ttCapture + 91 * ss->ttPv
                                      - corrValAdj2 - (ss->ply * 2 > thisThread->rootDepth * 3) * 54;
 
-                    extension =
+                    ss->extension =
                       1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                    depth++;
                 }
 
-                depth++;
+
             }
 
             // Multi-cut pruning
@@ -1194,19 +1206,19 @@ moves_loop:  // When in check, search starts here
 
             // If the ttMove is assumed to fail high over current beta
             else if (ttData.value >= beta)
-                extension = -3;
+                ss->extension = -3;
 
             // If we are on a cutNode but the ttMove is not assumed to fail high
             // over current beta
             else if (cutNode)
-                extension = -2;
+                ss->extension = -2;
         }
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
 
         // Add extension to new depth
-        newDepth += extension;
+        newDepth += ss->extension;
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1408,7 +1420,7 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    ss->cutoffCnt += (ss->extension < 2) || PvNode;
                     assert(value >= beta);  // Fail high
                     break;
                 }
