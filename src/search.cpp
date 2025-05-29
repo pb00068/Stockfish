@@ -1163,7 +1163,7 @@ moves_loop:  // When in check, search starts here
                 if (ss->ply > 10 && isReverseOrTriangulaton(move, ss))
                 {
                     if ((ss-1)->extension > 1)
-                        ss->extension = 1 - (ss-1)->extension; // compensate previous large extension
+                        ss->extension = - (ss-1)->extension; // compensate previous large extension
                     else if ((ss-1)->extension > 0)
                         ss->extension = 0;
                     else
