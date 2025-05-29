@@ -56,6 +56,8 @@ enum Stages {
     QCAPTURE
 };
 
+const int GOOD_QUIETS_LIMIT = -14000;
+
 // Sort moves in descending order up to and including a given limit.
 // The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
@@ -252,7 +254,7 @@ top:
             endCur = endQuiets = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
-            partial_insertion_sort(cur, endCur, -3560 * depth);
+            partial_insertion_sort(cur, endCur, std::max(-3560 * depth, GOOD_QUIETS_LIMIT));
         }
 
         ++stage;
@@ -260,7 +262,7 @@ top:
 
     case GOOD_QUIET :
         if (!skipQuiets && select([&]() {
-                return cur->value > -14000;
+                return cur->value > GOOD_QUIETS_LIMIT;
             }))
             return *(cur - 1);
 
@@ -284,7 +286,7 @@ top:
 
     case BAD_QUIET :
         if (!skipQuiets)
-            return select([&]() {  return cur->value <= -14000; });
+            return select([&]() {  return cur->value <= GOOD_QUIETS_LIMIT; });
 
         return Move::none();
 
