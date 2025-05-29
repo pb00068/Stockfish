@@ -1070,7 +1070,7 @@ moves_loop:  // When in check, search starts here
                 {
                     bool mayStalemateTrap =
                       depth > 2 && alpha < 0
-                      && PieceValue[movedPiece] >= RookValue && pos.count<ROOK>(us) == 1
+                      && PieceValue[movedPiece] >= RookValue && pos.count<ROOK>(us) + pos.count<QUEEN>(us) == 1
                       && pos.non_pawn_material(us) <= PieceValue[movedPiece] + 2 * BishopValue
                       && !mp.other_types_mobile(type_of(movedPiece)); // verify there's legal King/Pawn/Knight/Bishop moves left
 
