@@ -1160,8 +1160,8 @@ moves_loop:  // When in check, search starts here
                 // measure against search explosions: don't double/triple extend bouncing & triangulation moves
                 if (ss->ply > 10 && isReverseOrTriangulaton(move, ss))
                 {
-                    if ((ss-1)->extension > 2)
-                        ss->extension = -1; // no recursive extension
+                    if ((ss-1)->extension > 1)
+                        ss->extension = -1; // compensate previous large extension
                     else if ((ss-1)->extension)
                         ss->extension = 0;
                     else
