@@ -904,8 +904,9 @@ Value Search::Worker::search(
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
             thisThread->nmpMinPly = ss->ply + 3 * (depth - R) / 4;
-
+            Depth savedExtension = ss->extension;
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            ss->extension = savedExtension;
 
             thisThread->nmpMinPly = 0;
 
@@ -1145,15 +1146,16 @@ moves_loop:  // When in check, search starts here
         if (!rootNode && move == ttData.move && !excludedMove
             && depth >= 6 - (thisThread->completedDepth > 27) + ss->ttPv && is_valid(ttData.value)
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
-            //&& ss->ply < thisThread->rootDepth * 2
             && ttData.depth >= depth - 3)
         {
             Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57;
             Depth singularDepth = newDepth / 2;
 
             ss->excludedMove = move;
+            Depth savedExtension = ss->extension;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
+            ss->extension = savedExtension;
 
             if (value < singularBeta)
             {
@@ -1161,8 +1163,8 @@ moves_loop:  // When in check, search starts here
                 if (ss->ply > 10 && isReverseOrTriangulaton(move, ss))
                 {
                     if ((ss-1)->extension > 1)
-                        ss->extension = -1; // compensate previous large extension
-                    else if ((ss-1)->extension)
+                        ss->extension = 1 - (ss-1)->extension; // compensate previous large extension
+                    else if ((ss-1)->extension > 0)
                         ss->extension = 0;
                     else
                     {
