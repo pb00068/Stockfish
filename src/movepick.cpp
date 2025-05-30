@@ -56,8 +56,6 @@ enum Stages {
     QCAPTURE
 };
 
-const int GOOD_QUIETS_LIMIT = -14000;
-
 // Sort moves in descending order up to and including a given limit.
 // The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
@@ -251,10 +249,10 @@ top:
     case QUIET_INIT :
         if (!skipQuiets)
         {
-            endCur = endQuiets = generate<QUIETS>(pos, cur);
+            endCur = endGenerated = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
-            partial_insertion_sort(cur, endCur, std::max(-3560 * depth, GOOD_QUIETS_LIMIT));
+            partial_insertion_sort(cur, endCur, -3560 * depth);
         }
 
         ++stage;
@@ -262,7 +260,7 @@ top:
 
     case GOOD_QUIET :
         if (!skipQuiets && select([&]() {
-                return cur->value > GOOD_QUIETS_LIMIT;
+                return cur->value > -14000;
             }))
             return *(cur - 1);
 
@@ -279,20 +277,20 @@ top:
 
         // Prepare the pointers to loop over quiets again
         cur    = endCaptures;
-        endCur = endQuiets;
+        endCur = endGenerated;
 
         ++stage;
         [[fallthrough]];
 
     case BAD_QUIET :
         if (!skipQuiets)
-            return select([&]() {  return cur->value <= GOOD_QUIETS_LIMIT; });
+            return select([&]() {  return cur->value <= -14000; });
 
         return Move::none();
 
     case EVASION_INIT :
         cur    = moves;
-        endCur = generate<EVASIONS>(pos, cur);
+        endCur = endGenerated = generate<EVASIONS>(pos, cur);
 
         score<EVASIONS>();
         partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
@@ -318,7 +316,7 @@ bool MovePicker::other_types_mobile(PieceType pt) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
     assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
 
-    for (ExtMove* m = moves; m < endCur; ++m)
+    for (ExtMove* m = moves; m < endGenerated; ++m)
         if (type_of(pos.moved_piece(*m)) != pt && pos.legal(*m))
             return true;
     return false;
