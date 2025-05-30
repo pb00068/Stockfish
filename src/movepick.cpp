@@ -339,8 +339,8 @@ bool MovePicker::non_desperado_mobile(Square sq) {
        for (ExtMove* m = moves; !isDesperado && m < endGenerated; ++m)
           isDesperado = sqres[i] == m->from_sq() && (pos.check_squares(type_of(pos.moved_piece(*m))) & m->to_sq()) && distance(m->to_sq(), pos.square<KING>(~pos.side_to_move())) == 1;
 
-       if (isDesperado)
-         continue;
+       if (!isDesperado)
+         return true;
     }
     return false;
 }
