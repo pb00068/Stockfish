@@ -124,8 +124,8 @@ void update_all_stats(const Position&      pos,
                       Search::Worker&      workerThread,
                       Move                 bestMove,
                       Square               prevSq,
-                      ValueList<Move, 32>& quietsSearched,
-                      ValueList<Move, 32>& capturesSearched,
+                      ValueList<Move, 64>& quietsSearched,
+                      ValueList<Move, 64>& capturesSearched,
                       Depth                depth,
                       Move                 TTMove,
                       int                  moveCount);
@@ -606,8 +606,8 @@ Value Search::Worker::search(
     int   priorReduction;
     Piece movedPiece;
 
-    ValueList<Move, 32> capturesSearched;
-    ValueList<Move, 32> quietsSearched;
+    ValueList<Move, 64> capturesSearched;
+    ValueList<Move, 64> quietsSearched;
 
     // Step 1. Initialize node
     Worker* thisThread = this;
@@ -1061,7 +1061,13 @@ moves_loop:  // When in check, search starts here
                     Value futilityValue = ss->staticEval + 232 + 224 * lmrDepth
                                         + PieceValue[capturedPiece] + 131 * captHist / 1024;
                     if (futilityValue <= alpha)
-                        continue;
+                    {
+                                        	if (capture)
+                                                            	                capturesSearched.push_back(move);
+                                                            	else
+                                                            	                quietsSearched.push_back(move);
+                                            continue;
+                                        }
                 }
 
                 // SEE based pruning for captures and checks
@@ -1075,9 +1081,35 @@ moves_loop:  // When in check, search starts here
                       && !(attacks_bb<KING>(pos.square<KING>(us)) & move.from_sq())
                       && !mp.can_move_king_or_pawn();
 
+                    if (mayStalemateTrap)
+                    {
+                    	bool mobile = false;
+                      for (std::size_t i=0; i< capturesSearched.size();i++)
+                      {
+                          PieceType movedPieceType = type_of(pos.moved_piece(capturesSearched[i]));
+                          // it's assured they are legal;
+                          if (movedPieceType == PAWN || movedPieceType == KING)
+                          	mobile = true;
+                      }
+                      for (std::size_t i=0; i< quietsSearched.size();i++)
+                      {
+                         PieceType movedPieceType = type_of(pos.moved_piece(quietsSearched[i]));
+                         // it's assured they are legal;
+                         if (movedPieceType == PAWN || movedPieceType == KING)
+                            mobile = true;
+                      }
+                      dbg_hit_on(mobile);
+                    }
+
                     // avoid pruning sacrifices of our last piece for stalemate
                     if (!mayStalemateTrap)
+                    {
+                    	if (capture)
+                                        	                capturesSearched.push_back(move);
+                                        	else
+                                        	                quietsSearched.push_back(move);
                         continue;
+                    }
                 }
             }
             else
@@ -1089,7 +1121,10 @@ moves_loop:  // When in check, search starts here
 
                 // Continuation history based pruning
                 if (history < -4229 * depth)
-                    continue;
+                {
+                                	                quietsSearched.push_back(move);
+                                	                continue;
+                                }
 
                 history += 68 * thisThread->mainHistory[us][move.from_to()] / 32;
 
@@ -1107,14 +1142,21 @@ moves_loop:  // When in check, search starts here
                     if (bestValue <= futilityValue && !is_decisive(bestValue)
                         && !is_win(futilityValue))
                         bestValue = futilityValue;
-                    continue;
+                    {
+                    	                quietsSearched.push_back(move);
+                    	                continue;
+                    }
+
                 }
 
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
-                    continue;
+                {
+                                	                quietsSearched.push_back(move);
+                                	                continue;
+                                }
             }
         }
 
@@ -1857,8 +1899,8 @@ void update_all_stats(const Position&      pos,
                       Search::Worker&      workerThread,
                       Move                 bestMove,
                       Square               prevSq,
-                      ValueList<Move, 32>& quietsSearched,
-                      ValueList<Move, 32>& capturesSearched,
+                      ValueList<Move, 64>& quietsSearched,
+                      ValueList<Move, 64>& capturesSearched,
                       Depth                depth,
                       Move                 ttMove,
                       int                  moveCount) {
