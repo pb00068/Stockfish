@@ -131,7 +131,7 @@ void update_all_stats(const Position&      pos,
                       int                  moveCount);
 
 bool isReverseOrTriangulaton(Move move, Stack* const ss) {
-    if (!(ss-2)->currentMove.is_ok())
+    if (!ss->currentMove.is_ok() || !(ss-2)->currentMove.is_ok())
         return false;
     if (move == (ss-2)->currentMove.reverse())
         return true;
@@ -1142,7 +1142,7 @@ moves_loop:  // When in check, search starts here
         // (*Scaler) Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
 
-        if (!rootNode && move == ttData.move && !excludedMove
+        if (!rootNode && move == ttData.move && !excludedMove && pos.rule50_count() < 20
             && depth >= 6 - (thisThread->completedDepth > 27) + ss->ttPv && is_valid(ttData.value)
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3)
@@ -1157,8 +1157,10 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 // measure against search explosions: don't double/triple extend bouncing & triangulation moves
-                if (ss->ply > 6 && isReverseOrTriangulaton(move, ss))
-                    extension = 1;
+                if (ss->ply > 10 && (isReverseOrTriangulaton(move, ss) || isReverseOrTriangulaton((ss-1)->currentMove, ss-1)))
+                {
+                    extension = bool(pos.rule50_count() < 15);
+                }
                 else
                 {
                     int corrValAdj1  = std::abs(correctionValue) / 248400;
@@ -1171,9 +1173,9 @@ moves_loop:  // When in check, search starts here
 
                     extension =
                       1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                    if (pos.rule50_count() < 10)
+                        depth++;
                 }
-
-                depth++;
             }
 
             // Multi-cut pruning
