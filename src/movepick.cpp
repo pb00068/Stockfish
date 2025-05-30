@@ -312,13 +312,36 @@ top:
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
 // this function must be called after all quiet moves and captures have been generated
-bool MovePicker::other_types_mobile(PieceType pt) {
+bool MovePicker::non_desperado_mobile(Square sq) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
     assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
 
+    int legalFromSquares = 0;
+    Square sqres[12] = {SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE};
     for (ExtMove* m = moves; m < endGenerated; ++m)
-        if (type_of(pos.moved_piece(*m)) != pt && pos.legal(*m))
-            return true;
+    {
+        PieceType pt = type_of(pos.moved_piece(*m));
+        if (m->from_sq() != sq && pos.legal(*m))
+        {
+            if (pt == KING || pt <= BISHOP)
+                return true;
+            int i=0;
+            for (; i<legalFromSquares; i++ )
+              if (sqres[i] == m->from_sq())
+                break;
+            if (i >= legalFromSquares)
+              sqres[legalFromSquares++] = m->from_sq();
+        }
+    }
+    for (int i=0; i<legalFromSquares; i++ )
+    {
+       bool isDesperado = false;
+       for (ExtMove* m = moves; !isDesperado && m < endGenerated; ++m)
+          isDesperado = sqres[i] == m->from_sq() && (pos.check_squares(type_of(pos.moved_piece(*m))) & m->to_sq()) && distance(m->to_sq(), pos.square<KING>(~pos.side_to_move())) == 1;
+
+       if (isDesperado)
+         continue;
+    }
     return false;
 }
 
