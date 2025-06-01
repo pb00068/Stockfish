@@ -252,17 +252,27 @@ top:
             endCur = endGenerated = generate<QUIETS>(pos, cur);
 
             score<QUIETS>();
-            partial_insertion_sort(cur, endCur, -3560 * depth);
         }
 
         ++stage;
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select([&]() {
-                return cur->value > -14000;
-            }))
-            return *(cur - 1);
+        if (!skipQuiets && endGenerated > endCaptures)
+        {
+            ExtMove *best = cur = endCaptures;
+            for (; cur < endGenerated; ++cur) {
+               if (*cur == ttMove)
+               	   cur->value = std::numeric_limits<int>::min();
+               if (cur->value > best->value)
+                  best = cur;
+            }
+            if (best->value > -14000)
+            {
+                best->value = std::numeric_limits<int>::min();
+                return *best;
+            }
+        }
 
         // Prepare the pointers to loop over the bad captures
         cur    = moves;
@@ -283,8 +293,20 @@ top:
         [[fallthrough]];
 
     case BAD_QUIET :
-        if (!skipQuiets)
-            return select([&]() {  return cur->value <= -14000; });
+
+     if (!skipQuiets && endGenerated > endCaptures)
+     {
+              ExtMove *best = cur = endCaptures;
+              for (; cur < endGenerated; ++cur) {
+                  if (cur->value > best->value)
+                     best = cur;
+              }
+              if (best->value > std::numeric_limits<int>::min())
+              {
+                  best->value = std::numeric_limits<int>::min();
+                  return *best;
+              }
+      }
 
         return Move::none();
 
