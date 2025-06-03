@@ -130,15 +130,15 @@ void update_all_stats(const Position&      pos,
                       Move                 TTMove,
                       int                  moveCount);
 
-bool isReverseOrTriangulaton(Move move, Stack* const ss) {
+bool isReverseOrTriangulaton(Stack* const ss) {
     if (!ss->currentMove.is_ok() || !(ss-2)->currentMove.is_ok())
         return false;
-    if (move == (ss-2)->currentMove.reverse())
+    if ( ss->currentMove == (ss-2)->currentMove.reverse())
         return true;
     if (!(ss-4)->currentMove.is_ok())
         return false;
-    return move.to_sq() == (ss-4)->currentMove.from_sq()
-        && move.from_sq() == (ss-2)->currentMove.to_sq()
+    return ss->currentMove.to_sq() == (ss-4)->currentMove.from_sq()
+        && ss->currentMove.from_sq() == (ss-2)->currentMove.to_sq()
         && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq();
 }
 
@@ -1130,7 +1130,7 @@ moves_loop:  // When in check, search starts here
         // (*Scaler) Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
 
-        if (!rootNode && move == ttData.move && !excludedMove && pos.rule50_count() < 20
+        if (!rootNode && move == ttData.move && !excludedMove
             && depth >= 6 - (thisThread->completedDepth > 27) + ss->ttPv && is_valid(ttData.value)
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3)
@@ -1145,9 +1145,10 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 // measure against search explosions: don't double/triple extend bouncing & triangulation moves
-                if (ss->ply > 10 && (isReverseOrTriangulaton(move, ss) || isReverseOrTriangulaton((ss-1)->currentMove, ss-1)))
+                ss->currentMove = move;
+                if (ss->ply > 10 && (isReverseOrTriangulaton(ss) || isReverseOrTriangulaton(ss-1)))
                 {
-                    extension = bool(pos.rule50_count() < 15);
+                    extension = bool(pos.rule50_count() < 20);
                 }
                 else
                 {
@@ -1160,8 +1161,7 @@ moves_loop:  // When in check, search starts here
 
                     extension =
                       1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
-                    if (pos.rule50_count() < 10)
-                        depth++;
+                    depth++;
                 }
             }
 
