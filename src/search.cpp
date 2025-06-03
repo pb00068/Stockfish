@@ -1146,9 +1146,13 @@ moves_loop:  // When in check, search starts here
             {
                 // measure against search explosions: don't double/triple extend bouncing & triangulation moves
                 ss->currentMove = move;
-                if (ss->ply > 10 && (isReverseOrTriangulaton(ss) || isReverseOrTriangulaton(ss-1)))
+                if (isReverseOrTriangulaton(ss) || isReverseOrTriangulaton(ss-1))
                 {
-                    extension = bool(pos.rule50_count() < 20);
+                    if (pos.rule50_count() < 90)
+                    {
+                       extension = 1;
+                       depth++;
+                    }
                 }
                 else
                 {
