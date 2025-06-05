@@ -46,8 +46,8 @@ class MovePicker {
                const CapturePieceToHistory*,
                const PieceToHistory**,
                const PawnHistory*,
-               int);
-    MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
+               int, Move);
+    MovePicker(const Position&, Move, int, const CapturePieceToHistory*, Move);
     Move next_move();
     void skip_quiet_moves();
     bool can_move_king_or_pawn() const;
@@ -57,6 +57,7 @@ class MovePicker {
     Move select(Pred);
     template<GenType>
     void     score();
+    bool ttMove2Process();
     ExtMove* begin() { return cur; }
     ExtMove* end() { return endCur; }
 
@@ -73,6 +74,7 @@ class MovePicker {
     Depth                        depth;
     int                          ply;
     bool                         skipQuiets = false;
+    bool                         ttMoveisExcluded;
     ExtMove                      moves[MAX_MOVES];
 };
 
