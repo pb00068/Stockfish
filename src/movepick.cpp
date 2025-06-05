@@ -201,8 +201,11 @@ template<typename Pred>
 Move MovePicker::select(Pred filter) {
 
     for (; cur < endCur; ++cur)
-        if (*cur != ttMove && filter() && pos.legal(*cur))
-            return *cur++;
+        if (*cur != ttMove && filter()) {
+            if (stage == GOOD_QUIET || pos.legal(*cur))
+                return *cur++;
+            *cur = Move::none();
+        }
 
     return Move::none();
 }
@@ -263,7 +266,12 @@ top:
         if (!skipQuiets && select([&]() {
                 return cur->value > goodQuietThreshold ;
         }))
-            return *(cur - 1);
+        {
+            if (pos.legal(*(cur - 1)))
+                return *(cur - 1);
+            *(cur - 1) = Move::none();
+            goto top;
+        }
 
         // Prepare the pointers to loop over the bad captures
         cur    = moves;
@@ -319,9 +327,14 @@ bool MovePicker::can_move_king_or_pawn() const {
 
     for (const ExtMove* m = moves; m < endGenerated; ++m)
     {
+        if (!m)
+           continue;
         PieceType movedPieceType = type_of(pos.moved_piece(*m));
-        if ((movedPieceType == PAWN || movedPieceType == KING) && pos.legal(*m))
+        if ((movedPieceType == PAWN || movedPieceType == KING))
+        {
+           if ((m < cur && stage == GOOD_QUIET) || pos.legal(*m))
             return true;
+        }
     }
     return false;
 }
