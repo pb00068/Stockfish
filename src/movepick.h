@@ -73,7 +73,6 @@ class MovePicker {
     Depth                        depth;
     int                          ply;
     bool                         skipQuiets = false;
-    bool                         ttMoveisExcluded;
     ExtMove                      moves[MAX_MOVES];
 };
 
