@@ -57,7 +57,6 @@ class MovePicker {
     Move select(Pred);
     template<GenType>
     void     score();
-    bool ttMove2Process();
     ExtMove* begin() { return cur; }
     ExtMove* end() { return endCur; }
 

@@ -74,9 +74,7 @@ void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
 
 }  // namespace
 
-bool MovePicker::ttMove2Process() {
-    return ttMove && !ttMoveisExcluded && pos.pseudo_legal(ttMove) && pos.legal(ttMove);
-}
+constexpr int goodQuietThreshold = -14000;
 
 // Constructors of the MovePicker class. As arguments, we pass information
 // to decide which class of moves to emit, to help sorting the (presumably)
@@ -100,13 +98,14 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
-    ply(pl), ttMoveisExcluded(ttm == excluded) {
+    ply(pl) {
 
+    bool validTtm =  ttm && ttm != excluded && pos.pseudo_legal(ttm) && pos.legal(ttm);
     if (pos.checkers())
-        stage = EVASION_TT + !ttMove2Process();
+        stage = EVASION_TT + !validTtm;
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !ttMove2Process();
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !validTtm;
 }
 
 
@@ -116,11 +115,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     pos(p),
     captureHistory(cph),
     ttMove(ttm),
-    threshold(th), ttMoveisExcluded(ttm == excluded) {
+    threshold(th) {
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(pos.capture_stage(ttm) && ttMove2Process() && pos.see_ge(ttm, threshold));
+          + !(ttm && pos.capture_stage(ttm) && ttm != excluded && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold) && pos.legal(ttm));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -202,9 +201,9 @@ Move MovePicker::select(Pred filter) {
 
     for (; cur < endCur; ++cur)
         if (*cur != ttMove && filter()) {
-            if (stage == GOOD_QUIET || pos.legal(*cur))
+            if (pos.legal(*cur))
                 return *cur++;
-            *cur = Move::none();
+            *cur = Move::none(); // to skip
         }
 
     return Move::none();
@@ -215,7 +214,6 @@ Move MovePicker::select(Pred filter) {
 // picking the move with the highest score from a list of generated moves.
 Move MovePicker::next_move() {
 
-    constexpr int goodQuietThreshold = -14000;
 top:
     switch (stage)
     {
@@ -266,12 +264,7 @@ top:
         if (!skipQuiets && select([&]() {
                 return cur->value > goodQuietThreshold ;
         }))
-        {
-            if (pos.legal(*(cur - 1)))
-                return *(cur - 1);
-            *(cur - 1) = Move::none();
-            goto top;
-        }
+            return *(cur - 1);
 
         // Prepare the pointers to loop over the bad captures
         cur    = moves;
@@ -332,7 +325,7 @@ bool MovePicker::can_move_king_or_pawn() const {
         PieceType movedPieceType = type_of(pos.moved_piece(*m));
         if ((movedPieceType == PAWN || movedPieceType == KING))
         {
-           if ((m < cur && stage == GOOD_QUIET) || pos.legal(*m))
+           if ((m < cur && (stage != GOOD_QUIET || m->value > goodQuietThreshold)) || pos.legal(*m))
             return true;
         }
     }
