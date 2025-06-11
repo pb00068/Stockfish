@@ -100,12 +100,12 @@ MovePicker::MovePicker(const Position&              p,
     depth(d),
     ply(pl) {
 
-    bool validTtm =  ttm && ttm != excluded && pos.pseudo_legal(ttm) && pos.legal(ttm);
+    bool invalidTtm =  !ttm || ttm == excluded || !pos.pseudo_legal(ttm) || !pos.legal(ttm);
     if (pos.checkers())
-        stage = EVASION_TT + !validTtm;
+        stage = EVASION_TT + invalidTtm;
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !validTtm;
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + invalidTtm;
 }
 
 
@@ -118,8 +118,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     threshold(th) {
     assert(!pos.checkers());
 
-    stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && ttm != excluded && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold) && pos.legal(ttm));
+    bool validttm = ttm && pos.capture_stage(ttm) && ttm != excluded && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold);
+    if (validttm && type_of(pos.moved_piece(ttm)) != KING)
+        validttm &= pos.legal(ttm);
+
+    stage = PROBCUT_TT + !validttm;
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
