@@ -21,9 +21,11 @@
 #include <cassert>
 #include <limits>
 #include <utility>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
+#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -204,6 +206,8 @@ Move MovePicker::select(Pred filter) {
 
     for (; cur < endCur; ++cur)
         if (*cur != ttMove && filter()) {
+            if (stage == GOOD_CAPTURE && type_of(pos.moved_piece(*cur)) == KING)
+                return *cur++; // legality assured by see_ge
             if (pos.legal(*cur))
                 return *cur++;
             *cur = Move::none(); // to skip

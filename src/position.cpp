@@ -1084,7 +1084,7 @@ bool Position::see_ge(Move m, int threshold) const {
 
         // Don't allow pinned pieces to attack as long as there are
         // pinners on their original square.
-        if (pinners(~stm) & occupied)
+        if (swap < KingValue/2 && (pinners(~stm) & occupied))
         {
             stmAttackers &= ~blockers_for_king(stm);
 
@@ -1132,9 +1132,8 @@ bool Position::see_ge(Move m, int threshold) const {
 
         else if ((bb = stmAttackers & pieces(QUEEN)))
         {
-            swap = QueenValue - swap;
-            //  implies that the previous recapture was done by a higher rated piece than a Queen (King is excluded)
-            assert(swap >= res);
+            if ((swap = QueenValue - swap) < res)
+               break;
             occupied ^= least_significant_square_bb(bb);
 
             attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
@@ -1144,7 +1143,7 @@ bool Position::see_ge(Move m, int threshold) const {
         else  // KING
               // If we "capture" with the king but the opponent still has attackers,
               // reverse the result.
-            return (attackers & ~pieces(stm)) ? res ^ 1 : res;
+            return (PieceValue[piece_on(from)] != KingValue && (attackers & ~pieces(stm))) ? res ^ 1 : res;
     }
 
     return bool(res);

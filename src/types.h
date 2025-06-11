@@ -186,6 +186,7 @@ constexpr Value KnightValue = 781;
 constexpr Value BishopValue = 825;
 constexpr Value RookValue   = 1276;
 constexpr Value QueenValue  = 2538;
+constexpr Value KingValue  = 100000;
 
 
 // clang-format off
@@ -204,8 +205,8 @@ enum Piece : std::int8_t {
 // clang-format on
 
 constexpr Value PieceValue[PIECE_NB] = {
-  VALUE_ZERO, PawnValue, KnightValue, BishopValue, RookValue, QueenValue, VALUE_ZERO, VALUE_ZERO,
-  VALUE_ZERO, PawnValue, KnightValue, BishopValue, RookValue, QueenValue, VALUE_ZERO, VALUE_ZERO};
+  VALUE_ZERO, PawnValue, KnightValue, BishopValue, RookValue, QueenValue, KingValue, VALUE_ZERO,
+  VALUE_ZERO, PawnValue, KnightValue, BishopValue, RookValue, QueenValue, KingValue, VALUE_ZERO};
 
 using Depth = int;
 
