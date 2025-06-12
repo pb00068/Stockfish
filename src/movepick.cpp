@@ -89,7 +89,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl, Move excluded) :
+                       int                          pl) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -100,29 +100,24 @@ MovePicker::MovePicker(const Position&              p,
     depth(d),
     ply(pl) {
 
-    bool no_ttm = !ttm || ttm == excluded || !pos.pseudo_legal(ttm) || !pos.legal(ttm);
     if (pos.checkers())
-        stage = EVASION_TT + no_ttm;
+        stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
     else
-        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + no_ttm;
+        stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
-
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph, Move excluded) :
+MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
     pos(p),
     captureHistory(cph),
     ttMove(ttm),
     threshold(th) {
     assert(!pos.checkers());
 
-    bool dottm =  !ttm || ttm == excluded || !pos.pseudo_legal(ttm) || !pos.see_ge(ttm, threshold);
-    if (dottm && type_of(pos.moved_piece(ttm)) != KING) // a kingmove which passed see_ge can't be illegal
-        dottm = pos.legal(ttm);
-
-    stage = PROBCUT_TT + !dottm;
+    stage = PROBCUT_TT
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see_ge(ttm, threshold));
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -226,7 +221,9 @@ top:
     case QSEARCH_TT :
     case PROBCUT_TT :
         ++stage;
-        return ttMove;
+        if (pos.legal(ttMove))
+               return ttMove;
+        [[fallthrough]];
 
     case CAPTURE_INIT :
     case PROBCUT_INIT :

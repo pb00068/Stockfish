@@ -911,12 +911,16 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory, excludedMove);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
         Depth      probCutDepth = std::max(depth - 5, 0);
 
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
+
+            if (move == excludedMove)
+                continue;
+
             assert(pos.capture_stage(move));
 
             movedPiece = pos.moved_piece(move);
@@ -965,7 +969,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, excludedMove);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
 
     value = bestValue;
 
@@ -977,6 +981,8 @@ moves_loop:  // When in check, search starts here
     {
         assert(move.is_ok());
 
+        if (move == excludedMove)
+            continue;
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
         // searched and those of lower "TB rank" if we are in a TB root position.
@@ -1607,7 +1613,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, Move::none());
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
