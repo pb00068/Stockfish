@@ -1053,7 +1053,8 @@ bool Position::see_ge(Move m, int threshold) const {
     assert(m.is_ok());
 
     // Only deal with normal moves, assume others pass a simple SEE
-    if (m.type_of() != NORMAL)
+    // also assume king moves pass simple SEE since they already have passed or will have to pass legality check
+    if (m.type_of() != NORMAL || !PieceValue[piece_on(m.from_sq())])
         return VALUE_ZERO >= threshold;
 
     Square from = m.from_sq(), to = m.to_sq();

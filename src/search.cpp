@@ -1054,7 +1054,7 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 31, -137 * depth, 125 * depth);
-                if (type_of(movedPiece) != KING && !pos.see_ge(move, -158 * depth - seeHist))
+                if (!pos.see_ge(move, -158 * depth - seeHist))
                 {
                     bool mayStalemateTrap =
                       depth > 2 && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece]
@@ -1101,7 +1101,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE
-                if (type_of(movedPiece) != KING && !pos.see_ge(move, -27 * lmrDepth * lmrDepth))
+                if (!pos.see_ge(move, -27 * lmrDepth * lmrDepth))
                     continue;
             }
         }
