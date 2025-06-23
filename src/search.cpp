@@ -1069,9 +1069,9 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -158 * depth - seeHist))
                 {
                     bool mayStalemateTrap =
-                      depth > 2 && alpha < 0
-                      && PieceValue[movedPiece] >= RookValue && pos.count<ROOK>(us) + pos.count<QUEEN>(us) <= 2
-                      && pos.non_pawn_material(us) <= PieceValue[movedPiece] + 2 * BishopValue
+                      alpha < 0
+                      && PieceValue[movedPiece] >= RookValue
+                      && pos.non_pawn_material(us) <= QueenValue + RookValue
                       // verify there's no other legal moves left other than further 'desperados'
                       && !mp.non_desperado_mobile(move.from_sq());
 

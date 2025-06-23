@@ -316,24 +316,27 @@ bool MovePicker::non_desperado_mobile(Square sq) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
     assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
 
-    int legalFromSquares = 0;
-    Square sqres[12] = {SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE,SQ_NONE};
+    int heavyFromSquares = 0;
+    Square sqres[3] = {SQ_NONE,SQ_NONE,SQ_NONE};
     for (ExtMove* m = moves; m < endGenerated; ++m)
     {
-        PieceType pt = type_of(pos.moved_piece(*m));
-        if (m->from_sq() != sq && pos.legal(*m))
+        if (m->from_sq() != sq)
         {
-            if (pt == KING || pt <= BISHOP)
+            PieceType pt = type_of(pos.moved_piece(*m));
+            if (pt <= BISHOP)
                 return true;
+            if (pt == KING && pos.legal(*m))
+                return true;
+
             int i=0;
-            for (; i<legalFromSquares; i++ )
+            for (; i<heavyFromSquares; i++ )
               if (sqres[i] == m->from_sq())
                 break;
-            if (i >= legalFromSquares)
-              sqres[legalFromSquares++] = m->from_sq();
+            if (i >= heavyFromSquares && heavyFromSquares < 3)
+              sqres[heavyFromSquares++] = m->from_sq();
         }
     }
-    for (int i=0; i<legalFromSquares; i++ )
+    for (int i=0; i<heavyFromSquares; i++ )
     {
        bool isDesperado = false;
        for (ExtMove* m = moves; !isDesperado && m < endGenerated; ++m)
