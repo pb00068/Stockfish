@@ -327,14 +327,9 @@ bool MovePicker::can_move_king_or_pawn() const {
 
     for (const ExtMove* m = moves; m < endGenerated; ++m)
     {
-        if (!m)
-           continue;
-        PieceType movedPieceType = type_of(pos.moved_piece(*m));
-        if ((movedPieceType == PAWN || movedPieceType == KING))
-        {
+        if (*m && (type_of(pos.moved_piece(*m)) == PAWN || type_of(pos.moved_piece(*m)) == KING))
            if ((m < cur && (stage != GOOD_QUIET || m->value > goodQuietThreshold)) || pos.legal(*m))
             return true;
-        }
     }
     return false;
 }

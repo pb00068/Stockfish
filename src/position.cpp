@@ -1063,7 +1063,8 @@ bool Position::see_ge(Move m, int threshold) const {
         return false;
 
     swap = PieceValue[piece_on(from)] - swap;
-    if (swap <= 0)
+    // quiet king moves already passed legality check, so it's guaranteed there's no attackers
+    if (swap <= 0 || (PieceValue[piece_on(from)] == KingValue && !PieceValue[piece_on(to)]))
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
