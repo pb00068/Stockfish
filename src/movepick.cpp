@@ -21,9 +21,11 @@
 #include <cassert>
 #include <limits>
 #include <utility>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
+#include "uci.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -224,7 +226,7 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endCur = endCaptures = generate<CAPTURES>(pos, cur);
+        endCur = endCaptures = endGenerated = generate<CAPTURES>(pos, cur);
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
@@ -303,19 +305,45 @@ top:
     assert(false);
     return Move::none();  // Silence warning
 }
-
 void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 
-// this function must be called after all quiet moves and captures have been generated
-bool MovePicker::can_move_king_or_pawn() const {
+bool MovePicker::non_desperado_mobile(Square sq) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
-    assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
+    assert(stage >= GOOD_CAPTURE && stage != EVASION_INIT);
 
-    for (const ExtMove* m = moves; m < endGenerated; ++m)
+    int heavyFromSquares = 0;
+    Square sqres[3] = {SQ_NONE,SQ_NONE,SQ_NONE};
+    for (ExtMove* m = moves; m < endGenerated; ++m)
     {
-        PieceType movedPieceType = type_of(pos.moved_piece(*m));
-        if ((movedPieceType == PAWN || movedPieceType == KING) && pos.legal(*m))
-            return true;
+        if (m->from_sq() != sq)
+        {
+            PieceType pt = type_of(pos.moved_piece(*m));
+            if (pt <= BISHOP)
+                return true;
+
+            if (pt == KING)
+            {
+              if (pos.legal(*m))
+                return true;
+              else continue;
+            }
+
+            int i=0;
+            for (; i<heavyFromSquares; i++ )
+              if (sqres[i] == m->from_sq())
+                break;
+            if (i >= heavyFromSquares && heavyFromSquares < 3)
+              sqres[heavyFromSquares++] = m->from_sq();
+        }
+    }
+    for (int i=0; i<heavyFromSquares; i++ )
+    {
+       bool isDesperado = false;
+       for (ExtMove* m = moves; !isDesperado && m < endGenerated; ++m)
+          isDesperado = sqres[i] == m->from_sq() && (pos.check_squares(type_of(pos.moved_piece(*m))) & m->to_sq()) && distance(m->to_sq(), pos.square<KING>(~pos.side_to_move())) == 1;
+
+       if (!isDesperado)
+         return true;
     }
     return false;
 }
