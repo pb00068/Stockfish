@@ -1058,8 +1058,7 @@ moves_loop:  // When in check, search starts here
                 int seeHist = std::clamp(captHist / 31, -137 * depth, 125 * depth);
                 if (!pos.see_ge(move, -158 * depth - seeHist))
                 {
-                    bool mayStalemateTrap =
-                      alpha < 0
+                    bool mayStalemateTrap = alpha < 0
                       && PieceValue[movedPiece] >= RookValue
                       && pos.non_pawn_material(us) <= QueenValue + RookValue
                       // verify there's no other legal moves left other than further 'desperados'
