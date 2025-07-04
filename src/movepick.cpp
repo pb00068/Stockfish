@@ -22,6 +22,7 @@
 #include <limits>
 #include <utility>
 
+
 #include "bitboard.h"
 #include "misc.h"
 #include "position.h"
@@ -224,7 +225,7 @@ top:
     case PROBCUT_INIT :
     case QCAPTURE_INIT :
         cur = endBadCaptures = moves;
-        endCur = endCaptures = generate<CAPTURES>(pos, cur);
+        endCur = endCaptures = endGenerated = generate<CAPTURES>(pos, cur);
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
@@ -309,7 +310,7 @@ void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 // this function must be called after all quiet moves and captures have been generated
 bool MovePicker::non_desperado_mobile(Square sq) {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
-    assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
+    assert(stage >= GOOD_CAPTURE && stage != EVASION_INIT);
 
     int heavyFromSquares = 0;
     Square sqres[3] = {SQ_NONE,SQ_NONE,SQ_NONE};
