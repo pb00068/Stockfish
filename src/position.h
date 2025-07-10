@@ -140,6 +140,8 @@ class Position {
 
     // Static Exchange Evaluation
     bool see_ge(Move m, int threshold = 0) const;
+    bool see_ge(Move m, Bitboard& occupied, Value threshold = VALUE_ZERO) const;
+
 
     // Accessing hash keys
     Key key() const;

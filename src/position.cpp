@@ -1048,7 +1048,7 @@ void Position::undo_null_move() {
 // Tests if the SEE (Static Exchange Evaluation)
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
-bool Position::see_ge(Move m, int threshold) const {
+bool Position::see_ge(Move m, Bitboard& occupied, int threshold) const {
 
     assert(m.is_ok());
 
@@ -1067,7 +1067,7 @@ bool Position::see_ge(Move m, int threshold) const {
         return true;
 
     assert(color_of(piece_on(from)) == sideToMove);
-    Bitboard occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
+    occupied  = pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
     Color    stm       = sideToMove;
     Bitboard attackers = attackers_to(to, occupied);
     Bitboard stmAttackers, bb;
@@ -1098,34 +1098,34 @@ bool Position::see_ge(Move m, int threshold) const {
         // the bitboard 'attackers' any X-ray attackers behind it.
         if ((bb = stmAttackers & pieces(PAWN)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = PawnValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(KNIGHT)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = KnightValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
         }
 
         else if ((bb = stmAttackers & pieces(BISHOP)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = BishopValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
         }
 
         else if ((bb = stmAttackers & pieces(ROOK)))
         {
+            occupied ^= least_significant_square_bb(bb);
             if ((swap = RookValue - swap) < res)
                 break;
-            occupied ^= least_significant_square_bb(bb);
 
             attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
         }
@@ -1150,6 +1150,10 @@ bool Position::see_ge(Move m, int threshold) const {
     return bool(res);
 }
 
+bool Position::see_ge(Move m, Value threshold) const {
+    Bitboard occupied;
+    return see_ge(m, occupied, threshold);
+}
 // Tests whether the position is drawn by 50-move rule
 // or by repetition. It does not detect stalemates.
 bool Position::is_draw(int ply) const {

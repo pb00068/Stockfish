@@ -1056,7 +1056,8 @@ moves_loop:  // When in check, search starts here
 
                 // SEE based pruning for captures and checks
                 int seeHist = std::clamp(captHist / 31, -137 * depth, 125 * depth);
-                if (!pos.see_ge(move, -158 * depth - seeHist))
+                Bitboard occupied;
+                if (!pos.see_ge(move, occupied, -158 * depth - seeHist))
                 {
                     bool mayStalemateTrap =
                       depth > 2 && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece]
@@ -1065,9 +1066,22 @@ moves_loop:  // When in check, search starts here
                       && !(attacks_bb<KING>(pos.square<KING>(us)) & move.from_sq())
                       && !mp.can_move_king_or_pawn();
 
+                    // Don't prune the move if opponent Queen/Rook is under discovered attack after the exchanges
+                    // Don't prune the move if opponent King is under discovered attack after or during the exchanges
+                    Bitboard leftEnemies = (pos.pieces(~us, KING, QUEEN, ROOK)) & occupied;
+                    Bitboard attacks = 0;
+                    occupied |= move.to_sq();
+                    while (leftEnemies && !attacks)
+                    {
+                       Square sq = pop_lsb(leftEnemies);
+                       attacks |= pos.attackers_to(sq, occupied) & pos.pieces(us) & occupied;
+                       // don't consider pieces which were already threatened/hanging before SEE exchanges
+                       if (attacks && (sq != pos.square<KING>(~us) && (pos.attackers_to(sq, pos.pieces()) & pos.pieces(us))))
+                           attacks = 0;
+                    }
                     // avoid pruning sacrifices of our last piece for stalemate
-                    if (!mayStalemateTrap)
-                        continue;
+                    if (!mayStalemateTrap && !attacks)
+                       continue;
                 }
             }
             else
