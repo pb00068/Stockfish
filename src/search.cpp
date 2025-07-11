@@ -521,16 +521,15 @@ void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, Stac
 }
 
 void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, const bool givesCheck, Stack* const ss) {
+    bool capture = pos.capture_stage(move);
     DirtyPiece dp = pos.do_move(move, st, givesCheck, &tt);
     nodes.fetch_add(1, std::memory_order_relaxed);
     accumulatorStack.push(dp);
-
     if (ss != nullptr)
     {
-        Piece movedPiece = pos.moved_piece(move);
         ss->currentMove = move;
-        ss->continuationHistory = &continuationHistory[ss->inCheck][pos.capture_stage(move)][movedPiece][move.to_sq()];
-        ss->continuationCorrectionHistory = &continuationCorrectionHistory[movedPiece][move.to_sq()];
+        ss->continuationHistory = &continuationHistory[ss->inCheck][capture][dp.pc][move.to_sq()];
+        ss->continuationCorrectionHistory = &continuationCorrectionHistory[dp.pc][move.to_sq()];
     }
 }
 
@@ -936,7 +935,6 @@ Value Search::Worker::search(
             movedPiece = pos.moved_piece(move);
 
             do_move(pos, move, st, ss);
-
 
             // Perform a preliminary qsearch to verify that the move holds
             value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
