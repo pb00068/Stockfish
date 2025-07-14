@@ -125,10 +125,10 @@ void  update_quiet_histories(
 void update_all_stats(const Position& pos,
                       Stack*          ss,
                       Search::Worker& workerThread,
-                      Move            bestMove,
                       Square          prevSq,
                       SearchedList&   quietsSearched,
                       SearchedList&   capturesSearched,
+                      SearchedList&   bestMoves,
                       Depth           depth,
                       Move            TTMove,
                       int             moveCount);
@@ -610,6 +610,7 @@ Value Search::Worker::search(
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
+    SearchedList bestMoves;
 
     // Step 1. Initialize node
     Worker* thisThread = this;
@@ -1361,7 +1362,7 @@ moves_loop:  // When in check, search starts here
         // In case we have an alternative move equal in eval to the current bestmove,
         // promote it to bestmove by pretending it just exceeds alpha (but not beta).
         int inc = (value == bestValue && ss->ply + 2 >= thisThread->rootDepth
-                   && (int(nodes) & 15) == 0 && !is_win(std::abs(value) + 1));
+                   && (int(nodes) & 7) == 0 && !is_win(std::abs(value) + 1));
 
         if (value + inc > bestValue)
         {
@@ -1393,9 +1394,11 @@ moves_loop:  // When in check, search starts here
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
-        if (move != bestMove && moveCount <= SEARCHEDLIST_CAPACITY)
+        if (moveCount <= SEARCHEDLIST_CAPACITY)
         {
-            if (capture)
+            if (move == bestMove)
+                bestMoves.push_back(move);
+            else if (capture)
                 capturesSearched.push_back(move);
             else
                 quietsSearched.push_back(move);
@@ -1420,7 +1423,7 @@ moves_loop:  // When in check, search starts here
     // we update the stats of searched moves.
     else if (bestMove)
     {
-        update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
+        update_all_stats(pos, ss, *this, prevSq, quietsSearched, capturesSearched, bestMoves, depth,
                          ttData.move, moveCount);
         if (!PvNode)
             ttMoveHistory << (bestMove == ttData.move ? 800 : -879);
@@ -1839,34 +1842,39 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
 void update_all_stats(const Position& pos,
                       Stack*          ss,
                       Search::Worker& workerThread,
-                      Move            bestMove,
                       Square          prevSq,
                       SearchedList&   quietsSearched,
                       SearchedList&   capturesSearched,
+                      SearchedList&   bestMoves,
                       Depth           depth,
                       Move            ttMove,
                       int             moveCount) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
-    Piece                  movedPiece     = pos.moved_piece(bestMove);
-    PieceType              capturedPiece;
-
-    int bonus = std::min(143 * depth - 89, 1496) + 302 * (bestMove == ttMove);
-    int malus = std::min(737 * depth - 179, 3141) - 30 * moveCount;
-
-    if (!pos.capture_stage(bestMove))
+    bool decrease = false;
+    int bonus = std::min(143 * depth - 89, 1496);
+    for (Move move : bestMoves)
     {
-        update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 1059 / 1024);
-
-        // Decrease stats for all non-best quiet moves
-        for (Move move : quietsSearched)
-            update_quiet_histories(pos, ss, workerThread, move, -malus * 1310 / 1024);
+    Piece                  movedPiece     = pos.moved_piece(move);
+    if (!pos.capture_stage(move))
+    {
+        update_quiet_histories(pos, ss, workerThread, move, (bonus + 302 * (move == ttMove)) * 1059 / 1024);
+        decrease = true;
     }
     else
     {
         // Increase stats for the best move in case it was a capture move
-        capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1213 / 1024;
+        PieceType capturedPiece = type_of(pos.piece_on(move.to_sq()));
+        captureHistory[movedPiece][move.to_sq()][capturedPiece] << (bonus + 302 * (move == ttMove)) * 1213 / 1024;
+    }
+    bonus += bonus/3;
+    }
+
+    int malus = std::min(737 * depth - 179, 3141) - 30 * moveCount;
+    if (decrease) {
+      // Decrease stats for all non-best quiet moves
+      for (Move move : quietsSearched)
+          update_quiet_histories(pos, ss, workerThread, move, -malus * 1310 / 1024);
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1877,8 +1885,8 @@ void update_all_stats(const Position& pos,
     // Decrease stats for all non-best capture moves
     for (Move move : capturesSearched)
     {
-        movedPiece    = pos.moved_piece(move);
-        capturedPiece = type_of(pos.piece_on(move.to_sq()));
+        Piece movedPiece    = pos.moved_piece(move);
+        PieceType capturedPiece = type_of(pos.piece_on(move.to_sq()));
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1388 / 1024;
     }
 }
