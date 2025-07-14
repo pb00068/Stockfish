@@ -88,7 +88,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl, Bitboard ps) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -97,7 +97,7 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
-    ply(pl) {
+    ply(pl), prevSq(ps) {
 
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
@@ -153,7 +153,8 @@ void MovePicker::score() {
         else if constexpr (Type == QUIETS)
         {
             // histories
-            m.value = 2 * (*mainHistory)[us][m.from_to()];
+            bool crossing = pt != KNIGHT && (between_bb(to, from) & prevSq);
+            m.value = 2 * (*mainHistory)[us][crossing][m.from_to()];
             m.value += 2 * (*pawnHistory)[pawn_structure_index(pos)][pc][to];
             m.value += (*continuationHistory[0])[pc][to];
             m.value += (*continuationHistory[1])[pc][to];
@@ -183,7 +184,8 @@ void MovePicker::score() {
                 m.value = PieceValue[capturedPiece] + (1 << 28);
             else
             {
-                m.value = (*mainHistory)[us][m.from_to()] + (*continuationHistory[0])[pc][to];
+                bool crossing = pt != KNIGHT && (between_bb(to, from) & prevSq);
+                m.value = (*mainHistory)[us][crossing][m.from_to()] + (*continuationHistory[0])[pc][to];
                 if (ply < LOW_PLY_HISTORY_SIZE)
                     m.value += 2 * (*lowPlyHistory)[ply][m.from_to()] / (1 + ply);
             }

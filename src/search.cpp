@@ -528,6 +528,7 @@ void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, cons
     if (ss != nullptr)
     {
         ss->currentMove = move;
+        ss->crossing = type_of(dp.pc) == KNIGHT ? 0 : between_bb(move.to_sq(), move.from_sq());
         ss->continuationHistory = &continuationHistory[ss->inCheck][capture][dp.pc][move.to_sq()];
         ss->continuationCorrectionHistory = &continuationCorrectionHistory[dp.pc][move.to_sq()];
     }
@@ -816,7 +817,8 @@ Value Search::Worker::search(
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture && !ttHit)
     {
         int bonus = std::clamp(-10 * int((ss - 1)->staticEval + ss->staticEval), -1858, 1492) + 661;
-        thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()] << bonus * 1057 / 1024;
+        bool crossing = (ss - 2)->currentMove.is_ok() && bool((ss - 1)->crossing & (ss - 2)->currentMove.from_sq());
+        thisThread->mainHistory[~us][crossing][((ss - 1)->currentMove).from_to()] << bonus * 1057 / 1024;
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             thisThread->pawnHistory[pawn_structure_index(pos)][pos.piece_on(prevSq)][prevSq]
               << bonus * 1266 / 1024;
@@ -971,8 +973,9 @@ moves_loop:  // When in check, search starts here
       (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
 
 
+    Bitboard prev = Bitboard(0) | ((ss-1)->currentMove.is_ok() ?  (ss-1)->currentMove.from_sq() : 0) | ((ss-2)->currentMove.is_ok() ?  (ss-2)->currentMove.from_sq() : 0);
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, prev);
 
     value = bestValue;
 
@@ -1082,7 +1085,8 @@ moves_loop:  // When in check, search starts here
                 if (history < -4229 * depth)
                     continue;
 
-                history += 68 * thisThread->mainHistory[us][move.from_to()] / 32;
+                bool crossing = type_of(movedPiece) != KNIGHT && (ss - 1)->currentMove.is_ok() && (between_bb(move.to_sq(), move.from_sq()) & (ss - 1)->currentMove.from_sq());
+                history += 68 * thisThread->mainHistory[us][crossing][move.from_to()] / 32;
 
                 lmrDepth += history / 3388;
 
@@ -1216,7 +1220,7 @@ moves_loop:  // When in check, search starts here
               + thisThread->captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())]
               - 5030;
         else
-            ss->statScore = 2 * thisThread->mainHistory[us][move.from_to()]
+            ss->statScore = 2 * thisThread->mainHistory[us][(ss - 1)->currentMove.is_ok() && bool(ss->crossing & (ss - 1)->currentMove.from_sq())][move.from_to()]
                           + (*contHist[0])[movedPiece][move.to_sq()]
                           + (*contHist[1])[movedPiece][move.to_sq()] - 3206;
 
@@ -1437,8 +1441,8 @@ moves_loop:  // When in check, search starts here
 
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq,
                                       scaledBonus * 412 / 32768);
-
-        thisThread->mainHistory[~us][((ss - 1)->currentMove).from_to()]
+        bool crossing = (ss - 2)->currentMove.is_ok() && bool((ss - 1)->crossing & (ss - 2)->currentMove.from_sq());
+        thisThread->mainHistory[~us][crossing][((ss - 1)->currentMove).from_to()]
           << scaledBonus * 203 / 32768;
 
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
@@ -1613,8 +1617,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
+    Bitboard prev = Bitboard(0) | ((ss-1)->currentMove.is_ok() ?  (ss-1)->currentMove.from_sq() : 0) | ((ss-2)->currentMove.is_ok() ?  (ss-2)->currentMove.from_sq() : 0);
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, prev);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1892,7 +1897,8 @@ void update_quiet_histories(
   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus) {
 
     Color us = pos.side_to_move();
-    workerThread.mainHistory[us][move.from_to()] << bonus;  // Untuned to prevent duplicate effort
+    bool crossing = type_of(pos.moved_piece(move)) != KNIGHT && (ss - 1)->currentMove.is_ok() && (between_bb(move.to_sq(), move.from_sq()) & (ss - 1)->currentMove.from_sq());
+    workerThread.mainHistory[us][crossing][move.from_to()] << bonus;  // Untuned to prevent duplicate effort
 
     if (ss->ply < LOW_PLY_HISTORY_SIZE)
         workerThread.lowPlyHistory[ss->ply][move.from_to()] << bonus * 792 / 1024;
