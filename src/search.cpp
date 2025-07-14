@@ -1362,7 +1362,7 @@ moves_loop:  // When in check, search starts here
         // In case we have an alternative move equal in eval to the current bestmove,
         // promote it to bestmove by pretending it just exceeds alpha (but not beta).
         int inc = (value == bestValue && ss->ply + 2 >= thisThread->rootDepth
-                   && (int(nodes) & 7) == 0 && !is_win(std::abs(value) + 1));
+                   && (int(nodes) & 15) == 0 && !is_win(std::abs(value) + 1));
 
         if (value + inc > bestValue)
         {
@@ -1853,21 +1853,22 @@ void update_all_stats(const Position& pos,
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     bool decrease = false;
     int bonus = std::min(143 * depth - 89, 1496);
+    int div = bestMoves.size();
     for (Move move : bestMoves)
     {
     Piece                  movedPiece     = pos.moved_piece(move);
     if (!pos.capture_stage(move))
     {
-        update_quiet_histories(pos, ss, workerThread, move, (bonus + 302 * (move == ttMove)) * 1059 / 1024);
+        update_quiet_histories(pos, ss, workerThread, move, (bonus / div + 302 * (move == ttMove)) * 1059 / 1024);
         decrease = true;
     }
     else
     {
         // Increase stats for the best move in case it was a capture move
         PieceType capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << (bonus + 302 * (move == ttMove)) * 1213 / 1024;
+        captureHistory[movedPiece][move.to_sq()][capturedPiece] << (bonus / div + 302 * (move == ttMove)) * 1213 / 1024;
     }
-    bonus += bonus/3;
+    div --;
     }
 
     int malus = std::min(737 * depth - 179, 3141) - 30 * moveCount;
