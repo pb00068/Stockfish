@@ -1181,8 +1181,12 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * (64 - 2 * msb(depth));
         r -= std::abs(correctionValue) / 30450;
 
-        if (!givesCheck && !more_than_one(pos.state()->previous->blockersForKing[~us]) && more_than_one(pos.state()->blockersForKing[~us]))
-          r -= 2048; // less reduction if increasing pressure (blockers) on enemy king
+        if (pos.state()->blockersForKing[~us] & pos.pieces(~us, PAWN) & PseudoAttacks[KING][pos.square<KING>(~us)])
+        {
+          r -= 1024 * popcount(pos.state()->blockersForKing[~us] & pos.pieces(~us, PAWN) & PseudoAttacks[KING][pos.square<KING>(~us)]);
+          // less reduction if increasing pressure blockers near enemy king (king ring)
+          //sync_cout << pos << UCIEngine::move(move, false) << Bitboards::pretty(pos.state()->blockersForKing[~us]) << sync_endl;
+        }
 
         // Increase reduction for cut nodes
         if (cutNode)
