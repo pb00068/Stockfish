@@ -1182,7 +1182,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 30450;
 
         if (!givesCheck && !more_than_one(pos.state()->previous->blockersForKing[~us]) && more_than_one(pos.state()->blockersForKing[~us]))
-          r -= 1024; // less reduction if increasing pressure (blockers) on enemy king
+          r -= 2048; // less reduction if increasing pressure (blockers) on enemy king
 
         // Increase reduction for cut nodes
         if (cutNode)
