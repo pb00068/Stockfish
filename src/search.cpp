@@ -1181,6 +1181,9 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * (64 - 2 * msb(depth));
         r -= std::abs(correctionValue) / 30450;
 
+        if (!givesCheck && pos.state()->previous && pos.state()->previous->blockersForKing[~us] && more_than_one(pos.state()->blockersForKing[~us]))
+          r -= 2; // less reduction if increasing pressure (blockers) on enemy king
+
         // Increase reduction for cut nodes
         if (cutNode)
             r += 3092 + 2 * msb(depth) + (980 + 15 * msb(depth)) * !ttData.move;
