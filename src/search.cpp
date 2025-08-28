@@ -854,10 +854,11 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+    if ( ((cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove && ss->ply >= nmpMinPly
+          && pos.non_pawn_material(us) && !is_loss(beta))|| ((ss-1)->currentMove == Move::null()))
+        && ((ss-2)->currentMove != Move::null()))
+
     {
-        assert((ss - 1)->currentMove != Move::null());
 
         // Null move dynamic reduction based on depth
         Depth R = 6 + depth / 3;
@@ -1160,14 +1161,6 @@ moves_loop:  // When in check, search starts here
             // over current beta
             else if (cutNode)
                 extension = -2;
-        }
-
-        if (nmpMinPly && extension <= 0) // verification search - which depth is very shallow 
-        {
-           if ( move.promotion_type() == QUEEN)
-               extension = 2;
-           if (givesCheck)
-               extension = 1;
         }
 
         // Step 16. Make the move
