@@ -1162,6 +1162,14 @@ moves_loop:  // When in check, search starts here
                 extension = -2;
         }
 
+        if (nmpMinPly && extension <= 0) // verification search - which depth is very shallow 
+        {
+           if ( move.promotion_type() == QUEEN)
+               extension = 2;
+           if (givesCheck)
+               extension = 1;
+        }
+
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
 
