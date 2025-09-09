@@ -1175,8 +1175,6 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
-        if (uniqueMove && !extension)
-          extension = 1;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
@@ -1452,7 +1450,7 @@ moves_loop:  // When in check, search starts here
         bestValue = std::min(bestValue, maxValue);
 
     Move nextMov = !excludedMove && !uniqueMove && moveCount == 1 ? mp.next_move() : Move::none();
-    if (uniqueMove || (!excludedMove && moveCount == 1 && (nextMov == Move::none() || (!pos.legal(nextMov) && MoveList<LEGAL>(pos).size() == 1))))
+    if (uniqueMove || (!excludedMove && moveCount == 1 && move.type_of() == NORMAL && (nextMov == Move::none() || (!pos.legal(nextMov) && MoveList<LEGAL>(pos).size() == 1))))
     {
         move.setUnique();
         uniqueMove = true;
