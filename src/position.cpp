@@ -79,7 +79,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
     for (Bitboard b = pos.checkers(); b;)
         os << UCIEngine::square(pop_lsb(b)) << " ";
 
-    if (int(Tablebases::MaxCardinality) >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
+    if (Tablebases::MaxCardinality >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
     {
         StateInfo st;
 
@@ -597,10 +597,14 @@ bool Position::pseudo_legal(const Move m) const {
         if ((Rank8BB | Rank1BB) & to)
             return false;
 
-        if (!(attacks_bb<PAWN>(from, us) & pieces(~us) & to)  // Not a capture
-            && !((from + pawn_push(us) == to) && empty(to))   // Not a single push
-            && !((from + 2 * pawn_push(us) == to)             // Not a double push
-                 && (relative_rank(us, from) == RANK_2) && empty(to) && empty(to - pawn_push(us))))
+        // Check if it's a valid capture, single push, or double push
+        const bool isCapture    = bool(attacks_bb<PAWN>(from, us) & pieces(~us) & to);
+        const bool isSinglePush = (from + pawn_push(us) == to) && empty(to);
+        const bool isDoublePush = (from + 2 * pawn_push(us) == to)
+                               && (relative_rank(us, from) == RANK_2) && empty(to)
+                               && empty(to - pawn_push(us));
+
+        if (!(isCapture || isSinglePush || isDoublePush))
             return false;
     }
     else if (!(attacks_bb(type_of(pc), from, pieces()) & to))
@@ -706,15 +710,20 @@ DirtyPiece Position::do_move(Move                      m,
     ++st->rule50;
     ++st->pliesFromNull;
 
-    DirtyPiece dp;
-    dp.dirty_num = 1;
-
     Color  us       = sideToMove;
     Color  them     = ~us;
     Square from     = m.from_sq();
     Square to       = m.to_sq();
     Piece  pc       = piece_on(from);
     Piece  captured = m.type_of() == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
+
+    bool checkEP = false;
+
+    DirtyPiece dp;
+    dp.pc     = pc;
+    dp.from   = from;
+    dp.to     = to;
+    dp.add_sq = SQ_NONE;
 
     assert(color_of(pc) == us);
     assert(captured == NO_PIECE || color_of(captured) == (m.type_of() != CASTLING ? them : us));
@@ -762,10 +771,8 @@ DirtyPiece Position::do_move(Move                      m,
                 st->minorPieceKey ^= Zobrist::psq[captured][capsq];
         }
 
-        dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
-        dp.piece[1]  = captured;
-        dp.from[1]   = capsq;
-        dp.to[1]     = SQ_NONE;
+        dp.remove_pc = captured;
+        dp.remove_sq = capsq;
 
         // Update board and piece lists
         remove_piece(capsq);
@@ -776,6 +783,8 @@ DirtyPiece Position::do_move(Move                      m,
         // Reset rule 50 counter
         st->rule50 = 0;
     }
+    else
+        dp.remove_sq = SQ_NONE;
 
     // Update hash key
     k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
@@ -797,24 +806,14 @@ DirtyPiece Position::do_move(Move                      m,
 
     // Move the piece. The tricky Chess960 castling is handled earlier
     if (m.type_of() != CASTLING)
-    {
-        dp.piece[0] = pc;
-        dp.from[0]  = from;
-        dp.to[0]    = to;
-
         move_piece(from, to);
-    }
 
     // If the moving piece is a pawn do some special extra work
     if (type_of(pc) == PAWN)
     {
-        // Set en passant square if the moved pawn can be captured
-        if ((int(to) ^ int(from)) == 16
-            && (attacks_bb<PAWN>(to - pawn_push(us), us) & pieces(them, PAWN)))
-        {
-            st->epSquare = to - pawn_push(us);
-            k ^= Zobrist::enpassant[file_of(st->epSquare)];
-        }
+        // Check later if the en passant square needs to be set
+        if ((int(to) ^ int(from)) == 16)
+            checkEP = true;
 
         else if (m.type_of() == PROMOTION)
         {
@@ -827,12 +826,9 @@ DirtyPiece Position::do_move(Move                      m,
             remove_piece(to);
             put_piece(promotion, to);
 
-            // Promoting pawn to SQ_NONE, promoted piece from SQ_NONE
-            dp.to[0]               = SQ_NONE;
-            dp.piece[dp.dirty_num] = promotion;
-            dp.from[dp.dirty_num]  = SQ_NONE;
-            dp.to[dp.dirty_num]    = to;
-            dp.dirty_num++;
+            dp.add_pc = promotion;
+            dp.add_sq = to;
+            dp.to     = SQ_NONE;
 
             // Update hash keys
             // Zobrist::psq[pc][to] is zero, so we don't need to clear it
@@ -862,11 +858,6 @@ DirtyPiece Position::do_move(Move                      m,
             st->minorPieceKey ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
     }
 
-    // Update the key with the final value
-    st->key = k;
-    if (tt)
-        prefetch(tt->first_entry(key()));
-
     // Set capture piece
     st->capturedPiece = captured;
 
@@ -877,6 +868,63 @@ DirtyPiece Position::do_move(Move                      m,
 
     // Update king attacks used for fast check detection
     set_check_info();
+
+    // Accurate e.p. info is needed for correct zobrist key generation and 3-fold checking
+    while (checkEP)
+    {
+        auto updateEpSquare = [&] {
+            st->epSquare = to - pawn_push(us);
+            k ^= Zobrist::enpassant[file_of(st->epSquare)];
+        };
+
+        Bitboard pawns = attacks_bb<PAWN>(to - pawn_push(us), us) & pieces(them, PAWN);
+
+        // If there are no pawns attacking the ep square, ep is not possible
+        if (!pawns)
+            break;
+
+        // If there are checkers other than the to be captured pawn, ep is never legal
+        if (checkers() & ~square_bb(to))
+            break;
+
+        if (more_than_one(pawns))
+        {
+            // If there are two pawns potentially being abled to capture and at least one
+            // is not pinned, ep is legal as there are no horizontal exposed checks
+            if (!more_than_one(blockers_for_king(them) & pawns))
+            {
+                updateEpSquare();
+                break;
+            }
+
+            // If there is no pawn on our king's file, and thus both pawns are pinned
+            // by bishops, ep is not legal as the king square must be in front of the to square.
+            // And because the ep square and the king are not on a common diagonal, either ep capture
+            // would expose the king to a check from one of the bishops
+            if (!(file_bb(square<KING>(them)) & pawns))
+                break;
+
+            // Otherwise remove the pawn on the king file, as an ep capture by it can never be legal and the
+            // check below relies on there only being one pawn
+            pawns &= ~file_bb(square<KING>(them));
+        }
+
+        Square   ksq      = square<KING>(them);
+        Square   capsq    = to;
+        Bitboard occupied = (pieces() ^ lsb(pawns) ^ capsq) | (to - pawn_push(us));
+
+        // If our king is not attacked after making the move, ep is legal.
+        if (!(attacks_bb<ROOK>(ksq, occupied) & pieces(us, QUEEN, ROOK))
+            && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(us, QUEEN, BISHOP)))
+            updateEpSquare();
+
+        break;
+    }
+
+    // Update the key with the final value
+    st->key = k;
+    if (tt)
+        prefetch(tt->first_entry(key()));
 
     // Calculate the repetition info. It is the ply distance from the previous
     // occurrence of the same position, negative in the 3-fold case, or zero
@@ -899,6 +947,10 @@ DirtyPiece Position::do_move(Move                      m,
 
     assert(pos_is_ok());
 
+    assert(dp.pc != NO_PIECE);
+    assert(!(bool(captured) || m.type_of() == CASTLING) ^ (dp.remove_sq != SQ_NONE));
+    assert(dp.from != SQ_NONE);
+    assert(!(dp.add_sq != SQ_NONE) ^ (m.type_of() == PROMOTION || m.type_of() == CASTLING));
     return dp;
 }
 
@@ -981,13 +1033,10 @@ void Position::do_castling(
 
     if (Do)
     {
-        dp->piece[0]  = make_piece(us, KING);
-        dp->from[0]   = from;
-        dp->to[0]     = to;
-        dp->piece[1]  = make_piece(us, ROOK);
-        dp->from[1]   = rfrom;
-        dp->to[1]     = rto;
-        dp->dirty_num = 2;
+        dp->to        = to;
+        dp->remove_pc = dp->add_pc = make_piece(us, ROOK);
+        dp->remove_sq              = rfrom;
+        dp->add_sq                 = rto;
     }
 
     // Remove both pieces first since squares could overlap in Chess960
