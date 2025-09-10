@@ -877,14 +877,14 @@ Value Search::Worker::search(
         (!cutNode && (ss-1)->currentMove == Move::null()))
     {
         // Null move dynamic reduction based on depth
-        Depth R = cutNode ? 6 + depth / 3 : 2;
+        Depth R = cutNode ? 6 + depth / 3 : 0;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
 
         do_null_move(pos, st);
-        if (!nmpMinPly)
+        if (!cutNode)
              nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
