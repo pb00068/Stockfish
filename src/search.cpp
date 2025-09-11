@@ -1047,14 +1047,14 @@ moves_loop:  // When in check, search starts here
 
         // Step 14. Pruning at shallow depth.
         // Depth conditions are important for mate finding.
-        if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue) && !uniqueMove)
+        if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
             if (moveCount >= (3 + depth * depth) / (2 - improving))
                 mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
-            int lmrDepth = newDepth - r / 1024;
+            int lmrDepth = newDepth + bool(uniqueMove) - r / 1024;
 
             if (capture || givesCheck)
             {
@@ -1175,6 +1175,8 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+        else if (uniqueMove && (ttData.bound & BOUND_LOWER))
+          extension = 1;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
@@ -1449,12 +1451,21 @@ moves_loop:  // When in check, search starts here
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
 
-    Move nextMov = !excludedMove && !uniqueMove && moveCount == 1 ? mp.next_move() : Move::none();
-    if (uniqueMove || (!excludedMove && moveCount == 1 && move.type_of() == NORMAL && (nextMov == Move::none() || (!pos.legal(nextMov) && MoveList<LEGAL>(pos).size() == 1))))
+    if (uniqueMove)
     {
         move.setUnique();
         uniqueMove = true;
         bestMove = move; // save unique legal move into TT
+    }
+    else if (!excludedMove && moveCount == 1)
+    {
+        Move nextMov = mp.next_move();
+        if (nextMov == Move::none() || (!pos.legal(nextMov) && ss->inCheck && MoveList<LEGAL>(pos).size() == 1))
+        {
+            move.setUnique();
+            uniqueMove = true;
+            bestMove = move; // save unique legal move into TT
+        }
     }
 
     // If no good move is found and the previous position was ttPv, then the previous
@@ -1604,12 +1615,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         futilityBase = ss->staticEval + 352;
     }
 
-    bool uniqueMove = false;
     if (ttData.move && ttData.move.type_of() == PROMOTION
          && (type_of(pos.moved_piece(ttData.move)) != PAWN || relative_rank(pos.side_to_move(), ttData.move.from_sq()) != RANK_7))
     {
               ttData.move = Move(ttData.move.from_sq(), ttData.move.to_sq());
-              uniqueMove = true;
+
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
@@ -1638,7 +1648,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         moveCount++;
 
         // Step 6. Pruning
-        if (!is_loss(bestValue) && !uniqueMove)
+        if (!is_loss(bestValue))
         {
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
@@ -1704,9 +1714,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                     break;  // Fail high
             }
         }
-
-        if (uniqueMove)
-           break;
     }
 
     // Step 9. Check for mate
