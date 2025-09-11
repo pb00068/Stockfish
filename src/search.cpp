@@ -873,10 +873,11 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if ((cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta)) || ((ss-1)->currentMove == Move::null() && !cutNode))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+        || ((ss-1)->currentMove == Move::null() && (ss-2)->currentMove != Move::null()))
     {
         // Null move dynamic reduction based on depth
-        Depth R = cutNode ? 6 + depth / 3 : 0;
+        Depth R = (ss-1)->currentMove == Move::null() ? 0 : 6 + depth / 3;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
@@ -886,7 +887,7 @@ Value Search::Worker::search(
         if (!nmpMinPly)
              nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
         nmpMinPly = 0;
         undo_null_move(pos);
