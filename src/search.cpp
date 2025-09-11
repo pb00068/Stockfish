@@ -871,13 +871,12 @@ Value Search::Worker::search(
             return beta + (eval - beta) / 3;
     }
 
-    // Step 9. Null move search with Double Null move (= recursive verification search)
+    // Step 9. Null move search with verification search
     if ((cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta)) ||
-        (!cutNode && (ss-1)->currentMove == Move::null()))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta)) || ((ss-1)->currentMove == Move::null() && !cutNode))
     {
         // Null move dynamic reduction based on depth
-        Depth R = cutNode ? 6 + depth / 3 : 2;
+        Depth R = cutNode ? 6 + depth / 3 : 0;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
