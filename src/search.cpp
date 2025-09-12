@@ -860,8 +860,8 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+    if (cutNode && ss->staticEval >= beta - 18 * depth + 250 && !excludedMove
+        && pos.non_pawn_material(us) && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -880,23 +880,7 @@ Value Search::Worker::search(
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
-        {
-            if (nmpMinPly || depth < 16)
-                return nullValue;
-
-            assert(!nmpMinPly);  // Recursive verification is not allowed
-
-            // Do verification search at high depths, with null move pruning disabled
-            // until ply exceeds nmpMinPly.
-            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
-
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
-
-            nmpMinPly = 0;
-
-            if (v >= beta)
-                return nullValue;
-        }
+           return nullValue;
     }
 
     improving |= ss->staticEval >= beta;
