@@ -62,6 +62,7 @@ extern uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];
 extern Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 extern Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
+constexpr Bitboard AllSquares = ~Bitboard(0);
 
 
 // Magic holds all magic bitboards relevant data for a single square

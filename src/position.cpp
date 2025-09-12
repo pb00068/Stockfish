@@ -341,6 +341,7 @@ void Position::set_state() const {
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+    st->legalKing = AllSquares;
 
     set_check_info();
 
@@ -709,6 +710,7 @@ DirtyPiece Position::do_move(Move                      m,
     ++gamePly;
     ++st->rule50;
     ++st->pliesFromNull;
+    st->legalKing= AllSquares;
 
     Color  us       = sideToMove;
     Color  them     = ~us;
@@ -1067,6 +1069,7 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
         st->epSquare = SQ_NONE;
     }
 
+    st->legalKing= AllSquares;
     st->key ^= Zobrist::side;
     prefetch(tt.first_entry(key()));
 
@@ -1195,6 +1198,43 @@ bool Position::see_ge(Move m, int threshold) const {
     }
 
     return bool(res);
+}
+
+
+bool Position::king_danger(Color c) const {
+
+    Square ksq = square<KING>(c);
+    Bitboard kingRing, kingAttackers;
+
+    kingAttackers = st->legalKing = 0;
+
+    kingRing = attacks_bb<KING>(ksq);
+
+    while (kingRing)
+    {
+      Square to = pop_lsb(kingRing);
+      Bitboard enemyAttackers = pieces(~c) & attackers_to(to);
+      if (!enemyAttackers)
+      {
+          if ((pieces(c) & to) == 0)
+            st->legalKing |= to;
+      }
+
+      while (enemyAttackers)
+      {
+        Square currentEnemy = pop_lsb(enemyAttackers);
+        if ((currentEnemy & ~kingRing) || (more_than_one(attackers_to(to) & pieces(~c))))
+            kingAttackers |= currentEnemy;
+      }
+    }
+    int kingAttackersCount = popcount(kingAttackers);
+    int legalKingCount = popcount(st->legalKing);
+
+    if (   (kingAttackersCount > 1 &&  legalKingCount < 2)
+        || (kingAttackersCount > 0 && !legalKingCount))
+        return true;
+
+    return false;
 }
 
 // Tests whether the position is drawn by 50-move rule
