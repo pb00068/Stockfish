@@ -555,7 +555,7 @@ bool Position::legal(Move m) const {
     // If the moving piece is a king, check whether the destination square is
     // attacked by the opponent.
     if (type_of(piece_on(from)) == KING)
-        return !(attackers_to_exist(to, pieces() ^ from, ~us));
+        return st->legalKing != AllSquares || !(attackers_to_exist(to, pieces() ^ from, ~us));
 
     // A non-king move is legal if and only if it is not pinned or it
     // is moving along the ray towards or away from the king.

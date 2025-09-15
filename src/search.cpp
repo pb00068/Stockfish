@@ -627,7 +627,6 @@ Value Search::Worker::search(
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction;
-    bool  ourMove;
     Piece movedPiece;
 
     SearchedList capturesSearched;
@@ -637,7 +636,6 @@ Value Search::Worker::search(
     ss->inCheck   = pos.checkers();
     priorCapture  = pos.captured_piece();
     Color us      = pos.side_to_move();
-    ourMove             = !(ss->ply & 1);
     ss->moveCount = 0;
     bestValue     = -VALUE_INFINITE;
     maxValue      = VALUE_INFINITE;
@@ -880,7 +878,7 @@ Value Search::Worker::search(
     {
         assert((ss - 1)->currentMove != Move::null());
 
-        if (!ourMove && pos.king_danger(us))
+        if (pos.king_danger(us))
           goto afternmp;
 
         // Null move dynamic reduction based on depth
