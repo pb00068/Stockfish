@@ -869,7 +869,7 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth
         Depth nd = depth - (6 + depth / 3);
         if (!(ss-2)->inCheck && (ss-2)->avgLmrDepth > nd)
-          nd = (ss-2)->avgLmrDepth;
+          nd = (nd + (ss-2)->avgLmrDepth) / 2;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
