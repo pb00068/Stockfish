@@ -779,6 +779,7 @@ Value Search::Worker::search(
 
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
+    bool kingdanger;
     const auto correctionValue      = correction_value(*this, pos, ss);
     if (ss->inCheck)
     {
@@ -860,13 +861,16 @@ Value Search::Worker::search(
             return beta + (eval - beta) / 3;
     }
 
+    kingdanger = !cutNode ? pos.king_danger(us) : false;
+
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 18 * depth + 390 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
 
-        if (pos.king_danger(us))
+        kingdanger = pos.king_danger(us);
+        if (kingdanger)
           goto afternmp;
 
         // Null move dynamic reduction based on depth
