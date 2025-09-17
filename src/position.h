@@ -126,7 +126,7 @@ class Position {
     bool  pseudo_legal(const Move m) const;
     bool  capture(Move m) const;
     bool  capture_stage(Move m) const;
-    bool  gives_check(Move m) const;
+    bool  gives_check(Move m, bool& direct) const;
     Piece moved_piece(Move m) const;
     Piece captured_piece() const;
 
@@ -355,7 +355,8 @@ inline void Position::move_piece(Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt, const TranspositionTable* tt = nullptr) {
-    do_move(m, newSt, gives_check(m), tt);
+  bool d;
+    do_move(m, newSt, gives_check(m,d), tt);
 }
 
 inline StateInfo* Position::state() const { return st; }

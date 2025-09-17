@@ -518,7 +518,8 @@ void Search::Worker::iterative_deepening() {
 
 
 void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss) {
-    do_move(pos, move, st, pos.gives_check(move), ss);
+    bool d;
+    do_move(pos, move, st, pos.gives_check(move,d), ss);
 }
 
 void Search::Worker::do_move(
@@ -612,7 +613,7 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening;
+    bool  givesCheck, directCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
@@ -1008,7 +1009,7 @@ moves_loop:  // When in check, search starts here
         extension  = 0;
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
-        givesCheck = pos.gives_check(move);
+        givesCheck = pos.gives_check(move, directCheck);
 
         (ss + 1)->quietMoveStreak = capture ? 0 : (ss->quietMoveStreak + 1);
 
@@ -1051,12 +1052,18 @@ moves_loop:  // When in check, search starts here
                         continue;
                 }
 
+                if (bool(pos.check_squares(type_of(movedPiece)) & move.to_sq()) != directCheck)
+                  abort();
+
                 // SEE based pruning for captures and checks
                 // Avoid pruning sacrifices of our last piece for stalemate
                 int margin = std::max(157 * depth + captHist / 29, 0);
-                if ((alpha >= VALUE_DRAW || pos.non_pawn_material(us) != PieceValue[movedPiece])
-                    && !pos.see_ge(move, -margin))
-                    continue;
+                if (!(moveCount <= 4 && directCheck && margin >= 75 &&  move != ttData.move)) // otherwise its almost sure that !pos.see_ge(move, -margin) == false
+                {
+                    if ((alpha >= VALUE_DRAW || pos.non_pawn_material(us) != PieceValue[movedPiece])
+                        && !pos.see_ge(move, -margin))
+                        continue;
+                }
             }
             else
             {
@@ -1589,6 +1596,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
+    bool directCheck;
     while ((move = mp.next_move()) != Move::none())
     {
         assert(move.is_ok());
@@ -1596,7 +1604,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (!pos.legal(move))
             continue;
 
-        givesCheck = pos.gives_check(move);
+        givesCheck = pos.gives_check(move, directCheck);
         capture    = pos.capture_stage(move);
 
         moveCount++;

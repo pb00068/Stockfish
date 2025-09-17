@@ -636,7 +636,7 @@ bool Position::pseudo_legal(const Move m) const {
 
 
 // Tests whether a pseudo-legal move gives a check
-bool Position::gives_check(Move m) const {
+bool Position::gives_check(Move m, bool& direct) const {
 
     assert(m.is_ok());
     assert(color_of(moved_piece(m)) == sideToMove);
@@ -646,7 +646,9 @@ bool Position::gives_check(Move m) const {
 
     // Is there a direct check?
     if (check_squares(type_of(piece_on(from))) & to)
-        return true;
+        return direct=true;
+
+    direct = false;
 
     // Is there a discovered check?
     if (blockers_for_king(~sideToMove) & from)
