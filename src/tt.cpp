@@ -99,8 +99,8 @@ void TTEntry::save(
 
     // Overwrite less valuable entries (cheapest checks first)
     if (b == BOUND_EXACT || uint16_t(k) != key16 || d - DEPTH_ENTRY_OFFSET + 2 * pv > depth8 - 4
-        // overwrite values from older generations
-        || relative_age(generation8) > GENERATION_DELTA * 4)
+        // overwrite values from older generations except exact scores from young generation(s), helps in analysis mode
+        || (relative_age(generation8) && Bound(genBound8 & 0x3) != BOUND_EXACT) || relative_age(generation8) > GENERATION_DELTA)
     {
         assert(d > DEPTH_ENTRY_OFFSET);
         assert(d < 256 + DEPTH_ENTRY_OFFSET);
