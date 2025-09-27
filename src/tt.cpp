@@ -141,6 +141,8 @@ void TTWriter::write(
 
 static constexpr int ClusterSize = 3;
 
+static bool backWardAnalysis = false;
+
 struct Cluster {
     TTEntry entry[ClusterSize];
     char    padding[2];  // Pad to 32 bytes
@@ -208,10 +210,15 @@ int TranspositionTable::hashfull(int maxAge) const {
 
 
 void TranspositionTable::new_search() {
+
+    if (!backWardAnalysis)
     // increment by delta to keep lower bits as is
     generation8 += GENERATION_DELTA;
 }
 
+void TranspositionTable::setBackWards(bool b) {
+    backWardAnalysis = b;
+}
 
 uint8_t TranspositionTable::generation() const { return generation8; }
 
