@@ -1437,7 +1437,7 @@ moves_loop:  // When in check, search starts here
     if ( PvNode && bestMove && tt.backWardAnalysis && bestValue < beta && is_decisive(bestValue))
     {
      // sync_cout << "info depth increment 8" << sync_endl;
-      depth+=14;
+      depth+=24;
     }
 
 
