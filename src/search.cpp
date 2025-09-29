@@ -1433,6 +1433,13 @@ moves_loop:  // When in check, search starts here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
+//
+    if ( PvNode && bestMove && tt.backWardAnalysis && bestValue < beta && is_decisive(bestValue))
+    {
+     // sync_cout << "info depth increment 8" << sync_endl;
+      depth+=14;
+    }
+
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.

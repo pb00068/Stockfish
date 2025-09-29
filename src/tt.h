@@ -96,6 +96,7 @@ class TranspositionTable {
     probe(const Key key) const;  // The main method, whose retvals separate local vs global objects
     TTEntry* first_entry(const Key key)
       const;  // This is the hash function; its only external use is memory prefetching.
+    bool backWardAnalysis = false;
 
    private:
     friend struct TTEntry;
