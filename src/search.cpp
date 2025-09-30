@@ -290,6 +290,16 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
+    if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move && rootPos.legal(ttData.move))
+    {
+      rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
+      rootMoves[0].meanSquaredScore = 45000;
+      if (is_win(ttData.value))
+        rootDepth = VALUE_MATE - ttData.value;
+      else
+        rootDepth = ttData.depth - 3;
+    }
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
