@@ -208,8 +208,6 @@ int TranspositionTable::hashfull(int maxAge) const {
 
 
 void TranspositionTable::new_search() {
-
-  //sync_cout << "info new search with backward analysis " << backWardAnalysis << sync_endl;
     if (!backWardAnalysis)
     // increment by delta to keep lower bits as is
     generation8 += GENERATION_DELTA;

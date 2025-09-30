@@ -291,14 +291,15 @@ void Search::Worker::iterative_deepening() {
 
     lowPlyHistory.fill(97);
     auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
-    if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move && rootPos.legal(ttData.move))
+    if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
     {
       rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
       rootMoves[0].meanSquaredScore = 45000;
+      rootMoves[0].pv[0] = ttData.move;
       if (is_win(ttData.value))
-        rootDepth = VALUE_MATE - ttData.value;
-      else
-        rootDepth = ttData.depth - 3;
+        rootDepth = std::max(0, VALUE_MATE - ttData.value - 1);
+      else if (ttData.value > 1000)
+        rootDepth = (ttData.depth - 3)/2;
     }
 
     // Iterative deepening loop until requested to stop or the target depth is reached
@@ -1442,12 +1443,9 @@ moves_loop:  // When in check, search starts here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
-//
+
     if ( PvNode && bestMove && tt.backWardAnalysis && bestValue < beta && is_decisive(bestValue))
-    {
-     // sync_cout << "info depth increment 8" << sync_endl;
-      depth+=24;
-    }
+      depth+=5;
 
 
     // Write gathered information in transposition table. Note that the
