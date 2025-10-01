@@ -285,12 +285,14 @@ void Search::Worker::iterative_deepening() {
              rootPos.undo_move(ttData.move);
              if (ttHitNext && ttDataNext.bound == BOUND_EXACT)
              {
-                 rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
+                 rootMoves[0].score = rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
                  rootMoves[0].meanSquaredScore = 45000;
                  rootMoves[0].pv[0] = ttData.move;
+                 if (limits.use_time_management() && limits.time[us] < 15)
+                     threads.stop = true; // avoid time loss if we already have a good continuation
                  if (is_win(ttData.value))
-                   rootDepth = std::max(0, VALUE_MATE - ttData.value - 1);
-                 else rootDepth = 1;
+                     rootDepth = std::min(6, VALUE_MATE - ttData.value); // beginning with lower depth often looses track of the known win
+                 else rootDepth = 1 + bool(ttDataNext.move != Move::none());
              }
         }
     }
