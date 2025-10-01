@@ -275,6 +275,24 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(VALUE_ZERO);
         else
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
+
+        auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
+        if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
+        {
+             StateInfo st;
+             rootPos.do_move(ttData.move, st);
+             auto [ttHitNext, ttDataNext, ttWriterNext] = tt.probe(rootPos.key());
+             rootPos.undo_move(ttData.move);
+             if (ttHitNext && ttDataNext.bound == BOUND_EXACT)
+             {
+                 rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
+                 rootMoves[0].meanSquaredScore = 45000;
+                 rootMoves[0].pv[0] = ttData.move;
+                 if (is_win(ttData.value))
+                   rootDepth = std::max(0, VALUE_MATE - ttData.value - 1);
+                 else rootDepth = 1;
+             }
+        }
     }
 
     size_t multiPV = size_t(options["MultiPV"]);
@@ -290,17 +308,6 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
-    auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
-    if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
-    {
-      rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
-      rootMoves[0].meanSquaredScore = 45000;
-      rootMoves[0].pv[0] = ttData.move;
-      if (is_win(ttData.value))
-        rootDepth = std::max(0, VALUE_MATE - ttData.value - 1);
-      else if (ttData.value > 1000)
-        rootDepth = (ttData.depth - 3)/2;
-    }
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
