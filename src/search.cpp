@@ -277,22 +277,19 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
 
         auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
-        if (ttHit && ttData.bound == BOUND_EXACT && ttData.is_pv && is_valid(ttData.value) && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
+        if (ttHit && is_valid(ttData.value) && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
         {
-             StateInfo st;
-             rootPos.do_move(ttData.move, st);
-             auto [ttHitNext, ttDataNext, ttWriterNext] = tt.probe(rootPos.key());
-             rootPos.undo_move(ttData.move);
-             if (ttHitNext && ttDataNext.bound == BOUND_EXACT)
-             {
-                 rootMoves[0].score = rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
-                 rootMoves[0].meanSquaredScore = 45000;
+                 rootMoves[0].score = value_from_tt(ttData.value, 0, rootPos.rule50_count());
+                 rootMoves[0].meanSquaredScore = 100000 / (ttData.depth + 1);
                  rootMoves[0].pv[0] = ttData.move;
-                 if (limits.use_time_management() && limits.time[us] < 3)
-                     threads.stop = true; // avoid time loss if we already have a good continuation
-                 if (is_win(ttData.value))
-                     rootDepth = std::min(6, VALUE_MATE - ttData.value); // beginning with lower depth often looses track of the known win
-             }
+                 rootMoves[0].averageScore = rootMoves[0].score + (ttData.bound & BOUND_LOWER) * 50 - (ttData.bound & BOUND_UPPER) * 50;
+                 if (is_win(ttData.value) && (ttData.bound & BOUND_LOWER))
+                 {
+
+                     rootDepth = std::min(10, VALUE_MATE - ttData.value); // beginning with lower depth often looses track of the known win
+                     if (limits.use_time_management() && limits.time[us] < rootDepth)
+                        threads.stop = true; // avoid time loss if we already have a good continuation
+                 }
         }
     }
 
@@ -1446,7 +1443,7 @@ moves_loop:  // When in check, search starts here
 
     if (PvNode)
     {
-        if (is_win(bestValue))
+        if (tt.backWardAnalysis && is_win(bestValue))
           depth+=8; // helps in backwards analysis keeping track of mate
         bestValue = std::min(bestValue, maxValue);
     }
