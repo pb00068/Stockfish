@@ -277,7 +277,7 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
 
         auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
-        if (ttHit && ttData.bound == BOUND_EXACT && is_valid(ttData.value) && ttData.depth > 3 && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
+        if (ttHit && ttData.bound == BOUND_EXACT && ttData.is_pv && is_valid(ttData.value) && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
         {
              StateInfo st;
              rootPos.do_move(ttData.move, st);
@@ -288,11 +288,10 @@ void Search::Worker::iterative_deepening() {
                  rootMoves[0].score = rootMoves[0].averageScore = value_from_tt(ttData.value, 0, rootPos.rule50_count());
                  rootMoves[0].meanSquaredScore = 45000;
                  rootMoves[0].pv[0] = ttData.move;
-                 if (limits.use_time_management() && limits.time[us] < 15)
+                 if (limits.use_time_management() && limits.time[us] < 3)
                      threads.stop = true; // avoid time loss if we already have a good continuation
                  if (is_win(ttData.value))
                      rootDepth = std::min(6, VALUE_MATE - ttData.value); // beginning with lower depth often looses track of the known win
-                 else rootDepth = 1 + bool(ttDataNext.move != Move::none());
              }
         }
     }
@@ -1446,16 +1445,16 @@ moves_loop:  // When in check, search starts here
     }
 
     if (PvNode)
+    {
+        if (is_win(bestValue))
+          depth+=8; // helps in backwards analysis keeping track of mate
         bestValue = std::min(bestValue, maxValue);
+    }
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
-
-    if ( PvNode && bestMove && tt.backWardAnalysis && bestValue < beta && is_decisive(bestValue))
-      depth+=5;
-
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
