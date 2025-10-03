@@ -1281,7 +1281,7 @@ moves_loop:  // When in check, search starts here
             rm.effort += nodes - nodeCount;
 
             rm.averageScore =
-              (rm.averageScore != -VALUE_INFINITE && !is_decisive(value)) ? (value + rm.averageScore) / 2 : value;
+              rm.averageScore != -VALUE_INFINITE ? (value + rm.averageScore) / 2 : value;
 
             Value v = std::clamp(value, -8000, 8000);
             rm.meanSquaredScore = rm.meanSquaredScore != -VALUE_INFINITE * VALUE_INFINITE
