@@ -227,17 +227,17 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
                     tt.setBackWards(true);
                   }
                   pos.undo_move(mm);
-                  //if (tt.backWardAnalysis)
-                  //   break;
+                  if (tt.backWardAnalysis)
+                     break;
             }
         }
         pos.undo_move(m);
-        //if (tt.backWardAnalysis)
-        //  break;
+        if (tt.backWardAnalysis)
+          break;
       }
     }
-    //if (tt.backWardAnalysis)
-     // sync_cout << "info backward!!!!!" << sync_endl;
+    if (tt.backWardAnalysis)
+      sync_cout << "info backward!!!!!" << sync_endl;
 
     lastPosKey = pos.key();
     laspPosHalfClock = pos.game_ply();
