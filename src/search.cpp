@@ -275,22 +275,6 @@ void Search::Worker::iterative_deepening() {
             mainThread->iterValue.fill(VALUE_ZERO);
         else
             mainThread->iterValue.fill(mainThread->bestPreviousScore);
-
-//        auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.key());
-//        if (ttHit && is_valid(ttData.value) && ttData.move &&  rootPos.pseudo_legal(ttData.move) && rootPos.legal(ttData.move))
-//        {
-//                 rootMoves[0].score = value_from_tt(ttData.value, 0, rootPos.rule50_count());
-//                 rootMoves[0].meanSquaredScore = 100000 / (ttData.depth + 1);
-//                 rootMoves[0].pv[0] = ttData.move;
-//                 rootMoves[0].averageScore = rootMoves[0].score + (ttData.bound & BOUND_LOWER) * 50 - (ttData.bound & BOUND_UPPER) * 50;
-//                 if (is_win(ttData.value) && (ttData.bound & BOUND_LOWER))
-//                 {
-//
-//                     rootDepth = std::min(10, VALUE_MATE - ttData.value); // beginning with lower depth often looses track of the known win
-//                     if (limits.use_time_management() && limits.time[us] < rootDepth)
-//                        threads.stop = true; // avoid time loss if we already have a good continuation
-//                 }
-//        }
     }
 
     size_t multiPV = size_t(options["MultiPV"]);
@@ -361,7 +345,6 @@ void Search::Worker::iterative_deepening() {
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
                 rootDelta = beta - alpha;
-                sync_cout << "info start aspiration with ad-depth " << adjustedDepth << " alpah " << alpha << " beta " << beta << sync_endl;
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
                 // Bring the best move to the front. It is critical that sorting
@@ -599,6 +582,9 @@ Value Search::Worker::search(
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
+
+    if (PvNode && depth == 0 && is_loss(alpha))
+      depth = 1; // don't dive into qsearch
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
@@ -1441,11 +1427,7 @@ moves_loop:  // When in check, search starts here
     }
 
     if (PvNode)
-    {
-        if (tt.backWardAnalysis && is_win(bestValue))
-          depth+=10; // helps in backwards analysis keeping track of mate
         bestValue = std::min(bestValue, maxValue);
-    }
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
