@@ -208,24 +208,22 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
         pos.do_move(m, states->back());
     }
 
-    tt.setBackWards(false);
+    tt.backWardAnalysis=false;
     if (pos.game_ply() == laspPosHalfClock - 1 || pos.game_ply() == laspPosHalfClock - 2)
     {
       for (const auto& m : MoveList<LEGAL>(pos))
       {
         StateInfo st;
         pos.do_move(m, st);
-        if (pos.key() == lastPosKey) {
-          tt.setBackWards(true);
-        }
+        if (pos.key() == lastPosKey)
+          tt.backWardAnalysis = true;
         else {
             for (const auto& mm : MoveList<LEGAL>(pos))
             {
                   StateInfo st2;
                   pos.do_move(mm, st2);
-                  if (pos.key() == lastPosKey) {
-                    tt.setBackWards(true);
-                  }
+                  if (pos.key() == lastPosKey)
+                    tt.backWardAnalysis = true;
                   pos.undo_move(mm);
                   if (tt.backWardAnalysis)
                      break;
@@ -236,8 +234,8 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
           break;
       }
     }
-    if (tt.backWardAnalysis)
-      sync_cout << "info backward!!!!!" << sync_endl;
+//    if (tt.backWardAnalysis)
+//      sync_cout << "info backward!!!!!" << sync_endl;
 
     lastPosKey = pos.key();
     laspPosHalfClock = pos.game_ply();

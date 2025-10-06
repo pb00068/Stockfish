@@ -213,10 +213,6 @@ void TranspositionTable::new_search() {
     generation8 += GENERATION_DELTA;
 }
 
-void TranspositionTable::setBackWards(bool b) {
-    backWardAnalysis = b;
-}
-
 uint8_t TranspositionTable::generation() const { return generation8; }
 
 

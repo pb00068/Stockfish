@@ -583,8 +583,8 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
-    if (PvNode && depth == 0 && is_loss(alpha))
-      depth = 1; // don't dive into qsearch
+    if (PvNode && depth == 0  && is_win(rootMoves[0].score) && (ss-1)->ttDecisive)
+      depth = 1; // don't dive into qsearch if we expect to have a mate
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
@@ -674,6 +674,7 @@ Value Search::Worker::search(
     ttData.move  = rootNode ? rootMoves[pvIdx].pv[0] : ttHit ? ttData.move : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
+    ss->ttDecisive = ttData.value == VALUE_NONE ? false : is_decisive(ttData.value);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
