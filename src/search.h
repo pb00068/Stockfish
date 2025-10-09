@@ -73,7 +73,6 @@ struct Stack {
     bool                        inCheck;
     bool                        ttPv;
     bool                        ttHit;
-    bool                        ttDecisive;
     int                         cutoffCnt;
     int                         reduction;
 };
