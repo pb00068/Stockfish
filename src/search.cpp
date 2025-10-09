@@ -583,7 +583,7 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
-    if (PvNode && depth == 0  && is_win(rootMoves[0].score) && (ss-1)->ttDecisive)
+    if (PvNode && depth <= 0  && is_decisive(rootMoves[0].score) && (ss-1)->ttDecisive)
       depth = 1; // don't dive into qsearch if we expect to have a mate
 
     // Dive into quiescence search when the depth reaches zero
@@ -1549,7 +1549,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
               to_corrected_static_eval(unadjustedStaticEval, correctionValue);
 
             // ttValue can be used as a better position evaluation
-            if (is_valid(ttData.value) && !is_decisive(ttData.value)
+            if (is_valid(ttData.value)
+                && (!is_decisive(ttData.value))
                 && (ttData.bound & (ttData.value > bestValue ? BOUND_LOWER : BOUND_UPPER)))
                 bestValue = ttData.value;
         }
