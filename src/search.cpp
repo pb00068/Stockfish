@@ -1550,11 +1550,15 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
               to_corrected_static_eval(unadjustedStaticEval, correctionValue);
 
             // ttValue can be used as a better position evaluation
-            if (is_valid(ttData.value) && !is_decisive(ttData.value)
-                && (ttData.bound & (ttData.value > bestValue ? BOUND_LOWER : BOUND_UPPER)))
-                bestValue = ttData.value;
-            else if (PvNode && is_valid(ttData.value) && is_decisive(ttData.value) && std::abs(ttData.value) != VALUE_MATE)
-              return search<PV>(pos, ss, alpha, beta, 1, false);
+            if (is_valid(ttData.value) && (ttData.bound & (ttData.value > bestValue ? BOUND_LOWER : BOUND_UPPER)))
+            {
+                if (!is_decisive(ttData.value))
+                     bestValue = ttData.value;
+                else if (std::abs(ttData.value) == VALUE_MATE)
+                     return ttData.value; // terminal node
+                else
+                     return search<nodeType>(pos, ss, alpha, beta, 1, false); // rebuild PV to mate
+            }
         }
         else
         {
