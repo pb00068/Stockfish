@@ -179,7 +179,7 @@ constexpr bool is_loss(Value value) {
 constexpr bool is_decisive(Value value) { return is_win(value) || is_loss(value); }
 
 constexpr bool hasMateDistance(Value absValue) {
-    return  absValue >= VALUE_MATE_IN_MAX_PLY && absValue < VALUE_MATE;
+    return absValue >= VALUE_MATE_IN_MAX_PLY && absValue < VALUE_MATE;
 }
 
 // In the code, we make the assumption that these values
