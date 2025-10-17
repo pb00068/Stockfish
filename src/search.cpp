@@ -1535,7 +1535,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
 
-    if (ss->inCheck)
+    if (ss->inCheck ||  (ttHit && PvNode && hasMateDistance(std::abs(ttData.value)) &&
+        ttData.move != Move::none() && ttData.depth >= std::min(3, VALUE_MATE - std::abs(ttData.value))))
         bestValue = futilityBase = -VALUE_INFINITE;
     else
     {
@@ -1554,8 +1555,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             if (is_valid(ttData.value) && !is_decisive(ttData.value)
                 && (ttData.bound & (ttData.value > bestValue ? BOUND_LOWER : BOUND_UPPER)))
                 bestValue = ttData.value;
-            else if (PvNode && hasMateDistance(std::abs(ttData.value)) && ttData.move != Move::none() && ttData.depth >= VALUE_MATE - std::abs(ttData.value))
-                bestValue = futilityBase = -VALUE_INFINITE; // guarantees ttMove does'nt get pruned
         }
         else
         {
