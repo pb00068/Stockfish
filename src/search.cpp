@@ -541,7 +541,7 @@ void Search::Worker::do_move(
     }
 }
 
-void Search::Worker::do_null_move(Position& pos, StateInfo& st) { pos.do_null_move(st, tt); }
+void Search::Worker::do_null_move(Position& pos, StateInfo& st, Key prefetched) { pos.do_null_move(st, tt, prefetched); }
 
 void Search::Worker::undo_move(Position& pos, const Move move) {
     pos.undo_move(move);
@@ -868,6 +868,8 @@ Value Search::Worker::search(
     {
         assert((ss - 1)->currentMove != Move::null());
 
+        Key prefetched = posKey ^ Zobrist::side;
+        prefetch(tt.first_entry(prefetched));
         // Null move dynamic reduction based on depth
         Depth R = 6 + depth / 3;
 
@@ -875,7 +877,7 @@ Value Search::Worker::search(
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
 
-        do_null_move(pos, st);
+        do_null_move(pos, st, prefetched);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 

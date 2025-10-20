@@ -1051,7 +1051,7 @@ void Position::do_castling(
 
 // Used to do a "null move": it flips
 // the side to move without executing any move on the board.
-void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
+void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt, Key prefetched) {
 
     assert(!checkers());
     assert(&newSt != st);
@@ -1068,7 +1068,8 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     }
 
     st->key ^= Zobrist::side;
-    prefetch(tt.first_entry(key()));
+    if (key() != prefetched)
+        prefetch(tt.first_entry(key()));
 
     st->pliesFromNull = 0;
 
