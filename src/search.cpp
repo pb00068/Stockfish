@@ -1611,7 +1611,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         moveCount++;
 
         // Step 6. Pruning (second condition is needed to not prune moves to mate)
-        if (!is_loss(bestValue) && !(ttHit && PvNode && move==ttData.move && has_mate_distance(ttData.value)))
+        if (!is_loss(bestValue) && !(ttHit && move==ttData.move && has_mate_distance(ttData.value)))
         {
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
