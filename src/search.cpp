@@ -614,8 +614,9 @@ Value Search::Worker::search(
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
-        if (ttHit && PvNode && is_valid(ttVal) && is_decisive(ttVal))
-        // qsearch is not suited to pursue paths until mate (a ttMiss is enough to loose track)
+        if (ttHit && is_valid(ttVal) && is_decisive(ttVal))
+          // qsearch is not suited to pursue the path (plus building up the PV) until mate
+          // A single TT-Miss is already enough to loose track and override valuable info in TT.
           depth = 1;
         else
           return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta, {ttHit, ttData, ttWriter});
