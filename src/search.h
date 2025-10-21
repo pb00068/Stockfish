@@ -41,7 +41,6 @@
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
-#include "tt.h"
 
 namespace Stockfish {
 
@@ -310,7 +309,7 @@ class Worker {
 
     // Quiescence search function, which is called by the main search
     template<NodeType nodeType>
-    Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, std::tuple<bool, TTData, TTWriter> tte);
+    Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta);
 
     Depth reduction(bool i, Depth d, int mn, int delta) const;
 

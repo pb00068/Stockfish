@@ -614,12 +614,12 @@ Value Search::Worker::search(
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
     {
-        if (ttHit && is_valid(ttVal) && is_decisive(ttVal))
+        if (PvNode && ttHit && is_valid(ttVal) && is_decisive(ttVal))
           // qsearch is not suited to pursue the path (plus building up the PV) until mate
           // A single TT-Miss is already enough to loose track and override valuable info in TT.
           depth = 1;
         else
-          return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta, {ttHit, ttData, ttWriter});
+          return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
     }
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
@@ -710,7 +710,7 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, opponentWorsening;
-    bool  capture, dummy = false;
+    bool  capture;
     int   priorReduction;
     Piece movedPiece;
 
@@ -851,7 +851,7 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 514 - 294 * depth * depth)
-        return qsearch<NonPV>(pos, ss, alpha, beta, {dummy, ttData, ttWriter});
+        return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -946,7 +946,7 @@ Value Search::Worker::search(
             do_move(pos, move, st, ss);
 
             // Perform a preliminary qsearch to verify that the move holds
-            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, {dummy, ttData, ttWriter});
+            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
@@ -1480,7 +1480,7 @@ moves_loop:  // When in check, search starts here
 // See https://www.chessprogramming.org/Horizon_Effect
 // and https://www.chessprogramming.org/Quiescence_Search
 template<NodeType nodeType>
-Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, std::tuple<bool, TTData, TTWriter> tte) {
+Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1528,7 +1528,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
 
     // Step 3. Transposition table lookup
     posKey                         = pos.key();
-    auto [ttHit, ttData, ttWriter] = std::get<0>(tte) == true ? tte : tt.probe(posKey);
+    auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
 
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
@@ -1594,7 +1594,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
                                         (ss - 2)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
-    bool dummy = false;
 
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
@@ -1657,7 +1656,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         // Step 7. Make and search the move
         do_move(pos, move, st, givesCheck, ss);
 
-        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, {dummy, ttData, ttWriter});
+        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
         undo_move(pos, move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
