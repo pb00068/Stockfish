@@ -1550,12 +1550,14 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
               to_corrected_static_eval(unadjustedStaticEval, correctionValue);
 
             // ttValue can be used as a better position evaluation
-            if (is_valid(ttData.value) && !is_decisive(ttData.value)
+            if (is_valid(ttData.value) && (!is_decisive(ttData.value) || (!PvNode && has_mate_distance(ttData.value)))
                 && (ttData.bound & (ttData.value > bestValue ? BOUND_LOWER : BOUND_UPPER)))
                 bestValue = ttData.value;
-            else if (PvNode && has_mate_distance(ttData.value))
-                //  Prevent valuable TT information being overwritten, useful for mate finding & retrograde analysis
-                return search<PV>(pos, ss, alpha, beta, 1, false);
+            else if (PvNode && has_mate_distance(ttData.value) && ttData.move)
+                //  Prevent valuable TT information being ignored
+                //  explore the ttmove to build up the pv,
+                //  set bestValue = ttvalue -1 to avoid a fail low in case ttmove still confirms the mate score
+                bestValue = ttData.value - 1;
         }
         else
         {
@@ -1608,8 +1610,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         moveCount++;
 
-        // Step 6. Pruning
-        if (!is_loss(bestValue))
+        // Step 6. Pruning (second condition is needed to not prune moves to mate)
+        if (!is_loss(bestValue) && !(ttHit && PvNode && move==ttData.move && has_mate_distance(ttData.value)))
         {
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
