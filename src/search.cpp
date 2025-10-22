@@ -588,9 +588,6 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
-    // Dive into quiescence search when the depth reaches zero
-    if (depth <= 0)
-        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
 
     // Limit the depth if extensions made it too large
     depth = std::min(depth, MAX_PLY - 1);
@@ -605,7 +602,7 @@ Value Search::Worker::search(
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
-    assert(0 < depth && depth < MAX_PLY);
+    assert(depth < MAX_PLY);
     assert(!(PvNode && cutNode));
 
     Move      pv[MAX_PLY + 1];
@@ -660,13 +657,6 @@ Value Search::Worker::search(
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
-    Square prevSq  = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
-    bestMove       = Move::none();
-    priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction = 0;
-    ss->statScore       = 0;
-    (ss + 2)->cutoffCnt = 0;
-
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
     posKey                         = pos.key();
@@ -677,6 +667,23 @@ Value Search::Worker::search(
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
+
+    // Dive into quiescence search when the depth reaches zero
+    if (depth <= 0)
+    {
+        if (ttHit && PvNode && has_mate_distance(ttData.value))
+          depth = 1; // qsearch is not suited to pursue the path until mate
+        else
+          return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
+    }
+
+
+    Square prevSq  = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
+    bestMove       = Move::none();
+    priorReduction = (ss - 1)->reduction;
+    (ss - 1)->reduction = 0;
+    ss->statScore       = 0;
+    (ss + 2)->cutoffCnt = 0;
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -1351,7 +1358,8 @@ moves_loop:  // When in check, search starts here
                     assert(value >= beta);  // Fail high
                     break;
                 }
-
+                if (depth == 1 && is_win(value) && !is_win(alpha))
+                    break;
                 // Reduce other moves if we have found at least one score improvement
                 if (depth > 2 && depth < 14 && !is_decisive(value))
                     depth -= 2;
