@@ -1360,6 +1360,11 @@ moves_loop:  // When in check, search starts here
                     assert(value >= beta);  // Fail high
                     break;
                 }
+                if (depth == 1 && is_win(value) && !is_win(alpha))
+                   break;
+
+                if (!PvNode && depth == 1 && is_loss(value) && move==ttData.move && is_loss(ttData.value))
+                  break;
 
                 // Reduce other moves if we have found at least one score improvement
                 if (depth > 2 && depth < 14 && !is_decisive(value))
