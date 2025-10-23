@@ -588,19 +588,9 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
-    // check for special case (PvNode && cutNode) which means we are on a mating PV
-    if (PvNode && cutNode) {
-      cutNode = false;
-      auto [ttHit, ttData, ttWriter] = tt.probe(pos.key());
-      if (ttHit && is_valid(ttData.value) && is_decisive(ttData.value))
-          // qsearch is not suited to pursue paths to mate:
-          // a single TT miss is already enough to loose track and override valuable info in TT.
-          depth = 1;
-    }
-
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
-       return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
+        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
 
     // Limit the depth if extensions made it too large
     depth = std::min(depth, MAX_PLY - 1);
@@ -1269,10 +1259,11 @@ moves_loop:  // When in check, search starts here
             (ss + 1)->pv[0] = Move::none();
 
             // Extend move from transposition table if we are about to dive into qsearch.
-            if (move == ttData.move && ttData.depth > 1 && rootDepth > 8)
+            // This is especially important for not loosing track of a mating PV (qsearch fails)
+            if (move == ttData.move && (is_decisive(value) || (ttData.depth > 1 && rootDepth > 8)))
                 newDepth = std::max(newDepth, 1);
 
-            value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, !newDepth && ttHit && is_decisive(value));
+            value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
         // Step 19. Undo move
