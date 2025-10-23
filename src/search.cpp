@@ -1259,10 +1259,10 @@ moves_loop:  // When in check, search starts here
             (ss + 1)->pv[0] = Move::none();
 
             // Extend move from transposition table if we are about to dive into qsearch.
-            if (move == ttData.move && ttData.depth >= 1 && (rootDepth > 8 || is_decisive(value)))
+            // This is especially important for not loosing track of a mating PV (qsearch fails)
+            if (move == ttData.move && (is_decisive(value) || (ttData.depth > 1 && rootDepth > 8)))
                 newDepth = std::max(newDepth, 1);
 
-            // in case we are on a mating PV then don't let dive the search directly into qsearch
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
