@@ -433,9 +433,32 @@ void Search::Worker::iterative_deepening() {
         }
         else
         {
-            // prefetch the entire PV from TT as it will be navigated on next iteration
-            for (Key k : rootMoves[0].pvKey)
-                prefetch(tt.first_entry(k));
+
+            // reinforce PV in TT (some entries versus the tips might have been overridden by NON-PV searches)
+            int d = rootDepth;
+            Value v = VALUE_ZERO;
+            for (int j=1; j < (int)rootMoves[0].pvKey.size(); j++)
+            {
+              Key k = rootMoves[0].pvKey[j];
+              auto [ttHit, ttData, ttWriter] = tt.probe(k);
+              if (ttHit)
+              {
+                d = ttData.depth;
+                v = ttData.value;
+                if (rootMoves[0].pv[j] != ttData.move)
+                  ttWriter.write(k, v, true, ttData.bound, d, rootMoves[0].pv[j], VALUE_NONE, tt.generation());
+                //sync_cout << "info PV movediff at ply " << j << " PV move " << UCIEngine::move(rootMoves[0].pv[j], false) << " vs tt move " <<  UCIEngine::move(ttData.move, false) << sync_endl;
+                //dbg_hit_on(rootMoves[0].pv[j] != ttData.move, 1);
+              }
+              else
+              {
+                 ttWriter.write(k, v, true, BOUND_NONE, std::max(1 , d-1), rootMoves[0].pv[j], VALUE_NONE, tt.generation());
+                 //dbg_hit_on(true, 0);
+              }
+              d--;
+              v=-v;
+            }
+
             if (rootMoves[0].pv[0] != lastBestPV[0])
             {
                 lastBestPV        = rootMoves[0].pv;
