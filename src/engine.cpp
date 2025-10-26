@@ -49,6 +49,8 @@ namespace NN = Eval::NNUE;
 constexpr auto StartFEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 constexpr int  MaxHashMB  = Is64Bit ? 33554432 : 2048;
 int            MaxThreads = std::max(1024, 4 * int(get_hardware_concurrency()));
+Key            lastPosKey = 0;;
+int            laspPosHalfClock = 0;
 
 Engine::Engine(std::optional<std::string> path) :
     binaryDirectory(path ? CommandLine::get_binary_directory(*path) : ""),
@@ -205,6 +207,38 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
         states->emplace_back();
         pos.do_move(m, states->back());
     }
+
+    tt.backWardAnalysis=false;
+    if (pos.game_ply() == laspPosHalfClock - 1 || pos.game_ply() == laspPosHalfClock - 2)
+    {
+      for (const auto& m : MoveList<LEGAL>(pos))
+      {
+        StateInfo st;
+        pos.do_move(m, st);
+        if (pos.key() == lastPosKey)
+          tt.backWardAnalysis = true;
+        else {
+            for (const auto& mm : MoveList<LEGAL>(pos))
+            {
+                  StateInfo st2;
+                  pos.do_move(mm, st2);
+                  if (pos.key() == lastPosKey)
+                    tt.backWardAnalysis = true;
+                  pos.undo_move(mm);
+                  if (tt.backWardAnalysis)
+                     break;
+            }
+        }
+        pos.undo_move(m);
+        if (tt.backWardAnalysis)
+          break;
+      }
+    }
+//    if (tt.backWardAnalysis)
+//      sync_cout << "info backward!!!!!" << sync_endl;
+
+    lastPosKey = pos.key();
+    laspPosHalfClock = pos.game_ply();
 }
 
 // modifiers
