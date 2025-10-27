@@ -125,7 +125,7 @@ void update_correction_history(const Position& pos,
 Value value_draw(size_t nodes) { return VALUE_DRAW - 1 + Value(nodes & 0x2); }
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
-void  update_pv(Move* pv, Move move, const Move* childPv);
+void  update_pv(Stack* ss, Move move, bool isDecisive);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_histories(
    const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus);
@@ -590,7 +590,7 @@ Value Search::Worker::search(
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
-        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
+        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta, PvNode && is_win(alpha));
 
     // Limit the depth if extensions made it too large
     depth = std::min(depth, MAX_PLY - 1);
@@ -842,7 +842,7 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 514 - 294 * depth * depth)
-        return qsearch<NonPV>(pos, ss, alpha, beta);
+        return qsearch<NonPV>(pos, ss, alpha, beta, false);
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -910,6 +910,9 @@ Value Search::Worker::search(
     if (!allNode && depth >= 6 && !ttData.move && priorReduction <= 3)
         depth--;
 
+    if (PvNode && ttHit && !ttData.move && is_valid(ttData.value && is_decisive(ttData.value)))
+        ttData.move = ss->decisivePvMove;
+
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
@@ -937,7 +940,7 @@ Value Search::Worker::search(
             do_move(pos, move, st, ss);
 
             // Perform a preliminary qsearch to verify that the move holds
-            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
+            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, false);
 
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
@@ -1342,7 +1345,7 @@ moves_loop:  // When in check, search starts here
                 bestMove = move;
 
                 if (PvNode && !rootNode)  // Update pv even in fail-high case
-                    update_pv(ss->pv, move, (ss + 1)->pv);
+                    update_pv(ss, move, is_decisive(value));
 
                 if (value >= beta)
                 {
@@ -1471,7 +1474,7 @@ moves_loop:  // When in check, search starts here
 // See https://www.chessprogramming.org/Horizon_Effect
 // and https://www.chessprogramming.org/Quiescence_Search
 template<NodeType nodeType>
-Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta) {
+Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, bool decisivePV) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1534,8 +1537,13 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
-    if (ss->inCheck)
+    decisivePV |= PvNode && ttHit && is_valid(ttData.value) && is_decisive(ttData.value);
+    if (ss->inCheck || decisivePV)
+    {
         bestValue = futilityBase = -VALUE_INFINITE;
+        if (!ss->inCheck && decisivePV)
+            ss->staticEval = ttData.eval;
+    }
     else
     {
         const auto correctionValue = correction_value(*this, pos, ss);
@@ -1573,12 +1581,14 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                                tt.generation());
             return bestValue;
         }
-
         if (bestValue > alpha)
             alpha = bestValue;
 
         futilityBase = ss->staticEval + 352;
     }
+
+    if (decisivePV && !ttData.move)
+        ttData.move= ss->decisivePvMove;
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
@@ -1606,7 +1616,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         moveCount++;
 
         // Step 6. Pruning
-        if (!is_loss(bestValue))
+        if (!is_loss(bestValue) && !(move == ttData.move && decisivePV))
         {
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
@@ -1646,7 +1656,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         // Step 7. Make and search the move
         do_move(pos, move, st, givesCheck, ss);
 
-        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
+        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, decisivePV);
         undo_move(pos, move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
@@ -1661,7 +1671,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 bestMove = move;
 
                 if (PvNode)  // Update pv even in fail-high case
-                    update_pv(ss->pv, move, (ss + 1)->pv);
+                    update_pv(ss, move, is_decisive(value));
 
                 if (value < beta)  // Update alpha here!
                     alpha = value;
@@ -1784,10 +1794,21 @@ Value value_from_tt(Value v, int ply, int r50c) {
 
 
 // Adds current move and appends child pv[]
-void update_pv(Move* pv, Move move, const Move* childPv) {
-
+void update_pv(Stack* ss, Move move, bool isDecisive) {
+    Move* pv = ss->pv;
+    Move* childPv = (ss + 1)->pv;
+    if (isDecisive)
+      ss->decisivePvMove = move;
+    int i=1;
     for (*pv++ = move; childPv && *childPv != Move::none();)
-        *pv++ = *childPv++;
+    {
+        *pv = *childPv;
+        if (isDecisive)
+           (ss+i)->decisivePvMove = *pv;
+        pv++;
+        childPv++;
+        i++;
+    }
     *pv = Move::none();
 }
 
