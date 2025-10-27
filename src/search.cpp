@@ -125,7 +125,7 @@ void update_correction_history(const Position& pos,
 Value value_draw(size_t nodes) { return VALUE_DRAW - 1 + Value(nodes & 0x2); }
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
-void  update_pv(Stack* ss, Move move, bool isDecisive);
+void  update_pv(Stack* ss, Move move);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_histories(
    const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus);
@@ -910,8 +910,8 @@ Value Search::Worker::search(
     if (!allNode && depth >= 6 && !ttData.move && priorReduction <= 3)
         depth--;
 
-    if (PvNode && ttHit && !ttData.move && is_valid(ttData.value && is_decisive(ttData.value)))
-        ttData.move = ss->decisivePvMove;
+    if (PvNode && !ttData.move)
+        ttData.move = ss->pvMove;
 
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
@@ -1345,7 +1345,7 @@ moves_loop:  // When in check, search starts here
                 bestMove = move;
 
                 if (PvNode && !rootNode)  // Update pv even in fail-high case
-                    update_pv(ss, move, is_decisive(value));
+                    update_pv(ss, move);
 
                 if (value >= beta)
                 {
@@ -1587,8 +1587,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         futilityBase = ss->staticEval + 352;
     }
 
-    if (decisivePV && !ttData.move)
-        ttData.move= ss->decisivePvMove;
+    if (PvNode && !ttData.move)
+        ttData.move= ss->pvMove;
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
@@ -1671,7 +1671,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
                 bestMove = move;
 
                 if (PvNode)  // Update pv even in fail-high case
-                    update_pv(ss, move, is_decisive(value));
+                    update_pv(ss, move);
 
                 if (value < beta)  // Update alpha here!
                     alpha = value;
@@ -1794,17 +1794,15 @@ Value value_from_tt(Value v, int ply, int r50c) {
 
 
 // Adds current move and appends child pv[]
-void update_pv(Stack* ss, Move move, bool isDecisive) {
+void update_pv(Stack* ss, Move move) {
     Move* pv = ss->pv;
     Move* childPv = (ss + 1)->pv;
-    if (isDecisive)
-      ss->decisivePvMove = move;
+    ss->pvMove = move;
     int i=1;
     for (*pv++ = move; childPv && *childPv != Move::none();)
     {
         *pv = *childPv;
-        if (isDecisive)
-           (ss+i)->decisivePvMove = *pv;
+        (ss+i)->pvMove = *pv;
         pv++;
         childPv++;
         i++;

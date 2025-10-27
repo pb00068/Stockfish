@@ -67,7 +67,7 @@ struct Stack {
     int                         ply;
     Move                        currentMove;
     Move                        excludedMove;
-    Move                        decisivePvMove; // backup here the move for eventual tt-miss
+    Move                        pvMove; // backup here the move for eventual tt-miss
     Value                       staticEval;
     int                         statScore;
     int                         moveCount;
