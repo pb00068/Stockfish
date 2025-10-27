@@ -332,8 +332,18 @@ void Search::Worker::iterative_deepening() {
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
+            int md = mate_distance(rootMoves[0].score);
+            if (md > 0 && rootDepth < (md * 3) / 4)
+            {
+                delta = 5000;
+                avg = rootMoves[0].score;
+                rootDepth = (md * 3) / 4;
+                //sync_cout << "info after devisive score " << (rootMoves[0].score) << " set delta to 5000 rd " << rootDepth << " alpha " <<  std::max(avg - delta, -VALUE_INFINITE) << " beta " << std::min(avg + delta, VALUE_INFINITE) << sync_endl;
+            }
+
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
+
 
             // Adjust optimism based on root move's averageScore
             optimism[us]  = 137 * avg / (std::abs(avg) + 91);
@@ -1262,7 +1272,7 @@ moves_loop:  // When in check, search starts here
             (ss + 1)->pv[0] = Move::none();
 
             // Extend move from transposition table if we are about to dive into qsearch.
-            if (move == ttData.move && ttData.depth > 1 && rootDepth > 8)
+            if (move == ttData.move && ( (is_decisive(ttData.value) && ttData.depth > 0) || (ttData.depth > 1 && rootDepth > 8) ))
                 newDepth = std::max(newDepth, 1);
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
