@@ -1583,7 +1583,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
-    MovePicker mp(pos, ttData.move, beta < 0 && !ss->inCheck ? -1  : DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
+    bool goforDraw = beta < -100 && !ss->inCheck;
+    MovePicker mp(pos, ttData.move, goforDraw ? -1  : DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
                   contHist, &pawnHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
@@ -1591,6 +1592,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     while ((move = mp.next_move()) != Move::none())
     {
         assert(move.is_ok());
+
+        if (goforDraw && moveCount > 6)
+            break;
 
         if (!pos.legal(move))
             continue;
@@ -1600,11 +1604,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         moveCount++;
 
-        if (beta < 0 && !ss->inCheck && !givesCheck && !capture && moveCount > 1)
+        if (goforDraw && !givesCheck && !capture && moveCount > 1)
             break;
 
         // Step 6. Pruning
-        if (!is_loss(bestValue))
+        if (!is_loss(bestValue) && !(goforDraw && bestValue < -200))
         {
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
