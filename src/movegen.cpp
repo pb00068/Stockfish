@@ -155,6 +155,9 @@ Move* generate_pawn_moves(const Position& pos, Move* moveList, Bitboard target) 
         moveList = splat_pawn_moves<Up>(moveList, b1);
         moveList = splat_pawn_moves<Up + Up>(moveList, b2);
     }
+    if constexpr (Type == QUIET_CHECKS)
+        return moveList;
+
 
     // Promotions and underpromotions
     if (pawnsOn7)
@@ -206,7 +209,7 @@ Move* generate_pawn_moves(const Position& pos, Move* moveList, Bitboard target) 
 }
 
 
-template<Color Us, PieceType Pt>
+template<Color Us, PieceType Pt, bool Checks>
 Move* generate_moves(const Position& pos, Move* moveList, Bitboard target) {
 
     static_assert(Pt != KING && Pt != PAWN, "Unsupported piece type in generate_moves()");
@@ -229,7 +232,7 @@ template<Color Us, GenType Type>
 Move* generate_all(const Position& pos, Move* moveList) {
 
     static_assert(Type != LEGAL, "Unsupported type in generate_all()");
-
+    constexpr bool Checks = Type == QUIET_CHECKS;
     const Square ksq = pos.square<KING>(Us);
     Bitboard     target;
 
@@ -239,24 +242,27 @@ Move* generate_all(const Position& pos, Move* moveList) {
         target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces(Us)
                : Type == CAPTURES     ? pos.pieces(~Us)
-                                      : ~pos.pieces();  // QUIETS
+                                      : ~pos.pieces();  // QUIETS || QUIET_CHECKS
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
-        moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
-        moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
-        moveList = generate_moves<Us, ROOK>(pos, moveList, target);
-        moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
+        moveList = generate_moves<Us, KNIGHT, Checks>(pos, moveList, target);
+        moveList = generate_moves<Us, BISHOP, Checks>(pos, moveList, target);
+        moveList = generate_moves<Us, ROOK, Checks>(pos, moveList, target);
+        moveList = generate_moves<Us, QUEEN, Checks>(pos, moveList, target);
     }
 
-    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
+    if (!Checks || pos.blockers_for_king(~Us) & ksq)
+    {
+        Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
+        if (Checks)
+            b &= ~attacks_bb<QUEEN>(pos.square<KING>(~Us));
+        moveList = splat_moves(moveList, ksq, b);
 
-    moveList = splat_moves(moveList, ksq, b);
-
-    if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
-        for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
-            if (!pos.castling_impeded(cr) && pos.can_castle(cr))
-                *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
-
+        if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
+            for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
+                if (!pos.castling_impeded(cr) && pos.can_castle(cr))
+                    *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
+    }
     return moveList;
 }
 
@@ -267,6 +273,8 @@ Move* generate_all(const Position& pos, Move* moveList) {
 // <QUIETS>       Generates all pseudo-legal non-captures and underpromotions
 // <EVASIONS>     Generates all pseudo-legal check evasions
 // <NON_EVASIONS> Generates all pseudo-legal captures and non-captures
+// <QUIET_CHECKS> Generates all pseudo-legal non-captures giving check,
+//                except castling and promotions
 //
 // Returns a pointer to the end of the move list.
 template<GenType Type>
@@ -285,6 +293,7 @@ Move* generate(const Position& pos, Move* moveList) {
 template Move* generate<CAPTURES>(const Position&, Move*);
 template Move* generate<QUIETS>(const Position&, Move*);
 template Move* generate<EVASIONS>(const Position&, Move*);
+template Move* generate<QUIET_CHECKS>(const Position&, Move*);
 template Move* generate<NON_EVASIONS>(const Position&, Move*);
 
 // generate<LEGAL> generates all the legal moves in the given position

@@ -1583,7 +1583,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
-    MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
+    MovePicker mp(pos, ttData.move, beta < 0 && !ss->inCheck ? -1  : DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
                   contHist, &pawnHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
@@ -1599,6 +1599,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         capture    = pos.capture_stage(move);
 
         moveCount++;
+
+        if (beta < 0 && !ss->inCheck && !givesCheck && !capture && moveCount > 1)
+            break;
 
         // Step 6. Pruning
         if (!is_loss(bestValue))

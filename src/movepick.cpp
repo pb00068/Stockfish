@@ -53,7 +53,9 @@ enum Stages {
     // generate qsearch moves
     QSEARCH_TT,
     QCAPTURE_INIT,
-    QCAPTURE
+    QCAPTURE,
+    QCHECK_INIT,
+    QCHECK
 };
 
 
@@ -302,7 +304,25 @@ top:
     }
 
     case EVASION :
+         return select([]() { return true; });
     case QCAPTURE :
+        if (select([]() { return true; }))
+            return *(cur - 1);
+
+        if (!depth)
+            return Move::none();
+          ++stage;
+        [[fallthrough]];
+
+    case QCHECK_INIT : {
+        MoveList<QUIET_CHECKS> ml(pos);
+        cur      = moves;
+
+        ++stage;
+        [[fallthrough]];
+    }
+
+    case QCHECK :
         return select([]() { return true; });
 
     case PROBCUT :
