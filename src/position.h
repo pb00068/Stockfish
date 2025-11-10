@@ -173,7 +173,7 @@ class Position {
 
     void put_piece(Piece pc, Square s, DirtyThreats* const dts = nullptr);
     void remove_piece(Square s, DirtyThreats* const dts = nullptr);
-    void swap_piece(Square s, Piece pc, DirtyThreats* const dts = nullptr);
+    void swap_piece(Square s, Piece pc, bool skip, DirtyThreats* const dts = nullptr);
 
    private:
     // Initialization helpers (used while setting up a position)
@@ -382,7 +382,7 @@ inline void Position::move_piece(Square from, Square to, DirtyThreats* const dts
         update_piece_threats<true>(pc, to, dts);
 }
 
-inline void Position::swap_piece(Square s, Piece pc, DirtyThreats* const dts) {
+inline void Position::swap_piece(Square s, Piece pc, bool skip2ndUpd, DirtyThreats* const dts) {
     Piece old = board[s];
 
     remove_piece(s);
@@ -393,7 +393,7 @@ inline void Position::swap_piece(Square s, Piece pc, DirtyThreats* const dts) {
 
     put_piece(pc, s);
 
-    if (dts)
+    if (dts && !skip2ndUpd)
         update_piece_threats<true, false>(pc, s, dts);
 }
 
