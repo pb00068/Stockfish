@@ -124,7 +124,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
 template<GenType Type>
 ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
-    static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
+    static_assert(Type == CAPTURES || Type == CAPTURES_DIRECTCHECKS || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     Color us = pos.side_to_move();
 
@@ -151,7 +151,7 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         const PieceType pt            = type_of(pc);
         const Piece     capturedPiece = pos.piece_on(to);
 
-        if constexpr (Type == CAPTURES)
+        if constexpr (Type == CAPTURES || Type == CAPTURES_DIRECTCHECKS )
             m.value = (*captureHistory)[pc][to][type_of(capturedPiece)]
                     + 7 * int(PieceValue[capturedPiece]) + 1024 * bool(pos.check_squares(pt) & to);
 
@@ -225,8 +225,7 @@ top:
         return ttMove;
 
     case CAPTURE_INIT :
-    case PROBCUT_INIT :
-    case QCAPTURE_INIT : {
+    case PROBCUT_INIT : {
         MoveList<CAPTURES> ml(pos);
 
         cur = endBadCaptures = moves;
@@ -307,7 +306,20 @@ top:
 
     case PROBCUT :
         return select([&]() { return pos.see_ge(*cur, threshold); });
+
+    case QCAPTURE_INIT : {
+        MoveList<CAPTURES_DIRECTCHECKS> ml(pos);
+
+        cur = endBadCaptures = moves;
+        endCur = endCaptures = score<CAPTURES_DIRECTCHECKS>(ml);
+
+        partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
+        ++stage;
+        goto top;
     }
+    }
+
+
 
     assert(false);
     return Move::none();  // Silence warning

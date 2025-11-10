@@ -1629,9 +1629,17 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 }
             }
 
-            // Skip non-captures
+            if (!givesCheck && !capture)
+                 {
+                   sync_cout << pos << "strange move " << UCIEngine::move(move, false) << " mc " << moveCount << sync_endl;
+                   abort();
+                 }
+
+            // Skip non-captures (checks) if not consecutive checks
             if (!capture)
                 continue;
+
+
 
             // Do not search moves with bad enough SEE values
             if (!pos.see_ge(move, -78))

@@ -238,14 +238,25 @@ Move* generate_all(const Position& pos, Move* moveList) {
     {
         target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces(Us)
-               : Type == CAPTURES     ? pos.pieces(~Us)
+               : (Type == CAPTURES || Type == CAPTURES_DIRECTCHECKS)     ? pos.pieces(~Us)
                                       : ~pos.pieces();  // QUIETS
 
+        if (Type != CAPTURES_DIRECTCHECKS)
+        {
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
         moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
         moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
         moveList = generate_moves<Us, ROOK>(pos, moveList, target);
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
+        }
+        else {
+
+        moveList = generate_pawn_moves<Us, Type>(pos, moveList, target | (pos.check_squares(PAWN) & ~pos.pieces()));
+        moveList = generate_moves<Us, KNIGHT>(pos, moveList, target | (pos.check_squares(KNIGHT) & ~pos.pieces()));
+        moveList = generate_moves<Us, BISHOP>(pos, moveList, target | (pos.check_squares(BISHOP) & ~pos.pieces()));
+        moveList = generate_moves<Us, ROOK>(pos, moveList,  target  | (pos.check_squares(ROOK) & ~pos.pieces()));
+        moveList = generate_moves<Us, QUEEN>(pos, moveList, target  | (pos.check_squares(QUEEN) & ~pos.pieces()));
+        }
     }
 
     Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
@@ -283,6 +294,7 @@ Move* generate(const Position& pos, Move* moveList) {
 
 // Explicit template instantiations
 template Move* generate<CAPTURES>(const Position&, Move*);
+template Move* generate<CAPTURES_DIRECTCHECKS>(const Position&, Move*);
 template Move* generate<QUIETS>(const Position&, Move*);
 template Move* generate<EVASIONS>(const Position&, Move*);
 template Move* generate<NON_EVASIONS>(const Position&, Move*);
