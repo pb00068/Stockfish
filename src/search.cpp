@@ -333,14 +333,6 @@ void Search::Worker::iterative_deepening() {
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
-            int md = mate_distance(rootMoves[0].score);
-            if (md > 0 && rootDepth < (md * 3) / 4)
-            {
-                delta = 5000;
-                avg = rootMoves[0].score;
-                rootDepth = (md * 3) / 4;
-                //sync_cout << "info after devisive score " << (rootMoves[0].score) << " set delta to 5000 rd " << rootDepth << " alpha " <<  std::max(avg - delta, -VALUE_INFINITE) << " beta " << std::min(avg + delta, VALUE_INFINITE) << sync_endl;
-            }
 
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
@@ -361,6 +353,7 @@ void Search::Worker::iterative_deepening() {
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
                 rootDelta = beta - alpha;
+                leftMostPV = true;
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
                 // Bring the best move to the front. It is critical that sorting
@@ -685,7 +678,6 @@ Value Search::Worker::search(
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
-
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
 
@@ -783,6 +775,9 @@ Value Search::Worker::search(
             }
         }
     }
+
+    if (PvNode && !ttHit && leftMostPV && !rootNode && (ss-1)->currentMove == (ss-1)->pvMove)
+        ttData.move = ss->pvMove;
 
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
@@ -912,9 +907,6 @@ Value Search::Worker::search(
     // (*Scaler) Especially if they make IIR less aggressive.
     if (!allNode && depth >= 6 && !ttData.move && priorReduction <= 3)
         depth--;
-
-    if (PvNode && !ttData.move)
-        ttData.move = ss->pvMove;
 
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
@@ -1271,6 +1263,8 @@ moves_loop:  // When in check, search starts here
                     || (ttData.depth > 1 && rootDepth > 8)))
                 newDepth = std::max(newDepth, 1);
 
+            if (moveCount > 1)
+               leftMostPV = false;
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
@@ -1540,6 +1534,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
         return ttData.value;
 
+
+    if (PvNode && !ttHit && leftMostPV && (ss-1)->currentMove == (ss-1)->pvMove)
+       ttData.move = ss->pvMove;
+
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
     if (ss->inCheck)
@@ -1588,9 +1586,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         futilityBase = ss->staticEval + 352;
     }
-
-    if (PvNode && !ttData.move)
-        ttData.move= ss->pvMove;
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
@@ -1658,6 +1653,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         // Step 7. Make and search the move
         do_move(pos, move, st, givesCheck, ss);
 
+        if (PvNode && moveCount > 1)
+           leftMostPV = false;
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
         undo_move(pos, move);
 
