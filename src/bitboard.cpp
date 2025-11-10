@@ -31,6 +31,7 @@ uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];
 
 Bitboard LineBB[SQUARE_NB][SQUARE_NB];
 Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
+Bitboard RayPassBB[SQUARE_NB][SQUARE_NB];
 Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 
 alignas(64) Magic Magics[SQUARE_NB][2];
@@ -42,12 +43,6 @@ Bitboard BishopTable[0x1480];  // To store bishop attacks
 
 void init_magics(PieceType pt, Bitboard table[], Magic magics[][2]);
 
-// Returns the bitboard of target square for the given step
-// from the given square. If the step is off the board, returns empty bitboard.
-Bitboard safe_destination(Square s, int step) {
-    Square to = Square(s + step);
-    return is_ok(to) && distance(s, to) <= 2 ? square_bb(to) : Bitboard(0);
-}
 }
 
 // Returns an ASCII representation of a bitboard suitable
@@ -105,6 +100,8 @@ void Bitboards::init() {
                     LineBB[s1][s2] = (attacks_bb(pt, s1, 0) & attacks_bb(pt, s2, 0)) | s1 | s2;
                     BetweenBB[s1][s2] =
                       (attacks_bb(pt, s1, square_bb(s2)) & attacks_bb(pt, s2, square_bb(s1)));
+
+                    RayPassBB[s1][s2] = attacks_bb(pt, s1, 0) & (attacks_bb(pt, s2, square_bb(s1)) | s2);
                 }
                 BetweenBB[s1][s2] |= s2;
             }

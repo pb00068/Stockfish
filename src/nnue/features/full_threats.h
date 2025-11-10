@@ -1,25 +1,22 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
-
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-
   Stockfish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//Definition of input features HalfKP of NNUE evaluation function
+//Definition of input features Simplified_Threats of NNUE evaluation function
 
-#ifndef NNUE_FEATURES_HALF_KA_V2_HM_H_INCLUDED
-#define NNUE_FEATURES_HALF_KA_V2_HM_H_INCLUDED
+#ifndef NNUE_FEATURES_FULL_THREATS_INCLUDED
+#define NNUE_FEATURES_FULL_THREATS_INCLUDED
 
 #include <cstdint>
 
@@ -28,14 +25,18 @@
 #include "../nnue_common.h"
 
 namespace Stockfish {
+struct StateInfo;
 class Position;
 }
 
 namespace Stockfish::Eval::NNUE::Features {
 
-// Feature HalfKAv2_hm: Combination of the position of own king and the
-// position of pieces. Position mirrored such that king is always on e..h files.
-class HalfKAv2_hm {
+static constexpr int numValidTargets[PIECE_NB] = {0, 6, 12, 10, 10, 12, 8, 0,
+                                                  0, 6, 12, 10, 10, 12, 8, 0};
+extern IndexType     offsets[PIECE_NB][SQUARE_NB + 2];
+void                 init_threat_offsets();
+
+class FullThreats {
 
     // Unique number for each piece type on each square
     enum {
@@ -64,51 +65,63 @@ class HalfKAv2_hm {
 
    public:
     // Feature name
-    static constexpr const char* Name = "HalfKAv2_hm(Friend)";
+    static constexpr const char* Name = "Full_Threats(Friend)";
 
     // Hash value embedded in the evaluation file
-    static constexpr std::uint32_t HashValue = 0x7f234cb8u;
+    static constexpr std::uint32_t HashValue = 0x8f234cb8u;
 
     // Number of feature dimensions
-    static constexpr IndexType Dimensions =
-      static_cast<IndexType>(SQUARE_NB) * static_cast<IndexType>(PS_NB) / 2;
+    static constexpr IndexType Dimensions = 79856;
 
-#define B(v) (v * PS_NB)
-    // clang-format off
-    static constexpr IndexType KingBuckets[SQUARE_NB] = {
-        B(28), B(29), B(30), B(31), B(31), B(30), B(29), B(28),
-        B(24), B(25), B(26), B(27), B(27), B(26), B(25), B(24),
-        B(20), B(21), B(22), B(23), B(23), B(22), B(21), B(20),
-        B(16), B(17), B(18), B(19), B(19), B(18), B(17), B(16),
-        B(12), B(13), B(14), B(15), B(15), B(14), B(13), B(12),
-        B( 8), B( 9), B(10), B(11), B(11), B(10), B( 9), B( 8),
-        B( 4), B( 5), B( 6), B( 7), B( 7), B( 6), B( 5), B( 4),
-        B( 0), B( 1), B( 2), B( 3), B( 3), B( 2), B( 1), B( 0),
-    };
-    // clang-format on
-#undef B
     // clang-format off
     // Orient a square according to perspective (rotates by 180 for black)
-    static constexpr IndexType OrientTBL[SQUARE_NB] = {
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1,
-        SQ_H1, SQ_H1, SQ_H1, SQ_H1, SQ_A1, SQ_A1, SQ_A1, SQ_A1 ,
+    static constexpr int OrientTBL[COLOR_NB][SQUARE_NB] = {
+      { SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1,
+        SQ_A1, SQ_A1, SQ_A1, SQ_A1, SQ_H1, SQ_H1, SQ_H1, SQ_H1 },
+      { SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8,
+        SQ_A8, SQ_A8, SQ_A8, SQ_A8, SQ_H8, SQ_H8, SQ_H8, SQ_H8 }
+    };
+
+    static constexpr int map[PIECE_TYPE_NB-2][PIECE_TYPE_NB-2] = {
+      {0,  1, -1,  2, -1, -1},
+      {0,  1,  2,  3,  4,  5},
+      {0,  1,  2,  3, -1,  4},
+      {0,  1,  2,  3, -1,  4},
+      {0,  1,  2,  3,  4,  5},
+      {0,  1,  2,  3, -1, -1}
     };
     // clang-format on
 
-    // Maximum number of simultaneously active features.
-    static constexpr IndexType MaxActiveDimensions = 32;
-    using IndexList                                = ValueList<IndexType, MaxActiveDimensions>;
-    using DiffType                                 = DirtyPiece;
+    struct FusedUpdateData {
+        Bitboard dp2removedOriginBoard = 0;
+        Bitboard dp2removedTargetBoard = 0;
+        Bitboard dp2fromBoard = 0;
 
-    // Index of a feature for a given king position and another piece on some square
+        Square dp2removed;
+        Square dp2from;
+    };
+
+    // Maximum number of simultaneously active features.
+    static constexpr IndexType MaxActiveDimensions = 128;
+    using IndexList                                = ValueList<IndexType, MaxActiveDimensions>;
+    using DiffType                                 = DirtyThreats;
+
+    FullThreats() { init_threat_offsets(); };
+
     template<Color Perspective>
-    static IndexType make_index(Square s, Piece pc, Square ksq);
+    static IndexType make_index(Piece attkr, Square from, Square to, Piece attkd, Square ksq);
 
     // Get a list of indices for active features
     template<Color Perspective>
@@ -117,7 +130,7 @@ class HalfKAv2_hm {
     // Get a list of indices for recently changed features
     template<Color Perspective>
     static void
-    append_changed_indices(Square ksq, const DiffType& diff, IndexList& removed, IndexList& added);
+    append_changed_indices(Square ksq, const DiffType& diff, IndexList& removed, IndexList& added, FusedUpdateData* fd = nullptr, bool first = false);
 
     // Returns whether the change stored in this DirtyPiece means
     // that a full accumulator refresh is required.
@@ -126,4 +139,4 @@ class HalfKAv2_hm {
 
 }  // namespace Stockfish::Eval::NNUE::Features
 
-#endif  // #ifndef NNUE_FEATURES_HALF_KA_V2_HM_H_INCLUDED
+#endif  // #ifndef NNUE_FEATURES_FULL_THREATS_INCLUDED
