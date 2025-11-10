@@ -1629,15 +1629,17 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 }
             }
 
-            if (!givesCheck && !capture)
-                 {
-                   sync_cout << pos << "strange move " << UCIEngine::move(move, false) << " mc " << moveCount << sync_endl;
-                   abort();
-                 }
-
             // Skip non-captures (checks) if not consecutive checks
             if (!capture)
-                continue;
+            {
+                if (givesCheck)
+                {
+                  if ((ss-1)->inCheck && (ss-3)->inCheck && (ss-5)->inCheck)
+                    continue;
+                }
+                else
+                   continue;
+            }
 
 
 
