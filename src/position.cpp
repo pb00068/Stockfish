@@ -814,7 +814,13 @@ DirtyBoardData Position::do_move(Move                      m,
         if (captured && m.type_of() != EN_PASSANT)
         {
             remove_piece(from, &dts);
-            swap_piece(to, pc, &dts);
+            if (m.type_of() == PROMOTION)
+            {
+                Piece  promotion = make_piece(us, m.promotion_type());
+                swap_piece(to, promotion, &dts);
+            }
+            else
+               swap_piece(to, pc, &dts);
         }
         else
             move_piece(from, to, &dts);
@@ -835,7 +841,8 @@ DirtyBoardData Position::do_move(Move                      m,
             assert(relative_rank(us, to) == RANK_8);
             assert(type_of(promotion) >= KNIGHT && type_of(promotion) <= QUEEN);
 
-            swap_piece(to, promotion, &dts);
+            if (!captured)
+                swap_piece(to, promotion, &dts);
 
             dp.add_pc = promotion;
             dp.add_sq = to;
