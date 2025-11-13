@@ -522,11 +522,11 @@ void Search::Worker::iterative_deepening() {
 }
 
 
-void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss) {
-    do_move(pos, move, st, pos.gives_check(move), ss);
+DirtyBoardData Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss) {
+    return do_move(pos, move, st, pos.gives_check(move), ss);
 }
 
-void Search::Worker::do_move(
+DirtyBoardData Search::Worker::do_move(
   Position& pos, const Move move, StateInfo& st, const bool givesCheck, Stack* const ss) {
     bool capture = pos.capture_stage(move);
     nodes.fetch_add(1, std::memory_order_relaxed);
@@ -542,7 +542,9 @@ void Search::Worker::do_move(
         ss->continuationCorrectionHistory =
           &continuationCorrectionHistory[dirtyBoardData.dp.pc][move.to_sq()];
     }
+    return dirtyBoardData;
 }
+
 
 void Search::Worker::do_null_move(Position& pos, StateInfo& st) { pos.do_null_move(st, tt); }
 
@@ -1159,7 +1161,7 @@ moves_loop:  // When in check, search starts here
         }
 
         // Step 16. Make the move
-        do_move(pos, move, st, givesCheck, ss);
+        DirtyBoardData dbd = do_move(pos, move, st, givesCheck, ss);
 
         // Add extension to new depth
         newDepth += extension;
@@ -1183,6 +1185,8 @@ moves_loop:  // When in check, search starts here
         // Increase reduction if ttMove is a capture
         if (ttCapture)
             r += 1415;
+
+        r -= 512 * popcount(dbd.dts.threatenedSqs & pos.pieces(~us));
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 2)
