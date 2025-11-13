@@ -1186,7 +1186,7 @@ moves_loop:  // When in check, search starts here
         if (ttCapture)
             r += 1415;
 
-        r -= (popcount(dbd.dts.threatenedSqs) - 2) * 128;
+        r -= (5 - ((2 + (popcount(dbd.dts.threatenedSqs) & pos.pieces(us))) * (2 + (popcount(dbd.dts.threatenedSqs) & pos.pieces(~us))))) * 32;
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 2)
