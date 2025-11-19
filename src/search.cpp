@@ -153,6 +153,18 @@ bool isReverseOrTriangle(Move move, Stack* const ss) {
         && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq();
 }
 
+
+// rule50 count >= 12 and one side moving same piece for third time in a row
+bool isShuffling(Move move, Stack* const ss, const Position& pos) {
+    if (pos.rule50_count() < 12)
+        return false;
+    if (!(ss-2)->currentMove.is_ok() || !(ss-4)->currentMove.is_ok())
+        return false;
+    if (pos.moved_piece(move) == (ss-2)->movedPiece && (ss-2)->movedPiece  == (ss-4)->movedPiece)
+        return true;
+    return false;
+}
+
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -550,6 +562,7 @@ void Search::Worker::do_move(
     if (ss != nullptr)
     {
         ss->currentMove = move;
+        ss->movedPiece = dirtyPiece.pc;
         ss->continuationHistory =
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
@@ -560,6 +573,7 @@ void Search::Worker::do_move(
 void Search::Worker::do_null_move(Position& pos, StateInfo& st, Stack* const ss) {
     pos.do_null_move(st, tt);
     ss->currentMove                   = Move::null();
+    ss->movedPiece = NO_PIECE;
     ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
     ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
 }
@@ -1133,8 +1147,8 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
-                // measure against search explosions: don't double/triple extend bouncing & triangle moves
-                if (ss->ply > 12 && isReverseOrTriangle(move, ss))
+                // measure against search explosions: don't double/triple extend bouncing, trianglulation and shuffling moves
+                if (ss->ply > 12 && !pos.capture_stage(move) && (isReverseOrTriangle(move, ss) || isShuffling(move, ss, pos)))
                     extension = 1;
                 else
                 {
