@@ -141,28 +141,24 @@ void update_all_stats(const Position& pos,
                       Move            TTMove,
                       int             moveCount);
 
-bool isReverseOrTriangle(Move move, Stack* const ss) {
-    if (!(ss-2)->currentMove.is_ok())
+bool isReverseOrTriangle(Move move, Stack* const ss, const Position& pos) {
+    if (pos.state()->pliesFromNull <= 4 )
         return false;
-    if (move == (ss-2)->currentMove.reverse())
+    if (move == (ss-2)->currentMove.reverse() && pos.rule50_count() > 2)
         return true;
-    if (!(ss-4)->currentMove.is_ok())
-        return false;
+
     return move.to_sq() == (ss-4)->currentMove.from_sq()
         && move.from_sq() == (ss-2)->currentMove.to_sq()
-        && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq();
+        && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq()
+        &&  pos.rule50_count() >= 4;
 }
 
 
-// rule50 count >= 12 and one side moving same piece for third time in a row
+// rule50 count >= 20 and one side moving same piece four times in a row
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
-    if (pos.rule50_count() < 12)
+    if (pos.rule50_count() < 20 || pos.state()->pliesFromNull <= 6 || ss->ply < 20)
         return false;
-    if (!(ss-2)->currentMove.is_ok() || !(ss-4)->currentMove.is_ok())
-        return false;
-    if (pos.moved_piece(move) == (ss-2)->movedPiece && (ss-2)->movedPiece  == (ss-4)->movedPiece)
-        return true;
-    return false;
+    return pos.moved_piece(move) == (ss-2)->movedPiece && (ss-2)->movedPiece  == (ss-4)->movedPiece && (ss-4)->movedPiece  == (ss-6)->movedPiece;
 }
 
 }  // namespace
@@ -1136,7 +1132,8 @@ moves_loop:  // When in check, search starts here
 
         if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
-            && ttData.depth >= depth - 3)
+            && ttData.depth >= depth - 3
+            && (capture || !isShuffling(move, ss, pos)))
         {
             Value singularBeta  = ttData.value - (56 + 81 * (ss->ttPv && !PvNode)) * depth / 60;
             Depth singularDepth = newDepth / 2;
@@ -1148,7 +1145,7 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 // measure against search explosions: don't double/triple extend bouncing, trianglulation and shuffling moves
-                if (ss->ply > 12 && !pos.capture_stage(move) && (isReverseOrTriangle(move, ss) || isShuffling(move, ss, pos)))
+                if (ss->ply > 12 && !capture && isReverseOrTriangle(move, ss, pos))
                     extension = 1;
                 else
                 {
