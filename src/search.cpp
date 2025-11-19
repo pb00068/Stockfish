@@ -792,10 +792,14 @@ Value Search::Worker::search(
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = (ss - 2)->staticEval;
-        if (ss->ply <= 1) // (ss - 2)->staticEval not set/valid
+        ss->staticEval = eval = ss->ply != 1 ? (ss - 2)->staticEval : -(ss - 1)->staticEval;
+        if (rootNode)
+        {
           // we need a valid estimation of the position: exceptionally call evaluate even when in check
-          ss->staticEval = eval = evaluate(pos);
+          unadjustedStaticEval = evaluate(pos);
+          ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        }
+
         improving             = false;
         goto moves_loop;
     }
