@@ -141,6 +141,18 @@ void update_all_stats(const Position& pos,
                       Move            TTMove,
                       int             moveCount);
 
+bool isReverseOrTriangle(Move move, Stack* const ss) {
+    if (!(ss-2)->currentMove.is_ok())
+        return false;
+    if (move == (ss-2)->currentMove.reverse())
+        return true;
+    if (!(ss-4)->currentMove.is_ok())
+        return false;
+    return move.to_sq() == (ss-4)->currentMove.from_sq()
+        && move.from_sq() == (ss-2)->currentMove.to_sq()
+        && (ss-4)->currentMove.to_sq() == (ss-2)->currentMove.from_sq();
+}
+
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -1121,6 +1133,11 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
+                // measure against search explosions: don't double/triple extend bouncing & triangle moves
+                if (ss->ply > 12 && isReverseOrTriangle(move, ss))
+                    extension = 1;
+                else
+                {
                 int corrValAdj   = std::abs(correctionValue) / 229958;
                 int doubleMargin = -4 + 198 * PvNode - 212 * !ttCapture - corrValAdj
                                  - 921 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 45;
@@ -1129,6 +1146,7 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                }
 
                 depth++;
             }
