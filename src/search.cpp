@@ -144,9 +144,7 @@ void update_all_stats(const Position& pos,
 
 // rule50 count >= 20 and one side moving same piece more times in a row
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
-    if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 10)
-        return false;
-    if (pos.state()->pliesFromNull <= 6 || ss->ply < 20)
+    if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 20 || pos.state()->pliesFromNull <= 6 || ss->ply < 20)
         return false;
     return move.from_sq() == (ss-2)->currentMove.to_sq() && (ss-2)->currentMove.from_sq() == (ss-4)->currentMove.to_sq();
 }
@@ -1120,7 +1118,7 @@ moves_loop:  // When in check, search starts here
 
         if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
-            && ttData.depth >= depth - 3 && !isShuffling(move, ss, pos))
+            && ttData.depth >= depth - 3)
         {
             Value singularBeta  = ttData.value - (56 + 81 * (ss->ttPv && !PvNode)) * depth / 60;
             Depth singularDepth = newDepth / 2;
@@ -1131,6 +1129,9 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
+                if (isShuffling(move, ss, pos))
+                    extension = 1;
+                else {
                 int corrValAdj   = std::abs(correctionValue) / 229958;
                 int doubleMargin = -4 + 198 * PvNode - 212 * !ttCapture - corrValAdj
                                  - 921 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 45;
@@ -1139,6 +1140,7 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                }
 
                 depth++;
             }
