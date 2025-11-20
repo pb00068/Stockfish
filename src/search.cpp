@@ -141,12 +141,10 @@ void update_all_stats(const Position& pos,
                       Move            TTMove,
                       int             moveCount);
 
-
-// rule50 count >= 20 and one side moving same piece four times in a row
-bool isShuffling(Move move, Stack* const ss, const Position& pos) {
-    if (pos.rule50_count() < 20 || pos.state()->pliesFromNull <= 6 || ss->ply < 20)
+bool isKingVsBishopShuffling(Move move, const Position& pos) {
+    if (pos.non_pawn_material(pos.side_to_move()) || type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 10)
         return false;
-    return pos.moved_piece(move) == (ss-2)->movedPiece && (ss-2)->movedPiece  == (ss-4)->movedPiece && (ss-4)->movedPiece  == (ss-6)->movedPiece;
+    return pos.non_pawn_material(~pos.side_to_move()) == BishopValue;
 }
 
 }  // namespace
@@ -546,7 +544,6 @@ void Search::Worker::do_move(
     if (ss != nullptr)
     {
         ss->currentMove = move;
-        ss->movedPiece = dirtyPiece.pc;
         ss->continuationHistory =
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
@@ -557,7 +554,6 @@ void Search::Worker::do_move(
 void Search::Worker::do_null_move(Position& pos, StateInfo& st, Stack* const ss) {
     pos.do_null_move(st, tt);
     ss->currentMove                   = Move::null();
-    ss->movedPiece = NO_PIECE;
     ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
     ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
 }
@@ -1120,8 +1116,7 @@ moves_loop:  // When in check, search starts here
 
         if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
-            && ttData.depth >= depth - 3
-            && (capture || !isShuffling(move, ss, pos)))
+            && ttData.depth >= depth - 3)
         {
             Value singularBeta  = ttData.value - (56 + 81 * (ss->ttPv && !PvNode)) * depth / 60;
             Depth singularDepth = newDepth / 2;
@@ -1132,6 +1127,11 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
+                // special is needed to avoid search getting stuck due to explosions
+                if (isKingVsBishopShuffling(move, pos))
+                    extension = 1;
+                else {
+
                 int corrValAdj   = std::abs(correctionValue) / 229958;
                 int doubleMargin = -4 + 198 * PvNode - 212 * !ttCapture - corrValAdj
                                  - 921 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 45;
@@ -1140,6 +1140,7 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                }
 
                 depth++;
             }
