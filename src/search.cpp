@@ -142,11 +142,13 @@ void update_all_stats(const Position& pos,
                       int             moveCount);
 
 
-// rule50 count >= 20 and one side moving same piece four times in a row
+// rule50 count >= 20 and one side moving same piece more times in a row
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
-    if (pos.rule50_count() < 20 || pos.state()->pliesFromNull <= 6 || ss->ply < 20)
+    if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 10)
         return false;
-    return pos.moved_piece(move) == (ss-2)->movedPiece && (ss-2)->movedPiece  == (ss-4)->movedPiece && (ss-4)->movedPiece  == (ss-6)->movedPiece;
+    if (pos.state()->pliesFromNull <= 6 || ss->ply < 20)
+        return false;
+    return move.from_sq() == (ss-2)->currentMove.to_sq() && (ss-2)->currentMove.from_sq() == (ss-4)->currentMove.to_sq();
 }
 
 }  // namespace
@@ -546,7 +548,6 @@ void Search::Worker::do_move(
     if (ss != nullptr)
     {
         ss->currentMove = move;
-        ss->movedPiece = dirtyPiece.pc;
         ss->continuationHistory =
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
@@ -557,7 +558,6 @@ void Search::Worker::do_move(
 void Search::Worker::do_null_move(Position& pos, StateInfo& st, Stack* const ss) {
     pos.do_null_move(st, tt);
     ss->currentMove                   = Move::null();
-    ss->movedPiece = NO_PIECE;
     ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
     ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
 }
