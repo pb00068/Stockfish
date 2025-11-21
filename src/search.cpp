@@ -1443,12 +1443,15 @@ moves_loop:  // When in check, search starts here
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && pvIdx))
-        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
-                       bestValue >= beta    ? BOUND_LOWER
-                       : PvNode && bestMove ? BOUND_EXACT
-                                            : BOUND_UPPER,
-                       moveCount != 0 ? depth : std::min(MAX_PLY - 1, depth + 6), bestMove,
+    {
+        Bound bound = bestValue >= beta  ? BOUND_LOWER
+                    : PvNode && bestMove ? BOUND_EXACT
+                                         : BOUND_UPPER;
+
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv, bound,
+                       !moveCount || (bound == BOUND_EXACT && is_decisive(bestValue)) ? std::min(MAX_PLY - 1, depth + 6) : depth, bestMove,
                        unadjustedStaticEval, tt.generation());
+    }
 
     // Adjust correction history if the best move is not a capture
     // and the error direction matches whether we are above/below bounds.
@@ -1702,8 +1705,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
+    Bound bound = bestValue >= beta  ? BOUND_LOWER
+                : PvNode && bestMove ? BOUND_EXACT
+                                     : BOUND_UPPER;
     ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
-                   bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
+                   bound, !moveCount || (bound == BOUND_EXACT && is_decisive(bestValue)) ? 6 : DEPTH_QS, bestMove,
                    unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
