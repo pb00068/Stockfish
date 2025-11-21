@@ -142,13 +142,10 @@ void update_all_stats(const Position& pos,
                       int             moveCount);
 
 
-// rule50 count >= 20 and one side moving same piece more times in a row
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
-    if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 10)
+    if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move) || pos.rule50_count() < 18 || pos.state()->pliesFromNull <= 6 || ss->ply < 18)
         return false;
-    if (pos.state()->pliesFromNull <= 6 || ss->ply < 20)
-        return false;
-    return move.from_sq() == (ss-2)->currentMove.to_sq() && (ss-2)->currentMove.from_sq() == (ss-4)->currentMove.to_sq();
+    return move.from_sq() == (ss-2)->currentMove.to_sq() && (ss-2)->currentMove.from_sq() == (ss-4)->currentMove.to_sq() && (ss-4)->currentMove.from_sq() == (ss-6)->currentMove.to_sq();
 }
 
 }  // namespace
@@ -1139,6 +1136,10 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+
+                // don't extend to much on a null-move search tree (supposed to be a reduced search)
+                if (pos.state()->pliesFromNull < ss->ply)
+                  extension = 1;
 
                 depth++;
             }
