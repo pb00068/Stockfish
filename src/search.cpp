@@ -1117,7 +1117,7 @@ moves_loop:  // When in check, search starts here
 
         if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
-            && ttData.depth >= depth - 3 && pos.state()->pliesFromNull >= ss->ply && !isShuffling(move, ss, pos))
+            && ttData.depth >= depth - 3 && !isShuffling(move, ss, pos))
         {
             Value singularBeta  = ttData.value - (56 + 81 * (ss->ttPv && !PvNode)) * depth / 60;
             Depth singularDepth = newDepth / 2;
@@ -1136,6 +1136,10 @@ moves_loop:  // When in check, search starts here
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+
+                // don't extend to much on a null-move search tree (supposed to be a reduced search)
+                if (pos.state()->pliesFromNull < ss->ply)
+                  extension = 1;
 
                 depth++;
             }
