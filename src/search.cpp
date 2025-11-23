@@ -1135,7 +1135,7 @@ moves_loop:  // When in check, search starts here
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
 
                 // don't multiple extend on null-move search sub-trees (supposed to be a reduced search)
-                if (pos.state()->pliesFromNull < ss->ply)
+                if (pos.state()->pliesFromNull < ss->ply && ss->ply > rootDepth)
                     extension = 1;
 
                 depth++;
