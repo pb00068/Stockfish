@@ -1609,7 +1609,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         capture    = pos.capture_stage(move);
 
         // striking first into the exchange due to previous nm might give an excessive advantage
-        if ((ss-1)->currentMove == Move::null() && (ss-1)->currentMove.to_sq() == move.to_sq() && type_of(pos.piece_on(move.to_sq())) == type_of(pos.piece_on(move.from_sq())))
+        if (capture && (ss-1)->currentMove == Move::null() && type_of(pos.piece_on(move.to_sq())) == type_of(pos.piece_on(move.from_sq())))
             continue;
 
         givesCheck = pos.gives_check(move);
