@@ -1134,10 +1134,6 @@ moves_loop:  // When in check, search starts here
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
 
-                // don't multiple extend on null-move search sub-trees (supposed to be a reduced search)
-                if (pos.state()->pliesFromNull < ss->ply && ss->ply > rootDepth)
-                    extension = 1;
-
                 depth++;
             }
 
@@ -1610,8 +1606,13 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (!pos.legal(move))
             continue;
 
-        givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
+
+        // striking first into the exchange due to previous nm might give an excessive advantage
+        if ((ss-1)->currentMove == Move::null() && (ss-1)->currentMove.to_sq() == move.to_sq() && type_of(pos.piece_on(move.to_sq())) == type_of(pos.piece_on(move.from_sq())))
+            continue;
+
+        givesCheck = pos.gives_check(move);
 
         moveCount++;
 
