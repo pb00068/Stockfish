@@ -293,6 +293,9 @@ class Worker {
 
     TTMoveHistory ttMoveHistory;
 
+    PieceToHistory*             continuationHistoryPly1 = nullptr;
+    CorrectionHistory<PieceTo>* continuationCorrectionHistoryPly1= nullptr;
+
    private:
     void iterative_deepening();
 
@@ -337,6 +340,7 @@ class Worker {
     RootMoves rootMoves;
     Depth     rootDepth, completedDepth;
     Value     rootDelta;
+
 
     size_t                    threadIdx;
     NumaReplicatedAccessToken numaAccessToken;

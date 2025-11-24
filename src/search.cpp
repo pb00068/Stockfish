@@ -271,6 +271,13 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->staticEval                    = VALUE_NONE;
     }
 
+    // assume gameplay: overtake ply 1 histories (previous move) to ply - 1 histories
+    if (continuationHistoryPly1 != nullptr)
+    {
+       (ss-1)->continuationHistory = continuationHistoryPly1;
+       (ss-1)->continuationCorrectionHistory = continuationCorrectionHistoryPly1;
+    }
+
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
@@ -545,6 +552,11 @@ void Search::Worker::do_move(
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
           &continuationCorrectionHistory[dirtyPiece.pc][move.to_sq()];
+        if (ss->ply == 1)
+        {
+          continuationHistoryPly1 = ss->continuationHistory;
+          continuationCorrectionHistoryPly1 = ss->continuationCorrectionHistory;
+        }
     }
 }
 
