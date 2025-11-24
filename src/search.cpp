@@ -1550,8 +1550,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         bestValue = futilityBase = -VALUE_INFINITE;
         if (((ss - 2)->inCheck && (ss - 4)->inCheck))
         {
-            ss->staticEval = (ss->ttHit && is_valid(ttData.eval)) ? ttData.eval : evaluate(pos);
-            ss->staticEval = bestValue = to_corrected_static_eval(ss->staticEval, correction_value(*this, pos, ss));
+            unadjustedStaticEval = (ss->ttHit && is_valid(ttData.eval)) ? ttData.eval : evaluate(pos);
+            ss->staticEval = bestValue = to_corrected_static_eval(unadjustedStaticEval, correction_value(*this, pos, ss));
+            futilityBase = ss->staticEval + 100;
         }
     }
     else
@@ -1597,6 +1598,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         futilityBase = ss->staticEval + 351;
     }
+
 
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
@@ -1692,7 +1694,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Step 9. Check for mate
     // All legal moves have been searched. A special case: if we are
     // in check and no legal moves were found, it is checkmate.
-    if (ss->inCheck && bestValue == -VALUE_INFINITE)
+    if (ss->inCheck && !moveCount)
     {
         assert(!MoveList<LEGAL>(pos).size());
         return mated_in(ss->ply);  // Plies to mate from the root
