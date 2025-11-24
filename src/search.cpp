@@ -796,8 +796,20 @@ Value Search::Worker::search(
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = (ss - 2)->staticEval;
-        improving             = false;
+        if (ss->ttHit)
+        {
+              // Never assume anything about values stored in TT
+              unadjustedStaticEval = ttData.eval;
+              if (!is_valid(unadjustedStaticEval))
+                  unadjustedStaticEval = evaluate(pos);
+
+              ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        }
+        else {
+            unadjustedStaticEval = evaluate(pos);
+            ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        }
+        improving             = ss->staticEval > (ss - 2)->staticEval;;
         goto moves_loop;
     }
     else if (excludedMove)
