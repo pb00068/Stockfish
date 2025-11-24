@@ -1005,6 +1005,11 @@ moves_loop:  // When in check, search starts here
         if (rootNode && !std::count(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast, move))
             continue;
 
+        capture    = pos.capture_stage(move);
+        // moving twice to make a capture might give an excessive advantage
+        if (capture && (ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq())
+            continue;
+
         ss->moveCount = ++moveCount;
 
         if (rootNode && is_mainthread() && nodes > 10000000)
@@ -1016,7 +1021,6 @@ moves_loop:  // When in check, search starts here
             (ss + 1)->pv = nullptr;
 
         extension  = 0;
-        capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
 
