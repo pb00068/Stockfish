@@ -1006,8 +1006,8 @@ moves_loop:  // When in check, search starts here
             continue;
 
         capture    = pos.capture_stage(move);
-        // moving twice to make a capture might give an excessive advantage
-        if (capture && (ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq())
+        // moving same piece twice to capture/check might give an excessive advantage
+        if ((ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq() && (capture || pos.gives_check(move)))
             continue;
 
         ss->moveCount = ++moveCount;
@@ -1611,12 +1611,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             continue;
 
         capture    = pos.capture_stage(move);
-
-        // moving twice to make a capture might give an excessive advantage
-        if (capture && (ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq())
-            continue;
-
         givesCheck = pos.gives_check(move);
+
+        // moving same piece twice to capture/check might give an excessive advantage
+        if ((ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq() && (capture || givesCheck))
+            continue;
 
         moveCount++;
 
