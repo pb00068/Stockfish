@@ -797,6 +797,9 @@ Value Search::Worker::search(
     {
         // Skip early pruning when in check
         ss->staticEval = eval = (ss - 2)->staticEval;
+        if (ss->ply <= 1 || (ss - 2)->inCheck) // (ss - 2)->staticEval not set || not really thrustworth
+          // we need a valid estimation of the position: exceptionally call evaluate even when in check
+          ss->staticEval = eval = evaluate(pos);
         improving             = false;
         goto moves_loop;
     }
