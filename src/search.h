@@ -295,6 +295,8 @@ class Worker {
 
     PieceToHistory*             continuationHistoryPly1 = nullptr;
     CorrectionHistory<PieceTo>* continuationCorrectionHistoryPly1= nullptr;
+    PieceToHistory*             continuationHistoryPly2 = nullptr;
+    CorrectionHistory<PieceTo>* continuationCorrectionHistoryPly2= nullptr;
 
    private:
     void iterative_deepening();

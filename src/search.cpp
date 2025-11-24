@@ -272,10 +272,12 @@ void Search::Worker::iterative_deepening() {
     }
 
     // assume gameplay: overtake ply 1 histories (previous move) to ply - 1 histories
-    if (continuationHistoryPly1 != nullptr)
+    if (continuationHistoryPly2 != nullptr)
     {
        (ss-1)->continuationHistory = continuationHistoryPly1;
        (ss-1)->continuationCorrectionHistory = continuationCorrectionHistoryPly1;
+       (ss-2)->continuationHistory = continuationHistoryPly2;
+       (ss-2)->continuationCorrectionHistory = continuationCorrectionHistoryPly2;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -556,6 +558,11 @@ void Search::Worker::do_move(
         {
           continuationHistoryPly1 = ss->continuationHistory;
           continuationCorrectionHistoryPly1 = ss->continuationCorrectionHistory;
+        }
+        else if (ss->ply == 2)
+        {
+          continuationHistoryPly2 = ss->continuationHistory;
+          continuationCorrectionHistoryPly2 = ss->continuationCorrectionHistory;
         }
     }
 }
