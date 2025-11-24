@@ -1006,8 +1006,9 @@ moves_loop:  // When in check, search starts here
             continue;
 
         capture    = pos.capture_stage(move);
-        // moving same piece twice in order to make a capture might give an excessive advantage
-        if (capture && (ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq())
+        givesCheck = pos.gives_check(move);
+        // moving same piece twice in order to capture/check might give an excessive advantage
+        if ((capture || givesCheck) && (ss-1)->currentMove == Move::null() && (ss-2)->currentMove.to_sq() == move.from_sq())
             continue;
 
         ss->moveCount = ++moveCount;
@@ -1022,7 +1023,7 @@ moves_loop:  // When in check, search starts here
 
         extension  = 0;
         movedPiece = pos.moved_piece(move);
-        givesCheck = pos.gives_check(move);
+
 
         // Calculate new depth for this move
         newDepth = depth - 1;
