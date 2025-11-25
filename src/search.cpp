@@ -264,7 +264,6 @@ void Search::Worker::iterative_deepening() {
     Stack* ss                  = stack + 7;
 
     StateInfo* prev = rootPos.state();
-    const auto correctionValue      = correction_value(*this, rootPos, ss);
     for (int i = 1; i <=7 ; ++i)
     {
         (ss - i)->continuationHistory =
@@ -282,13 +281,6 @@ void Search::Worker::iterative_deepening() {
                 (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][capture][mp][move.to_sq()];
                 (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[mp][move.to_sq()];
                 (ss - i)->currentMove = move;
-
-                if (i <= 2 && !bool(prev->checkersBB))
-                {
-                      auto [ttHit, ttData, ttWriter] = tt.probe(prev->key);
-                      if (ttHit && is_valid(ttData.eval))
-                          (ss - i)->staticEval = to_corrected_static_eval(ttData.eval, correctionValue);
-                }
                 //sync_cout << "info setting hist for ply - " << i << " in check " <<  bool(prev->checkersBB) << " iscapture " << UCIEngine::move( move, rootPos.is_chess960()) << " " << capture << sync_endl;
             }
         }
@@ -822,10 +814,10 @@ Value Search::Worker::search(
     {
         // Skip early pruning when in check
         ss->staticEval = eval = (ss - 2)->staticEval;
-        if (ss->ply <= 1 && (ss - 2)->staticEval == VALUE_NONE)
+        if (ss->ply <= 1)
             // we need a valid estimation of the position: exceptionally call evaluate even when in check
             ss->staticEval = eval = evaluate(pos);
-        improving = ss->staticEval > (ss - 2)->staticEval;
+        improving = false;
         goto moves_loop;
     }
     else if (excludedMove)
