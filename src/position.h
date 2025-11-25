@@ -58,8 +58,9 @@ struct StateInfo {
     Bitboard   blockersForKing[COLOR_NB];
     Bitboard   pinners[COLOR_NB];
     Bitboard   checkSquares[PIECE_TYPE_NB];
-    Piece      capturedPiece;
+    Piece      capturedPiece, moved;
     int        repetition;
+    Move       m;
 };
 
 

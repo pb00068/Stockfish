@@ -263,22 +263,28 @@ void Search::Worker::iterative_deepening() {
     Stack  stack[MAX_PLY + 10] = {};
     Stack* ss                  = stack + 7;
 
-    for (int i = 7; i > 0; --i)
+    StateInfo* prev = rootPos.state();
+    for (int i = 1; i <=7 ; ++i)
     {
         (ss - i)->continuationHistory =
           &continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+
+        if (prev)
+        {
+            prev = prev->previous;
+            if (prev) {
+                (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][bool(prev->capturedPiece)][prev->moved][prev->m.to_sq()];
+                (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[prev->moved][prev->m.to_sq()];
+                auto [ttHit, ttData, ttWriter] = tt.probe(prev->key);
+                if (ttHit)
+                   (ss - i)->staticEval = ttData.eval;
+            }
+        }
     }
 
-    // assume gameplay: overtake ply 1 histories (previous move) to ply - 1 histories
-    if (continuationHistoryPly2 != nullptr)
-    {
-       (ss-1)->continuationHistory = continuationHistoryPly1;
-       (ss-1)->continuationCorrectionHistory = continuationCorrectionHistoryPly1;
-       (ss-2)->continuationHistory = continuationHistoryPly2;
-       (ss-2)->continuationCorrectionHistory = continuationCorrectionHistoryPly2;
-    }
+
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
@@ -554,16 +560,6 @@ void Search::Worker::do_move(
           &continuationHistory[ss->inCheck][capture][dirtyPiece.pc][move.to_sq()];
         ss->continuationCorrectionHistory =
           &continuationCorrectionHistory[dirtyPiece.pc][move.to_sq()];
-        if (ss->ply == 1)
-        {
-          continuationHistoryPly1 = ss->continuationHistory;
-          continuationCorrectionHistoryPly1 = ss->continuationCorrectionHistory;
-        }
-        else if (ss->ply == 2)
-        {
-          continuationHistoryPly2 = ss->continuationHistory;
-          continuationCorrectionHistoryPly2 = ss->continuationCorrectionHistory;
-        }
     }
 }
 

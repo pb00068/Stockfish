@@ -711,6 +711,7 @@ void Position::do_move(Move                      m,
     std::memcpy(&newSt, st, offsetof(StateInfo, key));
     newSt.previous = st;
     st             = &newSt;
+    st->m = m;
 
     // Increment ply counters. In particular, rule50 will be reset to zero later on
     // in case of a capture or a pawn move.
@@ -722,7 +723,7 @@ void Position::do_move(Move                      m,
     Color  them     = ~us;
     Square from     = m.from_sq();
     Square to       = m.to_sq();
-    Piece  pc       = piece_on(from);
+    Piece  pc       = st->moved = piece_on(from);
     Piece  captured = m.type_of() == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
 
     bool checkEP = false;
