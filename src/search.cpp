@@ -264,23 +264,25 @@ void Search::Worker::iterative_deepening() {
     Stack* ss                  = stack + 7;
 
     StateInfo* prev = rootPos.state();
-    auto [ttHit, ttData, ttWriter] = tt.probe(prev->key);
-    Value rootPosStaticEval = ttHit && is_valid(ttData.eval) ? ttData.eval : evaluate(rootPos);
     for (int i = 1; i <=7 ; ++i)
     {
         (ss - i)->continuationHistory =
           &continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
-        rootPosStaticEval = -rootPosStaticEval;
         if (prev)
         {
+            bool capture = bool(prev->capturedPiece);
             prev = prev->previous;
             if (prev) {
-                (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][bool(prev->capturedPiece)][prev->moved][prev->m.to_sq()];
+                (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][capture][prev->moved][prev->m.to_sq()];
                 (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[prev->moved][prev->m.to_sq()];
-                auto [ttHit2, ttData2, ttWriter2] = tt.probe(prev->key);
-                (ss - i)->staticEval = ttHit2 ? ttData2.eval : rootPosStaticEval;
+                (ss - i)->currentMove = prev->m;
+                if (i == 2 && rootPos.checkers())
+                {
+                      auto [ttHit, ttData, ttWriter] = tt.probe(prev->key);
+                      (ss - i)->staticEval = ttData.eval;
+                }
             }
         }
     }
