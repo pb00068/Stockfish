@@ -273,16 +273,21 @@ void Search::Worker::iterative_deepening() {
         if (prev)
         {
             bool capture = bool(prev->capturedPiece);
+            Move move = prev->m;
+            Piece mp = prev->moved;
             prev = prev->previous;
+
             if (prev) {
-                (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][capture][prev->moved][prev->m.to_sq()];
-                (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[prev->moved][prev->m.to_sq()];
-                (ss - i)->currentMove = prev->m;
+
+                (ss - i)->continuationHistory = &continuationHistory[bool(prev->checkersBB)][capture][mp][move.to_sq()];
+                (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[mp][move.to_sq()];
+                (ss - i)->currentMove = move;
                 if (i == 2 && rootPos.checkers())
                 {
                       auto [ttHit, ttData, ttWriter] = tt.probe(prev->key);
                       (ss - i)->staticEval = ttData.eval;
                 }
+                //sync_cout << "info setting hist for ply - " << i << " in check " <<  bool(prev->checkersBB) << " iscapture " << UCIEngine::move( move, rootPos.is_chess960()) << " " << capture << sync_endl;
             }
         }
     }
