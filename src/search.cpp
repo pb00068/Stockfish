@@ -274,8 +274,6 @@ void Search::Worker::iterative_deepening() {
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
-    ss->staticEval = evaluate(rootPos);
-
     ss->pv = pv;
 
     if (mainThread)
@@ -315,6 +313,7 @@ void Search::Worker::iterative_deepening() {
 
         size_t pvFirst = 0;
         pvLast         = 0;
+        ss->staticEval = evaluate(rootPos);
 
         if (!threads.increaseDepth)
             searchAgainCounter++;
