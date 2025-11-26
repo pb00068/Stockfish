@@ -274,6 +274,8 @@ void Search::Worker::iterative_deepening() {
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
+    ss->staticEval = evaluate(rootPos);
+
     ss->pv = pv;
 
     if (mainThread)
@@ -795,8 +797,11 @@ Value Search::Worker::search(
     const auto correctionValue      = correction_value(*this, pos, ss);
     if (ss->inCheck)
     {
-        // Skip early pruning when in check
-        ss->staticEval = eval = (ss - 2)->staticEval;
+        if (rootNode)
+          eval = ss->staticEval;
+        else
+            // Skip early pruning when in check
+            ss->staticEval = eval = (ss - 2)->staticEval;
         improving             = false;
         goto moves_loop;
     }
