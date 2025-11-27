@@ -288,7 +288,7 @@ void Search::Worker::iterative_deepening() {
 
 
 
-    for (int i = 0; i <= MAX_PLY + 2; ++i)
+    for (int i = -7; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
     ss->pv = pv;
@@ -1879,7 +1879,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
         // Only update the first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
             break;
-        if (((ss - i)->currentMove).is_ok())
+        if (((ss - i)->currentMove).is_ok() && (ss - i)->ply >= 0)
             (*(ss - i)->continuationHistory)[pc][to] << (bonus * weight / 1024) + 88 * (i < 2);
     }
 }
