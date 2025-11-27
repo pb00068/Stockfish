@@ -798,6 +798,7 @@ Value Search::Worker::search(
         // Skip early pruning when in check
         ss->staticEval = eval = (ss - 2)->staticEval;
         improving             = false;
+        ss->pawnKey = pawn_history_index(pos);
         goto moves_loop;
     }
     else if (excludedMove)
@@ -826,6 +827,7 @@ Value Search::Worker::search(
                        unadjustedStaticEval, tt.generation());
     }
 
+    ss->pawnKey = pawn_history_index(pos);
     // Use static evaluation difference to improve quiet move ordering
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
     {
@@ -833,7 +835,7 @@ Value Search::Worker::search(
         mainHistory[~us][((ss - 1)->currentMove).raw()] << evalDiff * 9;
         if (!ttHit && type_of(pos.piece_on(prevSq)) != PAWN
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
-            pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
+            pawnHistory[ss->pawnKey][pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
     }
 
     // Set up the improving flag, which is true if current static evaluation is
@@ -1854,11 +1856,19 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
     static std::array<ConthistBonus, 6> conthist_bonuses = {
       {{1, 1133}, {2, 683}, {3, 312}, {4, 582}, {5, 149}, {6, 474}}};
 
+    int pkey = ss->pawnKey;
+    int changes = 0;
     for (const auto [i, weight] : conthist_bonuses)
     {
         // Only update the first 2 continuation histories if we are in check
         if (ss->inCheck && i > 2)
             break;
+
+        changes += (pkey != (ss - i)->pawnKey);
+        pkey = (ss - i)->pawnKey;
+
+        if (changes == 2)
+          break;
         if (((ss - i)->currentMove).is_ok())
             (*(ss - i)->continuationHistory)[pc][to] << (bonus * weight / 1024) + 88 * (i < 2);
     }
