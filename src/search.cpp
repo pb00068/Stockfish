@@ -930,7 +930,7 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &lowPlyHistory, &captureHistory, ss->ply);
         Depth      probCutDepth = std::clamp(depth - 5 - (ss->staticEval - beta) / 315, 0, depth);
 
         while ((move = mp.next_move()) != Move::none())
@@ -1818,6 +1818,9 @@ void update_all_stats(const Position& pos,
     int bonus = std::min(116 * depth - 81, 1515) + 347 * (bestMove == ttMove);
     int malus = std::min(848 * depth - 207, 2446) - 17 * moveCount;
 
+    if (ss->ply < LOW_PLY_HISTORY_SIZE)
+        workerThread.lowPlyHistory[ss->ply][bestMove.raw()] << bonus * 750 / 1024;
+
     if (!pos.capture_stage(bestMove))
     {
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 910 / 1024);
@@ -1871,9 +1874,6 @@ void update_quiet_histories(
 
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.raw()] << bonus;  // Untuned to prevent duplicate effort
-
-    if (ss->ply < LOW_PLY_HISTORY_SIZE)
-        workerThread.lowPlyHistory[ss->ply][move.raw()] << bonus * 805 / 1024;
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus * 896 / 1024);
 
