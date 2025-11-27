@@ -158,13 +158,17 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         else if constexpr (Type == QUIETS)
         {
             // histories
-            m.value = 2 * (*mainHistory)[us][m.raw()];
-            m.value += 2 * (*pawnHistory)[pawn_history_index(pos)][pc][to];
-            m.value += (*continuationHistory[0])[pc][to];
-            m.value += (*continuationHistory[1])[pc][to];
+            m.value =  (*continuationHistory[1])[pc][to];
             m.value += (*continuationHistory[2])[pc][to];
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[5])[pc][to];
+
+            if (ply <= 1 && depth < 12)
+              m.value *= 4; // at beginning of Iterative Depeening give more weight to values from turn before (negative plies)
+
+            m.value += 2 * (*mainHistory)[us][m.raw()];
+            m.value += 2 * (*pawnHistory)[pawn_history_index(pos)][pc][to];
+            m.value += (*continuationHistory[0])[pc][to];
 
             // bonus for checks
             m.value += (bool(pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * 16384;
