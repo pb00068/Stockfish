@@ -791,31 +791,23 @@ Value Search::Worker::search(
     }
 
     // Step 6. Static evaluation of the position
-    Value      unadjustedStaticEval = VALUE_NONE;
+    Value      unadjustedStaticEval = ss->ttHit ? ttData.eval : VALUE_NONE;
+    if (!excludedMove && !is_valid(unadjustedStaticEval))
+        unadjustedStaticEval = evaluate(pos); // N.B.: might be in check but NNUE:eval copes with that
     const auto correctionValue      = correction_value(*this, pos, ss);
     if (ss->inCheck)
     {
+        // further put down correctionValue down 8 units
+        ss->staticEval = to_corrected_static_eval(unadjustedStaticEval, correctionValue - 131072 * 8);
+        improving         = ss->staticEval > (ss - 2)->staticEval;
         // Skip early pruning when in check
-        ss->staticEval = eval = (ss - 2)->staticEval;
-        if (ss->ply <= 1 || ((ss - 2)->inCheck && (ss - 4)->inCheck))
-        {
-             eval = (ss->ttHit && is_valid(ttData.eval)) ? ttData.eval : evaluate(pos);
-             ss->staticEval = eval = to_corrected_static_eval(eval, correctionValue);
-        }
-        improving = ss->staticEval > (ss - 2)->staticEval;
         goto moves_loop;
     }
     else if (excludedMove)
         unadjustedStaticEval = eval = ss->staticEval;
     else if (ss->ttHit)
     {
-        // Never assume anything about values stored in TT
-        unadjustedStaticEval = ttData.eval;
-        if (!is_valid(unadjustedStaticEval))
-            unadjustedStaticEval = evaluate(pos);
-
         ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
-
         // ttValue can be used as a better position evaluation
         if (is_valid(ttData.value)
             && (ttData.bound & (ttData.value > eval ? BOUND_LOWER : BOUND_UPPER)))
@@ -823,7 +815,6 @@ Value Search::Worker::search(
     }
     else
     {
-        unadjustedStaticEval = evaluate(pos);
         ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
 
         // Static evaluation is saved as it was before adjustment by correction history
