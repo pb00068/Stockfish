@@ -51,6 +51,7 @@ namespace NN = Eval::NNUE;
 constexpr auto StartFEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 constexpr int  MaxHashMB  = Is64Bit ? 33554432 : 2048;
 int            MaxThreads = std::max(1024, 4 * int(get_hardware_concurrency()));
+Move lastMoveBeforeRoot;
 
 Engine::Engine(std::optional<std::string> path) :
     binaryDirectory(path ? CommandLine::get_binary_directory(*path) : ""),
@@ -199,6 +200,7 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
     // Drop the old state and create a new one
     states = StateListPtr(new std::deque<StateInfo>(1));
     pos.set(fen, options["UCI_Chess960"], &states->back());
+    lastMoveBeforeRoot = Move::none();
 
     for (const auto& move : moves)
     {
@@ -209,6 +211,12 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
 
         states->emplace_back();
         pos.do_move(m, states->back());
+        lastMoveBeforeRoot = m;
+    }
+    if (lastMoveBeforeRoot)
+    {
+        options.erase("lastMoveTo");
+        options.add("lastMoveTo", Option(lastMoveBeforeRoot.to_sq(), 0, lastMoveBeforeRoot.to_sq()));
     }
 }
 

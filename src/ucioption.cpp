@@ -82,6 +82,10 @@ void OptionsMap::add(const std::string& name, const Option& option) {
     }
 }
 
+void OptionsMap::erase(const std::string& name) {
+    options_map.erase(name);
+}
+
 
 std::size_t OptionsMap::count(const std::string& name) const { return options_map.count(name); }
 

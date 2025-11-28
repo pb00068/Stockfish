@@ -86,6 +86,7 @@ class OptionsMap {
     const Option& operator[](const std::string&) const;
 
     void add(const std::string&, const Option& option);
+    void erase(const std::string& name);
 
     std::size_t count(const std::string&) const;
 

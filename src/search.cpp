@@ -271,6 +271,15 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->staticEval                    = VALUE_NONE;
     }
 
+    // Set continuation also 1 ply below zero if previous move is available
+    if (rootPos.state()->previous)
+    {
+      Square to = Square( int(options["lastMoveTo"]));
+      (ss-1)->continuationHistory =  &continuationHistory[bool(rootPos.state()->previous->checkersBB)][bool(rootPos.captured_piece())][rootPos.piece_on(to)][to];
+      (ss-1)->continuationCorrectionHistory = &continuationCorrectionHistory[rootPos.piece_on(to)][to];
+      (ss-1)->currentMove = Move(to,to); // we just need any OK move here in order that hist on ply -1 get updated
+    }
+
     for (int i = 0; i <= MAX_PLY + 2; ++i)
         (ss + i)->ply = i;
 
