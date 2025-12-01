@@ -1826,6 +1826,12 @@ void update_all_stats(const Position& pos,
 
     if (!pos.capture_stage(bestMove))
     {
+        // reduct bonus/malus on quiete evasion bestMove since it's a very specific situation
+        if (ss->inCheck)
+        {
+          bonus /=2;
+          malus /=2;
+        }
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 910 / 1024);
 
         // Decrease stats for all non-best quiet moves
