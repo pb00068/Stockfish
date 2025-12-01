@@ -1826,12 +1826,6 @@ void update_all_stats(const Position& pos,
 
     if (!pos.capture_stage(bestMove))
     {
-        // reduct bonus/malus on quiete evasion bestMove since it's a very specific situation
-        if (ss->inCheck)
-        {
-          bonus /=2;
-          malus /=2;
-        }
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 910 / 1024);
 
         // Decrease stats for all non-best quiet moves
@@ -1873,7 +1867,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
             break;
 
         if (((ss - i)->currentMove).is_ok())
-            (*(ss - i)->continuationHistory)[pc][to] << (bonus * weight / 1024) + 88 * (i < 2);
+            (*(ss - i)->continuationHistory)[pc][to] << (bonus * weight / 1024) + 88 * (i < 2) / (ss->inCheck ? 2 : 1);
     }
 }
 
