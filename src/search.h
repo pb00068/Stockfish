@@ -292,6 +292,7 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
+    Depth doNullFromPly;
 
    private:
     void iterative_deepening();

@@ -307,6 +307,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    doNullFromPly = 0;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -344,6 +345,9 @@ void Search::Worker::iterative_deepening() {
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
+
+            doNullFromPly = (avg <= 0 && abs(avg) < 40) ? rootDepth / 3 : 0;
+
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
 
@@ -886,7 +890,7 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 18 * depth + 350 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta) && ss->ply >= doNullFromPly)
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -1174,6 +1178,8 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+        //if (pos.state()->pliesFromNull < ss->ply && move.promotion_type() == QUEEN && (ss-1)->currentMove.promotion_type() == QUEEN)
+        //  extension = 0;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
