@@ -93,7 +93,15 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
-Value to_corrected_static_eval(const Value v, const int cv) {
+Value to_corrected_static_eval(Value v, const int cv, const Position& pos, int optimism) {
+  bool decisive = is_decisive(v);
+  int material = 534 * pos.count<PAWN>() + pos.non_pawn_material();
+  v += 3 * optimism * (7191 + material) / 77871;
+  v -= v * pos.rule50_count() / 199;
+
+      // Guarantee evaluation does not hit the tablebase range
+  if (!decisive)
+      v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
     return std::clamp(v + cv / 131072, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
@@ -818,7 +826,7 @@ Value Search::Worker::search(
         if (!is_valid(unadjustedStaticEval))
             unadjustedStaticEval = evaluate(pos);
 
-        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue, pos, optimism[pos.side_to_move()]);
 
         // ttValue can be used as a better position evaluation
         if (is_valid(ttData.value)
@@ -828,7 +836,7 @@ Value Search::Worker::search(
     else
     {
         unadjustedStaticEval = evaluate(pos);
-        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue, pos, optimism[pos.side_to_move()]);
 
         // Static evaluation is saved as it was before adjustment by correction history
         ttWriter.write(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_UNSEARCHED, Move::none(),
@@ -1508,6 +1516,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Value bestValue, value, futilityBase;
     bool  pvHit, givesCheck, capture;
     int   moveCount;
+    Color us = pos.side_to_move();
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1562,7 +1571,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 unadjustedStaticEval = evaluate(pos);
 
             ss->staticEval = bestValue =
-              to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+              to_corrected_static_eval(unadjustedStaticEval, correctionValue, pos, optimism[us]);
 
             // ttValue can be used as a better position evaluation
             if (is_valid(ttData.value) && !is_decisive(ttData.value)
@@ -1573,7 +1582,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         {
             unadjustedStaticEval = evaluate(pos);
             ss->staticEval       = bestValue =
-              to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+              to_corrected_static_eval(unadjustedStaticEval, correctionValue, pos, optimism[us]);
         }
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1697,7 +1706,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
 
-    Color us = pos.side_to_move();
     if (!ss->inCheck && !moveCount && !pos.non_pawn_material(us)
         && type_of(pos.captured_piece()) >= ROOK)
     {
@@ -1743,8 +1751,10 @@ TimePoint Search::Worker::elapsed() const {
 TimePoint Search::Worker::elapsed_time() const { return main_manager()->tm.elapsed_time(); }
 
 Value Search::Worker::evaluate(const Position& pos) {
-    return Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
-                          optimism[pos.side_to_move()]);
+    Value v = Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable);
+    Value undamped = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+
+    return undamped;
 }
 
 namespace {
@@ -1763,6 +1773,15 @@ Value value_from_tt(Value v, int ply, int r50c) {
 
     if (!is_valid(v))
         return VALUE_NONE;
+
+//    bool decisive = is_devisive(v);
+//    int material = 534 * pos.count<PAWN>() + pos.non_pawn_material();
+//    v += 3 * optimism * (7191 + material) / 77871;
+//    v -= v * pos.rule50_count() / 199;
+//
+//        // Guarantee evaluation does not hit the tablebase range
+//    if (!decisive)
+//        v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 
     // handle TB win or better
     if (is_win(v))
