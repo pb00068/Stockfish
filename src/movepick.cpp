@@ -84,14 +84,12 @@ MovePicker::MovePicker(const Position&              p,
                        Move                         ttm,
                        Depth                        d,
                        const ButterflyHistory*      mh,
-                       const LowPlyHistory*         lph,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
                        int                          pl) :
     pos(p),
     mainHistory(mh),
-    lowPlyHistory(lph),
     captureHistory(cph),
     continuationHistory(ch),
     pawnHistory(ph),
@@ -174,13 +172,8 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
             int v = threatByLesser[pt] & to ? -19 : 20 * bool(threatByLesser[pt] & from);
             m.value += PieceValue[pt] * v;
 
-
-            if (ply < LOW_PLY_HISTORY_SIZE)
-            {
-                m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
-                if (!ply)
-                   m.value += 4 * (*continuationHistory[1])[pc][to];
-            }
+            if (!ply)
+               m.value += 4 * (*continuationHistory[1])[pc][to];
         }
 
         else  // Type == EVASIONS
@@ -188,11 +181,7 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
             if (pos.capture_stage(m))
                 m.value = PieceValue[capturedPiece] + (1 << 28);
             else
-            {
                 m.value = (*mainHistory)[us][m.raw()] + (*continuationHistory[0])[pc][to];
-                if (ply < LOW_PLY_HISTORY_SIZE)
-                    m.value += (*lowPlyHistory)[ply][m.raw()];
-            }
         }
     }
     return it;
