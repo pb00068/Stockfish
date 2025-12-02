@@ -346,7 +346,7 @@ void Search::Worker::iterative_deepening() {
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
 
-            doNullFromPly = (avg <= 0 && abs(avg) < 40) ? rootDepth / 3 : 0;
+            doNullFromPly = (avg <= 0 && abs(avg) < 40 && rootPos.non_pawn_material() < 2 * QueenValue) ? rootDepth / 4 : 0;
 
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
@@ -1178,8 +1178,6 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
-        //if (pos.state()->pliesFromNull < ss->ply && move.promotion_type() == QUEEN && (ss-1)->currentMove.promotion_type() == QUEEN)
-        //  extension = 0;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
