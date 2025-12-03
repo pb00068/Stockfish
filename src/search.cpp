@@ -1619,6 +1619,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
 
+
         moveCount++;
 
         // Step 6. Pruning
@@ -1661,6 +1662,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         // Step 7. Make and search the move
         do_move(pos, move, st, givesCheck, ss);
+
+//        if (pos.key() % 1000 == 0)
+//          sync_cout << pos << UCIEngine::move(move, false) << Bitboards::pretty(pos.state()->threatened) << sync_endl;
 
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
         undo_move(pos, move);

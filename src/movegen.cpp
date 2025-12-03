@@ -248,7 +248,7 @@ Move* generate_all(const Position& pos, Move* moveList) {
         moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
     }
 
-    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
+    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target & ~pos.state()->threatened);
 
     moveList = splat_moves(moveList, ksq, b);
 
