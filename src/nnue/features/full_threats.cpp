@@ -172,9 +172,15 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                 auto right = (c == WHITE) ? NORTH_EAST : SOUTH_WEST;
                 auto left  = (c == WHITE) ? NORTH_WEST : SOUTH_EAST;
                 auto attacks_left =
-                  ((c == WHITE) ? shift<NORTH_EAST>(bb) : shift<SOUTH_WEST>(bb)) & occupied;
+                  ((c == WHITE) ? shift<NORTH_EAST>(bb) : shift<SOUTH_WEST>(bb));
                 auto attacks_right =
-                  ((c == WHITE) ? shift<NORTH_WEST>(bb) : shift<SOUTH_EAST>(bb)) & occupied;
+                  ((c == WHITE) ? shift<NORTH_WEST>(bb) : shift<SOUTH_EAST>(bb));
+
+                if (c == ~pos.side_to_move())
+                     pos.state()->threatened |= attacks_left | attacks_right;
+
+                attacks_left  &= occupied;
+                attacks_right &= occupied;
 
                 while (attacks_left)
                 {
@@ -203,7 +209,11 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                 while (bb)
                 {
                     Square   from    = pop_lsb(bb);
-                    Bitboard attacks = (attacks_bb(pt, from, occupied)) & occupied;
+                    Bitboard b = (attacks_bb(pt, from, occupied));
+                    if (c == ~pos.side_to_move())
+                       pos.state()->threatened |= b;
+
+                    Bitboard attacks = b & occupied;
 
                     while (attacks)
                     {
@@ -215,10 +225,12 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                         if (index < Dimensions)
                             active.push_back(index);
                     }
+
                 }
             }
         }
     }
+    //sync_cout << pos << Bitboards::pretty(pos.state()->threatened) << sync_endl;
 }
 
 // Get a list of indices for recently changed features

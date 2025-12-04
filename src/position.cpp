@@ -1191,7 +1191,6 @@ void Position::update_piece_threats(Piece               pc,
             const Bitboard ray        = RayPassBB[sliderSq][s] & ~BetweenBB[sliderSq][s];
             const Bitboard discovered = ray & qAttacks & occupied;
 
-
             if (!PutPiece && st->epSquare == SQ_NONE && color_of(slider) == sideToMove &&  (RayPassBB[sliderSq][s] & noRaysContaining) != noRaysContaining)
               st->threatened |= (ray & qAttacks);
 
