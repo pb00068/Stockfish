@@ -225,12 +225,10 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                         if (index < Dimensions)
                             active.push_back(index);
                     }
-
                 }
             }
         }
     }
-    //sync_cout << pos << Bitboards::pretty(pos.state()->threatened) << sync_endl;
 }
 
 // Get a list of indices for recently changed features
