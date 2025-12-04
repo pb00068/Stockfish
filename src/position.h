@@ -58,7 +58,8 @@ struct StateInfo {
     Bitboard   blockersForKing[COLOR_NB];
     Bitboard   pinners[COLOR_NB];
     Bitboard   checkSquares[PIECE_TYPE_NB];
-    Bitboard   threatened; // Threatened squares from last moved piece
+    Bitboard   threatened; // Threatened squares for side to move
+    bool       fullThreats;
     Piece      capturedPiece;
     int        repetition;
 };
@@ -271,6 +272,8 @@ inline bool Position::can_castle(CastlingRights cr) const { return st->castlingR
 
 inline bool Position::castling_impeded(CastlingRights cr) const {
     assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
+    if (st->fullThreats && !chess960)
+      return (pieces() | st->threatened) & castlingPath[cr];
     return pieces() & castlingPath[cr];
 }
 
