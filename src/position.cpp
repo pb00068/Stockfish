@@ -339,7 +339,6 @@ void Position::set_state() const {
     st->key               = 0;
     st->minorPieceKey     = 0;
     st->threatened        = 0;
-    st->fullThreats= false;
     st->nonPawnKey[WHITE] = st->nonPawnKey[BLACK] = 0;
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
@@ -545,8 +544,6 @@ bool Position::legal(Move m) const {
     // enemy attacks, it is delayed at a later time: now!
     if (m.type_of() == CASTLING)
     {
-        if (st->fullThreats && !chess960)
-            return true;
         // After castling, the rook and king final positions are the same in
         // Chess960 as they would be in standard chess.
         to             = relative_square(us, to > from ? SQ_G1 : SQ_C1);
@@ -564,11 +561,7 @@ bool Position::legal(Move m) const {
     // If the moving piece is a king, check whether the destination square is
     // attacked by the opponent.
     if (type_of(piece_on(from)) == KING)
-    {
-        if (st->fullThreats && !(st->threatened & to) && !checkers())
-           return true;
         return !(attackers_to_exist(to, pieces() ^ from, ~us));
-    }
 
     // A non-king move is legal if and only if it is not pinned or it
     // is moving along the ray towards or away from the king.
@@ -742,7 +735,6 @@ void Position::do_move(Move                      m,
     dts.us            = us;
     dts.prevKsq       = square<KING>(us);
     dts.threatenedSqs = dts.threateningSqs = st->threatened = 0;
-    st->fullThreats= false;
 
     assert(color_of(pc) == us);
     assert(captured == NO_PIECE || color_of(captured) == (m.type_of() != CASTLING ? them : us));
@@ -1295,7 +1287,6 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     prefetch(tt.first_entry(key()));
 
     st->pliesFromNull = st->threatened = 0;
-    st->fullThreats= false;
 
     sideToMove = ~sideToMove;
 
