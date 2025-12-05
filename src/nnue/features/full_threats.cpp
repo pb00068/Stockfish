@@ -158,6 +158,7 @@ inline sf_always_inline IndexType FullThreats::make_index(
 void FullThreats::append_active_indices(Color perspective, const Position& pos, IndexList& active) {
     Square   ksq      = pos.square<KING>(perspective);
     Bitboard occupied = pos.pieces();
+    pos.state()->fullThreats=true;
 
     for (Color color : {WHITE, BLACK})
     {
