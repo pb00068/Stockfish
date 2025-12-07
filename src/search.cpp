@@ -307,6 +307,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    doNullFromPly = 0;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -344,6 +345,7 @@ void Search::Worker::iterative_deepening() {
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
+            doNullFromPly = (avg <= 0 && abs(avg) < 80) ? rootDepth / 4 : 0;
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
 
@@ -888,10 +890,28 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 18 * depth + 350 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta)
+        && (ss->ply >= doNullFromPly || rootPos.non_pawn_material(us) > QueenValue))
     {
         assert((ss - 1)->currentMove != Move::null());
 
+        if (!pos.state()->kingRestrained && ss->ply > 2 && pos.state()->previous->previous->kingRestrained)
+        {
+              Square ksq = pos.square<KING>(us);
+              Bitboard b = PseudoAttacks[KING][ksq] & ~pos.pieces(us);
+              while (b)
+              {
+                  if (!pos.attackers_to_exist(pop_lsb(b), pos.pieces(), ~us))
+                  {
+                    b |= 1;
+                    break;
+                  }
+              }
+              pos.state()->kingRestrained = bool(!b);
+        }
+
+        if (!pos.state()->kingRestrained)
+        {
         // Null move dynamic reduction based on depth
         Depth R = 7 + depth / 3;
         do_null_move(pos, st, ss);
@@ -918,6 +938,7 @@ Value Search::Worker::search(
 
             if (v >= beta)
                 return nullValue;
+        }
         }
     }
 

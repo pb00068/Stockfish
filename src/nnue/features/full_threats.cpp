@@ -230,6 +230,12 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
             }
         }
     }
+    Color side2Move = pos.side_to_move();
+    ksq = pos.square<KING>(side2Move);
+    if ((PseudoAttacks[KING][ksq] & pos.state()->threatened) && pos.non_pawn_material(side2Move) && pos.non_pawn_material(side2Move) <= QueenValue)
+      if (!(PseudoAttacks[KING][ksq] & ~(pos.state()->threatened | pos.pieces(side2Move))))
+        pos.state()->kingRestrained = true;
+
 }
 
 // Get a list of indices for recently changed features

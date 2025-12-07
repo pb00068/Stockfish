@@ -340,6 +340,7 @@ void Position::set_state() const {
     st->minorPieceKey     = 0;
     st->threatened        = 0;
     st->fullThreats= false;
+    st->kingRestrained = false;
     st->nonPawnKey[WHITE] = st->nonPawnKey[BLACK] = 0;
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
@@ -545,8 +546,6 @@ bool Position::legal(Move m) const {
     // enemy attacks, it is delayed at a later time: now!
     if (m.type_of() == CASTLING)
     {
-        if (st->fullThreats && !chess960)
-            return true;
         // After castling, the rook and king final positions are the same in
         // Chess960 as they would be in standard chess.
         to             = relative_square(us, to > from ? SQ_G1 : SQ_C1);
@@ -743,6 +742,7 @@ void Position::do_move(Move                      m,
     dts.prevKsq       = square<KING>(us);
     dts.threatenedSqs = dts.threateningSqs = st->threatened = 0;
     st->fullThreats= false;
+    st->kingRestrained = false;
 
     assert(color_of(pc) == us);
     assert(captured == NO_PIECE || color_of(captured) == (m.type_of() != CASTLING ? them : us));
@@ -1144,8 +1144,6 @@ void Position::update_piece_threats(Piece               pc,
         threatened = PseudoAttacks[type_of(pc)][s];
     }
 
-    if (PutPiece && color_of(pc) == sideToMove)
-        st->threatened |= threatened;
     threatened &= occupied;
     Bitboard sliders = (rookQueens & rAttacks) | (bishopQueens & bAttacks);
     Bitboard incoming_threats =
@@ -1201,9 +1199,6 @@ void Position::update_piece_threats(Piece               pc,
 
             const Bitboard ray        = RayPassBB[sliderSq][s] & ~BetweenBB[sliderSq][s];
             const Bitboard discovered = ray & qAttacks & occupied;
-
-            if (!PutPiece && st->epSquare == SQ_NONE && color_of(slider) == sideToMove &&  (RayPassBB[sliderSq][s] & noRaysContaining) != noRaysContaining)
-              st->threatened |= (ray & qAttacks);
 
             assert(!more_than_one(discovered));
             if (discovered && (RayPassBB[sliderSq][s] & noRaysContaining) != noRaysContaining)
@@ -1295,7 +1290,7 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     prefetch(tt.first_entry(key()));
 
     st->pliesFromNull = st->threatened = 0;
-    st->fullThreats= false;
+    st->fullThreats = st->kingRestrained = false;
 
     sideToMove = ~sideToMove;
 
