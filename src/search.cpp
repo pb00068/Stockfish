@@ -346,7 +346,7 @@ void Search::Worker::iterative_deepening() {
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
 
-            doNullFromPly = (avg <= 3 && abs(avg) < 90 && rootPos.non_pawn_material() < 2 * QueenValue + RookValue) ? rootDepth / 4 : 0;
+            doNullFromPly = (avg <= 0 && abs(avg) < 40 && rootPos.non_pawn_material() < 2 * QueenValue) ? rootDepth / 4 : 0;
 
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
