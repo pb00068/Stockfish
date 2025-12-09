@@ -151,13 +151,6 @@ bool isShuffling(Move move, Stack* const ss, const Position& pos) {
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
 }
 
-Bitboard pawnPushes(const Position& pos, Color us)
-{
-   return (us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN))
-                             : shift<SOUTH>(pos.pieces(us, PAWN)))
-                & ~pos.pieces();
-}
-
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -314,6 +307,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    doNullFromPly = 0;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -352,7 +346,7 @@ void Search::Worker::iterative_deepening() {
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
 
-            nmpMinPly = (avg <= 0 && abs(avg) < 40 && rootPos.non_pawn_material() < 2 * QueenValue) ? rootDepth / 4 : 0;
+            doNullFromPly = (avg <= 0 && abs(avg) < 40 && rootPos.non_pawn_material() < 2 * QueenValue) ? rootDepth / 4 : 0;
 
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
@@ -898,7 +892,7 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 18 * depth + 350 && !excludedMove
-        && (pos.non_pawn_material(us) || popcount(pawnPushes(pos, us)) >2) && ss->ply >= nmpMinPly && !is_loss(beta))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta) && ss->ply >= doNullFromPly)
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -913,16 +907,18 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
         {
-            if (nmpMinPly < pos.state()->pliesFromNull || depth < 16)
+            if (nmpMinPly || depth < 16)
                 return nullValue;
- 
+
+            assert(!nmpMinPly);  // Recursive verification is not allowed
+
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            nmpMinPly += ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
             Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
 
-            nmpMinPly -= ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = 0;
 
             if (v >= beta)
                 return nullValue;
@@ -1711,7 +1707,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!ss->inCheck && !moveCount && !pos.non_pawn_material(us)
         && type_of(pos.captured_piece()) >= ROOK)
     {
-        if (!pawnPushes(pos, us))  // no pawn pushes available
+        if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN))
+                           : shift<SOUTH>(pos.pieces(us, PAWN)))
+              & ~pos.pieces()))  // no pawn pushes available
         {
             pos.state()->checkersBB = Rank1BB;  // search for legal king-moves only
             if (!MoveList<LEGAL>(pos).size())   // stalemate
