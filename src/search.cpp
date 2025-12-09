@@ -888,7 +888,8 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && ss->staticEval >= beta - 18 * depth + 350 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta) && !(ttHit && ttData.move.is_ok()))
+        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta)
+        && !(ttHit && ttData.move.is_ok() && ttData.depth >= (2 * depth)/3 - 7))
     {
         assert((ss - 1)->currentMove != Move::null());
 
