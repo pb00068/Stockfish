@@ -295,6 +295,7 @@ void Search::Worker::iterative_deepening() {
     }
 
     size_t multiPV = size_t(options["MultiPV"]);
+    size_t dummy;
     Skill skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     // When playing with strength handicap enable MultiPV search that we will
@@ -302,7 +303,7 @@ void Search::Worker::iterative_deepening() {
     if (skill.enabled())
         multiPV = std::max(multiPV, size_t(4));
 
-    multiPV = std::min(multiPV, rootMoves.size());
+    multiPV = dummy = std::min(multiPV, rootMoves.size());
 
     int searchAgainCounter = 0;
 
@@ -328,6 +329,11 @@ void Search::Worker::iterative_deepening() {
         if (!threads.increaseDepth)
             searchAgainCounter++;
 
+        Value avg = rootMoves[0].averageScore;
+        doNullFromPly = rootDepth > 10 && (avg <= 2 && abs(avg) < 40 && rootPos.non_pawn_material() < 3 * QueenValue) ? rootDepth / 6 : 0;
+        if (doNullFromPly && rootPos.non_pawn_material())
+           multiPV = std::min(std::min(rootDepth / 14, (int) rootMoves.size()), 6);
+
         // MultiPV loop. We perform a full root search for each PV line
         for (pvIdx = 0; pvIdx < multiPV; ++pvIdx)
         {
@@ -344,9 +350,8 @@ void Search::Worker::iterative_deepening() {
 
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
-            Value avg = rootMoves[pvIdx].averageScore;
+            avg = rootMoves[pvIdx].averageScore;
 
-            doNullFromPly = (avg <= 0 && abs(avg) < 40 && rootPos.non_pawn_material() < 2 * QueenValue) ? rootDepth / 4 : 0;
 
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
@@ -385,7 +390,7 @@ void Search::Worker::iterative_deepening() {
                 // When failing high/low give some update before a re-search. To avoid
                 // excessive output that could hang GUIs like Fritz 19, only start
                 // at nodes > 10M (rather than depth N, which can be reached quickly)
-                if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
+                if (mainThread && dummy == 1 && (bestValue <= alpha || bestValue >= beta)
                     && nodes > 10000000)
                     main_manager()->pv(*this, threads, tt, rootDepth);
 
@@ -405,6 +410,8 @@ void Search::Worker::iterative_deepening() {
                     alpha = std::max(beta - delta, alpha);
                     beta  = std::min(bestValue + delta, VALUE_INFINITE);
                     ++failedHighCnt;
+                    if (bestValue > 10)
+                      multiPV = dummy;
                 }
                 else
                     break;
@@ -418,7 +425,7 @@ void Search::Worker::iterative_deepening() {
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
             if (mainThread
-                && (threads.stop || pvIdx + 1 == multiPV || nodes > 10000000)
+                && (threads.stop || pvIdx + 1 == dummy || nodes > 10000000)
                 // A thread that aborted search can have mated-in/TB-loss PV and
                 // score that cannot be trusted, i.e. it can be delayed or refuted
                 // if we would have had time to fully search other root-moves. Thus
@@ -2115,6 +2122,8 @@ void SearchManager::pv(Search::Worker&           worker,
     for (size_t i = 0; i < multiPV; ++i)
     {
         bool updated = rootMoves[i].score != -VALUE_INFINITE;
+
+       // sync_cout << "info pv i " << i << " depth " << depth << " updated " << updated << sync_endl;
 
         if (depth == 1 && !updated && i > 0)
             continue;
