@@ -1022,7 +1022,7 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if  ((ss-1)->currentMove == Move::null() && ((ss-1)->weak[0] == move || (ss-1)->weak[1] == move || (ss-1)->weak[2] == move || (ss-1)->weak[3] == move))
+        if  ((ss-1)->currentMove == Move::null() && ((ss-2)->weak[0] == move || (ss-2)->weak[1] == move || (ss-2)->weak[2] == move || (ss-2)->weak[3] == move))
             continue;
 
         // Check for legality
