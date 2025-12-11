@@ -1209,6 +1209,10 @@ moves_loop:  // When in check, search starts here
         if (move == ttData.move)
             r -= 2151;
 
+        // Decrease reduction on successful Queem promotions at (reduced) null-move subtrees
+        if (move.promotion_type() == QUEEN && (pos.state()->pliesFromNull < ss->ply || nmpMinPly) && pos.see_ge(move, PawnValue))
+            r -= 4096;
+
         if (capture)
             ss->statScore = 868 * int(PieceValue[pos.captured_piece()]) / 128
                           + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
@@ -1221,7 +1225,7 @@ moves_loop:  // When in check, search starts here
         r -= ss->statScore * 850 / 8192;
 
         // Step 17. Late moves reduction / extension (LMR)
-        if (depth >= 2 && moveCount > 1)
+        if (depth >= 2 && moveCount > 1 && move.promotion_type() != QUEEN)
         {
             // In general we want to cap the LMR depth search at newDepth, but when
             // reduction is negative, we allow this move a limited search extension
