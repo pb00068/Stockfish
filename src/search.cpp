@@ -1703,7 +1703,10 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!ss->inCheck && !moveCount && !pos.non_pawn_material(us)
         && type_of(pos.captured_piece()) >= ROOK)
     {
-        Bitboard shiftable = pos.pieces(us, PAWN) & ~pos.blockers_for_king(us);
+        Bitboard shiftable = pos.pieces(us, PAWN);
+        if ((pos.blockers_for_king(us) & shiftable) && file_of(pos.square<KING>(us)) == file_of(lsb(pos.state()->pinners[~us])))
+           shiftable &= ~pos.blockers_for_king(us);
+
         if (!((us == WHITE ? shift<NORTH>(shiftable)
                            : shift<SOUTH>(shiftable))
               & ~pos.pieces()))  // no pawn pushes available
