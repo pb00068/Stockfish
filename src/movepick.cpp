@@ -88,7 +88,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl, Move weak) :
+                       int                          pl, Move* weak) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -97,13 +97,15 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
-    ply(pl), weakMove(weak) {
+    ply(pl) {
 
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
     else
         stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+
+    weakMove = weak;
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -178,8 +180,10 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
 
-            if (move == weakMove)
+            if (weakMove != nullptr && (move == weakMove[0] || move == weakMove[1] || move == weakMove[2] || move == weakMove[3] ))
+            {
               m.value -= 10000;
+            }
         }
 
         else  // Type == EVASIONS

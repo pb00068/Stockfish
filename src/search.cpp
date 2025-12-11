@@ -687,7 +687,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
-    ss->weak = Move::none();
+    ss->weak[0] = ss->weak[1] = ss->weak[2] = ss->weak[3] = Move::none();
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -906,7 +906,11 @@ Value Search::Worker::search(
         {
             if (nmpMinPly || depth < 16)
             {
-                (ss-1)->weak = (ss-1)->currentMove;
+                //dbg_hit_on((ss-1)->weak[3] != Move::none(), 0);
+                (ss-1)->weak[3] =  (ss-1)->weak[2];
+                (ss-1)->weak[2] =  (ss-1)->weak[1];
+                (ss-1)->weak[1] =  (ss-1)->weak[0];
+                (ss-1)->weak[0] =  (ss-1)->currentMove;
                 return nullValue;
             }
 
@@ -922,7 +926,11 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-                (ss-1)->weak = (ss-1)->currentMove;
+                //dbg_hit_on((ss-1)->weak[3] != Move::none(), 1);
+                (ss-1)->weak[3] =  (ss-1)->weak[2];
+                (ss-1)->weak[2] =  (ss-1)->weak[1];
+                (ss-1)->weak[1] =  (ss-1)->weak[0];
+                (ss-1)->weak[0] =  (ss-1)->currentMove;
                 return nullValue;
             }
 
@@ -999,7 +1007,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : Move::none());
+                  &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : nullptr);
 
     value = bestValue;
 
@@ -1613,7 +1621,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : Move::none());
+                  contHist, &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : nullptr);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
