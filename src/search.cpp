@@ -1703,8 +1703,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     if (!ss->inCheck && !moveCount && !pos.non_pawn_material(us)
         && type_of(pos.captured_piece()) >= ROOK)
     {
-        if (!((us == WHITE ? shift<NORTH>(pos.pieces(us, PAWN))
-                           : shift<SOUTH>(pos.pieces(us, PAWN)))
+        Bitboard shiftable = pos.pieces(us, PAWN) & ~pos.blockers_for_king(us);
+        if (!((us == WHITE ? shift<NORTH>(shiftable)
+                           : shift<SOUTH>(shiftable))
               & ~pos.pieces()))  // no pawn pushes available
         {
             pos.state()->checkersBB = Rank1BB;  // search for legal king-moves only
