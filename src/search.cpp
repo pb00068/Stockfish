@@ -687,6 +687,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
+    ss->weak = Move::none();
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -904,7 +905,10 @@ Value Search::Worker::search(
         if (nullValue >= beta && !is_win(nullValue))
         {
             if (nmpMinPly || depth < 16)
+            {
+                (ss-1)->weak = (ss-1)->currentMove;
                 return nullValue;
+            }
 
             assert(!nmpMinPly);  // Recursive verification is not allowed
 
@@ -917,7 +921,11 @@ Value Search::Worker::search(
             nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                (ss-1)->weak = (ss-1)->currentMove;
                 return nullValue;
+            }
+
         }
     }
 
@@ -991,7 +999,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &pawnHistory, ss->ply);
+                  &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : Move::none());
 
     value = bestValue;
 
@@ -1605,7 +1613,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &pawnHistory, ss->ply);
+                  contHist, &pawnHistory, ss->ply, (ss-1)->currentMove == Move::null() ? (ss-2)->weak : Move::none());
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.

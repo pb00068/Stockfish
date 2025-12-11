@@ -88,7 +88,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl, Move weak) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -97,7 +97,7 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
-    ply(pl) {
+    ply(pl), weakMove(weak) {
 
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
@@ -177,6 +177,9 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+
+            if (move == weakMove)
+              m.value -= 10000;
         }
 
         else  // Type == EVASIONS
