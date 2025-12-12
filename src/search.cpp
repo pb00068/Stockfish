@@ -896,7 +896,7 @@ Value Search::Worker::search(
         // Null move dynamic reduction based on depth
         Depth R = 7 + depth / 3;
         do_null_move(pos, st, ss);
-
+        (ss + 1)->currentMove = Move::none();
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
         undo_null_move(pos);
@@ -907,10 +907,13 @@ Value Search::Worker::search(
             if (nmpMinPly || depth < 16)
             {
                 //dbg_hit_on((ss-1)->weak[3] != Move::none(), 0);
-                (ss-1)->weak[3] =  (ss-1)->weak[2];
-                (ss-1)->weak[2] =  (ss-1)->weak[1];
-                (ss-1)->weak[1] =  (ss-1)->weak[0];
-                (ss-1)->weak[0] =  (ss-1)->currentMove;
+                if( (ss + 1)->currentMove)
+                {
+                    (ss-1)->weak[3] =  (ss-1)->weak[2];
+                    (ss-1)->weak[2] =  (ss-1)->weak[1];
+                    (ss-1)->weak[1] =  (ss-1)->weak[0];
+                    (ss-1)->weak[0] =  (ss-1)->currentMove;
+                }
                 return nullValue;
             }
 
@@ -926,11 +929,14 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
+                if( (ss + 1)->currentMove)
+                {
                 //dbg_hit_on((ss-1)->weak[3] != Move::none(), 1);
-                (ss-1)->weak[3] =  (ss-1)->weak[2];
-                (ss-1)->weak[2] =  (ss-1)->weak[1];
-                (ss-1)->weak[1] =  (ss-1)->weak[0];
-                (ss-1)->weak[0] =  (ss-1)->currentMove;
+                    (ss-1)->weak[3] =  (ss-1)->weak[2];
+                    (ss-1)->weak[2] =  (ss-1)->weak[1];
+                    (ss-1)->weak[1] =  (ss-1)->weak[0];
+                    (ss-1)->weak[0] =  (ss-1)->currentMove;
+                }
                 return nullValue;
             }
 
