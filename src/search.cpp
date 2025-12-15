@@ -907,7 +907,7 @@ Value Search::Worker::search(
             if (nmpMinPly || depth < 16)
             {
                 //dbg_hit_on((ss-1)->weak[3] != Move::none(), 0);
-                if( (ss + 1)->currentMove)
+                if( !(ss + 1)->currentMove)
                 {
                     (ss-1)->weak[3] =  (ss-1)->weak[2];
                     (ss-1)->weak[2] =  (ss-1)->weak[1];
@@ -929,7 +929,7 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-                if( (ss + 1)->currentMove)
+                if( !(ss + 1)->currentMove)
                 {
                 //dbg_hit_on((ss-1)->weak[3] != Move::none(), 1);
                     (ss-1)->weak[3] =  (ss-1)->weak[2];
