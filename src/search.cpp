@@ -1016,7 +1016,7 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if  ((ss-1)->currentMove == Move::null() && (ss-2)->weak.size())
+        if  ((ss-2)->weak.size())
         {
           auto it = std::find( (ss-2)->weak.begin(),  (ss-2)->weak.end(), move);
           if (it !=  (ss-2)->weak.end())
@@ -1126,7 +1126,10 @@ moves_loop:  // When in check, search starts here
 
                 // Prune moves with negative SEE
                 if (!pos.see_ge(move, -25 * lmrDepth * lmrDepth))
+                {
+                    ss->weak.push_back(move);
                     continue;
+                }
             }
         }
 
