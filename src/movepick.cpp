@@ -104,7 +104,6 @@ MovePicker::MovePicker(const Position&              p,
 
     else
         stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
-
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -178,7 +177,6 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
-
         }
 
         else  // Type == EVASIONS

@@ -67,7 +67,7 @@ struct Stack {
     int                         ply;
     Move                        currentMove;
     Move                        excludedMove;
-    Move                        weak[4];
+    std::vector<Move>           weak;
     Value                       staticEval;
     int                         statScore;
     int                         moveCount;

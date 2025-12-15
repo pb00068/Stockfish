@@ -687,7 +687,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
-    ss->weak[0] = ss->weak[1] = ss->weak[2] = ss->weak[3] = Move::none();
+    ss->weak.clear();
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -895,6 +895,7 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth
         Depth R = 7 + depth / 3;
+        (ss + 1)->currentMove = Move::none();
         do_null_move(pos, st, ss);
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
@@ -905,13 +906,8 @@ Value Search::Worker::search(
         {
             if (nmpMinPly || depth < 16)
             {
-                if(depth - R <= 0)
-                {
-                    (ss-1)->weak[3] =  (ss-1)->weak[2];
-                    (ss-1)->weak[2] =  (ss-1)->weak[1];
-                    (ss-1)->weak[1] =  (ss-1)->weak[0];
-                    (ss-1)->weak[0] =  (ss-1)->currentMove;
-                }
+                if( !(ss + 1)->currentMove)
+                     (ss - 1)->weak.push_back((ss-1)->currentMove);
                 return nullValue;
             }
 
@@ -926,7 +922,11 @@ Value Search::Worker::search(
             nmpMinPly = 0;
 
             if (v >= beta)
-                return nullValue;
+            {
+                 if( !(ss + 1)->currentMove)
+                      (ss - 1)->weak.push_back((ss-1)->currentMove);
+                 return nullValue;
+            }
 
         }
     }
@@ -1016,8 +1016,12 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if  ((ss-1)->currentMove == Move::null() && ((ss-2)->weak[0] == move || (ss-2)->weak[1] == move || (ss-2)->weak[2] == move || (ss-2)->weak[3] == move))
+        if  ((ss-1)->currentMove == Move::null() && (ss-2)->weak.size())
+        {
+          auto it = std::find( (ss-2)->weak.begin(),  (ss-2)->weak.end(), move);
+          if (it !=  (ss-2)->weak.end())
             continue;
+        }
 
         // Check for legality
         if (!pos.legal(move))
