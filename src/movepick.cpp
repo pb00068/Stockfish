@@ -88,7 +88,8 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl,
+                       std::vector<Move>            *weak) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -104,6 +105,8 @@ MovePicker::MovePicker(const Position&              p,
 
     else
         stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+
+    skip=weak;
 }
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
@@ -157,6 +160,14 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
         else if constexpr (Type == QUIETS)
         {
+            if (skip != nullptr && skip->size()) {
+                 auto toskip = std::find( skip->begin(),  skip->end(), move);
+                 if (toskip !=  skip->end())
+                 {
+                     m.value = -100000;
+                     continue;
+                 }
+            }
             // histories
             m.value = 2 * (*mainHistory)[us][m.raw()];
             m.value += 2 * (*pawnHistory)[pawn_history_index(pos)][pc][to];
