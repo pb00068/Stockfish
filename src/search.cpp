@@ -757,7 +757,7 @@ Value Search::Worker::search(
         depth--;
 
     // At non-PV nodes we check for an early TT cutoff
-    if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
+    if ((!PvNode || ss->ply <= 1) && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER))
         && (cutNode == (ttData.value >= beta) || depth > 5))
@@ -1468,6 +1468,13 @@ moves_loop:  // When in check, search starts here
                                             : BOUND_UPPER,
                        moveCount != 0 ? depth : std::min(MAX_PLY - 1, depth + 6), bestMove,
                        unadjustedStaticEval, tt.generation());
+
+    if (rootNode && is_valid(bestValue) && is_decisive(bestValue) && !(bestValue >= beta))
+    {
+        sync_cout << " not going to overriding this entry " << posKey << sync_endl;
+        Stockfish::preserve = posKey;
+    }
+
 
     // Adjust correction history if the best move is not a capture
     // and the error direction matches whether we are above/below bounds.
