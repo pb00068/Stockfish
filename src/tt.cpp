@@ -32,12 +32,6 @@
 namespace Stockfish {
 
 
-
-
-Key preserve = 0;  // Definition and initialization
-
-
-
 // TTEntry struct is the 10 bytes transposition table entry, defined as below:
 //
 // key        16 bit
@@ -98,12 +92,6 @@ bool TTEntry::is_occupied() const { return bool(depth8); }
 // overwriting an old position. The update is not atomic and can be racy.
 void TTEntry::save(
   Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8) {
-
-     if (k == preserve)
-     {
-       sync_cout << " not overriding this entry " << key16 << " value : " << value16 << " stored depth : " << (int) depth8 << sync_endl;
-       return;
-     }
 
     // Preserve the old ttmove if we don't have a new one
     if (m || uint16_t(k) != key16)
