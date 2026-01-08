@@ -51,9 +51,6 @@ namespace NN = Eval::NNUE;
 constexpr auto StartFEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 constexpr int  MaxHashMB  = Is64Bit ? 33554432 : 2048;
 int            MaxThreads = std::max(1024, 4 * int(get_hardware_concurrency()));
-Key            lastPosKey = 0;;
-int            lastPosHalfClock = 0;
-
 
 Engine::Engine(std::optional<std::string> path) :
     binaryDirectory(path ? CommandLine::get_binary_directory(*path) : ""),
@@ -209,30 +206,6 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
         states->emplace_back();
         pos.do_move(m, states->back());
     }
-
-    Stockfish::reachMove = Move::none();
-    if (pos.game_ply() == lastPosHalfClock - 1)
-    {
-          for (const auto& m : MoveList<LEGAL>(pos))
-          {
-            StateInfo st;
-            pos.do_move(m, st);
-            if (pos.key() == lastPosKey)
-            {
-              auto [ttHit, ttData, ttWriter] = tt.probe(lastPosKey);
-              // if position is winning then stick to it
-              if (ttHit && is_valid(ttData.value) && ttData.value < 400)
-              {
-                  Stockfish::reachMove = m;
-                  Stockfish::lastPosValue = ttData.value;
-              }
-            }
-            pos.undo_move(m);
-          }
-    }
-
-    lastPosKey = pos.key();
-    lastPosHalfClock = pos.game_ply();
 }
 
 // modifiers
