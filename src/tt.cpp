@@ -31,6 +31,7 @@
 
 namespace Stockfish {
 
+Move reachMove = Move::none();
 
 // TTEntry struct is the 10 bytes transposition table entry, defined as below:
 //

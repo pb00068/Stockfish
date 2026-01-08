@@ -1019,12 +1019,16 @@ moves_loop:  // When in check, search starts here
         if (rootNode && !std::count(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast, move))
             continue;
 
+        if (rootNode && Stockfish::reachMove && move != Stockfish::reachMove)
+            continue;
+
         ss->moveCount = ++moveCount;
 
         if (rootNode && is_mainthread() && nodes > 10000000)
         {
             main_manager()->updates.onIter(
               {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + pvIdx});
+            Stockfish::reachMove = Move::none();
         }
         if (PvNode)
             (ss + 1)->pv = nullptr;

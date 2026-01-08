@@ -32,6 +32,8 @@ class ThreadPool;
 struct TTEntry;
 struct Cluster;
 
+extern Move reachMove;
+
 // There is only one global hash table for the engine and all its threads. For chess in particular, we even allow racy
 // updates between threads to and from the TT, as taking the time to synchronize access would cost thinking time and
 // thus elo. As a hash table, collisions are possible and may cause chess playing issues (bizarre blunders, faulty mate
