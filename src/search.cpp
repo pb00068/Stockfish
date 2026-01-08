@@ -354,6 +354,9 @@ void Search::Worker::iterative_deepening() {
             // Reset aspiration window starting size
             delta     = 5 + threadIdx % 8 + std::abs(rootMoves[pvIdx].meanSquaredScore) / 9000;
             Value avg = rootMoves[pvIdx].averageScore;
+            if (Stockfish::reachMove && avg >= -Stockfish::lastPosValue -1)
+                Stockfish::reachMove = Move::none();
+
             alpha     = std::max(avg - delta, -VALUE_INFINITE);
             beta      = std::min(avg + delta, VALUE_INFINITE);
 
@@ -393,7 +396,10 @@ void Search::Worker::iterative_deepening() {
                 // at nodes > 10M (rather than depth N, which can be reached quickly)
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
                     && nodes > 10000000)
+                {
                     main_manager()->pv(*this, threads, tt, rootDepth);
+                    Stockfish::reachMove = Move::none();
+                }
 
                 // In case of failing low/high increase aspiration window and re-search,
                 // otherwise exit the loop.
@@ -1028,7 +1034,6 @@ moves_loop:  // When in check, search starts here
         {
             main_manager()->updates.onIter(
               {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + pvIdx});
-            Stockfish::reachMove = Move::none();
         }
         if (PvNode)
             (ss + 1)->pv = nullptr;

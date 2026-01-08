@@ -225,8 +225,11 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
             {
               auto [ttHit, ttData, ttWriter] = tt.probe(lastPosKey);
               // if position is winning then stick to it
-              if (ttHit && is_valid(ttData.value) && ttData.value < 300)
+              if (ttHit && is_valid(ttData.value) && ttData.value < 400)
+              {
                   Stockfish::reachMove = m;
+                  Stockfish::lastPosValue = ttData.value;
+              }
             }
             pos.undo_move(m);
           }
