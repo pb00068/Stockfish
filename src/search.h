@@ -52,6 +52,8 @@ enum NodeType {
     Root
 };
 
+extern Move lastMoveBeforeRoot;
+
 class TranspositionTable;
 class ThreadPool;
 class OptionsMap;
@@ -297,6 +299,8 @@ class Worker {
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 
+    bool breakAfterTTMove;
+
    private:
     void iterative_deepening();
 
@@ -330,7 +334,7 @@ class Worker {
 
     LimitsType limits;
 
-    size_t                pvIdx, pvLast;
+    size_t                pvIdx, pvLast=0;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
     int                   selDepth, nmpMinPly;
 

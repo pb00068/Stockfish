@@ -52,6 +52,8 @@
 
 namespace Stockfish {
 
+Move lastMoveBeforeRoot;
+
 namespace TB = Tablebases;
 
 void syzygy_extend_pv(const OptionsMap&            options,
@@ -271,6 +273,7 @@ void Search::Worker::iterative_deepening() {
     Color  us            = rootPos.side_to_move();
     double timeReduction = 1, totBestMoveChanges = 0;
     int    delta, iterIdx                        = 0;
+    breakAfterTTMove = false;
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
@@ -336,6 +339,9 @@ void Search::Worker::iterative_deepening() {
 
         if (!threads.increaseDepth)
             searchAgainCounter++;
+
+        if (is_win(rootMoves[0].score) && (nodes >= 300000 || rootDepth > mate_distance(rootMoves[0].score) + 10))
+            breakAfterTTMove = false;
 
         // MultiPV loop. We perform a full root search for each PV line
         for (pvIdx = 0; pvIdx < multiPV; ++pvIdx)
@@ -536,6 +542,13 @@ void Search::Worker::iterative_deepening() {
 
     mainThread->previousTimeReduction = timeReduction;
 
+    // code for backwards analysis capability on mate lines
+    if (is_loss(rootMoves[0].score) && mate_distance(rootMoves[0].score) && lastMoveBeforeRoot) {
+        auto [ttHit, ttData, ttWriter] = tt.probe(rootPos.state()->previous->key);
+        ttWriter.write(rootPos.state()->previous->key, -rootMoves[0].score - 1, false, BOUND_EXACT,
+            rootDepth, lastMoveBeforeRoot, VALUE_NONE, tt.generation());
+    }
+
     // If the skill level is enabled, swap the best PV line with the sub-optimal one
     if (skill.enabled())
         std::swap(rootMoves[0],
@@ -704,7 +717,7 @@ Value Search::Worker::search(
     auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
-    ttData.move  = rootNode ? rootMoves[pvIdx].pv[0] : ttHit ? ttData.move : Move::none();
+    ttData.move  = rootNode && depth > 1 ? rootMoves[pvIdx].pv[0] : ttHit ? ttData.move : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
@@ -996,6 +1009,13 @@ moves_loop:  // When in check, search starts here
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
                   &sharedHistory, ss->ply);
 
+    // retrograde analysis capability: if ttMove is winning then stick to it for a while for reestablishing PV
+    if (ttData.move && rootNode && is_win(ttData.value) && pos.legal(ttData.move) && nodes < 300000 && !ttData.is_pv)
+    {
+        mp.skip_quiet_moves();
+        breakAfterTTMove = true;
+    }
+
     value = bestValue;
 
     int moveCount = 0;
@@ -1008,6 +1028,9 @@ moves_loop:  // When in check, search starts here
 
         if (move == excludedMove)
             continue;
+
+        if (breakAfterTTMove && move != ttData.move)
+            break;
 
         // Check for legality
         if (!pos.legal(move))

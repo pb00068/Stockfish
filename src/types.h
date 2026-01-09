@@ -38,6 +38,7 @@
 
     #include <cassert>
     #include <cstddef>
+    #include <cstdlib>
     #include <cstdint>
     #include <type_traits>
     #include "misc.h"
@@ -178,6 +179,13 @@ constexpr bool is_loss(Value value) {
 }
 
 constexpr bool is_decisive(Value value) { return is_win(value) || is_loss(value); }
+
+constexpr int mate_distance(Value value) {
+    Value absValue = std::abs(value);
+    if (absValue >= VALUE_MATE_IN_MAX_PLY && absValue < VALUE_MATE)
+        return VALUE_MATE - absValue;
+    return 0;
+}
 
 // In the code, we make the assumption that these values
 // are such that non_pawn_material() can be used to uniquely
