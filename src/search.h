@@ -299,8 +299,6 @@ class Worker {
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 
-    bool breakAfterTTMove;
-
    private:
     void iterative_deepening();
 
@@ -334,7 +332,7 @@ class Worker {
 
     LimitsType limits;
 
-    size_t                pvIdx, pvLast=0;
+    size_t                pvIdx, pvLast, pvLastSelect;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
     int                   selDepth, nmpMinPly;
 

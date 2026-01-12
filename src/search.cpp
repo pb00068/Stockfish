@@ -273,7 +273,6 @@ void Search::Worker::iterative_deepening() {
     Color  us            = rootPos.side_to_move();
     double timeReduction = 1, totBestMoveChanges = 0;
     int    delta, iterIdx                        = 0;
-    breakAfterTTMove = false;
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
@@ -313,6 +312,7 @@ void Search::Worker::iterative_deepening() {
     multiPV = std::min(multiPV, rootMoves.size());
 
     int searchAgainCounter = 0;
+    pvLastSelect = rootMoves.size();
 
     lowPlyHistory.fill(97);
 
@@ -340,9 +340,6 @@ void Search::Worker::iterative_deepening() {
         if (!threads.increaseDepth)
             searchAgainCounter++;
 
-        if (is_win(rootMoves[0].score) && (nodes >= 300000 || rootDepth > mate_distance(rootMoves[0].score) + 10))
-            breakAfterTTMove = false;
-
         // MultiPV loop. We perform a full root search for each PV line
         for (pvIdx = 0; pvIdx < multiPV; ++pvIdx)
         {
@@ -353,6 +350,9 @@ void Search::Worker::iterative_deepening() {
                     if (rootMoves[pvLast].tbRank != rootMoves[pvFirst].tbRank)
                         break;
             }
+
+            if (pvIdx || (is_win(rootMoves[0].score) && (nodes >= 300000 || rootDepth > mate_distance(rootMoves[0].score) + 10)))
+              pvLastSelect = pvLast;
 
             // Reset UCI info selDepth for each depth and each PV line
             selDepth = 0;
@@ -386,7 +386,7 @@ void Search::Worker::iterative_deepening() {
                 // and we want to keep the same order for all the moves except the
                 // new PV that goes to the front. Note that in the case of MultiPV
                 // search the already searched PV lines are preserved.
-                std::stable_sort(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast);
+                std::stable_sort(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLastSelect);
 
                 // If search has been stopped, we break immediately. Sorting is
                 // safe because RootMoves is still valid, although it refers to
@@ -1009,11 +1009,14 @@ moves_loop:  // When in check, search starts here
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
                   &sharedHistory, ss->ply);
 
-    // retrograde analysis capability: if ttMove is winning then stick to it for a while for reestablishing PV
-    if (ttData.move && rootNode && is_win(ttData.value) && pos.legal(ttData.move) && nodes < 300000 && !ttData.is_pv)
+    // retrograde analysis capability: if ttMove is winning then stick to it for a while for re-establishing the mating PV
+    if (!pvIdx && ttData.move && rootNode && is_win(ttData.value) && pos.legal(ttData.move) && nodes < 300000 && !ttData.is_pv)
     {
+        RootMove& rm = *std::find(rootMoves.begin(), rootMoves.end(), ttData.move);
+        rm.score = ttData.value;
+        std::stable_sort(rootMoves.begin(), rootMoves.end());
         mp.skip_quiet_moves();
-        breakAfterTTMove = true;
+        pvLastSelect = 1;
     }
 
     value = bestValue;
@@ -1029,9 +1032,6 @@ moves_loop:  // When in check, search starts here
         if (move == excludedMove)
             continue;
 
-        if (breakAfterTTMove && move != ttData.move)
-            break;
-
         // Check for legality
         if (!pos.legal(move))
             continue;
@@ -1039,7 +1039,7 @@ moves_loop:  // When in check, search starts here
         // At root obey the "searchmoves" option and skip moves not listed in Root
         // Move List. In MultiPV mode we also skip PV moves that have been already
         // searched and those of lower "TB rank" if we are in a TB root position.
-        if (rootNode && !std::count(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast, move))
+        if (rootNode && !std::count(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLastSelect, move))
             continue;
 
         ss->moveCount = ++moveCount;
